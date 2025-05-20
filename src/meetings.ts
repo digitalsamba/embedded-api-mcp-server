@@ -577,26 +577,20 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
       send_invitations: z.boolean().optional()
     },
     async (params, request) => {
-      logger.info('Creating scheduled meeting', { title: params.title });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'Authentication Error: No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      // Create API client
-      logger.debug('Creating API client using context API key');
-      
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
-      
       try {
+        logger.info('Creating scheduled meeting', { title: params.title });
+        
+        // Get API key from session context
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          throw new AuthenticationError('No API key found. Please include an Authorization header with a Bearer token.');
+        }
+        
+        // Create API client
+        logger.debug('Creating API client using context API key');
+        
+        const client = new DigitalSambaApiClient(undefined, apiUrl);
+        
         // If no room_id is provided, create a new room
         let roomId = params.room_id;
         if (!roomId && params.room_settings) {
@@ -612,13 +606,12 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
           roomId = room.id;
           logger.debug(`Created new room with ID: ${roomId}`);
         } else if (!roomId) {
-          return {
-            content: [{ 
-              type: 'text', 
-              text: 'Validation Error: Either room_id or room_settings must be provided to create a meeting.'
-            }],
-            isError: true,
-          };
+          throw new ValidationError('Either room_id or room_settings must be provided to create a meeting.', {
+            validationErrors: { 
+              'room_id': 'Room ID is required if room_settings is not provided',
+              'room_settings': 'Room settings are required if room_id is not provided'
+            }
+          });
         }
         
         // Create the meeting
@@ -675,41 +668,53 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
         };
       } catch (error) {
         logger.error('Error creating scheduled meeting', { 
+          title: params.title,
           error: error instanceof Error ? error.message : String(error) 
         });
         
-        let errorMessage = 'Error creating scheduled meeting';
+        let errorResponse: { text: string, isError: boolean } = {
+          text: `Error creating scheduled meeting: ${error instanceof Error ? error.message : String(error)}`,
+          isError: true
+        };
         
-        // Provide more specific error messages based on error type
-        if (error instanceof Error) {
-          if ('statusCode' in error) {
-            const statusCode = (error as any).statusCode;
-            
-            // Handle specific status codes with user-friendly messages
-            if (statusCode === 404) {
-              errorMessage = `Resource not found: ${error.message}`;
-            } else if (statusCode === 403) {
-              errorMessage = `Authentication error: Insufficient permissions to create meeting`;
-            } else if (statusCode === 400) {
-              errorMessage = `Validation error: ${error.message}`;
-            } else {
-              errorMessage = `API error (${statusCode}): ${error.message}`;
+        // Customize error response based on error type
+        if (error instanceof AuthenticationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ValidationError) {
+          errorResponse.text = error.message;
+          
+          // If we have validation errors, add them to the message
+          if (Object.keys(error.validationErrors).length > 0) {
+            errorResponse.text += '\n\nValidation errors:';
+            for (const [field, message] of Object.entries(error.validationErrors)) {
+              if (message) {
+                errorResponse.text += `\n- ${field}: ${message}`;
+              }
             }
-          } else {
-            errorMessage = `Error creating scheduled meeting: ${error.message}`;
           }
-        } else {
-          errorMessage = `Error creating scheduled meeting: ${String(error)}`;
+        } else if (error instanceof ResourceNotFoundError) {
+          errorResponse.text = `Resource not found: ${error.resourceType} with ID ${error.resourceId} does not exist`;
+        } else if (error instanceof ApiResponseError) {
+          // Handle specific status codes with user-friendly messages
+          if (error.statusCode === 404) {
+            errorResponse.text = `Resource not found: ${error.apiErrorMessage}`;
+          } else if (error.statusCode === 403) {
+            errorResponse.text = `Authentication error: Insufficient permissions to create meeting`;
+          } else if (error.statusCode === 400) {
+            errorResponse.text = `Validation error: ${error.apiErrorMessage}`;
+          } else {
+            errorResponse.text = `API error (${error.statusCode}): ${error.apiErrorMessage}`;
+          }
         }
         
         return {
           content: [
             {
               type: 'text',
-              text: errorMessage,
+              text: errorResponse.text,
             },
           ],
-          isError: true,
+          isError: errorResponse.isError,
         };
       }
     }
@@ -740,35 +745,28 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
       send_updates: z.boolean().optional()
     },
     async (params, request) => {
-      const { meeting_id, ...updateParams } = params;
-      
-      if (!meeting_id) {
-        return {
-          content: [{ type: 'text', text: 'Meeting ID is required.' }],
-          isError: true,
-        };
-      }
-      
-      logger.info('Updating scheduled meeting', { meeting_id });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      // Create API client
-      logger.debug('Creating API client using context API key');
-      
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
-      
       try {
+        const { meeting_id, ...updateParams } = params;
+        
+        if (!meeting_id) {
+          throw new ValidationError('Meeting ID is required.', {
+            validationErrors: { 'meeting_id': 'Meeting ID cannot be empty' }
+          });
+        }
+        
+        logger.info('Updating scheduled meeting', { meeting_id });
+        
+        // Get API key from session context
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          throw new AuthenticationError('No API key found. Please include an Authorization header with a Bearer token.');
+        }
+        
+        // Create API client
+        logger.debug('Creating API client using context API key');
+        
+        const client = new DigitalSambaApiClient(undefined, apiUrl);
+        
         // Update the meeting
         // Ensure participants have required properties
         const normalizedParams = {
@@ -808,18 +806,43 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
         };
       } catch (error) {
         logger.error('Error updating scheduled meeting', { 
-          meeting_id,
+          meeting_id: params.meeting_id,
           error: error instanceof Error ? error.message : String(error) 
         });
+        
+        let errorResponse: { text: string, isError: boolean } = {
+          text: `Error updating scheduled meeting: ${error instanceof Error ? error.message : String(error)}`,
+          isError: true
+        };
+        
+        // Customize error response based on error type
+        if (error instanceof AuthenticationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ValidationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ResourceNotFoundError) {
+          errorResponse.text = `Meeting with ID ${error.resourceId} not found`;
+        } else if (error instanceof ApiResponseError) {
+          // Handle specific status codes with user-friendly messages
+          if (error.statusCode === 404) {
+            errorResponse.text = `Meeting not found: ${error.apiErrorMessage}`;
+          } else if (error.statusCode === 403) {
+            errorResponse.text = `Authentication error: Insufficient permissions to update meeting`;
+          } else if (error.statusCode === 400) {
+            errorResponse.text = `Validation error: ${error.apiErrorMessage}`;
+          } else {
+            errorResponse.text = `API error (${error.statusCode}): ${error.apiErrorMessage}`;
+          }
+        }
         
         return {
           content: [
             {
               type: 'text',
-              text: `Error updating scheduled meeting: ${error instanceof Error ? error.message : String(error)}`,
+              text: errorResponse.text,
             },
           ],
-          isError: true,
+          isError: errorResponse.isError,
         };
       }
     }
@@ -833,35 +856,28 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
       notify_participants: z.boolean().optional().default(true)
     },
     async (params, request) => {
-      const { meeting_id, notify_participants } = params;
-      
-      if (!meeting_id) {
-        return {
-          content: [{ type: 'text', text: 'Meeting ID is required.' }],
-          isError: true,
-        };
-      }
-      
-      logger.info('Cancelling scheduled meeting', { meeting_id });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      // Create API client
-      logger.debug('Creating API client using context API key');
-      
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
-      
       try {
+        const { meeting_id, notify_participants } = params;
+        
+        if (!meeting_id) {
+          throw new ValidationError('Meeting ID is required.', {
+            validationErrors: { 'meeting_id': 'Meeting ID cannot be empty' }
+          });
+        }
+        
+        logger.info('Cancelling scheduled meeting', { meeting_id });
+        
+        // Get API key from session context
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          throw new AuthenticationError('No API key found. Please include an Authorization header with a Bearer token.');
+        }
+        
+        // Create API client
+        logger.debug('Creating API client using context API key');
+        
+        const client = new DigitalSambaApiClient(undefined, apiUrl);
+        
         // Cancel the meeting
         await client.cancelScheduledMeeting(meeting_id, { notify_participants });
         
@@ -879,18 +895,41 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
         };
       } catch (error) {
         logger.error('Error cancelling scheduled meeting', { 
-          meeting_id,
+          meeting_id: params.meeting_id,
           error: error instanceof Error ? error.message : String(error) 
         });
+        
+        let errorResponse: { text: string, isError: boolean } = {
+          text: `Error cancelling scheduled meeting: ${error instanceof Error ? error.message : String(error)}`,
+          isError: true
+        };
+        
+        // Customize error response based on error type
+        if (error instanceof AuthenticationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ValidationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ResourceNotFoundError) {
+          errorResponse.text = `Meeting with ID ${error.resourceId} not found`;
+        } else if (error instanceof ApiResponseError) {
+          // Handle specific status codes with user-friendly messages
+          if (error.statusCode === 404) {
+            errorResponse.text = `Meeting not found: ${error.apiErrorMessage}`;
+          } else if (error.statusCode === 403) {
+            errorResponse.text = `Authentication error: Insufficient permissions to cancel meeting`;
+          } else {
+            errorResponse.text = `API error (${error.statusCode}): ${error.apiErrorMessage}`;
+          }
+        }
         
         return {
           content: [
             {
               type: 'text',
-              text: `Error cancelling scheduled meeting: ${error instanceof Error ? error.message : String(error)}`,
+              text: errorResponse.text,
             },
           ],
-          isError: true,
+          isError: errorResponse.isError,
         };
       }
     }
@@ -903,35 +942,28 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
       meeting_id: z.string()
     },
     async (params, request) => {
-      const { meeting_id } = params;
-      
-      if (!meeting_id) {
-        return {
-          content: [{ type: 'text', text: 'Meeting ID is required.' }],
-          isError: true,
-        };
-      }
-      
-      logger.info('Deleting scheduled meeting', { meeting_id });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      // Create API client
-      logger.debug('Creating API client using context API key');
-      
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
-      
       try {
+        const { meeting_id } = params;
+        
+        if (!meeting_id) {
+          throw new ValidationError('Meeting ID is required.', {
+            validationErrors: { 'meeting_id': 'Meeting ID cannot be empty' }
+          });
+        }
+        
+        logger.info('Deleting scheduled meeting', { meeting_id });
+        
+        // Get API key from session context
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          throw new AuthenticationError('No API key found. Please include an Authorization header with a Bearer token.');
+        }
+        
+        // Create API client
+        logger.debug('Creating API client using context API key');
+        
+        const client = new DigitalSambaApiClient(undefined, apiUrl);
+        
         // Delete the meeting
         await client.deleteScheduledMeeting(meeting_id);
         
@@ -945,18 +977,41 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
         };
       } catch (error) {
         logger.error('Error deleting scheduled meeting', { 
-          meeting_id,
+          meeting_id: params.meeting_id,
           error: error instanceof Error ? error.message : String(error) 
         });
+        
+        let errorResponse: { text: string, isError: boolean } = {
+          text: `Error deleting scheduled meeting: ${error instanceof Error ? error.message : String(error)}`,
+          isError: true
+        };
+        
+        // Customize error response based on error type
+        if (error instanceof AuthenticationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ValidationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ResourceNotFoundError) {
+          errorResponse.text = `Meeting with ID ${error.resourceId} not found`;
+        } else if (error instanceof ApiResponseError) {
+          // Handle specific status codes with user-friendly messages
+          if (error.statusCode === 404) {
+            errorResponse.text = `Meeting not found: ${error.apiErrorMessage}`;
+          } else if (error.statusCode === 403) {
+            errorResponse.text = `Authentication error: Insufficient permissions to delete meeting`;
+          } else {
+            errorResponse.text = `API error (${error.statusCode}): ${error.apiErrorMessage}`;
+          }
+        }
         
         return {
           content: [
             {
               type: 'text',
-              text: `Error deleting scheduled meeting: ${error instanceof Error ? error.message : String(error)}`,
+              text: errorResponse.text,
             },
           ],
-          isError: true,
+          isError: errorResponse.isError,
         };
       }
     }
