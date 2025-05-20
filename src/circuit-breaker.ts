@@ -588,7 +588,7 @@ export class CircuitBreaker extends EventEmitter {
  * // Execute a function with the circuit breaker
  * const rooms = await circuit.exec(() => apiClient.listRooms());
  */
-export class CircuitBreakerRegistry {
+export class CircuitBreakerRegistry extends EventEmitter {
   private static instance: CircuitBreakerRegistry;
   private circuits: Map<string, CircuitBreaker> = new Map();
   
@@ -597,7 +597,9 @@ export class CircuitBreakerRegistry {
    * 
    * @private
    */
-  private constructor() {}
+  private constructor() {
+    super(); // Initialize EventEmitter
+  }
   
   /**
    * Get the singleton instance of the registry
@@ -631,6 +633,9 @@ export class CircuitBreakerRegistry {
       circuit: options.name,
       totalCircuits: this.circuits.size
     });
+    
+    // Emit created event for the new circuit breaker
+    this.emit('created', circuitBreaker);
     
     return circuitBreaker;
   }
