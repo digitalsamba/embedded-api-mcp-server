@@ -15,20 +15,27 @@
  * @author Digital Samba Team
  * @version 0.1.0
  */
-import express, { Request, Response } from 'express';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+// Node.js built-in modules
 import crypto from 'crypto';
-import { DigitalSambaApiClient } from './digital-samba-api.js';
-import logger from './logger.js';
+
+// External dependencies
+import express, { Request, Response } from 'express';
+
+// MCP SDK imports
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+
+// Local modules
 import { getApiKeyFromRequest } from './auth.js';
+import { DigitalSambaApiClient } from './digital-samba-api.js';
 import {
-  AuthenticationError,
   ApiRequestError,
   ApiResponseError,
+  AuthenticationError,
+  ConfigurationError,
   ResourceNotFoundError,
-  ValidationError,
-  ConfigurationError
+  ValidationError
 } from './errors.js';
+import logger from './logger.js';
 
 // Define webhook event types
 export enum WebhookEventType {
