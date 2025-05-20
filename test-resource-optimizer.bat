@@ -1,0 +1,3 @@
+@echo off
+echo Running resource optimizer tests...
+npm run test:resource-optimizer
