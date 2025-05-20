@@ -100,6 +100,14 @@ class MetricsRegistry {
   public activeConnections: Gauge;
   public activeSessions: Gauge;
   
+  // Circuit breaker metrics
+  public circuitBreakersTotal: Counter;
+  public circuitBreakerSuccess: Counter;
+  public circuitBreakerFailures: Counter;
+  public circuitBreakerStateInfo: Gauge;
+  public circuitBreakerResets: Counter;
+  public circuitBreakerTrips: Counter;
+  
   /**
    * Constructor for the metrics registry
    * @param options Metrics configuration options
@@ -222,6 +230,48 @@ class MetricsRegistry {
     this.activeSessions = new Gauge({
       name: `${this.options.prefix}active_sessions`,
       help: 'Number of active sessions',
+      registers: [this.registry]
+    });
+    
+    // Initialize circuit breaker metrics
+    this.circuitBreakersTotal = new Counter({
+      name: `${this.options.prefix}circuit_breakers_total`,
+      help: 'Total number of circuit breakers',
+      registers: [this.registry]
+    });
+    
+    this.circuitBreakerSuccess = new Counter({
+      name: `${this.options.prefix}circuit_breaker_success_total`,
+      help: 'Total number of successful circuit breaker calls',
+      labelNames: ['circuit'],
+      registers: [this.registry]
+    });
+    
+    this.circuitBreakerFailures = new Counter({
+      name: `${this.options.prefix}circuit_breaker_failures_total`,
+      help: 'Total number of failed circuit breaker calls',
+      labelNames: ['circuit'],
+      registers: [this.registry]
+    });
+    
+    this.circuitBreakerStateInfo = new Gauge({
+      name: `${this.options.prefix}circuit_breaker_state_info`,
+      help: 'Circuit breaker state (0 = inactive, 1 = active)',
+      labelNames: ['circuit', 'state'],
+      registers: [this.registry]
+    });
+    
+    this.circuitBreakerResets = new Counter({
+      name: `${this.options.prefix}circuit_breaker_resets_total`,
+      help: 'Total number of circuit breaker manual resets',
+      labelNames: ['circuit'],
+      registers: [this.registry]
+    });
+    
+    this.circuitBreakerTrips = new Counter({
+      name: `${this.options.prefix}circuit_breaker_trips_total`,
+      help: 'Total number of circuit breaker manual trips',
+      labelNames: ['circuit'],
       registers: [this.registry]
     });
   }
