@@ -1,490 +1,332 @@
 # Digital Samba MCP Server
 
-An implementation of the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) for Digital Samba's video conferencing API. This server enables AI assistants to create and manage video conferencing rooms through a standardized interface.
+![Version](https://img.shields.io/npm/v/digital-samba-mcp)
+![License](https://img.shields.io/npm/l/digital-samba-mcp)
+![Node Version](https://img.shields.io/node/v/digital-samba-mcp)
 
-Full [Digital Samba API documentation](docs/digital-samba-api.md) is available in the docs folder.
+A Model Context Protocol (MCP) server implementation for Digital Samba's video conferencing API, allowing AI agents like Claude to seamlessly interact with Digital Samba rooms, participants, and meetings.
 
-## NPM Package
+## Table of Contents
 
-The Digital Samba MCP Server is available as an npm package for easy integration with Claude Desktop and other MCP clients. See [PACKAGE.md](PACKAGE.md) for detailed installation and usage instructions.
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [CLI Usage](#cli-usage)
+- [API Usage](#api-usage)
+- [Features](#features)
+- [Configuration](#configuration)
+- [Advanced Usage](#advanced-usage)
+- [Examples](#examples)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+## Installation
 
 ```bash
-# Install globally
-npm install -g digital-samba-mcp
+npm install digital-samba-mcp
+```
 
-# Run with your API key
-digital-samba-mcp --api-key YOUR_API_KEY
+Or install globally to use the CLI:
+
+```bash
+npm install -g digital-samba-mcp
 ```
 
 ## Quick Start
 
-To quickly get started with the Digital Samba MCP Server from the source code:
+### Using the CLI
 
-1. Run the installation script to install all required dependencies:
-   ```
-   install.bat
-   ```
+The fastest way to get started is to use the command-line interface:
 
-2. Start the server in development mode:
-   ```
-   run.bat
-   ```
-   
-   Alternatively, you can use the npm scripts:
-   ```
-   npm run dev
-   ```
+```bash
+digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
+```
 
-The server will run on port 3000 by default and will be accessible at `http://localhost:3000/mcp` for MCP clients.
+This will start the MCP server on port 3000 and expose resources and tools for Digital Samba's video conferencing functionality.
+
+### Using the API
+
+```javascript
+import { startServer } from 'digital-samba-mcp';
+
+// Start the server with options
+const server = startServer({
+  port: 4000,
+  apiUrl: 'https://api.digitalsamba.com/api/v1',
+  webhookSecret: 'your_webhook_secret',
+  publicUrl: 'https://your-server.example.com'
+});
+```
+
+## CLI Usage
+
+```
+digital-samba-mcp [options]
+
+Options:
+  -p, --port <port>                 Port to run the server on (default: 3000)
+  -k, --api-key <key>               Digital Samba API key
+  -u, --api-url <url>               Digital Samba API URL (default: https://api.digitalsamba.com/api/v1)
+  -l, --log-level <level>           Log level (default: info)
+  -w, --webhook-secret <secret>     Secret for webhook verification
+  -e, --webhook-endpoint <path>     Webhook endpoint path (default: /webhooks/digitalsamba)
+  --public-url <url>                Public URL for the server (for webhook callbacks)
+  -h, --help                        Display help message
+```
+
+### Environment Variables
+
+All CLI options can also be specified as environment variables:
+
+- `PORT` - Port to run the server on
+- `DIGITAL_SAMBA_API_KEY` - Digital Samba API key
+- `DIGITAL_SAMBA_API_URL` - Digital Samba API URL
+- `LOG_LEVEL` - Log level (error, warn, info, http, verbose, debug, silly)
+- `WEBHOOK_SECRET` - Secret for webhook verification
+- `WEBHOOK_ENDPOINT` - Webhook endpoint path
+- `PUBLIC_URL` - Public URL for the server
+
+## API Usage
+
+### Creating a Server
+
+```javascript
+import { createServer } from 'digital-samba-mcp';
+
+const { server, port, apiUrl } = createServer({
+  port: 4000,
+  apiUrl: 'https://api.digitalsamba.com/api/v1',
+  webhookSecret: 'your_webhook_secret',
+  webhookEndpoint: '/webhooks/digitalsamba',
+  publicUrl: 'https://your-server.example.com'
+});
+```
+
+### Starting a Server
+
+```javascript
+import { startServer } from 'digital-samba-mcp';
+
+const httpServer = startServer({
+  port: 4000,
+  apiUrl: 'https://api.digitalsamba.com/api/v1'
+});
+
+// Later, if needed:
+httpServer.close();
+```
+
+### Using the Digital Samba API Client Directly
+
+```javascript
+import { DigitalSambaApiClient } from 'digital-samba-mcp/client';
+
+const client = new DigitalSambaApiClient(
+  'your_api_key',
+  'https://api.digitalsamba.com/api/v1'
+);
+
+// List rooms
+const { data: rooms } = await client.listRooms();
+
+// Create a room
+const room = await client.createRoom({
+  name: 'My Meeting Room',
+  privacy: 'private'
+});
+
+// Generate a room token
+const token = await client.generateRoomToken(room.id, {
+  u: 'User Name'
+});
+
+console.log('Join URL:', token.link);
+```
 
 ## Features
 
-- **MCP TypeScript SDK Integration**: Built using the official MCP TypeScript SDK
-- **Digital Samba API Integration**: Connects to Digital Samba's video conferencing API
-- **Resources**: Access rooms and participants
-- **Tools**: Create, update, delete rooms and generate access tokens
-- **Webhook Support**: Real-time event handling via webhooks
-- **Client-Provided API Key Architecture**: No API keys stored on the server
-- **Streamable HTTP Transport**: Modern connection handling
-- **Proper Logging**: Comprehensive logging with Winston
-- **Error Handling**: Detailed error reporting
-- **NPM Package**: Available as an npm package for easy installation and use
+The Digital Samba MCP Server provides the following functionality:
 
-## Prerequisites
+### Room Management
+- List, create, update, and delete rooms
+- Generate room tokens for participant access
+- Manage room settings and participant permissions
 
-- Node.js 16+
-- npm or yarn
-- Digital Samba API key (provided by the client)
+### Meeting Scheduling
+- Schedule, update, and cancel meetings
+- Manage meeting participants
+- Find available meeting times
+- Generate meeting join links
 
-## Installation
+### Recording Functionality
+- Start and stop room recordings
+- List and access recordings
+- Manage recording settings
 
-1. Clone this repository
-2. Install dependencies:
-   ```
-   npm install
-   ```
+### Moderation Tools
+- Mute/unmute participants
+- Ban/unban participants
+- Lock/unlock rooms
+- Manage media settings
 
-## Running the Server
+### Breakout Rooms
+- Create and manage breakout rooms
+- Assign participants to breakout rooms
+- Broadcast messages to breakout rooms
 
-```bash
-# Development mode
-npm run dev
-
-# Build and run in production mode
-npm run build
-npm start
-```
+### Webhook Integration
+- Register webhooks to receive event notifications
+- Listen for room, participant, and recording events
+- Secure webhook verification with signatures
 
 ## Configuration
 
-The server can be configured using environment variables:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| PORT | Server port | 3000 |
-| DIGITAL_SAMBA_API_URL | Digital Samba API URL | https://api.digitalsamba.com/api/v1 |
-| LOG_LEVEL | Logging level (error, warn, info, verbose, debug) | info |
-| WEBHOOK_SECRET | Secret for verifying webhook signatures | (none) |
-| WEBHOOK_ENDPOINT | Endpoint path for receiving webhooks | /webhooks/digitalsamba |
-| PUBLIC_URL | Public URL of the server for webhook registration | http://localhost:[PORT] |
-
-## Authentication
-
-Authentication with the Digital Samba API is handled through the `Authorization` header using a Bearer token. The API key is not stored on the server but provided by the client with each request.
-
-### Authorization Header Format
-
-```
-Authorization: Bearer YOUR_API_KEY
-```
-
-The server extracts the API key from the Authorization header and uses it for all API requests to Digital Samba's services. The API key is associated with the current MCP session and reused for subsequent requests within the same session.
-
-## Available Resources
-
-| Resource URI | Description |
-|--------------|-------------|
-| `digitalsamba://rooms` | List all rooms |
-| `digitalsamba://rooms/{roomId}` | Get room details |
-| `digitalsamba://rooms/{roomId}/participants` | List room participants |
-| `digitalsamba://rooms/{roomId}/moderation` | Get room moderation settings |
-| `digitalsamba://rooms/{roomId}/banned-participants` | List banned participants |
-| `digitalsamba://rooms/{roomId}/breakout-rooms` | List breakout rooms for a parent room |
-| `digitalsamba://rooms/{roomId}/breakout-rooms/{breakoutRoomId}` | Get breakout room details |
-| `digitalsamba://rooms/{roomId}/breakout-rooms/{breakoutRoomId}/participants` | List participants in a breakout room |
-| `digitalsamba://recordings` | List all recordings |
-| `digitalsamba://recordings/{recordingId}` | Get recording details |
-| `digitalsamba://rooms/{roomId}/recordings` | List recordings for a room |
-
-## Available Tools
-
-### create-room
-
-Creates a new meeting room.
-
-**Parameters**:
-- `name`: Room name (min 3, max 100 characters)
-- `description`: Room description (optional, max 500 characters)
-- `friendly_url`: Friendly URL (optional, min 3, max 32 characters)
-- `privacy`: "public" or "private" (default: "public")
-- `max_participants`: Maximum number of participants (optional, min 2, max 2000)
-
-### update-room
-
-Updates an existing meeting room.
-
-**Parameters**:
-- `roomId`: ID of the room to update (required)
-- `name`: New room name (optional, min 3, max 100 characters)
-- `description`: New room description (optional, max 500 characters)
-- `friendly_url`: New friendly URL (optional, min 3, max 32 characters)
-- `privacy`: "public" or "private" (optional)
-- `max_participants`: New maximum number of participants (optional, min 2, max 2000)
-
-### delete-room
-
-Deletes a meeting room.
-
-**Parameters**:
-- `roomId`: ID of the room to delete (required)
-
-### generate-token
-
-Generates a token for joining a room.
-
-**Parameters**:
-- `roomId`: Room ID (required)
-- `userName`: User's display name (optional)
-- `role`: User role (optional)
-- `externalId`: External user ID (optional)
-
-### register-webhook
-
-Registers a webhook with the Digital Samba API.
-
-**Parameters**:
-- `webhookUrl`: The URL where Digital Samba will send webhook events (required)
-- `events`: Event types to subscribe to (optional, all events if not specified)
-
-### delete-webhook
-
-Deletes a webhook from the Digital Samba API.
-
-**Parameters**:
-- `webhookUrl`: The URL of the webhook to delete (required)
-
-### list-webhooks
-
-Lists all registered webhooks.
-
-**Parameters**: None
-
-### list-webhook-events
-
-Lists all available webhook event types.
-
-**Parameters**: None
-
-### Moderation Tools
-
-#### set-room-lock
-
-Controls whether a room is locked. When a room is locked, new participants cannot join.
-
-**Parameters**:
-- `roomId`: The ID of the room to lock/unlock (required)
-- `lock`: Whether to lock (true) or unlock (false) the room (required)
-
-#### update-room-media-settings
-
-Updates various media settings for a room.
-
-**Parameters**:
-- `roomId`: The ID of the room to update (required)
-- `chat_enabled`: Enable/disable chat (optional)
-- `private_chat_enabled`: Enable/disable private chat (optional)
-- `screenshare_enabled`: Enable/disable screen sharing (optional)
-- `recordings_enabled`: Enable/disable recording (optional)
-- `audio_on_join_enabled`: Enable/disable microphone on join (optional)
-- `video_on_join_enabled`: Enable/disable camera on join (optional)
-- `participants_list_enabled`: Enable/disable participants list (optional)
-
-#### remove-participant
-
-Removes a participant from a room.
-
-**Parameters**:
-- `roomId`: The ID of the room (required)
-- `participantId`: The ID of the participant to remove (required)
-
-#### set-participant-mute
-
-Controls the mute status of a participant's audio and/or video.
-
-**Parameters**:
-- `roomId`: The ID of the room (required)
-- `participantId`: The ID of the participant (required)
-- `mute`: Whether to mute (true) or unmute (false) the participant (required)
-- `type`: The type of mute to apply - 'audio', 'video', or 'all' (default) (optional)
-
-#### set-participant-role
-
-Sets the role for a participant, which determines their permissions in the room.
-
-**Parameters**:
-- `roomId`: The ID of the room (required)
-- `participantId`: The ID of the participant (required)
-- `role`: The role to assign to the participant (required)
-
-#### ban-participant
-
-Bans a participant from the room, preventing them from rejoining.
-
-**Parameters**:
-- `roomId`: The ID of the room (required)
-- `participantId`: The ID of the participant to ban (required)
-
-#### unban-participant
-
-Removes a ban for a participant, allowing them to rejoin the room.
-
-**Parameters**:
-- `roomId`: The ID of the room (required)
-- `participantId`: The ID of the banned participant to unban (required)
-
-#### list-banned-participants
-
-Lists all participants that have been banned from a room.
-
-**Parameters**:
-- `roomId`: The ID of the room (required)
-
-### Recording Tools
-
-#### get-recordings
-
-Retrieve a list of recordings with optional filtering.
-
-**Parameters**:
-- `roomId`: Filter by room ID (optional)
-- `status`: Filter by status ('IN_PROGRESS', 'PENDING_CONVERSION', 'READY') (optional)
-- `limit`: Maximum number of recordings to return (optional, max 100)
-- `offset`: Offset for pagination (optional)
-- `archived`: Whether to retrieve archived recordings (optional)
-
-#### get-recording
-
-Get detailed information about a specific recording.
-
-**Parameters**:
-- `recordingId`: The ID of the recording to retrieve (required)
-
-#### start-recording
-
-Start recording in a room.
-
-**Parameters**:
-- `roomId`: The ID of the room to start recording in (required)
-
-#### stop-recording
-
-Stop recording in a room.
-
-**Parameters**:
-- `roomId`: The ID of the room to stop recording in (required)
-
-#### delete-recording
-
-Delete a recording.
-
-**Parameters**:
-- `recordingId`: The ID of the recording to delete (required)
-
-#### get-recording-download-link
-
-Get a download link for a recording.
-
-**Parameters**:
-- `recordingId`: The ID of the recording (required)
-- `validForMinutes`: How long the download link should be valid for in minutes (optional, max 1440)
-
-#### archive-recording
-
-Archive a recording.
-
-**Parameters**:
-- `recordingId`: The ID of the recording to archive (required)
-
-#### unarchive-recording
-
-Unarchive a recording.
-
-**Parameters**:
-- `recordingId`: The ID of the recording to unarchive (required)
-
-### Breakout Rooms Tools
-
-#### create-breakout-rooms
-
-Creates breakout rooms for a parent room.
-
-**Parameters**:
-- `roomId`: The ID of the parent room (required)
-- `numRooms`: Number of breakout rooms to create (required, min 1, max 50)
-- `namePrefix`: Prefix for breakout room names (optional, default: "Breakout Room")
-- `assignParticipants`: Whether to automatically assign participants (optional, default: true)
-- `distributionMethod`: Method for distributing participants - "random" or "manual" (optional, default: "random")
-
-#### delete-breakout-room
-
-Deletes a specific breakout room.
-
-**Parameters**:
-- `roomId`: The ID of the parent room (required)
-- `breakoutRoomId`: The ID of the breakout room to delete (required)
-
-#### delete-all-breakout-rooms
-
-Deletes all breakout rooms for a parent room.
-
-**Parameters**:
-- `roomId`: The ID of the parent room (required)
-
-#### assign-participants-to-breakout-rooms
-
-Assigns participants to specific breakout rooms.
-
-**Parameters**:
-- `roomId`: The ID of the parent room (required)
-- `assignments`: Array of assignments, each containing `participantId` and `breakoutRoomId` (required)
-
-#### reassign-participant
-
-Reassigns a participant to a different breakout room.
-
-**Parameters**:
-- `roomId`: The ID of the parent room (required)
-- `participantId`: The ID of the participant to reassign (required)
-- `breakoutRoomId`: The ID of the target breakout room (required)
-
-#### return-participant-to-main-room
-
-Returns a participant from a breakout room back to the main room.
-
-**Parameters**:
-- `roomId`: The ID of the parent room (required)
-- `participantId`: The ID of the participant to return (required)
-
-#### return-all-participants-to-main-room
-
-Returns all participants from all breakout rooms back to the main room.
-
-**Parameters**:
-- `roomId`: The ID of the parent room (required)
-
-#### broadcast-to-breakout-rooms
-
-Sends a broadcast message to all breakout rooms.
-
-**Parameters**:
-- `roomId`: The ID of the parent room (required)
-- `message`: The message to broadcast (required)
-
-#### open-breakout-rooms
-
-Opens all breakout rooms for a parent room, starting the breakout sessions.
-
-**Parameters**:
-- `roomId`: The ID of the parent room (required)
-
-#### close-breakout-rooms
-
-Closes all breakout rooms for a parent room.
-
-**Parameters**:
-- `roomId`: The ID of the parent room (required)
-
-## Webhooks and Real-time Events
-
-The Digital Samba MCP Server supports webhooks for real-time event notification. When events occur in the Digital Samba platform (such as a participant joining or leaving a room), the webhook endpoint receives a notification and forwards it to connected MCP clients.
-
-### Event Types
-
-The server supports various event types, including:
-
-- Room events: creation, updates, deletion
-- Session events: start, end
-- Participant events: join, leave
-- Recording events: start, stop, ready
-- Chat events: new messages
-- Poll events: creation, updates, deletion
-- Q&A events: questions, answers
-
-### Setting Up Webhooks
-
-1. Use the `register-webhook` tool to register your webhook URL with Digital Samba
-2. Ensure your server is publicly accessible or use a tunneling service like ngrok for testing
-3. Optionally set the `WEBHOOK_SECRET` environment variable for enhanced security
-4. Events will be forwarded to connected MCP clients automatically
-
-### Events Notification Format
-
-When an event is received, it's forwarded to MCP clients with a notification in this format:
-
-```json
-{
-  "type": "digitalsambaEvent",
-  "params": {
-    "event": "event.type",
-    "timestamp": "2025-05-19T10:00:00Z",
-    "data": {
-      "eventSpecificData": "value"
-    }
+### Server Options
+
+The `createServer` and `startServer` functions accept the following options:
+
+| Option | Type | Description | Default |
+|--------|------|-------------|---------|
+| `port` | number | Port to run the server on | 3000 |
+| `apiUrl` | string | Digital Samba API URL | https://api.digitalsamba.com/api/v1 |
+| `webhookSecret` | string | Secret for webhook verification | undefined |
+| `webhookEndpoint` | string | Webhook endpoint path | /webhooks/digitalsamba |
+| `publicUrl` | string | Public URL for the server | http://localhost:{port} |
+
+### API Client Options
+
+The `DigitalSambaApiClient` constructor takes the following parameters:
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `apiKey` | string | Digital Samba API key | undefined |
+| `apiUrl` | string | Digital Samba API URL | https://api.digitalsamba.com/api/v1 |
+
+## Advanced Usage
+
+### Custom Error Handling
+
+The package includes standardized error types that can be used for consistent error handling:
+
+```javascript
+import { 
+  DigitalSambaError, 
+  AuthenticationError,
+  ResourceNotFoundError
+} from 'digital-samba-mcp/server';
+
+try {
+  // Some operation that might fail
+} catch (error) {
+  if (error instanceof AuthenticationError) {
+    console.log('Authentication failed:', error.message);
+  } else if (error instanceof ResourceNotFoundError) {
+    console.log(`Resource not found: ${error.resourceType} with ID ${error.resourceId}`);
+  } else if (error instanceof DigitalSambaError) {
+    console.log('Digital Samba error:', error.message);
+  } else {
+    console.log('Unknown error:', error);
   }
 }
 ```
 
-## Using with Claude or Other MCP Clients
+### Webhook Handling
 
-To use this server with an MCP client like Claude Desktop, add the following configuration:
+```javascript
+import express from 'express';
+import { WebhookService, setupWebhookTools } from 'digital-samba-mcp/server';
 
-```json
-{
-  "mcpServers": {
-    "digitalsamba": {
-      "url": "http://localhost:3000/mcp",
-      "headers": {
-        "Authorization": "Bearer YOUR_DIGITAL_SAMBA_API_KEY"
-      }
-    }
-  }
-}
+const app = express();
+app.use(express.json());
+
+const webhookService = new WebhookService(mcpServer, {
+  secret: 'your_webhook_secret',
+  endpoint: '/webhooks/digitalsamba'
+});
+
+// Register webhooks
+webhookService.registerWebhookEndpoint(app);
+
+// Register custom event handlers
+webhookService.on('room.created', async (payload) => {
+  console.log('Room created:', payload.data.id);
+});
+
+webhookService.on('participant.joined', async (payload) => {
+  console.log('Participant joined:', payload.data.name);
+});
 ```
 
-### Example API Usage with Authorization Header
+## Examples
 
-When making requests to the Digital Samba MCP Server:
+### Creating a Room and Generating Join Links
 
-1. Include the Authorization header in your HTTP request:
-   ```
-   Authorization: Bearer YOUR_DIGITAL_SAMBA_API_KEY
-   ```
+```javascript
+import { DigitalSambaApiClient } from 'digital-samba-mcp/client';
 
-2. The API key will be used for all resources and tools in that session
+const client = new DigitalSambaApiClient('your_api_key');
 
-## Testing with MCP Inspector
+async function createMeetingRoom() {
+  // Create a room
+  const room = await client.createRoom({
+    name: 'Team Meeting',
+    privacy: 'private',
+    max_participants: 10
+  });
+  console.log(`Room created: ${room.id}`);
+  
+  // Generate join links for participants
+  const hostToken = await client.generateRoomToken(room.id, {
+    u: 'Meeting Host',
+    role: 'host'
+  });
+  
+  const participantToken = await client.generateRoomToken(room.id, {
+    u: 'Team Member'
+  });
+  
+  console.log(`Host link: ${hostToken.link}`);
+  console.log(`Participant link: ${participantToken.link}`);
+}
 
-You can test the server using the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):
+createMeetingRoom().catch(console.error);
+```
 
-1. Start the Digital Samba MCP Server
-2. Connect to it using the MCP Inspector at `http://localhost:3000/mcp`
-3. Add the Authorization header with your Digital Samba API key
-4. Use the Inspector to explore resources and call tools
+### Scheduling a Meeting
+
+```javascript
+import { DigitalSambaApiClient } from 'digital-samba-mcp/client';
+
+const client = new DigitalSambaApiClient('your_api_key');
+
+async function scheduleMeeting() {
+  const meeting = await client.createScheduledMeeting({
+    title: 'Weekly Team Sync',
+    description: 'Weekly sync meeting to discuss ongoing projects',
+    start_time: '2025-06-01T14:00:00Z',
+    end_time: '2025-06-01T15:00:00Z',
+    timezone: 'UTC',
+    host_name: 'Team Lead',
+    host_email: 'team.lead@example.com',
+    participants: [
+      { name: 'Alice', email: 'alice@example.com' },
+      { name: 'Bob', email: 'bob@example.com' }
+    ],
+    recurring: true,
+    recurrence_pattern: 'FREQ=WEEKLY;BYDAY=MO',
+    send_invitations: true
+  });
+  
+  console.log(`Meeting scheduled: ${meeting.id}`);
+  console.log(`Starts: ${new Date(meeting.start_time).toLocaleString()}`);
+}
+
+scheduleMeeting().catch(console.error);
+```
 
 ## Troubleshooting
 
-If you encounter issues with running the server, see the [TROUBLESHOOTING.md](TROUBLESHOOTING.md) file for common problems and solutions.
+For common issues and solutions, please see the [TROUBLESHOOTING.md](TROUBLESHOOTING.md) file.
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
