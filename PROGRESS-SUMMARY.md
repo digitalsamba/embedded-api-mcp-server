@@ -4,7 +4,7 @@
 
 1. **Continuing Import Standardization**
    - Standardized imports in multiple source files according to our guidelines
-   - Standardized imports in breakout-rooms.ts and recordings.ts on 2025-06-02
+   - Standardized imports in breakout-rooms.ts, recordings.ts, and moderation.ts on 2025-06-02
    - Added proper categorization (Node.js modules, external deps, MCP SDK, local modules)
    - Alphabetized imports within each section for consistency
    - Verified the standards work effectively with our existing codebase
