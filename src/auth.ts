@@ -164,6 +164,12 @@ const apiKeyContext = ApiKeyContext.getInstance();
  * }
  */
 export function getApiKeyFromRequest(request: RequestMeta & { sessionId?: string }): string | null {
+  // Safety check for undefined request
+  if (!request) {
+    logger.warn('Request object is undefined when trying to get API key');
+    return process.env.DIGITAL_SAMBA_API_KEY || null;
+  }
+
   // Try to get from session context
   const sessionId = request.sessionId;
   if (sessionId) {

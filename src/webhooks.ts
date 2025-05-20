@@ -771,12 +771,17 @@ export function setupWebhookTools(
     },
     async (params, request) => {
       try {
-        // Get API key from the context
+        // Verify request is defined and properly initialized
+        if (!request) {
+          throw new Error('Request object is undefined');
+        }
+        
+        // Get API key from the context - safely handle when request.sessionId is undefined
         const apiKey = getApiKeyFromRequest(request);
         const { webhookUrl, events } = params;
         
         if (!apiKey) {
-          throw new AuthenticationError('API key is required for webhook registration');
+          throw new AuthenticationError('API key is required for webhook registration. Please provide a Bearer token in the Authorization header or set DIGITAL_SAMBA_API_KEY environment variable.');
         }
         
         if (!webhookUrl) {
@@ -861,12 +866,17 @@ export function setupWebhookTools(
     },
     async (params, request) => {
       try {
+        // Verify request is defined and properly initialized
+        if (!request) {
+          throw new Error('Request object is undefined');
+        }
+        
         // Get API key from the context
         const apiKey = getApiKeyFromRequest(request);
         const { webhookUrl } = params;
         
         if (!apiKey) {
-          throw new AuthenticationError('API key is required for webhook deletion');
+          throw new AuthenticationError('API key is required for webhook deletion. Please provide a Bearer token in the Authorization header or set DIGITAL_SAMBA_API_KEY environment variable.');
         }
         
         if (!webhookUrl) {
@@ -943,10 +953,15 @@ export function setupWebhookTools(
     {},
     async (params, request) => {
       try {
+        // Verify request is defined and properly initialized
+        if (!request) {
+          throw new Error('Request object is undefined');
+        }
+        
         // Get API key from the context
         const apiKey = getApiKeyFromRequest(request);
         if (!apiKey) {
-          throw new AuthenticationError('API key is required for listing webhooks');
+          throw new AuthenticationError('API key is required for listing webhooks. Please provide a Bearer token in the Authorization header or set DIGITAL_SAMBA_API_KEY environment variable.');
         }
         
         // Create API client with the provided key
@@ -1014,10 +1029,15 @@ export function setupWebhookTools(
     {},
     async (params, request) => {
       try {
+        // Verify request is defined and properly initialized
+        if (!request) {
+          throw new Error('Request object is undefined');
+        }
+        
         // Get API key from the context
         const apiKey = getApiKeyFromRequest(request);
         if (!apiKey) {
-          throw new AuthenticationError('API key is required for listing webhook events');
+          throw new AuthenticationError('API key is required for listing webhook events. Please provide a Bearer token in the Authorization header or set DIGITAL_SAMBA_API_KEY environment variable.');
         }
         
         // Create API client with the provided key
