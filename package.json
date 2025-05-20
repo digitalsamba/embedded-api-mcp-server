@@ -35,7 +35,7 @@
     "start": "node dist/src/index.js",
     "dev": "tsx --inspect src/index.ts",
     "dev:watch": "tsx --watch --inspect src/index.ts",
-    "debug": "node --inspect node_modules/.bin/tsx src/index.ts",
+    "debug": "npx tsx --inspect src/index.ts",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write \"src/**/*.ts\" \"bin/**/*.js\"",
     "test": "jest",

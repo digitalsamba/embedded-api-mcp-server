@@ -4,7 +4,9 @@ import { createServer as createHttpServer } from 'http';
 import { config as loadEnv } from 'dotenv';
 
 // Load environment variables from .env file
-loadEnv();
+console.log("Loading environment variables from .env file...");
+const result = loadEnv();
+console.log(result.parsed ? "Environment loaded successfully" : "No .env file found or error loading it");
 
 // External dependencies
 import express from 'express';
