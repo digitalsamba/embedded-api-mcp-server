@@ -17,18 +17,23 @@
  * @author Digital Samba Team
  * @version 0.1.0
  */
-import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+// External dependencies
 import { z } from 'zod';
-import { DigitalSambaApiClient } from './digital-samba-api.js';
-import logger from './logger.js';
+
+// MCP SDK imports
+import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
+
+// Local modules
 import { getApiKeyFromRequest } from './auth.js';
+import { DigitalSambaApiClient } from './digital-samba-api.js';
 import { 
+  ApiRequestError,
+  ApiResponseError,
   AuthenticationError, 
   ResourceNotFoundError, 
-  ValidationError, 
-  ApiResponseError,
-  ApiRequestError 
+  ValidationError
 } from './errors.js';
+import logger from './logger.js';
 
 /**
  * Set up breakout rooms resources and tools for the MCP server
