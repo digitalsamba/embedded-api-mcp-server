@@ -18,6 +18,10 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 
 // Local modules
 import apiKeyContext, { extractApiKey, getApiKeyFromRequest } from './auth.js';
+import { createConnectionManager } from './connection-manager.js';
+import { createTokenManager } from './token-manager.js';
+import { createResourceOptimizer } from './resource-optimizer.js';
+import { createEnhancedApiClient, EnhancedDigitalSambaApiClient } from './digital-samba-api-enhanced.js';
 import { setupBreakoutRoomsFunctionality } from './breakout-rooms.js';
 import { MemoryCache } from './cache.js';
 import { DigitalSambaApiClient } from './digital-samba-api.js';
@@ -39,6 +43,10 @@ export interface ServerOptions {
   rateLimitRequestsPerMinute?: number;
   enableCache?: boolean;
   cacheTtl?: number;
+  enableConnectionManagement?: boolean;
+  enableTokenManagement?: boolean;
+  enableResourceOptimization?: boolean;
+  connectionPoolSize?: number;
 }
 
 // Create and configure the MCP server
@@ -58,6 +66,10 @@ export function createServer(options?: ServerOptions) {
   const RATE_LIMIT_REQUESTS_PER_MINUTE = options?.rateLimitRequestsPerMinute || (process.env.RATE_LIMIT_REQUESTS_PER_MINUTE ? parseInt(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE) : 60);
   const ENABLE_CACHE = options?.enableCache !== undefined ? options.enableCache : process.env.ENABLE_CACHE === 'true';
   const CACHE_TTL = options?.cacheTtl || (process.env.CACHE_TTL ? parseInt(process.env.CACHE_TTL) : 5 * 60 * 1000); // 5 minutes default
+  const ENABLE_CONNECTION_MANAGEMENT = options?.enableConnectionManagement !== undefined ? options.enableConnectionManagement : process.env.ENABLE_CONNECTION_MANAGEMENT === 'true';
+  const ENABLE_TOKEN_MANAGEMENT = options?.enableTokenManagement !== undefined ? options.enableTokenManagement : process.env.ENABLE_TOKEN_MANAGEMENT === 'true';
+  const ENABLE_RESOURCE_OPTIMIZATION = options?.enableResourceOptimization !== undefined ? options.enableResourceOptimization : process.env.ENABLE_RESOURCE_OPTIMIZATION === 'true';
+  const CONNECTION_POOL_SIZE = options?.connectionPoolSize || (process.env.CONNECTION_POOL_SIZE ? parseInt(process.env.CONNECTION_POOL_SIZE) : 5);
 
   // Create the MCP server
   const server = new McpServer({
@@ -117,7 +129,25 @@ export function createServer(options?: ServerOptions) {
       // Create API client
       logger.debug('Creating API client using context API key');
       
-      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
+      let client;
+      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
+        // Use enhanced API client
+        logger.debug('Using enhanced API client with additional features enabled');
+        client = new EnhancedDigitalSambaApiClient(
+          undefined,
+          API_URL,
+          apiCache,
+          {
+            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
+            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+            connectionPoolSize: CONNECTION_POOL_SIZE
+          }
+        );
+      } else {
+        // Use standard API client
+        client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
+      }
       
       try {
         // Get rooms from API
@@ -161,7 +191,25 @@ export function createServer(options?: ServerOptions) {
       // Create API client
       logger.debug('Creating API client using context API key');
       
-      const client = new DigitalSambaApiClient(undefined, API_URL);
+      let client;
+      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
+        // Use enhanced API client
+        logger.debug('Using enhanced API client with additional features enabled');
+        client = new EnhancedDigitalSambaApiClient(
+          undefined,
+          API_URL,
+          apiCache,
+          {
+            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
+            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+            connectionPoolSize: CONNECTION_POOL_SIZE
+          }
+        );
+      } else {
+        // Use standard API client
+        client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
+      }
       
       try {
         // Get room from API
@@ -209,7 +257,25 @@ export function createServer(options?: ServerOptions) {
         apiUrl: API_URL
       });
       
-      const client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+      let client;
+      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
+        // Use enhanced API client
+        logger.debug('Using enhanced API client with additional features enabled');
+        client = new EnhancedDigitalSambaApiClient(
+          apiKey,
+          API_URL,
+          apiCache,
+          {
+            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
+            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+            connectionPoolSize: CONNECTION_POOL_SIZE
+          }
+        );
+      } else {
+        // Use standard API client
+        client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+      }
       
       try {
         // Get participants from API
@@ -274,7 +340,25 @@ export function createServer(options?: ServerOptions) {
         apiUrl: API_URL
       });
       
-      const client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+      let client;
+      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
+        // Use enhanced API client
+        logger.debug('Using enhanced API client with additional features enabled');
+        client = new EnhancedDigitalSambaApiClient(
+          apiKey,
+          API_URL,
+          apiCache,
+          {
+            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
+            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+            connectionPoolSize: CONNECTION_POOL_SIZE
+          }
+        );
+      } else {
+        // Use standard API client
+        client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+      }
       
       try {
         // Create room settings object
@@ -352,7 +436,25 @@ export function createServer(options?: ServerOptions) {
         apiUrl: API_URL
       });
       
-      const client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+      let client;
+      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
+        // Use enhanced API client
+        logger.debug('Using enhanced API client with additional features enabled');
+        client = new EnhancedDigitalSambaApiClient(
+          apiKey,
+          API_URL,
+          apiCache,
+          {
+            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
+            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+            connectionPoolSize: CONNECTION_POOL_SIZE
+          }
+        );
+      } else {
+        // Use standard API client
+        client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+      }
       
       try {
         // Generate token options
@@ -362,8 +464,16 @@ export function createServer(options?: ServerOptions) {
           ud: externalId || undefined,
         };
         
-        // Generate token
-        const token = await client.generateRoomToken(roomId, tokenOptions);
+        // Generate token - use token refresh if enabled
+        let token;
+        if (ENABLE_TOKEN_MANAGEMENT && client instanceof EnhancedDigitalSambaApiClient && request.sessionId) {
+          // Use token refresh
+          token = await client.generateRoomTokenWithRefresh(roomId, tokenOptions, request.sessionId);
+          logger.info('Generated token with auto-refresh', { roomId, expiresAt: token.expiresAt });
+        } else {
+          // Standard token generation
+          token = await client.generateRoomToken(roomId, tokenOptions);  
+        }
         logger.info('Token generated successfully', { roomId });
         
         return {
@@ -438,7 +548,25 @@ export function createServer(options?: ServerOptions) {
         apiUrl: API_URL
       });
       
-      const client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+      let client;
+      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
+        // Use enhanced API client
+        logger.debug('Using enhanced API client with additional features enabled');
+        client = new EnhancedDigitalSambaApiClient(
+          apiKey,
+          API_URL,
+          apiCache,
+          {
+            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
+            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+            connectionPoolSize: CONNECTION_POOL_SIZE
+          }
+        );
+      } else {
+        // Use standard API client
+        client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+      }
       
       try {
         // Create room settings object
@@ -517,7 +645,25 @@ export function createServer(options?: ServerOptions) {
         apiUrl: API_URL
       });
       
-      const client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+      let client;
+      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
+        // Use enhanced API client
+        logger.debug('Using enhanced API client with additional features enabled');
+        client = new EnhancedDigitalSambaApiClient(
+          apiKey,
+          API_URL,
+          apiCache,
+          {
+            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
+            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+            connectionPoolSize: CONNECTION_POOL_SIZE
+          }
+        );
+      } else {
+        // Use standard API client
+        client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+      }
       
       try {
         // Delete room
@@ -557,7 +703,10 @@ export function createServer(options?: ServerOptions) {
     apiUrl: API_URL, 
     webhookEndpoint: WEBHOOK_ENDPOINT, 
     publicUrl: PUBLIC_URL,
-    cache: apiCache
+    cache: apiCache,
+    enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+    enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
+    enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION
   };
 }
 
@@ -574,8 +723,18 @@ export function startServer(options?: ServerOptions) {
 
     // Create the MCP server
     console.log("Creating MCP server...");
-    const { server, port, apiUrl, webhookEndpoint, publicUrl, cache } = createServer(options);
-    console.log("MCP server created with configuration:", { port, apiUrl, webhookEndpoint, publicUrl, hasCache: !!cache });
+    const serverConfig = createServer(options);
+    const { server, port, apiUrl, webhookEndpoint, publicUrl, cache, enableConnectionManagement, enableTokenManagement, enableResourceOptimization } = serverConfig;
+    console.log("MCP server created with configuration:", { 
+      port, 
+      apiUrl, 
+      webhookEndpoint, 
+      publicUrl, 
+      hasCache: !!cache,
+      enableConnectionManagement,
+      enableTokenManagement,
+      enableResourceOptimization
+    });
 
     // Map to store transports by session ID
     const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
