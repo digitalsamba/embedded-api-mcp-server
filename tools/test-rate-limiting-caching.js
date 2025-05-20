@@ -3,8 +3,8 @@
 /**
  * Test script for rate limiting and caching functionality
  */
-const fetch = require('node-fetch');
-const { performance } = require('perf_hooks');
+import fetch from 'node-fetch';
+import { performance } from 'perf_hooks';
 
 // Configuration
 const API_KEY = process.env.DIGITAL_SAMBA_API_KEY || 'your-api-key-here';

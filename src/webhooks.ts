@@ -776,7 +776,12 @@ export function setupWebhookTools(
           throw new Error('Request object is undefined');
         }
         
-        // Get API key from the context - safely handle when request.sessionId is undefined
+        // Make sure the request has a sessionId property
+        if (!request.sessionId && request.context && request.context.sessionId) {
+          request.sessionId = request.context.sessionId;
+        }
+        
+        // Get API key from the context
         const apiKey = getApiKeyFromRequest(request);
         const { webhookUrl, events } = params;
         
@@ -871,6 +876,11 @@ export function setupWebhookTools(
           throw new Error('Request object is undefined');
         }
         
+        // Make sure the request has a sessionId property
+        if (!request.sessionId && request.context && request.context.sessionId) {
+          request.sessionId = request.context.sessionId;
+        }
+        
         // Get API key from the context
         const apiKey = getApiKeyFromRequest(request);
         const { webhookUrl } = params;
@@ -958,6 +968,11 @@ export function setupWebhookTools(
           throw new Error('Request object is undefined');
         }
         
+        // Make sure the request has a sessionId property
+        if (!request.sessionId && request.context && request.context.sessionId) {
+          request.sessionId = request.context.sessionId;
+        }
+        
         // Get API key from the context
         const apiKey = getApiKeyFromRequest(request);
         if (!apiKey) {
@@ -1032,6 +1047,11 @@ export function setupWebhookTools(
         // Verify request is defined and properly initialized
         if (!request) {
           throw new Error('Request object is undefined');
+        }
+        
+        // Make sure the request has a sessionId property
+        if (!request.sessionId && request.context && request.context.sessionId) {
+          request.sessionId = request.context.sessionId;
         }
         
         // Get API key from the context

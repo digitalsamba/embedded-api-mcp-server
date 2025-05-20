@@ -10,6 +10,7 @@ A Model Context Protocol (MCP) server implementation for Digital Samba's video c
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Claude Desktop Integration](#claude-desktop-integration)
 - [CLI Usage](#cli-usage)
 - [API Usage](#api-usage)
 - [Features](#features)
@@ -57,6 +58,64 @@ const server = startServer({
 });
 ```
 
+## Claude Desktop Integration
+
+The Digital Samba MCP Server is designed to work seamlessly with Claude Desktop, enabling Claude to create and manage Digital Samba video conferencing sessions.
+
+### Configure Claude Desktop
+
+1. Start the Digital Samba MCP Server locally:
+   ```bash
+   digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
+   ```
+
+2. Open Claude Desktop and navigate to Settings > Advanced > MCP Servers:
+   - Click "Add Server"
+   - Enter the following information:
+     - Name: `Digital Samba`
+     - URL: `http://localhost:3000/mcp`
+     - Add the following header:
+       - Name: `Authorization`
+       - Value: `Bearer YOUR_DIGITAL_SAMBA_API_KEY`
+   - Click "Save"
+
+3. Select "Digital Samba" from the MCP server dropdown in Claude Desktop.
+
+4. You can now ask Claude to interact with Digital Samba:
+   - "List my Digital Samba rooms"
+   - "Create a new Digital Samba meeting called 'Team Weekly'"
+   - "Generate a join link for room XYZ"
+   - "Show me participants in my active meetings"
+
+### Example Claude Prompts
+
+Here are examples of requests you can make to Claude once the Digital Samba MCP server is connected:
+
+**List Rooms**
+```
+Show me all my Digital Samba meeting rooms.
+```
+
+**Create Room**
+```
+Create a new Digital Samba meeting room called "Weekly Team Sync" with a maximum of 20 participants.
+```
+
+**Generate Join Link**
+```
+Generate a join link for my "Weekly Team Sync" room with the name "Meeting Host".
+```
+
+**View Participants**
+```
+Show me who's currently in my Digital Samba meetings.
+```
+
+**Schedule Meeting**
+```
+Schedule a Digital Samba meeting called "Quarterly Review" for next Monday at 10 AM Eastern Time with the following participants: [email list].
+```
+
 ## CLI Usage
 
 ```
@@ -70,6 +129,10 @@ Options:
   -w, --webhook-secret <secret>     Secret for webhook verification
   -e, --webhook-endpoint <path>     Webhook endpoint path (default: /webhooks/digitalsamba)
   --public-url <url>                Public URL for the server (for webhook callbacks)
+  --enable-rate-limiting            Enable rate limiting for API requests
+  --rate-limit-requests-per-minute  Maximum requests per minute per API key (default: 60)
+  --enable-cache                    Enable caching of API responses
+  --cache-ttl                       Cache Time-To-Live in milliseconds (default: 300000)
   -h, --help                        Display help message
 ```
 
@@ -84,6 +147,10 @@ All CLI options can also be specified as environment variables:
 - `WEBHOOK_SECRET` - Secret for webhook verification
 - `WEBHOOK_ENDPOINT` - Webhook endpoint path
 - `PUBLIC_URL` - Public URL for the server
+- `ENABLE_RATE_LIMITING` - Enable rate limiting (true/false)
+- `RATE_LIMIT_REQUESTS_PER_MINUTE` - Maximum requests per minute
+- `ENABLE_CACHE` - Enable caching (true/false)
+- `CACHE_TTL` - Cache TTL in milliseconds
 
 ## API Usage
 
@@ -208,6 +275,49 @@ The `DigitalSambaApiClient` constructor takes the following parameters:
 |-----------|------|-------------|---------|
 | `apiKey` | string | Digital Samba API key | undefined |
 | `apiUrl` | string | Digital Samba API URL | https://api.digitalsamba.com/api/v1 |
+
+## Available MCP Resources and Tools
+
+The Digital Samba MCP Server exposes the following resources and tools to MCP clients like Claude Desktop:
+
+### Resources
+
+| Resource URI | Description |
+|--------------|-------------|
+| `digitalsamba://rooms` | List all rooms |
+| `digitalsamba://rooms/{roomId}` | Get details for a specific room |
+| `digitalsamba://rooms/{roomId}/participants` | List participants in a room |
+| `digitalsamba://recordings` | List all recordings |
+| `digitalsamba://recordings/{recordingId}` | Get details for a specific recording |
+| `digitalsamba://webhooks` | List all registered webhooks |
+| `digitalsamba://meetings` | List all scheduled meetings |
+| `digitalsamba://meetings/{meetingId}` | Get details for a specific meeting |
+
+### Tools
+
+| Tool Name | Description |
+|-----------|-------------|
+| `create-room` | Create a new room |
+| `update-room` | Update an existing room |
+| `delete-room` | Delete a room |
+| `generate-token` | Generate a token for room access |
+| `register-webhook` | Register a webhook for events |
+| `delete-webhook` | Delete a registered webhook |
+| `list-webhooks` | List all registered webhooks |
+| `list-webhook-events` | List available webhook event types |
+| `start-recording` | Start recording in a room |
+| `stop-recording` | Stop recording in a room |
+| `delete-recording` | Delete a recording |
+| `ban-participant` | Ban a participant from a room |
+| `unban-participant` | Unban a participant from a room |
+| `mute-participant` | Mute a participant |
+| `create-breakout-rooms` | Create breakout rooms for a parent room |
+| `assign-participants` | Assign participants to breakout rooms |
+| `broadcast-message` | Broadcast a message to all breakout rooms |
+| `create-meeting` | Schedule a new meeting |
+| `update-meeting` | Update a scheduled meeting |
+| `cancel-meeting` | Cancel a scheduled meeting |
+| `add-participants` | Add participants to a meeting |
 
 ## Advanced Usage
 
@@ -349,9 +459,49 @@ async function scheduleMeeting() {
 scheduleMeeting().catch(console.error);
 ```
 
+## Testing with MCP Inspector
+
+You can test the Digital Samba MCP Server using the MCP Inspector tool:
+
+1. Install the MCP Inspector:
+   ```bash
+   npm install -g @modelcontextprotocol/inspector
+   ```
+
+2. Start the Digital Samba MCP Server:
+   ```bash
+   digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
+   ```
+
+3. Run the MCP Inspector:
+   ```bash
+   mcp-inspector --url http://localhost:3000/mcp --header "Authorization: Bearer YOUR_DIGITAL_SAMBA_API_KEY"
+   ```
+
+4. The MCP Inspector will allow you to:
+   - Browse available resources and tools
+   - Try out tool calls
+   - Explore resource URIs
+   - Verify MCP protocol compliance
+
 ## Troubleshooting
 
 For common issues and solutions, please see the [TROUBLESHOOTING.md](TROUBLESHOOTING.md) file.
+
+### Common Issues
+
+1. **Authentication Errors**
+   - Make sure you're using a valid Digital Samba API key
+   - Ensure the Authorization header is formatted correctly: `Bearer YOUR_API_KEY`
+
+2. **Connection Issues**
+   - Verify the server is running on the expected port
+   - Check firewall settings if connecting remotely
+   - Ensure the MCP client is using the correct URL
+
+3. **Rate Limiting**
+   - If you encounter 429 Too Many Requests errors, you may be exceeding the rate limit
+   - Enable rate limiting with a higher threshold or add caching to reduce API calls
 
 ## License
 

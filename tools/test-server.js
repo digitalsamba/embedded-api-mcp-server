@@ -4,7 +4,7 @@
  * Test server script with rate limiting and caching enabled
  */
 
-const { startServer } = require('../dist/index.js');
+import { startServer } from '../dist/src/index.js';
 
 // Get API key from command line argument
 const apiKey = process.argv[2];
@@ -29,9 +29,9 @@ console.log(`Cache TTL: ${process.env.CACHE_TTL}ms`);
 const server = startServer({
   port: 3000,
   enableRateLimiting: true,
-  rateLimitRequestsPerMinute: parseInt(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE),
+  rateLimitRequestsPerMinute: parseInt(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE) || 5,
   enableCache: true,
-  cacheTtl: parseInt(process.env.CACHE_TTL)
+  cacheTtl: parseInt(process.env.CACHE_TTL) || 60000
 });
 
 console.log('MCP server running on http://localhost:3000/mcp');

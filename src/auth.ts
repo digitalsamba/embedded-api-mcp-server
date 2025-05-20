@@ -163,7 +163,7 @@ const apiKeyContext = ApiKeyContext.getInstance();
  *   throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
  * }
  */
-export function getApiKeyFromRequest(request: RequestMeta & { sessionId?: string }): string | null {
+export function getApiKeyFromRequest(request: RequestMeta & { sessionId?: string, context?: { sessionId?: string } }): string | null {
   // Safety check for undefined request
   if (!request) {
     logger.warn('Request object is undefined when trying to get API key');
@@ -171,7 +171,12 @@ export function getApiKeyFromRequest(request: RequestMeta & { sessionId?: string
   }
 
   // Try to get from session context
-  const sessionId = request.sessionId;
+  let sessionId = request.sessionId;
+  if (!sessionId && request.context && request.context.sessionId) {
+    sessionId = request.context.sessionId;
+    logger.debug(`Got sessionId from request.context: ${sessionId}`);
+  }
+  
   if (sessionId) {
     logger.debug(`Looking for API key for session ID: ${sessionId}`);
     const contextApiKey = apiKeyContext.getApiKey(sessionId);

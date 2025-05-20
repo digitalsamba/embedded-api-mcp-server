@@ -18,6 +18,7 @@
  */
 // Local modules
 import apiKeyContext from './auth.js';
+import { MemoryCache } from './cache.js';
 import { 
   ApiRequestError, 
   ApiResponseError, 
