@@ -9,9 +9,14 @@
  * @author Digital Samba Team
  * @version 0.1.0
  */
+// External dependencies
 import { Request } from 'express';
-import logger from './logger.js';
+
+// MCP SDK imports
 import { RequestMeta } from '@modelcontextprotocol/sdk/types.js';
+
+// Local modules
+import logger from './logger.js';
 
 /**
  * Extracts API key from Authorization header
