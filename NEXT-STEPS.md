@@ -20,36 +20,30 @@
 4. **Recording Functionality**
    - Added resources for listing and viewing recordings
    - Implemented tools for starting and stopping recordings
-   - Created comprehensive tools for managing recordings:
-     - `get-recordings` - List all recordings with filtering options
-     - `get-recording` - Get detailed information about a specific recording
-     - `start-recording` - Start recording in a room
-     - `stop-recording` - Stop recording in a room
-     - `delete-recording` - Delete a recording
-     - `get-recording-download-link` - Get a download link for a recording
-     - `archive-recording` - Archive a recording
-     - `unarchive-recording` - Unarchive a recording
-   - Added test script for recording functionality
+   - Created comprehensive tools for managing recordings
 
 5. **Moderation Tools**
    - Implemented comprehensive moderation capabilities
    - Added tools for room locking and media settings
    - Created tools for participant management (mute, ban, etc.)
-   - Added test script for moderation functionality
 
 6. **Breakout Rooms**
    - Implemented breakout room creation and management
    - Added tools for participant assignment
    - Created messaging capabilities for breakout rooms
-   - Added test script for breakout room functionality
 
 7. **Meeting Scheduling**
    - Created comprehensive meeting scheduling functionality
    - Implemented tools for creating and managing scheduled meetings
    - Added participant management for meetings
-   - Implemented join link generation
-   - Created available time slot finding capability
-   - Added test script for meeting scheduling functionality
+
+8. **Rate Limiting and Caching**
+   - Implemented token bucket algorithm for rate limiting
+   - Created memory-based caching with TTL support
+   - Added cache invalidation strategies
+   - Created unit tests for both features
+   - Integrated rate limiting with the MCP server
+   - Added API key based rate limiting
 
 ## How to Use the MCP Server with Claude Desktop
 
@@ -76,6 +70,11 @@ Option 2: Using the CLI directly:
 digital-samba-mcp --api-key YOUR_API_KEY
 ```
 
+Option 3: Enable rate limiting and caching:
+```bash
+digital-samba-mcp --api-key YOUR_API_KEY --enable-rate-limiting --rate-limit-requests 60 --enable-cache --cache-ttl 300000
+```
+
 ### Step 3: Configure Claude Desktop
 
 1. Open Claude Desktop
@@ -93,22 +92,6 @@ digital-samba-mcp --api-key YOUR_API_KEY
 2. Ask Claude to list your Digital Samba rooms:
    "List my Digital Samba meeting rooms"
 3. If successful, you should see a list of your rooms
-
-## Troubleshooting
-
-If you encounter issues:
-
-1. Run the test script to validate your server and API key:
-   ```bash
-   run-test.bat
-   ```
-
-2. Check common authentication issues:
-   - Verify the API key is correct
-   - Make sure the Authorization header includes "Bearer " prefix
-   - Confirm the server is running and accessible
-
-3. See TROUBLESHOOTING.md for more detailed solutions
 
 ## Test Scripts
 
@@ -137,34 +120,38 @@ test-breakout-rooms.bat
 npm run test:meetings
 # Or run the batch file:
 test-meeting-scheduling.bat
+
+# Rate limiting and caching functionality
+npm run test:rate-limiting-caching
+# Or run the batch file:
+test-rate-limiting-caching.bat
 ```
 
 ## Next Steps
 
-1. **Codebase Cleanup and Quality Improvements**
+1. **Optimize Resource Usage for High-Traffic Scenarios**
+   - Implement memory usage optimization techniques
+   - Add metrics collection for monitoring resource consumption
+   - Create stress tests to validate performance under load
+   - Optimize connection handling for concurrent requests
+   - Add configurable limits for maximum concurrent connections
+
+2. **Implement Token Refresh Mechanism**
+   - Design a token expiration detection system
+   - Add automatic token refresh in the API client
+   - Implement token expiration tracking
+   - Create fallback mechanisms for token refresh failures
+
+3. **Codebase Cleanup and Quality Improvements**
    - Remove unnecessary files and directories
    - Standardize code formatting and style
    - Improve code documentation with JSDoc comments
    - Refactor complex functions for readability
    - Continue implementing consistent error handling across all modules
-     - ✅ Created standardized error types module (2025-05-26)
-     - ✅ Updated digital-samba-api.ts with improved error handling (2025-05-26)
-     - ✅ Updated breakout-rooms.ts with standardized error types (2025-05-27)
-     - Next: Update moderation.ts and recordings.ts
-
-2. **Testing and Validation**
-   - Set up unit testing framework with Jest
-   - Create unit tests for core MCP server components
-   - Implement integration tests for complete request flows
-
-3. **NPM Package Deployment**
-   - Set up NPM account and access tokens
-   - Configure GitHub Actions for automated NPM publishing
-   - Create release process documentation
-   - Set up versioning strategy following semantic versioning
 
 For complete documentation, refer to:
 - CLAUDE-DESKTOP.md for integration instructions
 - TROUBLESHOOTING.md for common issues and solutions
 - PACKAGE.md for general package usage information
 - docs/meeting-scheduling.md for meeting scheduling documentation
+- docs/rate-limiting.md for rate limiting and caching documentation (coming soon)

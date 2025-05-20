@@ -1,6 +1,10 @@
 // Node.js built-in modules
 import { randomUUID } from 'crypto';
 import { createServer as createHttpServer } from 'http';
+import { config as loadEnv } from 'dotenv';
+
+// Load environment variables from .env file
+loadEnv();
 
 // External dependencies
 import express from 'express';
@@ -761,5 +765,14 @@ export function startServer(options?: ServerOptions) {
 // If this file is executed directly or via npm run dev, start the server
 // Only start if the file is executed directly, not when imported
 if (process.env.NODE_ENV !== 'test' && import.meta.url === `file://${process.argv[1]}`) {
-  startServer();
+  try {
+    const server = startServer();
+    logger.info(`Server started successfully`);
+  } catch (error) {
+    logger.error('Failed to start server:', { 
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    process.exit(1);
+  }
 }
