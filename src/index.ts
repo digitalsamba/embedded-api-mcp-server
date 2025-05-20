@@ -563,214 +563,311 @@ export function createServer(options?: ServerOptions) {
 
 // Start a server with the provided options
 export function startServer(options?: ServerOptions) {
-  // Create Express app
-  const app = express();
-  app.use(express.json());
-
-  // Create the MCP server
-  const { server, port, apiUrl, webhookEndpoint, publicUrl, cache } = createServer(options);
-
-  // Map to store transports by session ID
-  const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
+  console.log("startServer function called with options:", options);
   
-  // Add rate limiting middleware if enabled
-  if (options?.enableRateLimiting || process.env.ENABLE_RATE_LIMITING === 'true') {
-    const requestsPerMinute = options?.rateLimitRequestsPerMinute || 
-      (process.env.RATE_LIMIT_REQUESTS_PER_MINUTE ? parseInt(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE) : 60);
-    
-    logger.info('Enabling rate limiting', { requestsPerMinute });
-    app.use('/mcp', createApiKeyRateLimiter({
-      maxRequests: requestsPerMinute,
-      windowMs: 60 * 1000, // 1 minute
-      message: 'Too many requests from this API key, please try again later.'
-    }));
-  }
+  try {
+    // Create Express app
+    console.log("Creating Express app...");
+    const app = express();
+    app.use(express.json());
+    console.log("Express app created and JSON middleware added");
 
-  // Handle POST requests for client-to-server communication
-  app.post('/mcp', async (req, res) => {
-    try {
-      logger.info('Received POST MCP request', { 
-        contentLength: req.headers['content-length'],
-        sessionId: req.headers['mcp-session-id'] || 'new-session'
-      });
+    // Create the MCP server
+    console.log("Creating MCP server...");
+    const { server, port, apiUrl, webhookEndpoint, publicUrl, cache } = createServer(options);
+    console.log("MCP server created with configuration:", { port, apiUrl, webhookEndpoint, publicUrl, hasCache: !!cache });
+
+    // Map to store transports by session ID
+    const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
+    console.log("Transport map initialized");
+    
+    // Add rate limiting middleware if enabled
+    if (options?.enableRateLimiting || process.env.ENABLE_RATE_LIMITING === 'true') {
+      const requestsPerMinute = options?.rateLimitRequestsPerMinute || 
+        (process.env.RATE_LIMIT_REQUESTS_PER_MINUTE ? parseInt(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE) : 60);
       
-      // Extract API key from Authorization header
-      const apiKey = extractApiKey(req);
-      if (apiKey) {
-        logger.debug('Found API key in Authorization header');
-      }
-      
-      // Check for existing session ID
-      const sessionId = req.headers['mcp-session-id'] as string | undefined;
-      let transport: StreamableHTTPServerTransport;
-      
-      if (sessionId && transports[sessionId]) {
-        // Reuse existing transport
-        transport = transports[sessionId];
-        logger.debug(`Using existing transport for session: ${sessionId}`);
+      console.log("Enabling rate limiting:", { requestsPerMinute });
+      logger.info('Enabling rate limiting', { requestsPerMinute });
+      app.use('/mcp', createApiKeyRateLimiter({
+        maxRequests: requestsPerMinute,
+        windowMs: 60 * 1000, // 1 minute
+        message: 'Too many requests from this API key, please try again later.'
+      }));
+      console.log("Rate limiting middleware added");
+    }
+
+    // Handle POST requests for client-to-server communication
+    console.log("Setting up POST handler for /mcp...");
+    app.post('/mcp', async (req, res) => {
+      try {
+        console.log("Received POST request to /mcp");
+        logger.info('Received POST MCP request', { 
+          contentLength: req.headers['content-length'],
+          sessionId: req.headers['mcp-session-id'] || 'new-session'
+        });
         
-        // Update API key if provided
+        // Extract API key from Authorization header
+        const apiKey = extractApiKey(req);
         if (apiKey) {
+          console.log("Found API key in Authorization header");
+          logger.debug('Found API key in Authorization header');
+        }
+        
+        // Check for existing session ID
+        const sessionId = req.headers['mcp-session-id'] as string | undefined;
+        let transport: StreamableHTTPServerTransport;
+        
+        if (sessionId && transports[sessionId]) {
+          // Reuse existing transport
+          transport = transports[sessionId];
+          console.log(`Using existing transport for session: ${sessionId}`);
+          logger.debug(`Using existing transport for session: ${sessionId}`);
+          
+          // Update API key if provided
+          if (apiKey) {
+            apiKeyContext.setApiKey(sessionId, apiKey);
+          }
+        } else {
+          // Create new transport
+          console.log("Creating new transport");
+          transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => randomUUID(),
+            onsessioninitialized: (sessionId: string) => {
+              // Store the transport by session ID
+              transports[sessionId] = transport;
+              console.log(`Initialized new session: ${sessionId}`);
+              logger.info(`Initialized new session: ${sessionId}`);
+              
+              // Store API key in the context if provided
+              if (apiKey) {
+                apiKeyContext.setApiKey(sessionId, apiKey);
+              }
+            },
+          });
+          
+          // Clean up transport when closed
+          transport.onclose = () => {
+            if (transport.sessionId) {
+              console.log(`Closing session: ${transport.sessionId}`);
+              logger.info(`Closing session: ${transport.sessionId}`);
+              apiKeyContext.removeApiKey(transport.sessionId);
+              delete transports[transport.sessionId];
+            }
+          };
+          
+          // Connect to the MCP server
+          console.log("Connecting transport to MCP server...");
+          await server.connect(transport);
+          console.log("Transport connected to MCP server");
+          logger.info('Connected transport to MCP server');
+        }
+        
+        // Handle the request
+        console.log("Handling MCP request...");
+        await transport.handleRequest(req, res, req.body);
+        console.log("MCP request handled successfully");
+      } catch (error) {
+        console.error("Error handling MCP request:", error);
+        logger.error('Error handling MCP request:', { 
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
+        
+        if (!res.headersSent) {
+          res.status(500).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32603,
+              message: error instanceof Error ? error.message : 'Internal server error',
+            },
+            id: null,
+          });
+        }
+      }
+    });
+    console.log("POST handler for /mcp set up successfully");
+
+    // Reusable handler for GET and DELETE requests
+    console.log("Setting up session request handler...");
+    const handleSessionRequest = async (req: express.Request, res: express.Response) => {
+      try {
+        const sessionId = req.headers['mcp-session-id'] as string | undefined;
+        if (!sessionId || !transports[sessionId]) {
+          console.warn(`Invalid or missing session ID: ${sessionId}`);
+          logger.warn(`Invalid or missing session ID: ${sessionId}`);
+          res.status(400).send('Invalid or missing session ID');
+          return;
+        }
+        
+        // Extract API key from Authorization header
+        const apiKey = extractApiKey(req);
+        if (apiKey) {
+          console.log("Found API key in Authorization header");
+          logger.debug('Found API key in Authorization header');
           apiKeyContext.setApiKey(sessionId, apiKey);
         }
-      } else {
-        // Create new transport
-        transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
-          onsessioninitialized: (sessionId: string) => {
-            // Store the transport by session ID
-            transports[sessionId] = transport;
-            logger.info(`Initialized new session: ${sessionId}`);
-            
-            // Store API key in the context if provided
-            if (apiKey) {
-              apiKeyContext.setApiKey(sessionId, apiKey);
-            }
-          },
+        
+        console.log(`Processing ${req.method} request for session: ${sessionId}`);
+        logger.info(`Processing ${req.method} request for session: ${sessionId}`);
+        const transport = transports[sessionId];
+        await transport.handleRequest(req, res);
+      } catch (error) {
+        console.error("Error handling session request:", error);
+        logger.error('Error handling session request:', { 
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
         });
         
-        // Clean up transport when closed
-        transport.onclose = () => {
-          if (transport.sessionId) {
-            logger.info(`Closing session: ${transport.sessionId}`);
-            apiKeyContext.removeApiKey(transport.sessionId);
-            delete transports[transport.sessionId];
-          }
-        };
-        
-        // Connect to the MCP server
-        await server.connect(transport);
-        logger.info('Connected transport to MCP server');
+        if (!res.headersSent) {
+          res.status(500).send('Internal server error');
+        }
       }
-      
-      // Handle the request
-      await transport.handleRequest(req, res, req.body);
-    } catch (error) {
-      logger.error('Error handling MCP request:', { 
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+    };
+    console.log("Session request handler created");
+
+    // Handle GET requests for server-to-client notifications via SSE
+    console.log("Setting up GET handler for /mcp...");
+    app.get('/mcp', handleSessionRequest);
+    console.log("GET handler for /mcp set up successfully");
+
+    // Handle DELETE requests for session termination
+    console.log("Setting up DELETE handler for /mcp...");
+    app.delete('/mcp', handleSessionRequest);
+    console.log("DELETE handler for /mcp set up successfully");
+
+    // Health check endpoint
+    console.log("Setting up health check endpoint...");
+    app.get('/health', (req, res) => {
+      console.log("Received request to /health");
+      res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        version: '0.1.0',
+        name: 'Digital Samba MCP Server'
+      });
+    });
+    console.log("Health check endpoint set up successfully");
+
+    // Get the webhook service instance
+    console.log("Setting up webhook service...");
+    const webhookService = new WebhookService(server, {
+      secret: process.env.WEBHOOK_SECRET,
+      endpoint: webhookEndpoint
+    });
+
+    // Register webhook endpoint
+    console.log("Registering webhook endpoint...");
+    webhookService.registerWebhookEndpoint(app);
+    console.log("Webhook endpoint registered successfully");
+
+    // Start the server
+    console.log("Creating HTTP server...");
+    const httpServer = createHttpServer(app);
+    console.log("HTTP server created");
+
+    console.log(`Starting server on port ${port}...`);
+    httpServer.listen(port, () => {
+      console.log(`Digital Samba MCP Server running on port ${port}`);
+      logger.info(`Digital Samba MCP Server running on port ${port}`);
+      logger.info(`Digital Samba API URL: ${apiUrl}`);
+      logger.info(`Webhook endpoint: ${publicUrl}${webhookEndpoint}`);
+    });
+    console.log("Server listen call completed");
+
+    // Handle graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM received, shutting down gracefully');
+      logger.info('SIGTERM received, shutting down gracefully');
+      httpServer.close(() => {
+        logger.info('HTTP server closed');
       });
       
-      if (!res.headersSent) {
-        res.status(500).json({
-          jsonrpc: '2.0',
-          error: {
-            code: -32603,
-            message: error instanceof Error ? error.message : 'Internal server error',
-          },
-          id: null,
-        });
-      }
-    }
-  });
-
-  // Reusable handler for GET and DELETE requests
-  const handleSessionRequest = async (req: express.Request, res: express.Response) => {
-    try {
-      const sessionId = req.headers['mcp-session-id'] as string | undefined;
-      if (!sessionId || !transports[sessionId]) {
-        logger.warn(`Invalid or missing session ID: ${sessionId}`);
-        res.status(400).send('Invalid or missing session ID');
-        return;
-      }
-      
-      // Extract API key from Authorization header
-      const apiKey = extractApiKey(req);
-      if (apiKey) {
-        logger.debug('Found API key in Authorization header');
-        apiKeyContext.setApiKey(sessionId, apiKey);
-      }
-      
-      logger.info(`Processing ${req.method} request for session: ${sessionId}`);
-      const transport = transports[sessionId];
-      await transport.handleRequest(req, res);
-    } catch (error) {
-      logger.error('Error handling session request:', { 
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+      // Close all transport connections
+      Object.keys(transports).forEach(sessionId => {
+        logger.info(`Closing transport for session: ${sessionId}`);
+        transports[sessionId].close();
       });
       
-      if (!res.headersSent) {
-        res.status(500).send('Internal server error');
-      }
-    }
-  };
-
-  // Handle GET requests for server-to-client notifications via SSE
-  app.get('/mcp', handleSessionRequest);
-
-  // Handle DELETE requests for session termination
-  app.delete('/mcp', handleSessionRequest);
-
-  // Health check endpoint
-  app.get('/health', (req, res) => {
-    res.status(200).json({
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      version: '0.1.0',
-      name: 'Digital Samba MCP Server'
+      process.exit(0);
     });
-  });
 
-  // Get the webhook service instance
-  const webhookService = new WebhookService(server, {
-    secret: process.env.WEBHOOK_SECRET,
-    endpoint: webhookEndpoint
-  });
-
-  // Register webhook endpoint
-  webhookService.registerWebhookEndpoint(app);
-
-  // Start the server
-  const httpServer = createHttpServer(app);
-
-  httpServer.listen(port, () => {
-    logger.info(`Digital Samba MCP Server running on port ${port}`);
-    logger.info(`Digital Samba API URL: ${apiUrl}`);
-    logger.info(`Webhook endpoint: ${publicUrl}${webhookEndpoint}`);
-  });
-
-  // Handle graceful shutdown
-  process.on('SIGTERM', () => {
-    logger.info('SIGTERM received, shutting down gracefully');
-    httpServer.close(() => {
-      logger.info('HTTP server closed');
+    process.on('SIGINT', () => {
+      console.log('SIGINT received, shutting down gracefully');
+      logger.info('SIGINT received, shutting down gracefully');
+      httpServer.close(() => {
+        logger.info('HTTP server closed');
+      });
+      
+      // Close all transport connections
+      Object.keys(transports).forEach(sessionId => {
+        logger.info(`Closing transport for session: ${sessionId}`);
+        transports[sessionId].close();
+      });
+      
+      process.exit(0);
     });
     
-    // Close all transport connections
-    Object.keys(transports).forEach(sessionId => {
-      logger.info(`Closing transport for session: ${sessionId}`);
-      transports[sessionId].close();
+    console.log("Server startup completed successfully");
+    return httpServer;
+  } catch (error) {
+    console.error("Error in startServer function:", error);
+    logger.error("Failed to start server:", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined
     });
-    
-    process.exit(0);
-  });
-
-  process.on('SIGINT', () => {
-    logger.info('SIGINT received, shutting down gracefully');
-    httpServer.close(() => {
-      logger.info('HTTP server closed');
-    });
-    
-    // Close all transport connections
-    Object.keys(transports).forEach(sessionId => {
-      logger.info(`Closing transport for session: ${sessionId}`);
-      transports[sessionId].close();
-    });
-    
-    process.exit(0);
-  });
-
-  return httpServer;
+    throw error;
+  }
 }
 
 // If this file is executed directly or via npm run dev, start the server
 // Only start if the file is executed directly, not when imported
-if (process.env.NODE_ENV !== 'test' && import.meta.url === `file://${process.argv[1]}`) {
+// The module initialization check had to be rewritten to work with tsx
+const isMainModule = () => {
+  // In a more straightforward environment, we would check:
+  // import.meta.url === `file://${process.argv[1]}`
+  // But with tsx and different environments, we need to be more flexible
+  
+  // Allow explicit opt-out via environment variable
+  if (process.env.MCP_DISABLE_AUTO_START === 'true') {
+    console.log("Auto-start disabled by MCP_DISABLE_AUTO_START environment variable");
+    return false;
+  }
+  
+  // Check if this is a test environment
+  if (process.env.NODE_ENV === 'test') {
+    console.log("Not starting server in test environment");
+    return false;
+  }
+  
+  // Allow explicit opt-in via environment variable
+  if (process.env.MCP_FORCE_START === 'true') {
+    console.log("Auto-start forced by MCP_FORCE_START environment variable");
+    return true;
+  }
+  
+  return true; // Default to starting the server
+};
+
+if (isMainModule()) {
+  console.log("Starting server initialization...");
+  
   try {
+    console.log("Creating server instance...");
+    const serverConfig = createServer();
+    console.log("Server created:", serverConfig);
+    
+    console.log("Starting server with config:", {
+      port: serverConfig.port,
+      apiUrl: serverConfig.apiUrl,
+      webhookEndpoint: serverConfig.webhookEndpoint,
+      publicUrl: serverConfig.publicUrl,
+      cacheEnabled: !!serverConfig.cache
+    });
+    
     const server = startServer();
-    logger.info(`Server started successfully`);
+    console.log(`Server started successfully`);
   } catch (error) {
+    console.error('Failed to start server:', error);
     logger.error('Failed to start server:', { 
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
