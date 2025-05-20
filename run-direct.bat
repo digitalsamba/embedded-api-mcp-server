@@ -1,5 +1,5 @@
 @echo off
-echo Starting Digital Samba MCP Server in debug mode...
+echo Starting Digital Samba MCP Server directly...
 echo Logs will be displayed in the console
 echo Press Ctrl+C to stop the server
 
@@ -7,7 +7,7 @@ echo Press Ctrl+C to stop the server
 set NODE_ENV=development
 set LOG_LEVEL=debug
 
-:: Start the server with debugging enabled
-npx tsx --inspect src/index.ts
+:: Start the server directly using npx 
+npx tsx src/index.ts
 
 pause
