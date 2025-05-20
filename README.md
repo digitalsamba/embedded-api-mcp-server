@@ -16,6 +16,10 @@ A Model Context Protocol (MCP) server implementation for Digital Samba's video c
 - [Features](#features)
 - [Configuration](#configuration)
 - [Advanced Usage](#advanced-usage)
+  - [Metrics Collection with Prometheus](#metrics-collection-with-prometheus)
+  - [Custom Error Handling](#custom-error-handling)
+  - [Webhook Handling](#webhook-handling)
+  - [Advanced Configuration](#advanced-configuration-with-rate-limiting-and-caching)
 - [Examples](#examples)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
@@ -133,6 +137,10 @@ Options:
   --rate-limit-requests-per-minute  Maximum requests per minute per API key (default: 60)
   --enable-cache                    Enable caching of API responses
   --cache-ttl                       Cache Time-To-Live in milliseconds (default: 300000)
+  --enable-metrics                  Enable Prometheus metrics collection
+  --metrics-endpoint <path>         Path for metrics endpoint (default: /metrics)
+  --metrics-prefix <prefix>         Prefix for metrics names (default: digital_samba_mcp_)
+  --collect-default-metrics         Collect default Node.js metrics (default: true)
   -h, --help                        Display help message
 ```
 
@@ -151,6 +159,10 @@ All CLI options can also be specified as environment variables:
 - `RATE_LIMIT_REQUESTS_PER_MINUTE` - Maximum requests per minute
 - `ENABLE_CACHE` - Enable caching (true/false)
 - `CACHE_TTL` - Cache TTL in milliseconds
+- `ENABLE_METRICS` - Enable Prometheus metrics collection (true/false)
+- `METRICS_ENDPOINT` - Endpoint path for metrics (default: /metrics)
+- `METRICS_PREFIX` - Prefix for metrics names (default: digital_samba_mcp_)
+- `COLLECT_DEFAULT_METRICS` - Collect default Node.js metrics (true/false)
 
 ## API Usage
 
@@ -216,6 +228,7 @@ The Digital Samba MCP Server provides the following functionality:
 ### Performance Optimization
 - **Rate Limiting**: Configurable API request rate limiting to prevent abuse and ensure fair usage
 - **Response Caching**: Memory-based caching of API responses for improved performance
+- **Metrics Collection**: Prometheus-compatible metrics for monitoring server performance and usage
 
 ### Room Management
 - List, create, update, and delete rooms
@@ -266,6 +279,10 @@ The `createServer` and `startServer` functions accept the following options:
 | `rateLimitRequestsPerMinute` | number | Maximum requests per minute per API key | 60 |
 | `enableCache` | boolean | Enable API response caching | false |
 | `cacheTtl` | number | Cache Time-To-Live in milliseconds | 300000 (5 minutes) |
+| `enableMetrics` | boolean | Enable Prometheus metrics collection | false |
+| `metricsEndpoint` | string | Endpoint for exposing metrics | /metrics |
+| `metricsPrefix` | string | Prefix for metrics names | digital_samba_mcp_ |
+| `collectDefaultMetrics` | boolean | Collect default Node.js metrics | true |
 
 ### API Client Options
 
@@ -320,6 +337,54 @@ The Digital Samba MCP Server exposes the following resources and tools to MCP cl
 | `add-participants` | Add participants to a meeting |
 
 ## Advanced Usage
+
+### Metrics Collection with Prometheus
+
+The Digital Samba MCP Server includes built-in support for Prometheus metrics, which allows you to monitor server performance, API calls, caching, and more.
+
+#### Enabling Metrics
+
+Metrics can be enabled via CLI arguments:
+
+```bash
+digital-samba-mcp --enable-metrics --metrics-endpoint /metrics --metrics-prefix digital_samba_mcp_
+```
+
+Or via environment variables:
+
+```bash
+ENABLE_METRICS=true METRICS_ENDPOINT=/metrics METRICS_PREFIX=digital_samba_mcp_ digital-samba-mcp
+```
+
+Or when using the API:
+
+```javascript
+import { startServer } from 'digital-samba-mcp';
+
+const server = startServer({
+  enableMetrics: true,
+  metricsEndpoint: '/metrics',
+  metricsPrefix: 'digital_samba_mcp_',
+  collectDefaultMetrics: true
+});
+```
+
+#### Available Metrics
+
+The server exposes the following metrics:
+
+- HTTP metrics (request counts, duration, response sizes)
+- API client metrics (requests, errors, latency)
+- Cache metrics (hits, misses, size)
+- Rate limiting metrics
+- Connection metrics (active sessions, connections)
+- Default Node.js metrics (memory, CPU, etc.)
+
+#### Setting Up Prometheus
+
+For detailed instructions on setting up Prometheus to scrape metrics from the Digital Samba MCP Server, see the [Prometheus Setup Guide](docs/prometheus-setup.md).
+
+A sample Grafana dashboard is also available in the [docs/grafana-dashboard.json](docs/grafana-dashboard.json) file.
 
 ### Custom Error Handling
 
