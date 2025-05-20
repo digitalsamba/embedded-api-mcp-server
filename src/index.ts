@@ -38,7 +38,12 @@ export interface ServerOptions {
 // Create and configure the MCP server
 export function createServer(options?: ServerOptions) {
   // Configure environment
-  const PORT = options?.port || process.env.PORT ? parseInt(process.env.PORT as string) : 3000;
+  let PORT = 3000;
+  if (options?.port !== undefined) {
+    PORT = options.port;
+  } else if (process.env.PORT) {
+    PORT = parseInt(process.env.PORT as string);
+  }
   const API_URL = options?.apiUrl || process.env.DIGITAL_SAMBA_API_URL || 'https://api.digitalsamba.com/api/v1';
   const WEBHOOK_SECRET = options?.webhookSecret || process.env.WEBHOOK_SECRET;
   const WEBHOOK_ENDPOINT = options?.webhookEndpoint || process.env.WEBHOOK_ENDPOINT || '/webhooks/digitalsamba';
@@ -563,10 +568,13 @@ export function startServer(options?: ServerOptions) {
   const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
   
   // Add rate limiting middleware if enabled
-  if (ENABLE_RATE_LIMITING) {
-    logger.info('Enabling rate limiting', { requestsPerMinute: RATE_LIMIT_REQUESTS_PER_MINUTE });
+  if (options?.enableRateLimiting || process.env.ENABLE_RATE_LIMITING === 'true') {
+    const requestsPerMinute = options?.rateLimitRequestsPerMinute || 
+      (process.env.RATE_LIMIT_REQUESTS_PER_MINUTE ? parseInt(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE) : 60);
+    
+    logger.info('Enabling rate limiting', { requestsPerMinute });
     app.use('/mcp', createApiKeyRateLimiter({
-      maxRequests: RATE_LIMIT_REQUESTS_PER_MINUTE,
+      maxRequests: requestsPerMinute,
       windowMs: 60 * 1000, // 1 minute
       message: 'Too many requests from this API key, please try again later.'
     }));
@@ -751,6 +759,7 @@ export function startServer(options?: ServerOptions) {
 }
 
 // If this file is executed directly or via npm run dev, start the server
-if (process.env.NODE_ENV !== 'test') {
+// Only start if the file is executed directly, not when imported
+if (process.env.NODE_ENV !== 'test' && import.meta.url === `file://${process.argv[1]}`) {
   startServer();
 }
