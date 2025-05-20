@@ -23,6 +23,7 @@ import { createTokenManager } from './token-manager.js';
 import { createResourceOptimizer } from './resource-optimizer.js';
 import { createEnhancedApiClient, EnhancedDigitalSambaApiClient } from './digital-samba-api-enhanced.js';
 import { CircuitBreakerApiClient } from './digital-samba-api-circuit-breaker.js';
+import ResilientApiClient from './digital-samba-api-resilient.js';
 import { setupBreakoutRoomsFunctionality } from './breakout-rooms.js';
 import { MemoryCache } from './cache.js';
 import { DigitalSambaApiClient } from './digital-samba-api.js';
@@ -52,6 +53,9 @@ export interface ServerOptions {
   enableCircuitBreaker?: boolean;
   circuitBreakerFailureThreshold?: number;
   circuitBreakerResetTimeout?: number;
+  enableGracefulDegradation?: boolean;
+  gracefulDegradationMaxRetries?: number;
+  gracefulDegradationInitialDelay?: number;
   connectionPoolSize?: number;
   enableMetrics?: boolean;
   metricsEndpoint?: string;
@@ -82,6 +86,9 @@ export function createServer(options?: ServerOptions) {
   const ENABLE_CIRCUIT_BREAKER = options?.enableCircuitBreaker !== undefined ? options.enableCircuitBreaker : process.env.ENABLE_CIRCUIT_BREAKER === 'true';
   const CIRCUIT_BREAKER_FAILURE_THRESHOLD = options?.circuitBreakerFailureThreshold || (process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD ? parseInt(process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD) : 5);
   const CIRCUIT_BREAKER_RESET_TIMEOUT = options?.circuitBreakerResetTimeout || (process.env.CIRCUIT_BREAKER_RESET_TIMEOUT ? parseInt(process.env.CIRCUIT_BREAKER_RESET_TIMEOUT) : 30000);
+  const ENABLE_GRACEFUL_DEGRADATION = options?.enableGracefulDegradation !== undefined ? options.enableGracefulDegradation : process.env.ENABLE_GRACEFUL_DEGRADATION === 'true';
+  const GRACEFUL_DEGRADATION_MAX_RETRIES = options?.gracefulDegradationMaxRetries || (process.env.GRACEFUL_DEGRADATION_MAX_RETRIES ? parseInt(process.env.GRACEFUL_DEGRADATION_MAX_RETRIES) : 3);
+  const GRACEFUL_DEGRADATION_INITIAL_DELAY = options?.gracefulDegradationInitialDelay || (process.env.GRACEFUL_DEGRADATION_INITIAL_DELAY ? parseInt(process.env.GRACEFUL_DEGRADATION_INITIAL_DELAY) : 1000);
   const CONNECTION_POOL_SIZE = options?.connectionPoolSize || (process.env.CONNECTION_POOL_SIZE ? parseInt(process.env.CONNECTION_POOL_SIZE) : 5);
   const ENABLE_METRICS = options?.enableMetrics !== undefined ? options.enableMetrics : process.env.ENABLE_METRICS === 'true';
   const METRICS_ENDPOINT = options?.metricsEndpoint || process.env.METRICS_ENDPOINT || '/metrics';
@@ -147,7 +154,29 @@ export function createServer(options?: ServerOptions) {
       logger.debug('Creating API client using context API key');
       
       let client;
-      if (ENABLE_CIRCUIT_BREAKER) {
+      if (ENABLE_CIRCUIT_BREAKER && ENABLE_GRACEFUL_DEGRADATION) {
+        // Use resilient API client with circuit breaker and graceful degradation
+        logger.debug('Using resilient API client with circuit breaker and graceful degradation');
+        
+        // First create the base client
+        const baseClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+        
+        // Then wrap it with resilient client
+        client = ResilientApiClient.withResilience(baseClient, {
+          cache: apiCache,
+          circuitBreaker: {
+            failureThreshold: CIRCUIT_BREAKER_FAILURE_THRESHOLD,
+            resetTimeout: CIRCUIT_BREAKER_RESET_TIMEOUT,
+            requestTimeout: 10000 // 10 second timeout for requests
+          },
+          gracefulDegradation: {
+            maxRetryAttempts: GRACEFUL_DEGRADATION_MAX_RETRIES,
+            initialRetryDelay: GRACEFUL_DEGRADATION_INITIAL_DELAY,
+            retryBackoffFactor: 2,
+            maxRetryDelay: 30000
+          }
+        });
+      } else if (ENABLE_CIRCUIT_BREAKER) {
         // Use circuit breaker API client
         logger.debug('Using circuit breaker API client');
         
@@ -742,6 +771,9 @@ export function createServer(options?: ServerOptions) {
     enableCircuitBreaker: ENABLE_CIRCUIT_BREAKER,
     circuitBreakerFailureThreshold: CIRCUIT_BREAKER_FAILURE_THRESHOLD,
     circuitBreakerResetTimeout: CIRCUIT_BREAKER_RESET_TIMEOUT,
+    enableGracefulDegradation: ENABLE_GRACEFUL_DEGRADATION,
+    gracefulDegradationMaxRetries: GRACEFUL_DEGRADATION_MAX_RETRIES,
+    gracefulDegradationInitialDelay: GRACEFUL_DEGRADATION_INITIAL_DELAY,
     enableMetrics: ENABLE_METRICS,
     metricsEndpoint: METRICS_ENDPOINT,
     metricsPrefix: METRICS_PREFIX,
@@ -996,6 +1028,48 @@ export function startServer(options?: ServerOptions) {
       });
     });
     console.log("Health check endpoint set up successfully");
+
+    // System health status endpoint
+    console.log("Setting up system health endpoint...");
+    app.get('/health/system', (req, res) => {
+      console.log("Received request to /health/system");
+      
+      // Get graceful degradation health status
+      const overallHealth = gracefulDegradation.getOverallHealth();
+      const componentHealth = gracefulDegradation.getComponentHealth();
+      
+      // Format component health for response
+      const formattedComponents = componentHealth.map(component => ({
+        name: component.name,
+        status: component.status,
+        lastCheck: component.lastCheck,
+        errorCount: component.errorCount,
+        message: component.message
+      }));
+      
+      res.status(200).json({
+        status: overallHealth === ServiceHealthStatus.HEALTHY ? 'ok' : 
+                overallHealth === ServiceHealthStatus.PARTIALLY_DEGRADED ? 'degraded' : 
+                overallHealth === ServiceHealthStatus.SEVERELY_DEGRADED ? 'critical' : 'unavailable',
+        timestamp: new Date().toISOString(),
+        version: '0.1.0',
+        name: 'Digital Samba MCP Server',
+        degradation: {
+          overall: overallHealth,
+          components: formattedComponents
+        },
+        features: {
+          cache: ENABLE_CACHE,
+          circuitBreaker: ENABLE_CIRCUIT_BREAKER,
+          gracefulDegradation: ENABLE_GRACEFUL_DEGRADATION,
+          connectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+          tokenManagement: ENABLE_TOKEN_MANAGEMENT,
+          resourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+          metrics: ENABLE_METRICS
+        }
+      });
+    });
+    console.log("System health endpoint set up successfully");
 
     // Get the webhook service instance
     console.log("Setting up webhook service...");
