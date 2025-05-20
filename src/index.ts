@@ -734,6 +734,10 @@ export function startServer(options?: ServerOptions) {
     app.use(express.json());
     console.log("Express app created and JSON middleware added");
 
+    // Create the MCP server
+    console.log("Creating MCP server...");
+    const serverConfig = createServer(options);
+    
     // Add metrics middleware if enabled
     if (serverConfig.enableMetrics) {
       console.log("Adding metrics middleware...");
@@ -741,10 +745,6 @@ export function startServer(options?: ServerOptions) {
       metricsRegistry.registerMetricsEndpoint(app, serverConfig.metricsEndpoint);
       console.log(`Metrics endpoint registered at ${serverConfig.metricsEndpoint}`);
     }
-
-    // Create the MCP server
-    console.log("Creating MCP server...");
-    const serverConfig = createServer(options);
     const { 
       server, 
       port, 
@@ -857,7 +857,7 @@ export function startServer(options?: ServerOptions) {
               }
               
               // Update session metrics if enabled
-              if (serverConfig.enableMetrics) {
+              if (enableMetrics) {
                 metricsRegistry.activeSessions.inc();
               }
             },
@@ -872,7 +872,7 @@ export function startServer(options?: ServerOptions) {
               delete transports[transport.sessionId];
               
               // Update session metrics if enabled
-              if (serverConfig.enableMetrics) {
+              if (enableMetrics) {
                 metricsRegistry.activeSessions.dec();
               }
             }
@@ -995,8 +995,8 @@ export function startServer(options?: ServerOptions) {
       logger.info(`Digital Samba API URL: ${apiUrl}`);
       logger.info(`Webhook endpoint: ${publicUrl}${webhookEndpoint}`);
       
-      if (serverConfig.enableMetrics) {
-        logger.info(`Metrics endpoint: ${publicUrl}${serverConfig.metricsEndpoint}`);
+      if (enableMetrics) {
+        logger.info(`Metrics endpoint: ${publicUrl}${metricsEndpoint}`);
       }
     });
     console.log("Server listen call completed");
