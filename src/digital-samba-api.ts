@@ -16,8 +16,8 @@
  * @author Digital Samba Team
  * @version 0.1.0
  */
+// Local modules
 import apiKeyContext from './auth.js';
-import logger from './logger.js';
 import { 
   ApiRequestError, 
   ApiResponseError, 
@@ -25,6 +25,7 @@ import {
   ResourceNotFoundError,
   ValidationError 
 } from './errors.js';
+import logger from './logger.js';
 
 // Base interfaces
 export interface PaginationParams {

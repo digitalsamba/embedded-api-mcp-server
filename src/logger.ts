@@ -10,6 +10,7 @@
  * @version 0.1.0
  */
 
+// External dependencies
 import winston from 'winston';
 
 /**
