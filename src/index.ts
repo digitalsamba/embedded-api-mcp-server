@@ -33,6 +33,7 @@ import { setupModerationFunctionality } from './moderation.js';
 import { createApiKeyRateLimiter } from './rate-limiter.js';
 import { setupRecordingFunctionality } from './recordings.js';
 import WebhookService, { setupWebhookTools } from './webhooks.js';
+import gracefulDegradation, { ServiceHealthStatus } from './graceful-degradation.js';
 
 // Type definitions for server options
 export interface ServerOptions {

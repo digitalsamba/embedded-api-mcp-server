@@ -286,3 +286,50 @@ export class SessionError extends DigitalSambaError {
     this.sessionId = options?.sessionId;
   }
 }
+
+/**
+ * Error thrown when a service is in a degraded state
+ * 
+ * This error is used when a service operation fails due to degraded service health,
+ * and no fallback strategies are available or all fallbacks have failed.
+ * 
+ * @class DegradedServiceError
+ * @extends DigitalSambaError
+ * @property {string} operationName - Name of the operation that failed
+ * @property {string} componentStatus - Status of the component that is degraded
+ * @property {string[]} attemptedStrategies - List of strategies that were attempted
+ * @example
+ * throw new DegradedServiceError('Service unavailable', { 
+ *   operationName: 'listRooms',
+ *   componentStatus: 'SEVERELY_DEGRADED',
+ *   attemptedStrategies: ['retry', 'cache', 'fallback']
+ * });
+ */
+export class DegradedServiceError extends DigitalSambaError {
+  operationName: string;
+  componentStatus?: string;
+  attemptedStrategies: string[];
+  
+  /**
+   * Create a new DegradedServiceError
+   * 
+   * @param {string} message - Error message
+   * @param {Object} options - Additional error options
+   * @param {string} options.operationName - Name of the operation that failed
+   * @param {string} [options.componentStatus] - Status of the component that is degraded
+   * @param {string[]} [options.attemptedStrategies] - List of strategies that were attempted
+   * @param {Error} [options.cause] - The error that caused this error
+   */
+  constructor(message: string, options: { 
+    operationName: string,
+    componentStatus?: string,
+    attemptedStrategies?: string[],
+    cause?: Error
+  }) {
+    super(message);
+    this.name = 'DegradedServiceError';
+    this.operationName = options.operationName;
+    this.componentStatus = options.componentStatus;
+    this.attemptedStrategies = options.attemptedStrategies || [];
+  }
+}
