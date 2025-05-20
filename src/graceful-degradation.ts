@@ -296,9 +296,17 @@ export class GracefulDegradation extends EventEmitter {
     }
     
     // Listen for new circuit breakers
-    circuitBreakerRegistry.on('created', (circuit: CircuitBreaker) => {
-      this.monitorCircuitBreaker(circuit);
-    });
+    try {
+      if (typeof circuitBreakerRegistry.on === 'function') {
+        circuitBreakerRegistry.on('created', (circuit: CircuitBreaker) => {
+          this.monitorCircuitBreaker(circuit);
+        });
+      } else {
+        logger.debug('Circuit breaker registry does not support events, will not monitor new circuits');
+      }
+    } catch (error) {
+      logger.debug(`Error setting up circuit breaker registry listener: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
   
   /**
