@@ -108,6 +108,22 @@ class MetricsRegistry {
   public circuitBreakerResets: Counter;
   public circuitBreakerTrips: Counter;
   
+  // Graceful degradation metrics
+  public degradationHealthChecksTotal: Counter;
+  public degradationComponentStatusInfo: Gauge;
+  public degradationOverallStatusInfo: Gauge;
+  public degradationFallbacksRegisteredTotal: Counter;
+  public degradationFallbackActivationsTotal: Counter;
+  public degradationFallbackDeactivationsTotal: Counter;
+  public degradationFallbackSuccessTotal: Counter;
+  public degradationFallbackFailureTotal: Counter;
+  public degradationOperationDuration: Histogram;
+  public degradationOperationFailuresTotal: Counter;
+  public degradationCacheHitsTotal: Counter;
+  public degradationRetryAttemptsTotal: Counter;
+  public degradationRetrySuccessTotal: Counter;
+  public degradationRetryFailureTotal: Counter;
+  
   /**
    * Constructor for the metrics registry
    * @param options Metrics configuration options
@@ -272,6 +288,105 @@ class MetricsRegistry {
       name: `${this.options.prefix}circuit_breaker_trips_total`,
       help: 'Total number of circuit breaker manual trips',
       labelNames: ['circuit'],
+      registers: [this.registry]
+    });
+    
+    // Initialize graceful degradation metrics
+    this.degradationHealthChecksTotal = new Counter({
+      name: `${this.options.prefix}degradation_health_checks_total`,
+      help: 'Total number of degradation health checks performed',
+      registers: [this.registry]
+    });
+    
+    this.degradationComponentStatusInfo = new Gauge({
+      name: `${this.options.prefix}degradation_component_status_info`,
+      help: 'Degradation component status (0 = inactive, 1 = active)',
+      labelNames: ['component', 'status'],
+      registers: [this.registry]
+    });
+    
+    this.degradationOverallStatusInfo = new Gauge({
+      name: `${this.options.prefix}degradation_overall_status_info`,
+      help: 'Overall degradation status (0 = inactive, 1 = active)',
+      labelNames: ['status'],
+      registers: [this.registry]
+    });
+    
+    this.degradationFallbacksRegisteredTotal = new Counter({
+      name: `${this.options.prefix}degradation_fallbacks_registered_total`,
+      help: 'Total number of fallbacks registered',
+      labelNames: ['operation'],
+      registers: [this.registry]
+    });
+    
+    this.degradationFallbackActivationsTotal = new Counter({
+      name: `${this.options.prefix}degradation_fallback_activations_total`,
+      help: 'Total number of fallback activations',
+      labelNames: ['operation'],
+      registers: [this.registry]
+    });
+    
+    this.degradationFallbackDeactivationsTotal = new Counter({
+      name: `${this.options.prefix}degradation_fallback_deactivations_total`,
+      help: 'Total number of fallback deactivations',
+      labelNames: ['operation'],
+      registers: [this.registry]
+    });
+    
+    this.degradationFallbackSuccessTotal = new Counter({
+      name: `${this.options.prefix}degradation_fallback_success_total`,
+      help: 'Total number of successful fallback operations',
+      labelNames: ['operation'],
+      registers: [this.registry]
+    });
+    
+    this.degradationFallbackFailureTotal = new Counter({
+      name: `${this.options.prefix}degradation_fallback_failure_total`,
+      help: 'Total number of failed fallback operations',
+      labelNames: ['operation'],
+      registers: [this.registry]
+    });
+    
+    this.degradationOperationDuration = new Histogram({
+      name: `${this.options.prefix}degradation_operation_duration_seconds`,
+      help: 'Duration of operations with degradation protection',
+      labelNames: ['operation', 'source'],
+      buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10],
+      registers: [this.registry]
+    });
+    
+    this.degradationOperationFailuresTotal = new Counter({
+      name: `${this.options.prefix}degradation_operation_failures_total`,
+      help: 'Total number of operation failures with degradation protection',
+      labelNames: ['operation'],
+      registers: [this.registry]
+    });
+    
+    this.degradationCacheHitsTotal = new Counter({
+      name: `${this.options.prefix}degradation_cache_hits_total`,
+      help: 'Total number of cache hits during degraded operations',
+      labelNames: ['operation'],
+      registers: [this.registry]
+    });
+    
+    this.degradationRetryAttemptsTotal = new Counter({
+      name: `${this.options.prefix}degradation_retry_attempts_total`,
+      help: 'Total number of retry attempts during degraded operations',
+      labelNames: ['operation', 'attempt'],
+      registers: [this.registry]
+    });
+    
+    this.degradationRetrySuccessTotal = new Counter({
+      name: `${this.options.prefix}degradation_retry_success_total`,
+      help: 'Total number of successful retries during degraded operations',
+      labelNames: ['operation', 'attempt'],
+      registers: [this.registry]
+    });
+    
+    this.degradationRetryFailureTotal = new Counter({
+      name: `${this.options.prefix}degradation_retry_failure_total`,
+      help: 'Total number of failed retries during degraded operations',
+      labelNames: ['operation', 'attempt'],
       registers: [this.registry]
     });
   }
