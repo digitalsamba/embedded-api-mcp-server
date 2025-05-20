@@ -22,6 +22,7 @@ import { createConnectionManager } from './connection-manager.js';
 import { createTokenManager } from './token-manager.js';
 import { createResourceOptimizer } from './resource-optimizer.js';
 import { createEnhancedApiClient, EnhancedDigitalSambaApiClient } from './digital-samba-api-enhanced.js';
+import { CircuitBreakerApiClient } from './digital-samba-api-circuit-breaker.js';
 import { setupBreakoutRoomsFunctionality } from './breakout-rooms.js';
 import { MemoryCache } from './cache.js';
 import { DigitalSambaApiClient } from './digital-samba-api.js';
@@ -47,6 +48,9 @@ export interface ServerOptions {
   enableConnectionManagement?: boolean;
   enableTokenManagement?: boolean;
   enableResourceOptimization?: boolean;
+  enableCircuitBreaker?: boolean;
+  circuitBreakerFailureThreshold?: number;
+  circuitBreakerResetTimeout?: number;
   connectionPoolSize?: number;
   enableMetrics?: boolean;
   metricsEndpoint?: string;
@@ -74,6 +78,9 @@ export function createServer(options?: ServerOptions) {
   const ENABLE_CONNECTION_MANAGEMENT = options?.enableConnectionManagement !== undefined ? options.enableConnectionManagement : process.env.ENABLE_CONNECTION_MANAGEMENT === 'true';
   const ENABLE_TOKEN_MANAGEMENT = options?.enableTokenManagement !== undefined ? options.enableTokenManagement : process.env.ENABLE_TOKEN_MANAGEMENT === 'true';
   const ENABLE_RESOURCE_OPTIMIZATION = options?.enableResourceOptimization !== undefined ? options.enableResourceOptimization : process.env.ENABLE_RESOURCE_OPTIMIZATION === 'true';
+  const ENABLE_CIRCUIT_BREAKER = options?.enableCircuitBreaker !== undefined ? options.enableCircuitBreaker : process.env.ENABLE_CIRCUIT_BREAKER === 'true';
+  const CIRCUIT_BREAKER_FAILURE_THRESHOLD = options?.circuitBreakerFailureThreshold || (process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD ? parseInt(process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD) : 5);
+  const CIRCUIT_BREAKER_RESET_TIMEOUT = options?.circuitBreakerResetTimeout || (process.env.CIRCUIT_BREAKER_RESET_TIMEOUT ? parseInt(process.env.CIRCUIT_BREAKER_RESET_TIMEOUT) : 30000);
   const CONNECTION_POOL_SIZE = options?.connectionPoolSize || (process.env.CONNECTION_POOL_SIZE ? parseInt(process.env.CONNECTION_POOL_SIZE) : 5);
   const ENABLE_METRICS = options?.enableMetrics !== undefined ? options.enableMetrics : process.env.ENABLE_METRICS === 'true';
   const METRICS_ENDPOINT = options?.metricsEndpoint || process.env.METRICS_ENDPOINT || '/metrics';
@@ -139,7 +146,22 @@ export function createServer(options?: ServerOptions) {
       logger.debug('Creating API client using context API key');
       
       let client;
-      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
+      if (ENABLE_CIRCUIT_BREAKER) {
+        // Use circuit breaker API client
+        logger.debug('Using circuit breaker API client');
+        
+        // First create the base client
+        const baseClient = new DigitalSambaApiClient(undefined, API_URL, apiCache);
+        
+        // Then wrap it with circuit breaker
+        client = CircuitBreakerApiClient.withCircuitBreaker(baseClient, {
+          defaultOptions: {
+            failureThreshold: CIRCUIT_BREAKER_FAILURE_THRESHOLD,
+            resetTimeout: CIRCUIT_BREAKER_RESET_TIMEOUT,
+            requestTimeout: 10000 // 10 second timeout for requests
+          }
+        });
+      } else if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
         // Use enhanced API client
         logger.debug('Using enhanced API client with additional features enabled');
         client = new EnhancedDigitalSambaApiClient(
@@ -716,6 +738,9 @@ export function createServer(options?: ServerOptions) {
     enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
     enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
     enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+    enableCircuitBreaker: ENABLE_CIRCUIT_BREAKER,
+    circuitBreakerFailureThreshold: CIRCUIT_BREAKER_FAILURE_THRESHOLD,
+    circuitBreakerResetTimeout: CIRCUIT_BREAKER_RESET_TIMEOUT,
     enableMetrics: ENABLE_METRICS,
     metricsEndpoint: METRICS_ENDPOINT,
     metricsPrefix: METRICS_PREFIX,
