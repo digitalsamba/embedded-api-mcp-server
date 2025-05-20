@@ -1,0 +1,3 @@
+@echo off
+echo Running Digital Samba MCP Server metrics test...
+node tests/test-metrics.js

@@ -26,6 +26,7 @@ import { setupBreakoutRoomsFunctionality } from './breakout-rooms.js';
 import { MemoryCache } from './cache.js';
 import { DigitalSambaApiClient } from './digital-samba-api.js';
 import logger from './logger.js';
+import metricsRegistry, { initializeMetrics } from './metrics.js';
 import { setupMeetingSchedulingFunctionality } from './meetings.js';
 import { setupModerationFunctionality } from './moderation.js';
 import { createApiKeyRateLimiter } from './rate-limiter.js';
@@ -47,6 +48,10 @@ export interface ServerOptions {
   enableTokenManagement?: boolean;
   enableResourceOptimization?: boolean;
   connectionPoolSize?: number;
+  enableMetrics?: boolean;
+  metricsEndpoint?: string;
+  metricsPrefix?: string;
+  collectDefaultMetrics?: boolean;
 }
 
 // Create and configure the MCP server
@@ -70,6 +75,10 @@ export function createServer(options?: ServerOptions) {
   const ENABLE_TOKEN_MANAGEMENT = options?.enableTokenManagement !== undefined ? options.enableTokenManagement : process.env.ENABLE_TOKEN_MANAGEMENT === 'true';
   const ENABLE_RESOURCE_OPTIMIZATION = options?.enableResourceOptimization !== undefined ? options.enableResourceOptimization : process.env.ENABLE_RESOURCE_OPTIMIZATION === 'true';
   const CONNECTION_POOL_SIZE = options?.connectionPoolSize || (process.env.CONNECTION_POOL_SIZE ? parseInt(process.env.CONNECTION_POOL_SIZE) : 5);
+  const ENABLE_METRICS = options?.enableMetrics !== undefined ? options.enableMetrics : process.env.ENABLE_METRICS === 'true';
+  const METRICS_ENDPOINT = options?.metricsEndpoint || process.env.METRICS_ENDPOINT || '/metrics';
+  const METRICS_PREFIX = options?.metricsPrefix || process.env.METRICS_PREFIX || 'digital_samba_mcp_';
+  const COLLECT_DEFAULT_METRICS = options?.collectDefaultMetrics !== undefined ? options.collectDefaultMetrics : process.env.COLLECT_DEFAULT_METRICS === 'true';
 
   // Create the MCP server
   const server = new McpServer({
@@ -706,7 +715,11 @@ export function createServer(options?: ServerOptions) {
     cache: apiCache,
     enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
     enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
-    enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION
+    enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+    enableMetrics: ENABLE_METRICS,
+    metricsEndpoint: METRICS_ENDPOINT,
+    metricsPrefix: METRICS_PREFIX,
+    collectDefaultMetrics: COLLECT_DEFAULT_METRICS
   };
 }
 
@@ -721,10 +734,32 @@ export function startServer(options?: ServerOptions) {
     app.use(express.json());
     console.log("Express app created and JSON middleware added");
 
+    // Add metrics middleware if enabled
+    if (serverConfig.enableMetrics) {
+      console.log("Adding metrics middleware...");
+      app.use(metricsRegistry.createHttpMetricsMiddleware());
+      metricsRegistry.registerMetricsEndpoint(app, serverConfig.metricsEndpoint);
+      console.log(`Metrics endpoint registered at ${serverConfig.metricsEndpoint}`);
+    }
+
     // Create the MCP server
     console.log("Creating MCP server...");
     const serverConfig = createServer(options);
-    const { server, port, apiUrl, webhookEndpoint, publicUrl, cache, enableConnectionManagement, enableTokenManagement, enableResourceOptimization } = serverConfig;
+    const { 
+      server, 
+      port, 
+      apiUrl, 
+      webhookEndpoint, 
+      publicUrl, 
+      cache, 
+      enableConnectionManagement, 
+      enableTokenManagement, 
+      enableResourceOptimization,
+      enableMetrics,
+      metricsEndpoint,
+      metricsPrefix,
+      collectDefaultMetrics
+    } = serverConfig;
     console.log("MCP server created with configuration:", { 
       port, 
       apiUrl, 
@@ -733,8 +768,27 @@ export function startServer(options?: ServerOptions) {
       hasCache: !!cache,
       enableConnectionManagement,
       enableTokenManagement,
-      enableResourceOptimization
+      enableResourceOptimization,
+      enableMetrics,
+      metricsEndpoint
     });
+    
+    // Initialize metrics if enabled
+    if (enableMetrics) {
+      console.log("Initializing metrics collection...");
+      const metrics = initializeMetrics({
+        prefix: metricsPrefix,
+        defaultMetrics: collectDefaultMetrics,
+        enableHttpMetrics: true,
+        enableApiMetrics: true,
+        enableCacheMetrics: cache !== undefined,
+        enableRateLimitMetrics: options?.enableRateLimiting || process.env.ENABLE_RATE_LIMITING === 'true'
+      });
+      
+      // Track active sessions
+      metrics.activeSessions.set(0);
+      console.log("Metrics collection initialized");
+    }
 
     // Map to store transports by session ID
     const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
@@ -801,6 +855,11 @@ export function startServer(options?: ServerOptions) {
               if (apiKey) {
                 apiKeyContext.setApiKey(sessionId, apiKey);
               }
+              
+              // Update session metrics if enabled
+              if (serverConfig.enableMetrics) {
+                metricsRegistry.activeSessions.inc();
+              }
             },
           });
           
@@ -811,6 +870,11 @@ export function startServer(options?: ServerOptions) {
               logger.info(`Closing session: ${transport.sessionId}`);
               apiKeyContext.removeApiKey(transport.sessionId);
               delete transports[transport.sessionId];
+              
+              // Update session metrics if enabled
+              if (serverConfig.enableMetrics) {
+                metricsRegistry.activeSessions.dec();
+              }
             }
           };
           
@@ -930,6 +994,10 @@ export function startServer(options?: ServerOptions) {
       logger.info(`Digital Samba MCP Server running on port ${port}`);
       logger.info(`Digital Samba API URL: ${apiUrl}`);
       logger.info(`Webhook endpoint: ${publicUrl}${webhookEndpoint}`);
+      
+      if (serverConfig.enableMetrics) {
+        logger.info(`Metrics endpoint: ${publicUrl}${serverConfig.metricsEndpoint}`);
+      }
     });
     console.log("Server listen call completed");
 
