@@ -49,6 +49,7 @@
     "test:moderation": "node tests/moderation-test.js",
     "test:breakout": "node tests/test-breakout-rooms.js",
     "test:meetings": "node tests/meeting-scheduling-test.js",
+    "test:enhanced-features": "node --loader tsx tests/test-enhanced-features.js",
     "prepublishOnly": "npm run build:clean",
     "postbuild": "node -e \"const fs = require('fs'); const path = require('path'); const srcPath = path.join(process.cwd(), 'bin', 'cli.js'); const destPath = path.join(process.cwd(), 'dist', 'bin', 'cli.js'); require('fs').mkdirSync(path.dirname(destPath), { recursive: true }); fs.copyFileSync(srcPath, destPath); fs.chmodSync(destPath, '755');\""
   },
