@@ -1,9 +1,19 @@
 /**
  * Webhook handler for Digital Samba MCP Server
  * 
- * This module implements webhook handling for the Digital Samba API,
+ * This module implements a comprehensive webhook system for the Digital Samba API,
  * allowing the MCP server to receive real-time events from Digital Samba
- * and propagate them to connected MCP clients.
+ * and propagate them to connected MCP clients. It provides:
+ * 
+ * - Webhook endpoint registration and management
+ * - Webhook event processing and validation
+ * - Event signature verification for security
+ * - Client notification for real-time updates
+ * - Tools for managing webhooks through the MCP interface
+ * 
+ * @module webhooks
+ * @author Digital Samba Team
+ * @version 0.1.0
  */
 import express, { Request, Response } from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -63,6 +73,25 @@ type WebhookEventHandler = (payload: WebhookPayload) => Promise<void>;
 
 /**
  * Webhook service for handling Digital Samba events
+ * 
+ * This class provides the core functionality for receiving, processing, and
+ * propagating webhook events from the Digital Samba API. It manages event
+ * handlers, signature verification, and client notifications.
+ * 
+ * @class
+ * @example
+ * const webhookService = new WebhookService(mcpServer, {
+ *   secret: process.env.WEBHOOK_SECRET,
+ *   endpoint: '/webhooks/digitalsamba'
+ * });
+ * 
+ * // Register an event handler
+ * webhookService.on(WebhookEventType.RECORDING_READY, async (payload) => {
+ *   console.log('Recording is ready:', payload.data.id);
+ * });
+ * 
+ * // Register the webhook endpoint with Express
+ * webhookService.registerWebhookEndpoint(app);
  */
 export class WebhookService {
   private server: McpServer;
@@ -71,6 +100,12 @@ export class WebhookService {
   
   /**
    * Create a new webhook service
+   * 
+   * @constructor
+   * @param {McpServer} server - The MCP server instance for notifications
+   * @param {WebhookConfig} config - Configuration for the webhook service
+   * @param {string} [config.secret] - Secret for verifying webhook signatures
+   * @param {string} config.endpoint - HTTP endpoint path for receiving webhooks
    */
   constructor(server: McpServer, config: WebhookConfig) {
     this.server = server;
@@ -84,6 +119,12 @@ export class WebhookService {
   
   /**
    * Register the webhook endpoint with the Express app
+   * 
+   * This method sets up the HTTP route that will receive webhook events from
+   * the Digital Samba API and process them through the webhook service.
+   * 
+   * @param {express.Application} app - Express application instance
+   * @returns {void}
    */
   public registerWebhookEndpoint(app: express.Application): void {
     logger.info(`Registering webhook endpoint at ${this.config.endpoint}`);
@@ -93,6 +134,15 @@ export class WebhookService {
   
   /**
    * Handle incoming webhook requests
+   * 
+   * This method processes HTTP requests to the webhook endpoint. It verifies
+   * signatures if a secret is configured, validates the payload, and triggers
+   * event processing.
+   * 
+   * @private
+   * @param {Request} req - Express request object
+   * @param {Response} res - Express response object
+   * @returns {Promise<void>}
    */
   private async handleWebhookRequest(req: Request, res: Response): Promise<void> {
     try {
@@ -150,6 +200,14 @@ export class WebhookService {
   
   /**
    * Verify the webhook signature
+   * 
+   * Uses HMAC-SHA256 to verify that the webhook was sent by Digital Samba
+   * and that the payload hasn't been tampered with.
+   * 
+   * @private
+   * @param {Request} req - Express request object
+   * @param {string} signature - Signature from the X-DigitalSamba-Signature header
+   * @returns {boolean} True if signature is valid, false otherwise
    */
   private verifySignature(req: Request, signature: string): boolean {
     if (!this.config.secret) {
@@ -185,6 +243,12 @@ export class WebhookService {
   
   /**
    * Process a webhook event
+   * 
+   * Executes all registered handlers for the event type and notifies MCP clients.
+   * 
+   * @private
+   * @param {WebhookPayload} payload - The webhook event payload
+   * @returns {Promise<void>}
    */
   private async processWebhookEvent(payload: WebhookPayload): Promise<void> {
     const { event } = payload;
@@ -207,6 +271,18 @@ export class WebhookService {
   
   /**
    * Register a handler for a specific event type
+   * 
+   * Allows custom logic to be executed when specific webhook events are received.
+   * 
+   * @public
+   * @param {WebhookEventType} event - The event type to listen for
+   * @param {WebhookEventHandler} handler - Function to execute when event occurs
+   * @returns {void}
+   * @example
+   * webhookService.on(WebhookEventType.RECORDING_READY, async (payload) => {
+   *   console.log(`Recording ${payload.data.id} is ready for viewing`);
+   *   // Custom logic for when a recording is ready
+   * });
    */
   public on(event: WebhookEventType, handler: WebhookEventHandler): void {
     const handlers = this.eventHandlers.get(event) || [];
@@ -218,6 +294,13 @@ export class WebhookService {
   
   /**
    * Notify MCP clients about a webhook event
+   * 
+   * Sends a notification to all connected MCP clients about the webhook event.
+   * This allows clients to receive real-time updates about Digital Samba events.
+   * 
+   * @private
+   * @param {WebhookPayload} payload - The webhook event payload
+   * @returns {Promise<void>}
    */
   private async notifyMcpClients(payload: WebhookPayload): Promise<void> {
     try {
@@ -269,6 +352,13 @@ export class WebhookService {
   
   /**
    * Create a notification object based on the event type
+   * 
+   * Formats the webhook payload into a structured notification object
+   * based on the event type, extracting relevant fields for each event category.
+   * 
+   * @private
+   * @param {WebhookPayload} payload - The webhook event payload
+   * @returns {Object} Formatted notification object
    */
   private createNotificationForEvent(payload: WebhookPayload): any {
     const { event, data } = payload;
@@ -360,6 +450,17 @@ export class WebhookService {
   
   /**
    * Register or update a webhook with Digital Samba API
+   * 
+   * Creates a new webhook registration or updates an existing one with
+   * the Digital Samba API, specifying which events to subscribe to.
+   * 
+   * @public
+   * @param {string} apiKey - Digital Samba API key
+   * @param {string} apiBaseUrl - Base URL for the Digital Samba API
+   * @param {string} webhookUrl - URL where webhook events should be sent
+   * @param {WebhookEventType[]} [eventTypes] - Event types to subscribe to (defaults to all)
+   * @returns {Promise<void>}
+   * @throws Will throw an error if the API request fails
    */
   public async registerWebhook(
     apiKey: string, 
@@ -413,6 +514,15 @@ export class WebhookService {
   
   /**
    * Delete a webhook with Digital Samba API
+   * 
+   * Deletes a webhook registration with the Digital Samba API based on the URL.
+   * 
+   * @public
+   * @param {string} apiKey - Digital Samba API key
+   * @param {string} apiBaseUrl - Base URL for the Digital Samba API
+   * @param {string} webhookUrl - URL of the webhook to delete
+   * @returns {Promise<void>}
+   * @throws Will throw an error if the API request fails
    */
   public async deleteWebhook(
     apiKey: string,
@@ -450,6 +560,15 @@ export class WebhookService {
 
 /**
  * Create webhook handling tools for MCP server
+ * 
+ * Sets up MCP tools for managing webhooks, including registration, deletion,
+ * and listing of webhooks and available event types. These tools allow clients
+ * to interact with the webhook system through the MCP interface.
+ * 
+ * @param {McpServer} server - The MCP server instance
+ * @param {WebhookService} webhookService - The webhook service instance
+ * @param {string} apiBaseUrl - Base URL for the Digital Samba API
+ * @returns {void}
  */
 export function setupWebhookTools(
   server: McpServer, 

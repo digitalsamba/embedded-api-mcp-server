@@ -1,5 +1,13 @@
 /**
  * Authentication utilities for the Digital Samba MCP Server
+ * 
+ * This module provides functions and classes for handling API key authentication
+ * with the Digital Samba API. It supports extracting API keys from HTTP headers,
+ * storing them in a session context, and retrieving them when needed for API calls.
+ *
+ * @module auth
+ * @author Digital Samba Team
+ * @version 0.1.0
  */
 import { Request } from 'express';
 import logger from './logger.js';
@@ -7,7 +15,17 @@ import { RequestMeta } from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * Extracts API key from Authorization header
- * Expects format: 'Bearer YOUR_API_KEY'
+ * 
+ * This function parses the Authorization header to extract a Bearer token.
+ * It expects the format: 'Bearer YOUR_API_KEY'
+ * 
+ * @param {Request} req - Express request object containing headers
+ * @returns {string|null} The extracted API key or null if not found or invalid
+ * @example
+ * const apiKey = extractApiKey(req);
+ * if (apiKey) {
+ *   // Use apiKey for authentication
+ * }
  */
 export function extractApiKey(req: Request): string | null {
   const authHeader = req.headers.authorization;
@@ -39,6 +57,11 @@ export function extractApiKey(req: Request): string | null {
 
 /**
  * API Key context for the current MCP session
+ * 
+ * Singleton class that maintains a mapping between session IDs and their
+ * corresponding API keys. This allows the system to store and retrieve
+ * API keys based on the session context, enabling stateful authentication
+ * across multiple requests within the same session.
  */
 export class ApiKeyContext {
   private static instance: ApiKeyContext;
@@ -56,6 +79,11 @@ export class ApiKeyContext {
   
   /**
    * Store API key for a session
+   * 
+   * Associates an API key with a specific session ID and sets it as the current session.
+   * 
+   * @param {string} sessionId - The unique identifier for the session
+   * @param {string} apiKey - The Digital Samba API key to store
    */
   public setApiKey(sessionId: string, apiKey: string): void {
     logger.debug(`Storing API key for session ${sessionId}`);
@@ -65,6 +93,11 @@ export class ApiKeyContext {
   
   /**
    * Get API key for a session
+   * 
+   * Retrieves the API key associated with the specified session ID.
+   * 
+   * @param {string} sessionId - The unique identifier for the session
+   * @returns {string|undefined} The API key if found, undefined otherwise
    */
   public getApiKey(sessionId: string): string | undefined {
     const apiKey = this.apiKeys.get(sessionId);
@@ -74,6 +107,11 @@ export class ApiKeyContext {
   
   /**
    * Remove API key for a session
+   * 
+   * Removes the API key associated with the specified session ID.
+   * If this was the current session, clears the current session reference.
+   * 
+   * @param {string} sessionId - The unique identifier for the session to remove
    */
   public removeApiKey(sessionId: string): void {
     logger.debug(`Removing API key for session ${sessionId}`);
@@ -85,6 +123,11 @@ export class ApiKeyContext {
   
   /**
    * Get the current API key (from the most recently used session)
+   * 
+   * Retrieves the API key associated with the most recently used session.
+   * This is useful when the session context is not explicitly provided.
+   * 
+   * @returns {string|undefined} The API key if a current session exists, undefined otherwise
    */
   public getCurrentApiKey(): string | undefined {
     if (!this.currentSessionId) {
@@ -102,8 +145,18 @@ const apiKeyContext = ApiKeyContext.getInstance();
 /**
  * Gets API key from MCP request context
  * 
- * This function tries to get the API key from the session context first,
- * then falls back to the global API key if available.
+ * This function attempts to retrieve an API key using a multi-tiered approach:
+ * 1. First tries to get the API key from the session context if a sessionId exists
+ * 2. Falls back to the DIGITAL_SAMBA_API_KEY environment variable if available
+ * 3. If an environment API key is found and a sessionId exists, stores the key in the session context
+ * 
+ * @param {RequestMeta & { sessionId?: string }} request - The MCP request metadata object
+ * @returns {string|null} The API key if found through any method, null otherwise
+ * @example
+ * const apiKey = getApiKeyFromRequest(request);
+ * if (!apiKey) {
+ *   throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
+ * }
  */
 export function getApiKeyFromRequest(request: RequestMeta & { sessionId?: string }): string | null {
   // Try to get from session context
