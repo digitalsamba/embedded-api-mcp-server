@@ -146,6 +146,10 @@ console.log('Join URL:', token.link);
 
 The Digital Samba MCP Server provides the following functionality:
 
+### Performance Optimization
+- **Rate Limiting**: Configurable API request rate limiting to prevent abuse and ensure fair usage
+- **Response Caching**: Memory-based caching of API responses for improved performance
+
 ### Room Management
 - List, create, update, and delete rooms
 - Generate room tokens for participant access
@@ -191,6 +195,10 @@ The `createServer` and `startServer` functions accept the following options:
 | `webhookSecret` | string | Secret for webhook verification | undefined |
 | `webhookEndpoint` | string | Webhook endpoint path | /webhooks/digitalsamba |
 | `publicUrl` | string | Public URL for the server | http://localhost:{port} |
+| `enableRateLimiting` | boolean | Enable API request rate limiting | false |
+| `rateLimitRequestsPerMinute` | number | Maximum requests per minute per API key | 60 |
+| `enableCache` | boolean | Enable API response caching | false |
+| `cacheTtl` | number | Cache Time-To-Live in milliseconds | 300000 (5 minutes) |
 
 ### API Client Options
 
@@ -253,6 +261,24 @@ webhookService.on('room.created', async (payload) => {
 
 webhookService.on('participant.joined', async (payload) => {
   console.log('Participant joined:', payload.data.name);
+});
+```
+
+### Advanced Configuration with Rate Limiting and Caching
+
+```javascript
+import { startServer } from 'digital-samba-mcp';
+
+// Start the server with advanced configuration
+const server = startServer({
+  port: 4000,
+  apiUrl: 'https://api.digitalsamba.com/api/v1',
+  // Enable rate limiting
+  enableRateLimiting: true,
+  rateLimitRequestsPerMinute: 60, // 60 requests per minute per API key
+  // Enable response caching
+  enableCache: true,
+  cacheTtl: 60000, // Cache responses for 1 minute
 });
 ```
 
