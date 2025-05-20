@@ -87,8 +87,8 @@ type WebhookEventHandler = (payload: WebhookPayload) => Promise<void>;
  * 
  * // Register an event handler
  * webhookService.on(WebhookEventType.RECORDING_READY, async (payload) => {
- *   console.log('Recording is ready:', payload.data.id);
- * });
+*   logger.info('Recording is ready:', payload.data.id);
+* });
  * 
  * // Register the webhook endpoint with Express
  * webhookService.registerWebhookEndpoint(app);
@@ -280,9 +280,9 @@ export class WebhookService {
    * @returns {void}
    * @example
    * webhookService.on(WebhookEventType.RECORDING_READY, async (payload) => {
-   *   console.log(`Recording ${payload.data.id} is ready for viewing`);
-   *   // Custom logic for when a recording is ready
-   * });
+*   logger.info(`Recording ${payload.data.id} is ready for viewing`);
+*   // Custom logic for when a recording is ready
+* });
    */
   public on(event: WebhookEventType, handler: WebhookEventHandler): void {
     const handlers = this.eventHandlers.get(event) || [];
