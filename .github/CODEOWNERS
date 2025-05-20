@@ -1,0 +1,16 @@
+# These owners will be the default owners for everything in the repo.
+# Unless a later match takes precedence, they will be requested for
+# review when someone opens a pull request.
+* @digital-samba/developers
+
+# Order is important; the last matching pattern takes the most precedence.
+
+# Core server files
+/src/ @digital-samba/developers
+/bin/ @digital-samba/developers
+
+# Documentation
+/docs/ @digital-samba/documentation-team @digital-samba/developers
+
+# CI/CD and GitHub workflows
+/.github/ @digital-samba/devops
