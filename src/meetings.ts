@@ -1277,47 +1277,40 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
       min_options: z.number().min(1).max(10).default(3)
     },
     async (params, request) => {
-      const { 
-        participants, 
-        duration_minutes, 
-        start_date, 
-        end_date, 
-        timezone,
-        working_hours_start,
-        working_hours_end,
-        min_options
-      } = params;
-      
-      if (!participants || participants.length === 0) {
-        return {
-          content: [{ type: 'text', text: 'At least one participant email is required.' }],
-          isError: true,
-        };
-      }
-      
-      logger.info('Finding available meeting times', { 
-        participantCount: participants.length,
-        duration_minutes
-      });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      // Create API client
-      logger.debug('Creating API client using context API key');
-      
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
-      
       try {
+        const { 
+          participants, 
+          duration_minutes, 
+          start_date, 
+          end_date, 
+          timezone,
+          working_hours_start,
+          working_hours_end,
+          min_options
+        } = params;
+        
+        if (!participants || participants.length === 0) {
+          throw new ValidationError('At least one participant email is required', {
+            validationErrors: { participants: 'At least one participant email is required' }
+          });
+        }
+        
+        logger.info('Finding available meeting times', { 
+          participantCount: participants.length,
+          duration_minutes
+        });
+        
+        // Get API key from session context
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          throw new AuthenticationError('No API key found. Please include an Authorization header with a Bearer token.');
+        }
+        
+        // Create API client
+        logger.debug('Creating API client using context API key');
+        
+        const client = new DigitalSambaApiClient(undefined, apiUrl);
+        
         // Find available times
         const availableTimes = await client.findAvailableMeetingTimes({
           participants,
@@ -1365,14 +1358,37 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        let errorResponse: { text: string, isError: boolean } = {
+          text: `Error finding available meeting times: ${error instanceof Error ? error.message : String(error)}`,
+          isError: true
+        };
+        
+        // Customize error response based on error type
+        if (error instanceof AuthenticationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ValidationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ApiResponseError) {
+          // Handle specific status codes with user-friendly messages
+          if (error.statusCode === 404) {
+            errorResponse.text = `Resource not found: ${error.apiErrorMessage}`;
+          } else if (error.statusCode === 403) {
+            errorResponse.text = `Authentication error: Insufficient permissions to find available meeting times`;
+          } else if (error.statusCode === 400) {
+            errorResponse.text = `Validation error: ${error.apiErrorMessage}`;
+          } else {
+            errorResponse.text = `API error (${error.statusCode}): ${error.apiErrorMessage}`;
+          }
+        }
+        
         return {
           content: [
             {
               type: 'text',
-              text: `Error finding available meeting times: ${error instanceof Error ? error.message : String(error)}`,
+              text: errorResponse.text,
             },
           ],
-          isError: true,
+          isError: errorResponse.isError,
         };
       }
     }
@@ -1388,35 +1404,34 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
       role: z.string().optional()
     },
     async (params, request) => {
-      const { meeting_id, participant_name, participant_email, role } = params;
-      
-      if (!meeting_id) {
-        return {
-          content: [{ type: 'text', text: 'Meeting ID is required.' }],
-          isError: true,
-        };
-      }
-      
-      logger.info('Generating meeting join link', { meeting_id, participant_name });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      // Create API client
-      logger.debug('Creating API client using context API key');
-      
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
-      
       try {
+        const { meeting_id, participant_name, participant_email, role } = params;
+        
+        if (!meeting_id) {
+          throw new ValidationError('Meeting ID is required', {
+            validationErrors: { meeting_id: 'Meeting ID cannot be empty' }
+          });
+        }
+        
+        if (!participant_name) {
+          throw new ValidationError('Participant name is required', {
+            validationErrors: { participant_name: 'Participant name cannot be empty' }
+          });
+        }
+        
+        logger.info('Generating meeting join link', { meeting_id, participant_name });
+        
+        // Get API key from session context
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          throw new AuthenticationError('No API key found. Please include an Authorization header with a Bearer token.');
+        }
+        
+        // Create API client
+        logger.debug('Creating API client using context API key');
+        
+        const client = new DigitalSambaApiClient(undefined, apiUrl);
+        
         // Get the meeting details to find the room_id
         const meeting = await client.getScheduledMeeting(meeting_id);
         
@@ -1439,18 +1454,41 @@ export function setupMeetingSchedulingFunctionality(server: McpServer, apiUrl: s
         };
       } catch (error) {
         logger.error('Error generating meeting join link', { 
-          meeting_id,
+          meeting_id: params.meeting_id,
           error: error instanceof Error ? error.message : String(error) 
         });
+        
+        let errorResponse: { text: string, isError: boolean } = {
+          text: `Error generating meeting join link: ${error instanceof Error ? error.message : String(error)}`,
+          isError: true
+        };
+        
+        // Customize error response based on error type
+        if (error instanceof AuthenticationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ValidationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ResourceNotFoundError) {
+          errorResponse.text = `Meeting with ID ${error.resourceId} not found`;
+        } else if (error instanceof ApiResponseError) {
+          // Handle specific status codes with user-friendly messages
+          if (error.statusCode === 404) {
+            errorResponse.text = `Meeting not found: ${error.apiErrorMessage}`;
+          } else if (error.statusCode === 403) {
+            errorResponse.text = `Authentication error: Insufficient permissions to generate meeting join link`;
+          } else {
+            errorResponse.text = `API error (${error.statusCode}): ${error.apiErrorMessage}`;
+          }
+        }
         
         return {
           content: [
             {
               type: 'text',
-              text: `Error generating meeting join link: ${error instanceof Error ? error.message : String(error)}`,
+              text: errorResponse.text,
             },
           ],
-          isError: true,
+          isError: errorResponse.isError,
         };
       }
     }
