@@ -13,10 +13,12 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 // Local modules
 import apiKeyContext, { extractApiKey, getApiKeyFromRequest } from './auth.js';
 import { setupBreakoutRoomsFunctionality } from './breakout-rooms.js';
+import { MemoryCache } from './cache.js';
 import { DigitalSambaApiClient } from './digital-samba-api.js';
 import logger from './logger.js';
 import { setupMeetingSchedulingFunctionality } from './meetings.js';
 import { setupModerationFunctionality } from './moderation.js';
+import { createApiKeyRateLimiter } from './rate-limiter.js';
 import { setupRecordingFunctionality } from './recordings.js';
 import WebhookService, { setupWebhookTools } from './webhooks.js';
 
@@ -27,6 +29,10 @@ export interface ServerOptions {
   webhookSecret?: string;
   webhookEndpoint?: string;
   publicUrl?: string;
+  enableRateLimiting?: boolean;
+  rateLimitRequestsPerMinute?: number;
+  enableCache?: boolean;
+  cacheTtl?: number;
 }
 
 // Create and configure the MCP server
@@ -37,12 +43,27 @@ export function createServer(options?: ServerOptions) {
   const WEBHOOK_SECRET = options?.webhookSecret || process.env.WEBHOOK_SECRET;
   const WEBHOOK_ENDPOINT = options?.webhookEndpoint || process.env.WEBHOOK_ENDPOINT || '/webhooks/digitalsamba';
   const PUBLIC_URL = options?.publicUrl || process.env.PUBLIC_URL || `http://localhost:${PORT}`;
+  const ENABLE_RATE_LIMITING = options?.enableRateLimiting !== undefined ? options.enableRateLimiting : process.env.ENABLE_RATE_LIMITING === 'true';
+  const RATE_LIMIT_REQUESTS_PER_MINUTE = options?.rateLimitRequestsPerMinute || (process.env.RATE_LIMIT_REQUESTS_PER_MINUTE ? parseInt(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE) : 60);
+  const ENABLE_CACHE = options?.enableCache !== undefined ? options.enableCache : process.env.ENABLE_CACHE === 'true';
+  const CACHE_TTL = options?.cacheTtl || (process.env.CACHE_TTL ? parseInt(process.env.CACHE_TTL) : 5 * 60 * 1000); // 5 minutes default
 
   // Create the MCP server
   const server = new McpServer({
     name: 'Digital Samba MCP Server',
     version: '0.1.0',
   });
+  
+  // Initialize cache if enabled
+  let apiCache: MemoryCache | undefined;
+  if (ENABLE_CACHE) {
+    logger.info('Initializing API response cache', { cacheTtl: CACHE_TTL });
+    apiCache = new MemoryCache({
+      ttl: CACHE_TTL,
+      maxItems: 1000,
+      useEtag: true
+    });
+  }
 
   // Create webhook service
   const webhookService = new WebhookService(server, {
@@ -85,7 +106,7 @@ export function createServer(options?: ServerOptions) {
       // Create API client
       logger.debug('Creating API client using context API key');
       
-      const client = new DigitalSambaApiClient(undefined, API_URL);
+      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
       
       try {
         // Get rooms from API
@@ -177,7 +198,7 @@ export function createServer(options?: ServerOptions) {
         apiUrl: API_URL
       });
       
-      const client = new DigitalSambaApiClient(apiKey, API_URL);
+      const client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
       
       try {
         // Get participants from API
@@ -242,7 +263,7 @@ export function createServer(options?: ServerOptions) {
         apiUrl: API_URL
       });
       
-      const client = new DigitalSambaApiClient(apiKey, API_URL);
+      const client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
       
       try {
         // Create room settings object
@@ -320,7 +341,7 @@ export function createServer(options?: ServerOptions) {
         apiUrl: API_URL
       });
       
-      const client = new DigitalSambaApiClient(apiKey, API_URL);
+      const client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
       
       try {
         // Generate token options
@@ -406,7 +427,7 @@ export function createServer(options?: ServerOptions) {
         apiUrl: API_URL
       });
       
-      const client = new DigitalSambaApiClient(apiKey, API_URL);
+      const client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
       
       try {
         // Create room settings object
@@ -485,7 +506,7 @@ export function createServer(options?: ServerOptions) {
         apiUrl: API_URL
       });
       
-      const client = new DigitalSambaApiClient(apiKey, API_URL);
+      const client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
       
       try {
         // Delete room
@@ -519,7 +540,14 @@ export function createServer(options?: ServerOptions) {
     }
   );
 
-  return { server, port: PORT, apiUrl: API_URL, webhookEndpoint: WEBHOOK_ENDPOINT, publicUrl: PUBLIC_URL };
+  return { 
+    server, 
+    port: PORT, 
+    apiUrl: API_URL, 
+    webhookEndpoint: WEBHOOK_ENDPOINT, 
+    publicUrl: PUBLIC_URL,
+    cache: apiCache
+  };
 }
 
 // Start a server with the provided options
@@ -529,10 +557,20 @@ export function startServer(options?: ServerOptions) {
   app.use(express.json());
 
   // Create the MCP server
-  const { server, port, apiUrl, webhookEndpoint, publicUrl } = createServer(options);
+  const { server, port, apiUrl, webhookEndpoint, publicUrl, cache } = createServer(options);
 
   // Map to store transports by session ID
   const transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
+  
+  // Add rate limiting middleware if enabled
+  if (ENABLE_RATE_LIMITING) {
+    logger.info('Enabling rate limiting', { requestsPerMinute: RATE_LIMIT_REQUESTS_PER_MINUTE });
+    app.use('/mcp', createApiKeyRateLimiter({
+      maxRequests: RATE_LIMIT_REQUESTS_PER_MINUTE,
+      windowMs: 60 * 1000, // 1 minute
+      message: 'Too many requests from this API key, please try again later.'
+    }));
+  }
 
   // Handle POST requests for client-to-server communication
   app.post('/mcp', async (req, res) => {

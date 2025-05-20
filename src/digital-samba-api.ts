@@ -463,6 +463,7 @@ export interface LibraryFile {
  */
 export class DigitalSambaApiClient {
   private apiBaseUrl: string;
+  private cache?: MemoryCache;
   
   /**
    * Creates an instance of the Digital Samba API Client
@@ -478,13 +479,14 @@ export class DigitalSambaApiClient {
    * // Create a client with a custom API URL
    * const customClient = new DigitalSambaApiClient('your-api-key', 'https://custom-api.example.com/v1');
    */
-  constructor(apiKey?: string, apiBaseUrl: string = 'https://api.digitalsamba.com/api/v1') {
+  constructor(apiKey?: string, apiBaseUrl: string = 'https://api.digitalsamba.com/api/v1', cache?: MemoryCache) {
     // Store the API key in ApiKeyContext if provided
     if (apiKey) {
       // For direct usage outside of MCP context
       this._apiKey = apiKey;
     }
     this.apiBaseUrl = apiBaseUrl;
+    this.cache = cache;
   }
   
   // Private field for storing API key when used outside MCP context
@@ -542,6 +544,21 @@ export class DigitalSambaApiClient {
    */
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.apiBaseUrl}${endpoint}`;
+    const method = options.method || 'GET';
+    const isCacheable = this.cache && method === 'GET';
+    
+    // Generate a cache key based on endpoint and API key (to avoid cross-client leakage)
+    const cacheNamespace = 'api';
+    const cacheKey = endpoint;
+    
+    // Check cache first for GET requests
+    if (isCacheable) {
+      const cachedResponse = this.cache.get(cacheNamespace, cacheKey);
+      if (cachedResponse) {
+        logger.debug(`Cache hit for ${endpoint}`);
+        return cachedResponse.value as T;
+      }
+    }
     
     try {
       const apiKey = this.getApiKey();
@@ -554,8 +571,9 @@ export class DigitalSambaApiClient {
       
       // Log the request details (excluding sensitive info)
       logger.debug(`Making API request to: ${url}`, {
-        method: options.method || 'GET',
-        headers: { ...headers, Authorization: '[REDACTED]' }
+        method,
+        headers: { ...headers, Authorization: '[REDACTED]' },
+        cacheStatus: isCacheable ? 'miss' : 'disabled'
       });
       
       let response;
@@ -568,7 +586,7 @@ export class DigitalSambaApiClient {
         // Handle network errors
         logger.error('Network error in API request', {
           url,
-          method: options.method || 'GET',
+          method,
           error: error instanceof Error ? error.message : String(error)
         });
         
@@ -650,6 +668,12 @@ export class DigitalSambaApiClient {
         responseData.map = function<U>(callback: (value: any, index: number, array: any[]) => U): U[] {
           return this.data.map(callback);
         };
+      }
+      
+      // Store successful GET responses in cache
+      if (isCacheable) {
+        logger.debug(`Caching response for ${endpoint}`);
+        this.cache!.set(cacheNamespace, cacheKey, responseData);
       }
       
       return responseData;
@@ -753,6 +777,11 @@ export class DigitalSambaApiClient {
    * Delete a room
    */
   async deleteRoom(roomId: string, options?: { delete_resources?: boolean }): Promise<void> {
+    // Invalidate cache when deleting resources
+    if (this.cache) {
+      this.cache.invalidateNamespace('api');
+    }
+    
     await this.request<void>(`/rooms/${roomId}`, {
       method: 'DELETE',
       body: options ? JSON.stringify(options) : undefined
@@ -2164,6 +2193,11 @@ export class DigitalSambaApiClient {
    * Delete a breakout room
    */
   async deleteBreakoutRoom(roomId: string, breakoutRoomId: string): Promise<void> {
+    // Invalidate cache when deleting resources
+    if (this.cache) {
+      this.cache.invalidateNamespace('api');
+    }
+    
     await this.request<void>(`/rooms/${roomId}/breakout-rooms/${breakoutRoomId}`, {
       method: 'DELETE'
     });
@@ -2173,6 +2207,11 @@ export class DigitalSambaApiClient {
    * Delete all breakout rooms
    */
   async deleteAllBreakoutRooms(roomId: string): Promise<void> {
+    // Invalidate cache when deleting resources
+    if (this.cache) {
+      this.cache.invalidateNamespace('api');
+    }
+    
     await this.request<void>(`/rooms/${roomId}/breakout-rooms`, {
       method: 'DELETE'
     });
