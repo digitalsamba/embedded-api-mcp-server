@@ -1,16 +1,48 @@
 /**
  * Digital Samba MCP Server - Recording Functionality
  * 
- * This module implements resources and tools for managing room recordings.
+ * This module implements resources and tools for managing Digital Samba room recordings.
+ * It provides capabilities for listing, retrieving, creating, and managing recordings
+ * through the MCP interface, exposing the Digital Samba recording API to MCP clients.
+ * 
+ * Features include:
+ * - Listing all recordings (standard and archived)
+ * - Retrieving specific recording details
+ * - Starting and stopping recordings
+ * - Generating download links
+ * - Archiving and unarchiving recordings
+ * - Deleting recordings
+ * 
+ * @module recordings
+ * @author Digital Samba Team
+ * @version 0.1.0
  */
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { DigitalSambaApiClient } from './digital-samba-api.js';
 import logger from './logger.js';
 import { getApiKeyFromRequest } from './auth.js';
+import { 
+  AuthenticationError,
+  ApiResponseError,
+  ResourceNotFoundError, 
+  ValidationError
+} from './errors.js';
 
 /**
  * Set up recording resources and tools for the MCP server
+ * 
+ * This function registers all recording-related resources and tools with the MCP server.
+ * It creates resources for listing and retrieving recordings, as well as tools for
+ * managing recording operations.
+ * 
+ * @param {McpServer} server - The MCP server instance
+ * @param {string} apiUrl - Base URL for the Digital Samba API
+ * @returns {void}
+ * 
+ * @example
+ * // Register recording functionality with the MCP server
+ * setupRecordingFunctionality(mcpServer, 'https://api.digitalsamba.com/api/v1');
  */
 export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
   // -------------------------------------------------------------------
@@ -27,12 +59,11 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       // Get API key from session context
       const apiKey = getApiKeyFromRequest(request);
       if (!apiKey) {
-        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
+        throw new AuthenticationError('No API key found. Please include an Authorization header with a Bearer token.');
       }
       
       // Create API client
       logger.debug('Creating API client using context API key');
-      
       const client = new DigitalSambaApiClient(undefined, apiUrl);
       
       try {
@@ -50,6 +81,21 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
         return { contents };
       } catch (error) {
         logger.error('Error fetching recordings', { error: error instanceof Error ? error.message : String(error) });
+        
+        // Handle specific error types
+        if (error instanceof Error) {
+          // Handle authentication errors
+          if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            throw new AuthenticationError('Authentication failed. Please check your API key.');
+          }
+          
+          // Rethrow the original error with more context if it's not a specific case
+          throw new ApiResponseError(`Failed to fetch recordings`, {
+            statusCode: error.message.includes('404') ? 404 : 500,
+            apiErrorMessage: error.message
+          });
+        }
+        
         throw error;
       }
     }
@@ -63,7 +109,9 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       const { recordingId } = params;
       
       if (!recordingId) {
-        throw new Error('Recording ID is required.');
+        throw new ValidationError('Recording ID is required.', {
+          validationErrors: { recordingId: 'This field is required' }
+        });
       }
       
       logger.info('Getting recording details', { recordingId });
@@ -71,12 +119,11 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       // Get API key from session context
       const apiKey = getApiKeyFromRequest(request);
       if (!apiKey) {
-        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
+        throw new AuthenticationError('No API key found. Please include an Authorization header with a Bearer token.');
       }
       
       // Create API client
       logger.debug('Creating API client using context API key');
-      
       const client = new DigitalSambaApiClient(undefined, apiUrl);
       
       try {
@@ -95,6 +142,29 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
           recordingId, 
           error: error instanceof Error ? error.message : String(error) 
         });
+        
+        // Handle specific error types
+        if (error instanceof Error) {
+          // Handle 404 errors specifically for better user experience
+          if (error.message.includes('404') || error.message.includes('not found')) {
+            throw new ResourceNotFoundError(`Recording with ID ${recordingId} not found`, {
+              resourceId: recordingId as string,
+              resourceType: 'recording'
+            });
+          }
+          
+          // Handle authentication errors
+          if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            throw new AuthenticationError('Authentication failed. Please check your API key.');
+          }
+          
+          // Rethrow the original error with more context if it's not a specific case
+          throw new ApiResponseError(`Failed to fetch recording details`, {
+            statusCode: error.message.includes('404') ? 404 : 500,
+            apiErrorMessage: error.message
+          });
+        }
+        
         throw error;
       }
     }
@@ -108,7 +178,9 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       const { roomId } = params;
       
       if (!roomId) {
-        throw new Error('Room ID is required.');
+        throw new ValidationError('Room ID is required.', {
+          validationErrors: { roomId: 'This field is required' }
+        });
       }
       
       logger.info('Listing recordings for room', { roomId });
@@ -116,12 +188,11 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       // Get API key from session context
       const apiKey = getApiKeyFromRequest(request);
       if (!apiKey) {
-        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
+        throw new AuthenticationError('No API key found. Please include an Authorization header with a Bearer token.');
       }
       
       // Create API client
       logger.debug('Creating API client using context API key');
-      
       const client = new DigitalSambaApiClient(undefined, apiUrl);
       
       try {
@@ -142,6 +213,29 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
           roomId, 
           error: error instanceof Error ? error.message : String(error) 
         });
+        
+        // Handle specific error types
+        if (error instanceof Error) {
+          // Handle 404 errors specifically for better user experience
+          if (error.message.includes('404') || error.message.includes('not found')) {
+            throw new ResourceNotFoundError(`Room with ID ${roomId} not found`, {
+              resourceId: roomId as string,
+              resourceType: 'room'
+            });
+          }
+          
+          // Handle authentication errors
+          if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            throw new AuthenticationError('Authentication failed. Please check your API key.');
+          }
+          
+          // Rethrow the original error with more context if it's not a specific case
+          throw new ApiResponseError(`Failed to fetch recordings for room ${roomId}`, {
+            statusCode: error.message.includes('404') ? 404 : 500,
+            apiErrorMessage: error.message
+          });
+        }
+        
         throw error;
       }
     }
@@ -157,12 +251,11 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       // Get API key from session context
       const apiKey = getApiKeyFromRequest(request);
       if (!apiKey) {
-        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
+        throw new AuthenticationError('No API key found. Please include an Authorization header with a Bearer token.');
       }
       
       // Create API client
       logger.debug('Creating API client using context API key');
-      
       const client = new DigitalSambaApiClient(undefined, apiUrl);
       
       try {
@@ -182,6 +275,21 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
         logger.error('Error fetching archived recordings', { 
           error: error instanceof Error ? error.message : String(error) 
         });
+        
+        // Handle specific error types
+        if (error instanceof Error) {
+          // Handle authentication errors
+          if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            throw new AuthenticationError('Authentication failed. Please check your API key.');
+          }
+          
+          // Rethrow the original error with more context if it's not a specific case
+          throw new ApiResponseError(`Failed to fetch archived recordings`, {
+            statusCode: error.message.includes('404') ? 404 : 500,
+            apiErrorMessage: error.message
+          });
+        }
+        
         throw error;
       }
     }
@@ -224,7 +332,6 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       // Create API client
       logger.debug('Creating API client using context API key');
-      
       const client = new DigitalSambaApiClient(undefined, apiUrl);
       
       try {
@@ -291,13 +398,37 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        // Format error message based on error type
+        let errorMessage = 'Error retrieving recordings. Please try again.';
+        
+        if (error instanceof Error) {
+          // Handle 404 errors specifically for better user experience
+          if (error.message.includes('404') || error.message.includes('not found')) {
+            if (roomId) {
+              errorMessage = `Room with ID ${roomId} not found.`;
+            } else {
+              errorMessage = `Requested resource not found.`;
+            }
+          }
+          
+          // Handle authentication errors
+          else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            errorMessage = 'Authentication failed. Please check your API key.';
+          }
+          
+          // Handle permission errors
+          else if (error.message.includes('403') || error.message.includes('forbidden')) {
+            errorMessage = 'You do not have permission to access these recordings.';
+          }
+          
+          // Use the original error message for any other cases
+          else {
+            errorMessage = `Error retrieving recordings: ${error.message}`;
+          }
+        }
+        
         return {
-          content: [
-            {
-              type: 'text',
-              text: `Error retrieving recordings: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
+          content: [{ type: 'text', text: errorMessage }],
           isError: true,
         };
       }
@@ -315,7 +446,10 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       if (!roomId) {
         return {
-          content: [{ type: 'text', text: 'Room ID is required.' }],
+          content: [{ 
+            type: 'text', 
+            text: 'Room ID is required.' 
+          }],
           isError: true,
         };
       }
@@ -336,7 +470,6 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       // Create API client
       logger.debug('Creating API client using context API key');
-      
       const client = new DigitalSambaApiClient(undefined, apiUrl);
       
       try {
@@ -358,13 +491,39 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        // Format error message based on error type
+        let errorMessage = 'Error starting recording. Please try again.';
+        
+        if (error instanceof Error) {
+          // Handle 404 errors specifically for better user experience
+          if (error.message.includes('404') || error.message.includes('not found')) {
+            errorMessage = `Room with ID ${roomId} not found.`;
+          }
+          
+          // Handle authentication errors
+          else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            errorMessage = 'Authentication failed. Please check your API key.';
+          }
+          
+          // Handle permission errors
+          else if (error.message.includes('403') || error.message.includes('forbidden')) {
+            errorMessage = 'You do not have permission to start recordings in this room.';
+          }
+          
+          // Handle already recording errors
+          else if (error.message.toLowerCase().includes('already recording') || 
+                   error.message.toLowerCase().includes('recording in progress')) {
+            errorMessage = `A recording is already in progress for room ${roomId}.`;
+          }
+          
+          // Use the original error message for any other cases
+          else {
+            errorMessage = `Error starting recording: ${error.message}`;
+          }
+        }
+        
         return {
-          content: [
-            {
-              type: 'text',
-              text: `Error starting recording: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
+          content: [{ type: 'text', text: errorMessage }],
           isError: true,
         };
       }
@@ -382,7 +541,10 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       if (!roomId) {
         return {
-          content: [{ type: 'text', text: 'Room ID is required.' }],
+          content: [{ 
+            type: 'text', 
+            text: 'Room ID is required.' 
+          }],
           isError: true,
         };
       }
@@ -403,7 +565,6 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       // Create API client
       logger.debug('Creating API client using context API key');
-      
       const client = new DigitalSambaApiClient(undefined, apiUrl);
       
       try {
@@ -425,13 +586,39 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        // Format error message based on error type
+        let errorMessage = 'Error stopping recording. Please try again.';
+        
+        if (error instanceof Error) {
+          // Handle 404 errors specifically for better user experience
+          if (error.message.includes('404') || error.message.includes('not found')) {
+            errorMessage = `Room with ID ${roomId} not found.`;
+          }
+          
+          // Handle authentication errors
+          else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            errorMessage = 'Authentication failed. Please check your API key.';
+          }
+          
+          // Handle permission errors
+          else if (error.message.includes('403') || error.message.includes('forbidden')) {
+            errorMessage = 'You do not have permission to stop recordings in this room.';
+          }
+          
+          // Handle no active recording errors
+          else if (error.message.toLowerCase().includes('no recording') || 
+                   error.message.toLowerCase().includes('not recording')) {
+            errorMessage = `There is no active recording in room ${roomId} to stop.`;
+          }
+          
+          // Use the original error message for any other cases
+          else {
+            errorMessage = `Error stopping recording: ${error.message}`;
+          }
+        }
+        
         return {
-          content: [
-            {
-              type: 'text',
-              text: `Error stopping recording: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
+          content: [{ type: 'text', text: errorMessage }],
           isError: true,
         };
       }
@@ -449,7 +636,10 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       if (!recordingId) {
         return {
-          content: [{ type: 'text', text: 'Recording ID is required.' }],
+          content: [{ 
+            type: 'text', 
+            text: 'Recording ID is required.' 
+          }],
           isError: true,
         };
       }
@@ -470,7 +660,6 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       // Create API client
       logger.debug('Creating API client using context API key');
-      
       const client = new DigitalSambaApiClient(undefined, apiUrl);
       
       try {
@@ -492,13 +681,33 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        // Format error message based on error type
+        let errorMessage = 'Error deleting recording. Please try again.';
+        
+        if (error instanceof Error) {
+          // Handle 404 errors specifically for better user experience
+          if (error.message.includes('404') || error.message.includes('not found')) {
+            errorMessage = `Recording with ID ${recordingId} not found.`;
+          }
+          
+          // Handle authentication errors
+          else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            errorMessage = 'Authentication failed. Please check your API key.';
+          }
+          
+          // Handle permission errors
+          else if (error.message.includes('403') || error.message.includes('forbidden')) {
+            errorMessage = 'You do not have permission to delete this recording.';
+          }
+          
+          // Use the original error message for any other cases
+          else {
+            errorMessage = `Error deleting recording: ${error.message}`;
+          }
+        }
+        
         return {
-          content: [
-            {
-              type: 'text',
-              text: `Error deleting recording: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
+          content: [{ type: 'text', text: errorMessage }],
           isError: true,
         };
       }
@@ -516,7 +725,10 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       if (!recordingId) {
         return {
-          content: [{ type: 'text', text: 'Recording ID is required.' }],
+          content: [{ 
+            type: 'text', 
+            text: 'Recording ID is required.' 
+          }],
           isError: true,
         };
       }
@@ -537,7 +749,6 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       // Create API client
       logger.debug('Creating API client using context API key');
-      
       const client = new DigitalSambaApiClient(undefined, apiUrl);
       
       try {
@@ -592,13 +803,33 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        // Format error message based on error type
+        let errorMessage = 'Error getting recording details. Please try again.';
+        
+        if (error instanceof Error) {
+          // Handle 404 errors specifically for better user experience
+          if (error.message.includes('404') || error.message.includes('not found')) {
+            errorMessage = `Recording with ID ${recordingId} not found.`;
+          }
+          
+          // Handle authentication errors
+          else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            errorMessage = 'Authentication failed. Please check your API key.';
+          }
+          
+          // Handle permission errors
+          else if (error.message.includes('403') || error.message.includes('forbidden')) {
+            errorMessage = 'You do not have permission to view this recording.';
+          }
+          
+          // Use the original error message for any other cases
+          else {
+            errorMessage = `Error getting recording details: ${error.message}`;
+          }
+        }
+        
         return {
-          content: [
-            {
-              type: 'text',
-              text: `Error getting recording details: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
+          content: [{ type: 'text', text: errorMessage }],
           isError: true,
         };
       }
@@ -617,7 +848,10 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       if (!recordingId) {
         return {
-          content: [{ type: 'text', text: 'Recording ID is required.' }],
+          content: [{ 
+            type: 'text', 
+            text: 'Recording ID is required.' 
+          }],
           isError: true,
         };
       }
@@ -641,7 +875,6 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       // Create API client
       logger.debug('Creating API client using context API key');
-      
       const client = new DigitalSambaApiClient(undefined, apiUrl);
       
       try {
@@ -663,13 +896,40 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        // Format error message based on error type
+        let errorMessage = 'Error generating download link. Please try again.';
+        
+        if (error instanceof Error) {
+          // Handle 404 errors specifically for better user experience
+          if (error.message.includes('404') || error.message.includes('not found')) {
+            errorMessage = `Recording with ID ${recordingId} not found.`;
+          }
+          
+          // Handle authentication errors
+          else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            errorMessage = 'Authentication failed. Please check your API key.';
+          }
+          
+          // Handle permission errors
+          else if (error.message.includes('403') || error.message.includes('forbidden')) {
+            errorMessage = 'You do not have permission to download this recording.';
+          }
+          
+          // Handle recording not ready errors
+          else if (error.message.toLowerCase().includes('not ready') || 
+                   error.message.toLowerCase().includes('in progress') ||
+                   error.message.toLowerCase().includes('pending')) {
+            errorMessage = `Recording is not ready for download yet. Current status may be 'IN_PROGRESS' or 'PENDING_CONVERSION'.`;
+          }
+          
+          // Use the original error message for any other cases
+          else {
+            errorMessage = `Error generating download link: ${error.message}`;
+          }
+        }
+        
         return {
-          content: [
-            {
-              type: 'text',
-              text: `Error generating download link: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
+          content: [{ type: 'text', text: errorMessage }],
           isError: true,
         };
       }
@@ -687,7 +947,10 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       if (!recordingId) {
         return {
-          content: [{ type: 'text', text: 'Recording ID is required.' }],
+          content: [{ 
+            type: 'text', 
+            text: 'Recording ID is required.' 
+          }],
           isError: true,
         };
       }
@@ -708,7 +971,6 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       // Create API client
       logger.debug('Creating API client using context API key');
-      
       const client = new DigitalSambaApiClient(undefined, apiUrl);
       
       try {
@@ -730,13 +992,38 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        // Format error message based on error type
+        let errorMessage = 'Error archiving recording. Please try again.';
+        
+        if (error instanceof Error) {
+          // Handle 404 errors specifically for better user experience
+          if (error.message.includes('404') || error.message.includes('not found')) {
+            errorMessage = `Recording with ID ${recordingId} not found.`;
+          }
+          
+          // Handle authentication errors
+          else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            errorMessage = 'Authentication failed. Please check your API key.';
+          }
+          
+          // Handle permission errors
+          else if (error.message.includes('403') || error.message.includes('forbidden')) {
+            errorMessage = 'You do not have permission to archive this recording.';
+          }
+          
+          // Handle already archived errors
+          else if (error.message.toLowerCase().includes('already archived')) {
+            errorMessage = `Recording ${recordingId} is already archived.`;
+          }
+          
+          // Use the original error message for any other cases
+          else {
+            errorMessage = `Error archiving recording: ${error.message}`;
+          }
+        }
+        
         return {
-          content: [
-            {
-              type: 'text',
-              text: `Error archiving recording: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
+          content: [{ type: 'text', text: errorMessage }],
           isError: true,
         };
       }
@@ -754,7 +1041,10 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       if (!recordingId) {
         return {
-          content: [{ type: 'text', text: 'Recording ID is required.' }],
+          content: [{ 
+            type: 'text', 
+            text: 'Recording ID is required.' 
+          }],
           isError: true,
         };
       }
@@ -775,7 +1065,6 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
       
       // Create API client
       logger.debug('Creating API client using context API key');
-      
       const client = new DigitalSambaApiClient(undefined, apiUrl);
       
       try {
@@ -797,13 +1086,38 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        // Format error message based on error type
+        let errorMessage = 'Error unarchiving recording. Please try again.';
+        
+        if (error instanceof Error) {
+          // Handle 404 errors specifically for better user experience
+          if (error.message.includes('404') || error.message.includes('not found')) {
+            errorMessage = `Recording with ID ${recordingId} not found in the archive.`;
+          }
+          
+          // Handle authentication errors
+          else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+            errorMessage = 'Authentication failed. Please check your API key.';
+          }
+          
+          // Handle permission errors
+          else if (error.message.includes('403') || error.message.includes('forbidden')) {
+            errorMessage = 'You do not have permission to unarchive this recording.';
+          }
+          
+          // Handle not archived errors
+          else if (error.message.toLowerCase().includes('not archived')) {
+            errorMessage = `Recording ${recordingId} is not currently archived.`;
+          }
+          
+          // Use the original error message for any other cases
+          else {
+            errorMessage = `Error unarchiving recording: ${error.message}`;
+          }
+        }
+        
         return {
-          content: [
-            {
-              type: 'text',
-              text: `Error unarchiving recording: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
+          content: [{ type: 'text', text: errorMessage }],
           isError: true,
         };
       }
