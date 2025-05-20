@@ -20,7 +20,15 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import crypto from 'crypto';
 import { DigitalSambaApiClient } from './digital-samba-api.js';
 import logger from './logger.js';
-import apiKeyContext, { getApiKeyFromRequest } from './auth.js';
+import { getApiKeyFromRequest } from './auth.js';
+import {
+  AuthenticationError,
+  ApiRequestError,
+  ApiResponseError,
+  ResourceNotFoundError,
+  ValidationError,
+  ConfigurationError
+} from './errors.js';
 
 // Define webhook event types
 export enum WebhookEventType {
@@ -155,14 +163,16 @@ export class WebhookService {
       if (this.config.secret) {
         const signature = req.headers['x-digitalsamba-signature'] as string;
         if (!signature) {
-          logger.warn('Missing webhook signature');
-          res.status(401).json({ error: 'Missing webhook signature' });
+          const error = new AuthenticationError('Missing webhook signature');
+          logger.warn(error.message);
+          res.status(401).json({ error: error.message });
           return;
         }
         
         if (!this.verifySignature(req, signature)) {
-          logger.warn('Invalid webhook signature');
-          res.status(401).json({ error: 'Invalid webhook signature' });
+          const error = new AuthenticationError('Invalid webhook signature');
+          logger.warn(error.message);
+          res.status(401).json({ error: error.message });
           return;
         }
       }
@@ -170,8 +180,16 @@ export class WebhookService {
       // Parse webhook payload
       const payload = req.body as WebhookPayload;
       if (!payload || !payload.event) {
-        logger.warn('Invalid webhook payload', { payload });
-        res.status(400).json({ error: 'Invalid webhook payload' });
+        const error = new ValidationError('Invalid webhook payload', {
+          validationErrors: {
+            'payload': 'Webhook payload must contain an event property'
+          }
+        });
+        logger.warn(error.message, { payload });
+        res.status(400).json({ 
+          error: error.message,
+          details: error.validationErrors
+        });
         return;
       }
       
@@ -191,9 +209,35 @@ export class WebhookService {
         stack: error instanceof Error ? error.stack : undefined
       });
       
-      // Respond with error
+      // Respond with appropriate status code based on error type
       if (!res.headersSent) {
-        res.status(500).json({ error: 'Internal server error' });
+        if (error instanceof AuthenticationError) {
+          res.status(401).json({ error: error.message });
+        }
+        else if (error instanceof ValidationError) {
+          res.status(400).json({ 
+            error: error.message,
+            details: error.validationErrors
+          });
+        }
+        else if (error instanceof ApiResponseError) {
+          res.status(error.statusCode).json({
+            error: error.message,
+            apiError: error.apiErrorMessage,
+            details: error.apiErrorData
+          });
+        }
+        else if (error instanceof ResourceNotFoundError) {
+          res.status(404).json({
+            error: error.message,
+            resourceType: error.resourceType,
+            resourceId: error.resourceId
+          });
+        }
+        else {
+          // Default server error
+          res.status(500).json({ error: 'Internal server error' });
+        }
       }
     }
   }
@@ -237,7 +281,10 @@ export class WebhookService {
       logger.error('Error verifying webhook signature', {
         error: error instanceof Error ? error.message : String(error)
       });
-      return false;
+      
+      throw new AuthenticationError(`Error verifying webhook signature: ${error instanceof Error ? error.message : String(error)}`, {
+        cause: error instanceof Error ? error : undefined
+      });
     }
   }
   
@@ -334,11 +381,17 @@ export class WebhookService {
         }
         else {
           // No notification method found
-          logger.warn('Unable to send notification: notification method not found');
+          const error = new ConfigurationError('Unable to send notification: notification method not found');
+          logger.warn(error.message);
+          throw error;
         }
       } catch (notifyError) {
         logger.error('Error during notification send', {
           error: notifyError instanceof Error ? notifyError.message : String(notifyError)
+        });
+        
+        throw new ApiRequestError(`Failed to send notification: ${notifyError instanceof Error ? notifyError.message : String(notifyError)}`, {
+          cause: notifyError instanceof Error ? notifyError : undefined
         });
       }
       
@@ -347,6 +400,9 @@ export class WebhookService {
       logger.error('Error in notifyMcpClients', {
         error: error instanceof Error ? error.message : String(error)
       });
+      
+      // Re-throw the error to be handled by the caller
+      throw error;
     }
   }
   
@@ -469,6 +525,23 @@ export class WebhookService {
     eventTypes: WebhookEventType[] = Object.values(WebhookEventType) as WebhookEventType[]
   ): Promise<void> {
     try {
+      // Validate input parameters
+      if (!apiKey) {
+        throw new AuthenticationError('API key is required for webhook registration');
+      }
+      
+      if (!webhookUrl) {
+        throw new ValidationError('Webhook URL is required', {
+          validationErrors: { webhookUrl: 'Webhook URL cannot be empty' }
+        });
+      }
+      
+      if (!apiBaseUrl) {
+        throw new ValidationError('API base URL is required', {
+          validationErrors: { apiBaseUrl: 'API base URL cannot be empty' }
+        });
+      }
+      
       logger.info('Registering webhook with Digital Samba API', {
         webhookUrl,
         eventCount: eventTypes.length
@@ -477,33 +550,68 @@ export class WebhookService {
       // Create API client with the provided key
       const client = new DigitalSambaApiClient(apiKey, apiBaseUrl);
       
-      // Get existing webhooks
-      const webhooks = await client.listWebhooks();
-      
-      // Check if a webhook already exists for this URL
-      const existingWebhook = webhooks.data.find(webhook => webhook.endpoint === webhookUrl);
-      
-      if (existingWebhook) {
-        // Update existing webhook
-        logger.info('Updating existing webhook', { webhookId: existingWebhook.id });
+      try {
+        // Get existing webhooks
+        const webhooks = await client.listWebhooks();
         
-        await client.updateWebhook(existingWebhook.id, {
-          endpoint: webhookUrl,
-          events: eventTypes as unknown as string[],
-          name: 'MCP Server Webhook'
-        });
-      } else {
-        // Create new webhook
-        logger.info('Creating new webhook');
+        // Check if a webhook already exists for this URL
+        const existingWebhook = webhooks.data.find(webhook => webhook.endpoint === webhookUrl);
         
-        await client.createWebhook({
-          endpoint: webhookUrl,
-          events: eventTypes as unknown as string[],
-          name: 'MCP Server Webhook'
+        if (existingWebhook) {
+          // Update existing webhook
+          logger.info('Updating existing webhook', { webhookId: existingWebhook.id });
+          
+          await client.updateWebhook(existingWebhook.id, {
+            endpoint: webhookUrl,
+            events: eventTypes as unknown as string[],
+            name: 'MCP Server Webhook'
+          });
+        } else {
+          // Create new webhook
+          logger.info('Creating new webhook');
+          
+          await client.createWebhook({
+            endpoint: webhookUrl,
+            events: eventTypes as unknown as string[],
+            name: 'MCP Server Webhook'
+          });
+        }
+        
+        logger.info('Webhook registration successful');
+      } catch (error) {
+        // Handle API-specific errors
+        if (error instanceof Error) {
+          if ('statusCode' in error) {
+            const statusCode = (error as any).statusCode;
+            const errorMessage = error.message;
+            
+            if (statusCode === 401 || statusCode === 403) {
+              throw new AuthenticationError(`Authentication failed during webhook registration: ${errorMessage}`, {
+                cause: error
+              });
+            }
+            
+            if (statusCode === 404) {
+              throw new ResourceNotFoundError('Resource not found during webhook registration', {
+                resourceId: 'webhook',
+                resourceType: 'webhook',
+                cause: error
+              });
+            }
+            
+            throw new ApiResponseError(`API error during webhook registration`, {
+              statusCode,
+              apiErrorMessage: errorMessage,
+              cause: error
+            });
+          }
+        }
+        
+        // Default error handling
+        throw new ApiRequestError(`Error registering webhook: ${error instanceof Error ? error.message : String(error)}`, {
+          cause: error instanceof Error ? error : undefined
         });
       }
-      
-      logger.info('Webhook registration successful');
     } catch (error) {
       logger.error('Error registering webhook', {
         error: error instanceof Error ? error.message : String(error)
@@ -530,24 +638,85 @@ export class WebhookService {
     webhookUrl: string
   ): Promise<void> {
     try {
+      // Validate input parameters
+      if (!apiKey) {
+        throw new AuthenticationError('API key is required for webhook deletion');
+      }
+      
+      if (!webhookUrl) {
+        throw new ValidationError('Webhook URL is required', {
+          validationErrors: { webhookUrl: 'Webhook URL cannot be empty' }
+        });
+      }
+      
+      if (!apiBaseUrl) {
+        throw new ValidationError('API base URL is required', {
+          validationErrors: { apiBaseUrl: 'API base URL cannot be empty' }
+        });
+      }
+      
       logger.info('Deleting webhook from Digital Samba API', { webhookUrl });
       
       // Create API client with the provided key
       const client = new DigitalSambaApiClient(apiKey, apiBaseUrl);
       
-      // Get existing webhooks
-      const webhooks = await client.listWebhooks();
-      
-      // Find webhook for this URL
-      const existingWebhook = webhooks.data.find(webhook => webhook.endpoint === webhookUrl);
-      
-      if (existingWebhook) {
-        // Delete the webhook
-        logger.info('Deleting webhook', { webhookId: existingWebhook.id });
-        await client.deleteWebhook(existingWebhook.id);
-        logger.info('Webhook deletion successful');
-      } else {
-        logger.info('No webhook found for the specified URL');
+      try {
+        // Get existing webhooks
+        const webhooks = await client.listWebhooks();
+        
+        // Find webhook for this URL
+        const existingWebhook = webhooks.data.find(webhook => webhook.endpoint === webhookUrl);
+        
+        if (existingWebhook) {
+          // Delete the webhook
+          logger.info('Deleting webhook', { webhookId: existingWebhook.id });
+          await client.deleteWebhook(existingWebhook.id);
+          logger.info('Webhook deletion successful');
+        } else {
+          logger.info('No webhook found for the specified URL');
+          throw new ResourceNotFoundError('No webhook found for the specified URL', {
+            resourceId: webhookUrl,
+            resourceType: 'webhook'
+          });
+        }
+      } catch (error) {
+        // Handle API-specific errors
+        if (error instanceof ResourceNotFoundError) {
+          // Re-throw ResourceNotFoundError
+          throw error;
+        }
+        
+        if (error instanceof Error) {
+          if ('statusCode' in error) {
+            const statusCode = (error as any).statusCode;
+            const errorMessage = error.message;
+            
+            if (statusCode === 401 || statusCode === 403) {
+              throw new AuthenticationError(`Authentication failed during webhook deletion: ${errorMessage}`, {
+                cause: error
+              });
+            }
+            
+            if (statusCode === 404) {
+              throw new ResourceNotFoundError('Webhook not found', {
+                resourceId: webhookUrl,
+                resourceType: 'webhook',
+                cause: error
+              });
+            }
+            
+            throw new ApiResponseError(`API error during webhook deletion`, {
+              statusCode,
+              apiErrorMessage: errorMessage,
+              cause: error
+            });
+          }
+        }
+        
+        // Default error handling
+        throw new ApiRequestError(`Error deleting webhook: ${error instanceof Error ? error.message : String(error)}`, {
+          cause: error instanceof Error ? error : undefined
+        });
       }
     } catch (error) {
       logger.error('Error deleting webhook', {
@@ -594,25 +763,21 @@ export function setupWebhookTools(
       }
     },
     async (params, request) => {
-      // Get API key from the context
-      const apiKey = getApiKeyFromRequest(request);
-      const { webhookUrl, events } = params;
-      
-      if (!apiKey) {
-        return {
-          content: [{ type: 'text', text: 'API key is required for webhook registration.' }],
-          isError: true,
-        };
-      }
-      
-      if (!webhookUrl) {
-        return {
-          content: [{ type: 'text', text: 'Webhook URL is required.' }],
-          isError: true,
-        };
-      }
-      
       try {
+        // Get API key from the context
+        const apiKey = getApiKeyFromRequest(request);
+        const { webhookUrl, events } = params;
+        
+        if (!apiKey) {
+          throw new AuthenticationError('API key is required for webhook registration');
+        }
+        
+        if (!webhookUrl) {
+          throw new ValidationError('Webhook URL is required', {
+            validationErrors: { webhookUrl: 'Webhook URL cannot be empty' }
+          });
+        }
+        
         // Register the webhook
         await webhookService.registerWebhook(
           apiKey,
@@ -632,12 +797,47 @@ export function setupWebhookTools(
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        let errorResponse: { text: string, isError: boolean } = {
+          text: `Error registering webhook: ${error instanceof Error ? error.message : String(error)}`,
+          isError: true
+        };
+        
+        // Customize error response based on error type
+        if (error instanceof AuthenticationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ValidationError) {
+          errorResponse.text = error.message;
+          
+          // If we have validation errors, add them to the message
+          if (Object.keys(error.validationErrors).length > 0) {
+            errorResponse.text += '\n\nValidation errors:';
+            for (const [field, message] of Object.entries(error.validationErrors)) {
+              errorResponse.text += `\n- ${field}: ${message}`;
+            }
+          }
+        } else if (error instanceof ResourceNotFoundError) {
+          errorResponse.text = `Resource not found: ${error.resourceType} with ID ${error.resourceId} does not exist`;
+        } else if (error instanceof ApiResponseError) {
+          // Handle specific status codes with user-friendly messages
+          if (error.statusCode === 404) {
+            errorResponse.text = `Resource not found: ${error.apiErrorMessage}`;
+          } else if (error.statusCode === 403) {
+            errorResponse.text = `Authentication error: Insufficient permissions to register webhook`;
+          } else if (error.statusCode === 400) {
+            errorResponse.text = `Validation error: ${error.apiErrorMessage}`;
+          } else {
+            errorResponse.text = `API error (${error.statusCode}): ${error.apiErrorMessage}`;
+          }
+        }
+        
         return {
-          content: [{
-            type: 'text',
-            text: `Error registering webhook: ${error instanceof Error ? error.message : String(error)}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: errorResponse.text,
+            },
+          ],
+          isError: errorResponse.isError,
         };
       }
     }
@@ -653,25 +853,21 @@ export function setupWebhookTools(
       }
     },
     async (params, request) => {
-      // Get API key from the context
-      const apiKey = getApiKeyFromRequest(request);
-      const { webhookUrl } = params;
-      
-      if (!apiKey) {
-        return {
-          content: [{ type: 'text', text: 'API key is required for webhook deletion.' }],
-          isError: true,
-        };
-      }
-      
-      if (!webhookUrl) {
-        return {
-          content: [{ type: 'text', text: 'Webhook URL is required.' }],
-          isError: true,
-        };
-      }
-      
       try {
+        // Get API key from the context
+        const apiKey = getApiKeyFromRequest(request);
+        const { webhookUrl } = params;
+        
+        if (!apiKey) {
+          throw new AuthenticationError('API key is required for webhook deletion');
+        }
+        
+        if (!webhookUrl) {
+          throw new ValidationError('Webhook URL is required', {
+            validationErrors: { webhookUrl: 'Webhook URL cannot be empty' }
+          });
+        }
+        
         // Delete the webhook
         await webhookService.deleteWebhook(
           apiKey,
@@ -690,12 +886,45 @@ export function setupWebhookTools(
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        let errorResponse: { text: string, isError: boolean } = {
+          text: `Error deleting webhook: ${error instanceof Error ? error.message : String(error)}`,
+          isError: true
+        };
+        
+        // Customize error response based on error type
+        if (error instanceof AuthenticationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ValidationError) {
+          errorResponse.text = error.message;
+          
+          // If we have validation errors, add them to the message
+          if (Object.keys(error.validationErrors).length > 0) {
+            errorResponse.text += '\n\nValidation errors:';
+            for (const [field, message] of Object.entries(error.validationErrors)) {
+              errorResponse.text += `\n- ${field}: ${message}`;
+            }
+          }
+        } else if (error instanceof ResourceNotFoundError) {
+          errorResponse.text = `Webhook not found: No webhook exists at ${params.webhookUrl}`;
+        } else if (error instanceof ApiResponseError) {
+          // Handle specific status codes with user-friendly messages
+          if (error.statusCode === 404) {
+            errorResponse.text = `Webhook not found: ${error.apiErrorMessage}`;
+          } else if (error.statusCode === 403) {
+            errorResponse.text = `Authentication error: Insufficient permissions to delete webhook`;
+          } else {
+            errorResponse.text = `API error (${error.statusCode}): ${error.apiErrorMessage}`;
+          }
+        }
+        
         return {
-          content: [{
-            type: 'text',
-            text: `Error deleting webhook: ${error instanceof Error ? error.message : String(error)}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: errorResponse.text,
+            },
+          ],
+          isError: errorResponse.isError,
         };
       }
     }
@@ -706,16 +935,13 @@ export function setupWebhookTools(
     'list-webhooks',
     {},
     async (params, request) => {
-      // Get API key from the context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ type: 'text', text: 'API key is required for listing webhooks.' }],
-          isError: true,
-        };
-      }
-      
       try {
+        // Get API key from the context
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          throw new AuthenticationError('API key is required for listing webhooks');
+        }
+        
         // Create API client with the provided key
         const client = new DigitalSambaApiClient(apiKey, apiBaseUrl);
         
@@ -746,12 +972,30 @@ export function setupWebhookTools(
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        let errorResponse: { text: string, isError: boolean } = {
+          text: `Error listing webhooks: ${error instanceof Error ? error.message : String(error)}`,
+          isError: true
+        };
+        
+        // Customize error response based on error type
+        if (error instanceof AuthenticationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ApiResponseError) {
+          if (error.statusCode === 403) {
+            errorResponse.text = `Authentication error: Insufficient permissions to list webhooks`;
+          } else {
+            errorResponse.text = `API error (${error.statusCode}): ${error.apiErrorMessage}`;
+          }
+        }
+        
         return {
-          content: [{
-            type: 'text',
-            text: `Error listing webhooks: ${error instanceof Error ? error.message : String(error)}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: errorResponse.text,
+            },
+          ],
+          isError: errorResponse.isError,
         };
       }
     }
@@ -762,16 +1006,13 @@ export function setupWebhookTools(
     'list-webhook-events',
     {},
     async (params, request) => {
-      // Get API key from the context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ type: 'text', text: 'API key is required for listing webhook events.' }],
-          isError: true,
-        };
-      }
-      
       try {
+        // Get API key from the context
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          throw new AuthenticationError('API key is required for listing webhook events');
+        }
+        
         // Create API client with the provided key
         const client = new DigitalSambaApiClient(apiKey, apiBaseUrl);
         
@@ -811,12 +1052,30 @@ export function setupWebhookTools(
           error: error instanceof Error ? error.message : String(error) 
         });
         
+        let errorResponse: { text: string, isError: boolean } = {
+          text: `Error listing webhook events: ${error instanceof Error ? error.message : String(error)}`,
+          isError: true
+        };
+        
+        // Customize error response based on error type
+        if (error instanceof AuthenticationError) {
+          errorResponse.text = error.message;
+        } else if (error instanceof ApiResponseError) {
+          if (error.statusCode === 403) {
+            errorResponse.text = `Authentication error: Insufficient permissions to list webhook events`;
+          } else {
+            errorResponse.text = `API error (${error.statusCode}): ${error.apiErrorMessage}`;
+          }
+        }
+        
         return {
-          content: [{
-            type: 'text',
-            text: `Error listing webhook events: ${error instanceof Error ? error.message : String(error)}`,
-          }],
-          isError: true,
+          content: [
+            {
+              type: 'text',
+              text: errorResponse.text,
+            },
+          ],
+          isError: errorResponse.isError,
         };
       }
     }
