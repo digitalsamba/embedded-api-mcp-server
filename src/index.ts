@@ -1,17 +1,24 @@
+// Node.js built-in modules
+import { randomUUID } from 'crypto';
+import { createServer as createHttpServer } from 'http';
+
+// External dependencies
+import express from 'express';
+import { z } from 'zod';
+
+// MCP SDK imports
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import express from 'express';
-import { createServer as createHttpServer } from 'http';
-import { randomUUID } from 'crypto';
-import { z } from 'zod';
+
+// Local modules
+import apiKeyContext, { extractApiKey, getApiKeyFromRequest } from './auth.js';
+import { setupBreakoutRoomsFunctionality } from './breakout-rooms.js';
 import { DigitalSambaApiClient } from './digital-samba-api.js';
 import logger from './logger.js';
-import apiKeyContext, { extractApiKey, getApiKeyFromRequest } from './auth.js';
-import WebhookService, { setupWebhookTools } from './webhooks.js';
-import { setupRecordingFunctionality } from './recordings.js';
-import { setupModerationFunctionality } from './moderation.js';
-import { setupBreakoutRoomsFunctionality } from './breakout-rooms.js';
 import { setupMeetingSchedulingFunctionality } from './meetings.js';
+import { setupModerationFunctionality } from './moderation.js';
+import { setupRecordingFunctionality } from './recordings.js';
+import WebhookService, { setupWebhookTools } from './webhooks.js';
 
 // Type definitions for server options
 export interface ServerOptions {
