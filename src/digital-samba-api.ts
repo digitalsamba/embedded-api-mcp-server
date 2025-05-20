@@ -1,11 +1,30 @@
 /**
- * Digital Samba API Client
+ * Digital Samba API Client Module
  * 
- * A comprehensive client for the Digital Samba API.
- * Updated to use the ApiKeyContext for authorization.
+ * This module provides a comprehensive client for interacting with the Digital Samba API.
+ * It offers interfaces for all API entities and a client class that handles authentication,
+ * request processing, and provides methods for all available API endpoints.
+ * 
+ * Key features include:
+ * - Authentication using either direct API key or the ApiKeyContext for session-based auth
+ * - Comprehensive coverage of all Digital Samba API endpoints
+ * - Type-safe interfaces for request and response data
+ * - Error handling and logging
+ * - Support for pagination, filtering, and other API parameters
+ * 
+ * @module digital-samba-api
+ * @author Digital Samba Team
+ * @version 0.1.0
  */
 import apiKeyContext from './auth.js';
 import logger from './logger.js';
+import { 
+  ApiRequestError, 
+  ApiResponseError, 
+  AuthenticationError, 
+  ResourceNotFoundError,
+  ValidationError 
+} from './errors.js';
 
 // Base interfaces
 export interface PaginationParams {
@@ -250,6 +269,106 @@ export interface BreakoutRoomParticipantAssignment {
   breakout_id: string | null;
 }
 
+// Meeting scheduling related interfaces
+export interface ScheduledMeeting {
+  id: string;
+  title: string;
+  description?: string;
+  room_id: string;
+  start_time: string;
+  end_time: string;
+  timezone: string;
+  host_name: string;
+  host_email?: string;
+  participants: {
+    name: string;
+    email: string;
+    role?: string;
+  }[];
+  recurring?: boolean;
+  recurrence_pattern?: string;
+  status: 'scheduled' | 'started' | 'ended' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MeetingCreateSettings {
+  title: string;
+  description?: string;
+  room_id?: string;
+  room_settings?: {
+    name?: string;
+    privacy?: 'public' | 'private';
+    max_participants?: number;
+  };
+  start_time: string;
+  end_time: string;
+  timezone: string;
+  host_name: string;
+  host_email?: string;
+  participants?: {
+    name: string;
+    email: string;
+    role?: string;
+  }[];
+  recurring?: boolean;
+  recurrence_pattern?: string;
+  send_invitations?: boolean;
+}
+
+export interface MeetingUpdateSettings {
+  title?: string;
+  description?: string;
+  start_time?: string;
+  end_time?: string;
+  timezone?: string;
+  host_name?: string;
+  host_email?: string;
+  participants?: {
+    name: string;
+    email: string;
+    role?: string;
+  }[];
+  recurring?: boolean;
+  recurrence_pattern?: string;
+  status?: 'scheduled' | 'cancelled';
+  send_updates?: boolean;
+}
+
+export interface MeetingParticipantAddOptions {
+  participants: {
+    name: string;
+    email: string;
+    role?: string;
+  }[];
+  send_invitations?: boolean;
+}
+
+export interface MeetingParticipantRemoveOptions {
+  participant_emails: string[];
+  notify_participants?: boolean;
+}
+
+export interface MeetingReminderOptions {
+  message?: string;
+}
+
+export interface MeetingAvailabilityOptions {
+  participants: string[];
+  duration_minutes: number;
+  start_date: string;
+  end_date: string;
+  timezone: string;
+  working_hours_start?: number;
+  working_hours_end?: number;
+  min_options?: number;
+}
+
+export interface AvailableTimeSlot {
+  start_time: string;
+  end_time: string;
+}
+
 // Poll related interfaces
 export interface Poll {
   id: string;
@@ -318,10 +437,46 @@ export interface LibraryFile {
 
 /**
  * Digital Samba API Client
+ * 
+ * This class provides a comprehensive interface to the Digital Samba API. It handles
+ * authentication, request formation, response parsing, and error handling for all
+ * available API endpoints. The client supports both direct API key authentication
+ * and session-based authentication through the ApiKeyContext.
+ * 
+ * @class DigitalSambaApiClient
+ * @example
+ * // Create a client with direct API key
+ * const client = new DigitalSambaApiClient('your-api-key');
+ * 
+ * // Create a client that uses the ApiKeyContext
+ * const sessionClient = new DigitalSambaApiClient();
+ * 
+ * // List all rooms
+ * const rooms = await client.listRooms();
+ * 
+ * // Create a room
+ * const room = await client.createRoom({
+ *   name: 'New Meeting Room',
+ *   privacy: 'public'
+ * });
  */
 export class DigitalSambaApiClient {
   private apiBaseUrl: string;
   
+  /**
+   * Creates an instance of the Digital Samba API Client
+   * 
+   * @constructor
+   * @param {string} [apiKey] - Optional API key for direct authentication. If not provided,
+   *                          the client will use the ApiKeyContext for session-based authentication
+   * @param {string} [apiBaseUrl='https://api.digitalsamba.com/api/v1'] - Base URL for the Digital Samba API
+   * @example
+   * // Create a client with the default API URL
+   * const client = new DigitalSambaApiClient('your-api-key');
+   * 
+   * // Create a client with a custom API URL
+   * const customClient = new DigitalSambaApiClient('your-api-key', 'https://custom-api.example.com/v1');
+   */
   constructor(apiKey?: string, apiBaseUrl: string = 'https://api.digitalsamba.com/api/v1') {
     // Store the API key in ApiKeyContext if provided
     if (apiKey) {
@@ -336,6 +491,15 @@ export class DigitalSambaApiClient {
   
   /**
    * Get the API key from context or direct value
+   * 
+   * This method retrieves the API key using a prioritized approach:
+   * 1. First tries to get the API key from the ApiKeyContext (for session-based auth)
+   * 2. If not found, falls back to using the direct API key if provided during construction
+   * 3. If neither source provides an API key, throws an AuthenticationError
+   *
+   * @private
+   * @returns {string} The API key to use for authentication
+   * @throws {AuthenticationError} If no API key is available from any source
    */
   private getApiKey(): string {
     // Try to get API key from context first
@@ -350,11 +514,30 @@ export class DigitalSambaApiClient {
     }
     
     // No API key available
-    throw new Error('No API key found in context or provided directly. Please include an Authorization header with a Bearer token.');
+    throw new AuthenticationError('No API key found in context or provided directly. Please include an Authorization header with a Bearer token.');
   }
   
   /**
    * Make an authenticated request to the Digital Samba API
+   * 
+   * This method handles all API requests including authentication, error handling, and response parsing.
+   * It automatically adds the Authorization header with the API key, logs request details (excluding sensitive
+   * information), and processes the response. It also handles special cases like 204 No Content responses and
+   * adds array-like properties to ApiResponse objects for easier consumption.
+   *
+   * @private
+   * @template T - The expected response type
+   * @param {string} endpoint - The API endpoint path (without the base URL)
+   * @param {RequestInit} [options={}] - Request options, including method, body, and additional headers
+   * @returns {Promise<T>} A promise resolving to the parsed response data
+   * @throws {AuthenticationError} If no API key is available for authentication
+   * @throws {ApiRequestError} If a network error occurs during the request
+   * @throws {ApiResponseError} If the API returns a non-2xx status code
+   * @throws {ValidationError} If the API returns a 400 Bad Request with validation errors
+   * @throws {ResourceNotFoundError} If the API returns a 404 Not Found response
+   * @example
+   * // Example internal usage
+   * const rooms = await this.request<ApiResponse<Room>>('/rooms');
    */
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.apiBaseUrl}${endpoint}`;
@@ -374,18 +557,80 @@ export class DigitalSambaApiClient {
         headers: { ...headers, Authorization: '[REDACTED]' }
       });
       
-      const response = await fetch(url, {
-        ...options,
-        headers
-      });
+      let response;
+      try {
+        response = await fetch(url, {
+          ...options,
+          headers
+        });
+      } catch (error) {
+        // Handle network errors
+        logger.error('Network error in API request', {
+          url,
+          method: options.method || 'GET',
+          error: error instanceof Error ? error.message : String(error)
+        });
+        
+        throw new ApiRequestError(
+          `Network error while connecting to Digital Samba API: ${error instanceof Error ? error.message : String(error)}`,
+          { cause: error instanceof Error ? error : undefined }
+        );
+      }
       
       // Log response details
       logger.debug(`Response status: ${response.status} ${response.statusText}`);
       
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error(`API Error Response: ${errorText}`);
-        throw new Error(`Digital Samba API error (${response.status}): ${errorText}`);
+        logger.error(`API Error Response: ${errorText}`, {
+          status: response.status,
+          statusText: response.statusText
+        });
+        
+        // Parse error text as JSON if possible
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          // Not JSON, use as plain text
+          errorData = { message: errorText };
+        }
+        
+        // Handle specific error types based on status code
+        if (response.status === 400) {
+          // Bad Request - typically validation errors
+          const validationErrors = errorData.errors || {};
+          throw new ValidationError(
+            `Validation error: ${errorData.message || errorText}`,
+            { validationErrors: validationErrors }
+          );
+        } else if (response.status === 401 || response.status === 403) {
+          // Authentication or authorization error
+          throw new AuthenticationError(
+            `Authentication error: ${errorData.message || errorText}`
+          );
+        } else if (response.status === 404) {
+          // Not Found error
+          // Try to extract resource type and ID from the endpoint
+          const matches = endpoint.match(/\/([^\/]+)\/([^\/]+)/);
+          const resourceType = matches ? matches[1] : 'resource';
+          const resourceId = matches ? matches[2] : 'unknown';
+          
+          throw new ResourceNotFoundError(
+            `Resource not found: ${errorData.message || errorText}`,
+            { resourceType, resourceId }
+          );
+        } else {
+          // Generic API error
+          throw new ApiResponseError(
+            `Digital Samba API error (${response.status}): ${errorData.message || errorText}`,
+            {
+              statusCode: response.status,
+              apiErrorMessage: errorData.message || errorText,
+              apiErrorData: errorData
+            }
+          );
+        }
       }
       
       // Return empty object for 204 No Content responses
@@ -408,11 +653,26 @@ export class DigitalSambaApiClient {
       
       return responseData;
     } catch (error) {
-      logger.error('Error in API request', {
-        url,
-        method: options.method || 'GET',
-        error: error instanceof Error ? error.message : String(error)
-      });
+      // Catch and re-throw errors that aren't already one of our custom types
+      if (!(error instanceof AuthenticationError) && 
+          !(error instanceof ApiRequestError) && 
+          !(error instanceof ApiResponseError) &&
+          !(error instanceof ValidationError) &&
+          !(error instanceof ResourceNotFoundError)) {
+        
+        logger.error('Unexpected error in API request', {
+          url,
+          method: options.method || 'GET',
+          error: error instanceof Error ? error.message : String(error)
+        });
+        
+        throw new ApiRequestError(
+          `Unexpected error in Digital Samba API request: ${error instanceof Error ? error.message : String(error)}`,
+          { cause: error instanceof Error ? error : undefined }
+        );
+      }
+      
+      // Re-throw custom error types
       throw error;
     }
   }
@@ -1978,6 +2238,145 @@ export class DigitalSambaApiClient {
   async closeBreakoutRooms(roomId: string): Promise<void> {
     await this.request<void>(`/rooms/${roomId}/breakout-rooms/close`, {
       method: 'POST'
+    });
+  }
+  
+  // Meeting Scheduling
+  
+  /**
+   * List all scheduled meetings
+   */
+  async listScheduledMeetings(params?: PaginationParams & DateRangeParams): Promise<ApiResponse<ScheduledMeeting>> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    return this.request<ApiResponse<ScheduledMeeting>>(`/meetings${query}`);
+  }
+  
+  /**
+   * Get a specific scheduled meeting
+   */
+  async getScheduledMeeting(meetingId: string): Promise<ScheduledMeeting> {
+    return this.request<ScheduledMeeting>(`/meetings/${meetingId}`);
+  }
+  
+  /**
+   * Create a new scheduled meeting
+   */
+  async createScheduledMeeting(settings: MeetingCreateSettings): Promise<ScheduledMeeting> {
+    return this.request<ScheduledMeeting>('/meetings', {
+      method: 'POST',
+      body: JSON.stringify(settings)
+    });
+  }
+  
+  /**
+   * Update a scheduled meeting
+   */
+  async updateScheduledMeeting(meetingId: string, settings: MeetingUpdateSettings): Promise<ScheduledMeeting> {
+    return this.request<ScheduledMeeting>(`/meetings/${meetingId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(settings)
+    });
+  }
+  
+  /**
+   * Cancel a scheduled meeting
+   */
+  async cancelScheduledMeeting(meetingId: string, options?: { notify_participants?: boolean }): Promise<void> {
+    await this.request<void>(`/meetings/${meetingId}/cancel`, {
+      method: 'POST',
+      body: options ? JSON.stringify(options) : undefined
+    });
+  }
+  
+  /**
+   * Delete a scheduled meeting
+   */
+  async deleteScheduledMeeting(meetingId: string): Promise<void> {
+    await this.request<void>(`/meetings/${meetingId}`, {
+      method: 'DELETE'
+    });
+  }
+  
+  /**
+   * List upcoming meetings
+   */
+  async listUpcomingMeetings(params?: PaginationParams): Promise<ApiResponse<ScheduledMeeting>> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    return this.request<ApiResponse<ScheduledMeeting>>(`/meetings/upcoming${query}`);
+  }
+  
+  /**
+   * List meetings for a specific room
+   */
+  async listRoomMeetings(roomId: string, params?: PaginationParams & DateRangeParams): Promise<ApiResponse<ScheduledMeeting>> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    return this.request<ApiResponse<ScheduledMeeting>>(`/rooms/${roomId}/meetings${query}`);
+  }
+  
+  /**
+   * Add participants to a meeting
+   */
+  async addMeetingParticipants(meetingId: string, options: MeetingParticipantAddOptions): Promise<void> {
+    await this.request<void>(`/meetings/${meetingId}/participants`, {
+      method: 'POST',
+      body: JSON.stringify(options)
+    });
+  }
+  
+  /**
+   * Remove participants from a meeting
+   */
+  async removeMeetingParticipants(meetingId: string, options: MeetingParticipantRemoveOptions): Promise<void> {
+    await this.request<void>(`/meetings/${meetingId}/participants/remove`, {
+      method: 'POST',
+      body: JSON.stringify(options)
+    });
+  }
+  
+  /**
+   * Send meeting reminders
+   */
+  async sendMeetingReminders(meetingId: string, options?: MeetingReminderOptions): Promise<void> {
+    await this.request<void>(`/meetings/${meetingId}/reminders`, {
+      method: 'POST',
+      body: options ? JSON.stringify(options) : undefined
+    });
+  }
+  
+  /**
+   * Find available meeting times
+   */
+  async findAvailableMeetingTimes(options: MeetingAvailabilityOptions): Promise<AvailableTimeSlot[]> {
+    return this.request<AvailableTimeSlot[]>('/meetings/available-times', {
+      method: 'POST',
+      body: JSON.stringify(options)
     });
   }
 }

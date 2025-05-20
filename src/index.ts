@@ -11,6 +11,7 @@ import WebhookService, { setupWebhookTools } from './webhooks.js';
 import { setupRecordingFunctionality } from './recordings.js';
 import { setupModerationFunctionality } from './moderation.js';
 import { setupBreakoutRoomsFunctionality } from './breakout-rooms.js';
+import { setupMeetingSchedulingFunctionality } from './meetings.js';
 
 // Type definitions for server options
 export interface ServerOptions {
@@ -53,6 +54,9 @@ export function createServer(options?: ServerOptions) {
   
   // Set up breakout rooms functionality
   setupBreakoutRoomsFunctionality(server, API_URL);
+  
+  // Set up meeting scheduling functionality
+  setupMeetingSchedulingFunctionality(server, API_URL);
 
   // -------------------------------------------------------------------
   // Resources
