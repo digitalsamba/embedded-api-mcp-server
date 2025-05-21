@@ -70,6 +70,7 @@
     "test:claude-desktop-verbose": "node test-claude-desktop-verbose.js",
     "test:claude-desktop-mock": "node test-claude-desktop-mock.js",
     "test:claude-desktop-simple": "node test-claude-desktop-simple.js",
+    "test:claude-desktop-direct": "node test-claude-desktop-direct.js",
     "prepublishOnly": "npm run build:prod",
     "prepare": "npm run build:clean",
     "size-check": "node build-size-check.js",
