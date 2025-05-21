@@ -544,7 +544,8 @@ export class DigitalSambaApiClient {
    * const rooms = await this.request<ApiResponse<Room>>('/rooms');
    */
   protected async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.apiBaseUrl}${endpoint}`;
+    // Handle case where endpoint is already a full URL (starts with http:// or https://)
+    const url = endpoint.startsWith('http') ? endpoint : `${this.apiBaseUrl}${endpoint}`;
     const method = options.method || 'GET';
     const isCacheable = this.cache && method === 'GET';
     

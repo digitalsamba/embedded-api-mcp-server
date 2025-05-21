@@ -65,6 +65,7 @@ const DEFAULT_CIRCUIT_OPTIONS: Partial<CircuitBreakerOptions> = {
   resetTimeout: 30000, // 30 seconds
   successThreshold: 2,
   requestTimeout: 10000, // 10 seconds
+  initialRequestTimeout: 60000, // 60 seconds for the initial request
   isFailure: (error: unknown) => {
     // Only count server errors (5xx) and network errors as circuit failures
     if (error instanceof ApiResponseError) {

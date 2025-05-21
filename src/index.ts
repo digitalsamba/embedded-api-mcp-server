@@ -194,7 +194,8 @@ export function createServer(options?: ServerOptions) {
           circuitBreaker: {
             failureThreshold: CIRCUIT_BREAKER_FAILURE_THRESHOLD,
             resetTimeout: CIRCUIT_BREAKER_RESET_TIMEOUT,
-            requestTimeout: 10000 // 10 second timeout for requests
+            requestTimeout: 15000, // 15 second timeout for requests
+            initialRequestTimeout: 60000 // 60 second timeout for initial requests
           },
           gracefulDegradation: {
             maxRetryAttempts: GRACEFUL_DEGRADATION_MAX_RETRIES,
@@ -215,7 +216,8 @@ export function createServer(options?: ServerOptions) {
           defaultOptions: {
             failureThreshold: CIRCUIT_BREAKER_FAILURE_THRESHOLD,
             resetTimeout: CIRCUIT_BREAKER_RESET_TIMEOUT,
-            requestTimeout: 10000 // 10 second timeout for requests
+            requestTimeout: 15000, // 15 second timeout for requests
+            initialRequestTimeout: 60000 // 60 second timeout for initial requests
           }
         });
       } else if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
@@ -952,6 +954,8 @@ export function startServer(options?: ServerOptions) {
                 metricsRegistry.activeSessions.inc();
               }
             },
+            // Additional options for streamable HTTP transport
+            timeout: 60000, // 60 second timeout for initial connection
           });
           
           // Clean up transport when closed
