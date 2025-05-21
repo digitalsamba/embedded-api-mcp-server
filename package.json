@@ -37,11 +37,13 @@
     "LICENSE"
   ],
   "scripts": {
+    "fix-imports": "node fix-imports.js",
+    "fix-sdk-paths": "node fix-sdk-paths.js",
     "build": "tsc --skipLibCheck",
     "build:clean": "rimraf dist && tsc --skipLibCheck",
     "build:esbuild": "rimraf dist && node build.js",
     "build:bundle": "rimraf dist && tsc --skipLibCheck && node build.js",
-    "build:prod": "rimraf dist && tsc --skipLibCheck && node build.js && node build-size-check.js",
+    "build:prod": "npm run fix-imports && npm run fix-sdk-paths && rimraf dist && tsc --skipLibCheck && node build.js && node build-size-check.js",
     "start": "node dist/src/index.js",
     "dev": "tsx --inspect src/index.ts",
     "dev:watch": "tsx --watch --inspect src/index.ts",
@@ -63,6 +65,7 @@
     "test:metrics": "node tests/test-metrics.js",
     "test:token-refresh": "node tests/token-refresh-test.js",
     "test:resource-optimizer": "node tests/resource-optimizer-test.js",
+    "test:claude-desktop-verbose": "node test-claude-desktop-verbose.js",
     "prepublishOnly": "npm run build:prod",
     "prepare": "npm run build:clean",
     "size-check": "node build-size-check.js",
