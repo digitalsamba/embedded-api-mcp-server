@@ -126,9 +126,16 @@ if (args['api-key']) {
 
 // Start the server
 import('../dist/src/index.js').then(module => {
-  console.log('Starting Digital Samba MCP Server...');
+  // Check if we're in JSON-RPC mode (for MCP communication)
+  const isJsonRpcMode = process.env.MCP_JSON_RPC_MODE === 'true' || !process.stdout.isTTY;
+  
+  if (!isJsonRpcMode) {
+    console.log('Starting Digital Samba MCP Server...');
+  }
+  
   module.startServer();
 }).catch(error => {
+  // Always show critical errors, even in JSON-RPC mode
   console.error('Failed to start server:', error);
   process.exit(1);
 });
