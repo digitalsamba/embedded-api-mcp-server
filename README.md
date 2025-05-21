@@ -598,17 +598,23 @@ test-local-npm.bat YOUR_API_KEY --port 4000 --log-level debug
 
 ### Method 3: Direct Integration with Claude Desktop
 
-You can configure Claude Desktop to point directly to your local development version:
+For optimal Claude Desktop integration, use the dedicated wrapper script:
 
 ```json
 "Digital_Samba": {
   "command": "node",
   "args": [
-    "C:/path/to/digital-samba-mcp/test-local-npx.js", 
+    "C:\\path\\to\\digital-samba-mcp\\claude-desktop-wrapper.js", 
     "YOUR_API_KEY"
   ]
 }
 ```
+
+The `claude-desktop-wrapper.js` script is specifically designed for Claude Desktop integration:
+- Suppresses console windows that might interfere with Claude
+- Redirects log output to a file for debugging
+- Sets up proper environment variables for JSON-RPC communication
+- Handles process termination gracefully
 
 Add this configuration to Claude Desktop's MCP Server setup.
 
