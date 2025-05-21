@@ -92,7 +92,7 @@ export interface ServerOptions {
 // Create and configure the MCP server
 export function createServer(options?: ServerOptions) {
   // Configure environment
-  let PORT = 3000;
+  let PORT = 4521; // Uncommon port to avoid conflicts
   if (options?.port !== undefined) {
     PORT = options.port;
   } else if (process.env.PORT) {
