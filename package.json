@@ -75,7 +75,7 @@
     "prepublishOnly": "npm run build:prod",
     "prepare": "npm run build:clean",
     "size-check": "node build-size-check.js",
-    "package-test": "npm pack && tar -tf *.tgz && rm *.tgz"
+    "package-test": "npm pack && (if exist *.tgz del /q *.tgz)"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.11.4",
