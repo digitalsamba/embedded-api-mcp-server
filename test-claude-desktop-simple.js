@@ -76,7 +76,7 @@ async function checkFileExists(filePath) {
   };
   
   // Run the CLI script with stdio pipes for direct JSON-RPC communication
-  const proc = spawn('node', [cliPath, apiKey], {
+  const proc = spawn('node', [cliPath, apiKey, '--port', '3001'], {
     stdio: ['pipe', 'pipe', 'inherit'],
     env: {
       ...process.env,
