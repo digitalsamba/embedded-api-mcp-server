@@ -111,31 +111,79 @@ process.env.WEBHOOK_SECRET = args['webhook-secret'];
 process.env.WEBHOOK_ENDPOINT = args['webhook-endpoint'];
 process.env.PUBLIC_URL = args['public-url'] || `http://localhost:${args.port}`;
 
-// Set API key from options or positional arguments
+// Set API key from options or positional arguments or environment variable
 if (args['api-key']) {
   process.env.DIGITAL_SAMBA_API_KEY = args['api-key'];
+  if (!process.env.MCP_JSON_RPC_MODE) {
+    console.log(`Using API key from --api-key option: ${args['api-key'].substring(0, 5)}...`);
+  }
 } else if (positionals && positionals.length > 0) {
   // Use the first positional argument as the API key
   process.env.DIGITAL_SAMBA_API_KEY = positionals[0];
-  console.log(`Using API key from positional argument: ${positionals[0].substring(0, 5)}...`);
+  if (!process.env.MCP_JSON_RPC_MODE) {
+    console.log(`Using API key from positional argument: ${positionals[0].substring(0, 5)}...`);
+  }
 } else if (positionalArgs.length > 0) {
   // Fallback for older Node.js versions
   process.env.DIGITAL_SAMBA_API_KEY = positionalArgs[0];
-  console.log(`Using API key from positional argument: ${positionalArgs[0].substring(0, 5)}...`);
+  if (!process.env.MCP_JSON_RPC_MODE) {
+    console.log(`Using API key from positional argument: ${positionalArgs[0].substring(0, 5)}...`);
+  }
+} else if (process.env.DIGITAL_SAMBA_API_KEY) {
+  // API key already set in environment variable
+  if (!process.env.MCP_JSON_RPC_MODE) {
+    console.log(`Using API key from environment: ${process.env.DIGITAL_SAMBA_API_KEY.substring(0, 5)}...`);
+  }
+} else {
+  if (!process.env.MCP_JSON_RPC_MODE) {
+    console.error('No API key provided. Please specify an API key using --api-key or as a positional argument, or set DIGITAL_SAMBA_API_KEY environment variable.');
+  }
+  process.exit(1);
 }
 
 // Start the server
-import('../dist/src/index.js').then(module => {
-  // Check if we're in JSON-RPC mode (for MCP communication)
-  const isJsonRpcMode = process.env.MCP_JSON_RPC_MODE === 'true' || !process.stdout.isTTY;
-  
-  if (!isJsonRpcMode) {
-    console.log('Starting Digital Samba MCP Server...');
-  }
-  
-  module.startServer();
-}).catch(error => {
-  // Always show critical errors, even in JSON-RPC mode
-  console.error('Failed to start server:', error);
+try {
+  // Try a direct import first
+  import('../dist/src/index.js').then(module => {
+    // Check if we're in JSON-RPC mode (for MCP communication)
+    const isJsonRpcMode = process.env.MCP_JSON_RPC_MODE === 'true' || !process.stdout.isTTY;
+    
+    if (!isJsonRpcMode) {
+      console.log('Starting Digital Samba MCP Server...');
+    }
+    
+    // Check if module has the startServer function
+    if (typeof module.startServer !== 'function') {
+      console.error('ERROR: startServer function not found in module. This may indicate a build issue.');
+      console.error('Module exports:', Object.keys(module));
+      process.exit(1);
+    }
+    
+    // Start the server with enhanced error handling
+    try {
+      const server = module.startServer();
+      
+      // Add error handling for the server
+      if (server && typeof server.on === 'function') {
+        server.on('error', (err) => {
+          console.error('Server error:', err.message);
+          process.exit(1);
+        });
+      }
+    } catch (startError) {
+      console.error('Error starting server:', startError.message);
+      console.error(startError.stack);
+      process.exit(1);
+    }
+  }).catch(importError => {
+    console.error('Failed to import server module:', importError.message);
+    console.error('This may indicate a build issue or missing files.');
+    console.error('Try running "npm run build" before starting the server.');
+    console.error(importError.stack);
+    process.exit(1);
+  });
+} catch (error) {
+  console.error('Critical error loading server:', error.message);
+  console.error(error.stack);
   process.exit(1);
-});
+}
