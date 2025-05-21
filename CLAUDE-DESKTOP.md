@@ -1,104 +1,88 @@
-# Using Digital Samba MCP with Claude Desktop
+# Claude Desktop Integration Instructions
 
-The Digital Samba MCP Server enables Claude Desktop to create and manage Digital Samba video conferencing rooms through the Model Context Protocol.
+## Overview
 
-## Installation
+This document explains how to integrate the Digital Samba MCP Server with Claude Desktop for seamless interaction with Digital Samba's video conferencing platform.
 
-### Local Installation
+## Prerequisites
 
-```bash
-git clone https://github.com/digital-samba/mcp-server.git
-cd mcp-server
-npm install
-npm run build:clean
-npm link
-```
+1. An API key from Digital Samba
+2. Node.js installed on your system
+3. The Digital Samba MCP Server project cloned and built
 
-This will install the package globally as `digital-samba-mcp`.
+## Setup Steps
 
-### Running the Server
+1. **Build the Digital Samba MCP Server**
 
-Start the server with your Digital Samba API key:
+   ```bash
+   cd C:\path\to\digital-samba-mcp
+   npm install
+   npm run build:clean
+   ```
 
-```bash
-digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
-```
+2. **Test the integration**
 
-Or alternatively, run from source:
+   ```bash
+   test-claude-desktop.bat YOUR_API_KEY
+   ```
 
-```bash
-npm run dev
-```
+3. **Configure Claude Desktop**
 
-If you run from source, you'll need to set the API key in the Authorization header when connecting from Claude Desktop.
+   Open Claude Desktop and navigate to Settings > Advanced > MCP Servers:
+   
+   - Click "Add Server"
+   - Enter the following configuration:
+   
+   ```json
+   {
+     "mcpServers": {
+       "Digital_Samba": {
+         "command": "C:\\Users\\ffxxr\\Documents\\DS\\projects\\digital-samba-mcp\\claude-desktop-wrapper.bat",
+         "args": ["YOUR_API_KEY"]
+       }
+     }
+   }
+   ```
+   
+   Make sure to replace:
+   - `C:\\Users\\ffxxr\\Documents\\DS\\projects\\digital-samba-mcp` with your actual project path
+   - `YOUR_API_KEY` with your Digital Samba API key
 
-## Configuring Claude Desktop
+4. **Select Digital Samba MCP Server**
 
-1. Open Claude Desktop
-2. Go to Settings > Advanced > MCP Servers
-3. Add a new MCP server:
-   - Name: Digital Samba
-   - URL: `http://localhost:3000/mcp`
-   - Headers: 
-     - Name: `Authorization` 
-     - Value: `Bearer YOUR_DIGITAL_SAMBA_API_KEY`
-     - (Replace YOUR_DIGITAL_SAMBA_API_KEY with your actual API key)
-     - Make sure to include the word "Bearer" followed by a space, then your API key
-
-## Available Resources and Tools
-
-The server provides access to Digital Samba's video conferencing API with the following features:
-
-### Resources
-- `digitalsamba://rooms`: List all rooms
-- `digitalsamba://rooms/{roomId}`: Get details for a specific room
-- `digitalsamba://rooms/{roomId}/participants`: List participants in a room
-
-### Tools
-- `create-room`: Create a new room
-- `update-room`: Update an existing room
-- `delete-room`: Delete a room
-- `generate-token`: Generate a token for room access
-- `register-webhook`: Register a webhook for events
-- `delete-webhook`: Delete a registered webhook
-- `list-webhooks`: List all registered webhooks
-- `list-webhook-events`: List available webhook event types
-
-## Authentication
-
-The MCP server uses Bearer token authentication. Your Digital Samba API key must be provided in the Authorization header:
-
-```
-Authorization: Bearer YOUR_DIGITAL_SAMBA_API_KEY
-```
-
-Claude Desktop handles this automatically when you configure the MCP server with the Authorization header.
-
-## Example Usage with Claude
-
-Once your server is running and Claude Desktop is configured, you can interact with Digital Samba through Claude:
-
-- "List all my Digital Samba rooms"
-- "Create a new Digital Samba meeting room called 'Team Weekly'"
-- "Generate a token for the Digital Samba room with ID XYZ"
-- "Show me who's in my Digital Samba meeting right now"
+   After adding the server configuration, select "Digital Samba" from the MCP server dropdown in Claude Desktop.
 
 ## Troubleshooting
 
-If you encounter issues, check the following:
+If you encounter issues:
 
-1. Make sure the server is running and accessible
-2. Verify you've included the correct API key in the Authorization header
-3. Check the server logs for error messages
-4. See the TROUBLESHOOTING.md file for common issues and solutions
+1. **Check the log file**
 
-## Upcoming Features
+   The Claude Desktop wrapper creates a `claude-desktop.log` file in the project directory. Check this file for error messages.
 
-We're actively working on additional features, including:
+2. **Common Issues**
 
-- Room recording functionality
-- Moderation tools and capabilities
-- Breakout rooms functionality
-- Meeting scheduling
+   - **API key errors**: Ensure your API key is valid and correctly formatted
+   - **Path errors**: Verify the path to the batch file in the Claude Desktop configuration
+   - **Build errors**: Make sure you've run `npm run build:clean` to compile the TypeScript files
 
-Stay tuned for updates!
+3. **For debugging purposes**, you can run the wrapper manually:
+
+   ```bash
+   claude-desktop-wrapper.bat YOUR_API_KEY
+   ```
+
+## Example Claude Prompts
+
+Once the Digital Samba MCP server is connected, you can ask Claude things like:
+
+- "Show me my video conferencing rooms"
+- "Create a new Digital Samba meeting called 'Weekly Team Sync'"
+- "Generate a join link for my meeting"
+- "Who's currently in my active meetings?"
+- "Schedule a meeting for tomorrow at 2pm with the team"
+
+## Additional Resources
+
+- For more detailed information, refer to the [README.md](README.md)
+- For troubleshooting guidance, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
