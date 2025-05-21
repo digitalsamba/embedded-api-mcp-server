@@ -18,44 +18,44 @@
 // Local modules
 import { 
   DigitalSambaApiClient, 
-  ApiResponse, 
-  PaginationParams, 
-  DateRangeParams,
-  Room,
-  RoomCreateSettings,
-  TokenOptions,
-  TokenResponse,
-  Recording,
-  RecordingDownloadLink,
-  Participant,
-  ParticipantDetail,
-  Session,
-  SessionStatistics,
-  Webhook,
-  WebhookCreateSettings,
-  BreakoutRoom,
-  BreakoutRoomCreateSettings,
-  BreakoutRoomParticipantAssignment,
-  ScheduledMeeting,
-  MeetingCreateSettings,
-  MeetingUpdateSettings,
-  MeetingParticipantAddOptions,
-  MeetingParticipantRemoveOptions,
-  MeetingReminderOptions,
-  MeetingAvailabilityOptions,
-  AvailableTimeSlot,
-  Poll,
-  PollCreateSettings,
-  Role,
-  RoleCreateSettings,
-  Library,
-  LibraryFolder,
-  LibraryFile
+  type ApiResponse, 
+  type PaginationParams, 
+  type DateRangeParams,
+  type Room,
+  type RoomCreateSettings,
+  type TokenOptions,
+  type TokenResponse,
+  type Recording,
+  type RecordingDownloadLink,
+  type Participant,
+  type ParticipantDetail,
+  type Session,
+  type SessionStatistics,
+  type Webhook,
+  type WebhookCreateSettings,
+  type BreakoutRoom,
+  type BreakoutRoomCreateSettings,
+  type BreakoutRoomParticipantAssignment,
+  type ScheduledMeeting,
+  type MeetingCreateSettings,
+  type MeetingUpdateSettings,
+  type MeetingParticipantAddOptions,
+  type MeetingParticipantRemoveOptions,
+  type MeetingReminderOptions,
+  type MeetingAvailabilityOptions,
+  type AvailableTimeSlot,
+  type Poll,
+  type PollCreateSettings,
+  type Role,
+  type RoleCreateSettings,
+  type Library,
+  type LibraryFolder,
+  type LibraryFile
 } from './digital-samba-api.js';
 import { MemoryCache } from './cache.js';
 import { ApiRequestError, ApiResponseError } from './errors.js';
 import logger from './logger.js';
-import { CircuitBreaker, circuitBreakerRegistry, CircuitBreakerOptions } from './circuit-breaker.js';
+import { CircuitBreaker, circuitBreakerRegistry, type CircuitBreakerOptions } from './circuit-breaker.js';
 
 /**
  * Default circuit breaker options
@@ -68,7 +68,7 @@ const DEFAULT_CIRCUIT_OPTIONS: Partial<CircuitBreakerOptions> = {
   isFailure: (error: unknown) => {
     // Only count server errors (5xx) and network errors as circuit failures
     if (error instanceof ApiResponseError) {
-      return error.details?.statusCode >= 500;
+      return error.statusCode >= 500;
     }
     
     if (error instanceof ApiRequestError) {
@@ -78,6 +78,8 @@ const DEFAULT_CIRCUIT_OPTIONS: Partial<CircuitBreakerOptions> = {
     return false; // Other errors (validation, not found, etc.) don't break the circuit
   }
 };
+
+// We don't need a specific type for fallback function as we're using the generic type parameters
 
 /**
  * Circuit breaker wrapper for the Digital Samba API client
@@ -149,13 +151,16 @@ export class CircuitBreakerApiClient {
    */
   async listRooms(params?: PaginationParams): Promise<ApiResponse<Room>> {
     const circuit = this.createCircuitBreaker('listRooms', {
-      // Example of a fallback for this specific endpoint
-      fallback: async () => ({
-        data: [],
-        total_count: 0,
-        length: 0,
-        map: () => []
-      })
+      // Correctly type the fallback function to match the circuit breaker's exec method signature
+      fallback: async <T, Args extends any[]>(_args: Args): Promise<T> => {
+        const response: ApiResponse<Room> = {
+          data: [] as Room[],
+          total_count: 0,
+          length: 0,
+          map: () => [] as Room[]
+        };
+        return response as unknown as T;
+      }
     });
     
     return circuit.exec(() => this.apiClient.listRooms(params));
