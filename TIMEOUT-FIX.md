@@ -25,21 +25,21 @@ We implemented the following changes:
 1. **Added Initial Request Timeout**: Created a separate timeout value for the first request to a service.
    - Added an `initialRequestTimeout` parameter to the CircuitBreaker class (default: 30 seconds)
    - Modified the execution logic to use the longer timeout for the first request
+   - Updated the interface in `digital-samba-api-resilient.ts` to include the new parameter
 
 2. **Increased Default Timeouts**:
    - Updated default request timeout from 10 seconds to 15 seconds
    - Set initial request timeout to 60 seconds
 
-3. **Enhanced StreamableHTTPServerTransport**: Added an explicit timeout of 60 seconds for connections.
-
-4. **URL Handling Improvement**: Added a check to handle cases where an endpoint is already a full URL.
+3. **URL Handling Improvement**: Added a check to handle cases where an endpoint is already a full URL.
 
 ## Files Changed
 
 1. `src/circuit-breaker.ts`: Added `initialRequestTimeout` parameter and logic to use it for the first request.
 2. `src/digital-samba-api-circuit-breaker.ts`: Updated default circuit breaker options.
-3. `src/index.ts`: Updated circuit breaker timeout settings and transport initialization.
+3. `src/index.ts`: Updated circuit breaker timeout settings.
 4. `src/digital-samba-api.ts`: Added handling for full URLs in the `request` method.
+5. `src/digital-samba-api-resilient.ts`: Updated the interface to include `initialRequestTimeout` parameter.
 
 ## Testing
 
