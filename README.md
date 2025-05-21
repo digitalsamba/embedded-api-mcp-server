@@ -598,24 +598,21 @@ test-local-npm.bat YOUR_API_KEY --port 4000 --log-level debug
 
 ### Method 3: Direct Integration with Claude Desktop
 
-For optimal Claude Desktop integration, use the dedicated wrapper script with the explicit path to Node.js:
+For optimal Claude Desktop integration, use the dedicated Windows batch file wrapper:
 
 ```json
 "Digital_Samba": {
-  "command": "C:\\Program Files\\nodejs\\node.exe",
-  "args": [
-    "C:\\path\\to\\digital-samba-mcp\\claude-desktop-wrapper.js", 
-    "YOUR_API_KEY"
-  ]
+  "command": "C:\\path\\to\\digital-samba-mcp\\claude-desktop-wrapper.bat",
+  "args": ["YOUR_API_KEY"]
 }
 ```
 
-> **Note**: Use the actual path to node.exe on your system. You can find it by running `where node` in Command Prompt.
+Using a .bat file avoids Windows "Open with" prompts since Windows knows how to execute batch files natively.
 
-The `claude-desktop-wrapper.js` script is specifically designed for Claude Desktop integration:
-- Redirects log output to a file for debugging
+The batch file wrapper:
+- Redirects log output to a file for debugging (claude-desktop.log)
 - Sets up proper environment variables for JSON-RPC communication
-- Handles process termination gracefully
+- Logs startup information for troubleshooting
 
 Add this configuration to Claude Desktop's MCP Server setup.
 
