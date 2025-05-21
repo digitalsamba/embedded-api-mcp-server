@@ -201,6 +201,7 @@ export class CircuitBreaker extends EventEmitter {
    * @param {() => Promise<T>} fn - The function to protect
    * @param {Args} args - Arguments to pass to the function (as an array)
    * @param {boolean} [forceNoTimeout=false] - If true, disables the timeout for this call
+   * @param {boolean} [isInitialization=false] - If true, treats this as an initialization request with special handling
    * @returns {Promise<T>} The result of the function or fallback
    * @throws {Error} If the circuit is open and no fallback is provided
    * @example
@@ -210,7 +211,22 @@ export class CircuitBreaker extends EventEmitter {
    *   [] // No args
    * );
    */
-  async exec<T, Args extends any[]>(fn: () => Promise<T>, args: Args = [] as unknown as Args, forceNoTimeout: boolean = false): Promise<T> {
+  async exec<T, Args extends any[]>(
+    fn: () => Promise<T>, 
+    args: Args = [] as unknown as Args, 
+    forceNoTimeout: boolean = false,
+    isInitialization: boolean = false
+  ): Promise<T> {
+    // Debug initialization requests if enabled
+    const debugInitialization = process.env.DEBUG_INITIALIZATION === 'true';
+    if (isInitialization && debugInitialization) {
+      logger.info(`Executing initialization request for circuit: ${this.name}`, {
+        circuit: this.name,
+        state: this.state,
+        forceNoTimeout
+      });
+    }
+    
     // Check if the circuit is open
     if (this.state === CircuitState.OPEN) {
       // If we passed the reset timeout, transition to half-open
@@ -243,8 +259,17 @@ export class CircuitBreaker extends EventEmitter {
     try {
       let result: T;
       
+      // For initialization requests during server startup, we need special handling
+      if (isInitialization) {
+        if (debugInitialization) {
+          logger.info(`Running initialization request with special handling for circuit: ${this.name}`);
+        }
+        
+        // Always force no timeout for initialization
+        result = await fn();
+      }
       // If forceNoTimeout is true, skip timeout handling entirely
-      if (forceNoTimeout) {
+      else if (forceNoTimeout) {
         // No timeout, just execute the function
         result = await fn();
       } else {
@@ -254,12 +279,33 @@ export class CircuitBreaker extends EventEmitter {
                          ? this.initialRequestTimeout 
                          : this.requestTimeout;
         
-        if (useTimeout !== undefined) {
+        // Override with environment variable if set
+        const envInitialTimeout = process.env.INITIAL_REQUEST_TIMEOUT 
+                              ? parseInt(process.env.INITIAL_REQUEST_TIMEOUT) 
+                              : undefined;
+        
+        const finalTimeout = envInitialTimeout !== undefined && this.state === CircuitState.CLOSED && this.failureCount === 0
+                           ? envInitialTimeout
+                           : useTimeout;
+        
+        // Debug timeout settings if enabled
+        if (process.env.DEBUG_TIMEOUTS === 'true') {
+          logger.debug(`Circuit timeout settings for ${this.name}:`, {
+            circuit: this.name,
+            useTimeout,
+            envInitialTimeout,
+            finalTimeout,
+            state: this.state,
+            failureCount: this.failureCount
+          });
+        }
+        
+        if (finalTimeout !== undefined) {
           // Use Promise.race to implement timeout
           const timeoutPromise = new Promise<never>((_, reject) => {
             setTimeout(() => {
-              reject(new Error(`Request timeout after ${useTimeout}ms`));
-            }, useTimeout);
+              reject(new Error(`Request timeout after ${finalTimeout}ms`));
+            }, finalTimeout);
           });
           
           // Race the function execution against the timeout
@@ -275,8 +321,23 @@ export class CircuitBreaker extends EventEmitter {
       
       // Success - handle based on current state
       this.handleSuccess();
+      
+      // Log successful initialization
+      if (isInitialization && debugInitialization) {
+        logger.info(`Initialization request completed successfully for circuit: ${this.name}`);
+      }
+      
       return result;
     } catch (error) {
+      // Log initialization failures with more details
+      if (isInitialization && debugInitialization) {
+        logger.error(`Initialization request failed for circuit: ${this.name}`, {
+          circuit: this.name,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
+      }
+      
       // Determine if this error should count as a circuit failure
       if (this.isFailure(error)) {
         this.handleFailure(error instanceof Error ? error : new Error(String(error)));

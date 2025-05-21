@@ -87,7 +87,12 @@ export interface ServerOptions {
   metricsEndpoint?: string;
   metricsPrefix?: string;
   collectDefaultMetrics?: boolean;
-  enableSilentMode?: boolean; // New option for MCP mode
+  enableSilentMode?: boolean; // Option for MCP mode
+  debugTimeouts?: boolean; // Enable timeout debugging
+  debugInitialization?: boolean; // Enable initialization debugging
+  initialRequestTimeout?: number; // Override initial request timeout
+  // Direct options for testing/debugging
+  apiKey?: string; // Direct API key for testing
 }
 
 // Create and configure the MCP server
@@ -171,14 +176,27 @@ export function createServer(options?: ServerOptions) {
     async (uri, _params, request) => {
       logger.info('Listing rooms');
       
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
+      // Get API key from various sources in priority order:
+      // 1. Direct API key passed in options during server creation 
+      // 2. API key from session context
+      // 3. Environment variable
+      let apiKey = options?.apiKey;
+      
+      if (!apiKey) {
+        apiKey = getApiKeyFromRequest(request);
+      }
+      
+      if (!apiKey && process.env.DIGITAL_SAMBA_API_KEY) {
+        apiKey = process.env.DIGITAL_SAMBA_API_KEY;
+        logger.debug('Using API key from environment variable');
+      }
+      
       if (!apiKey) {
         throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
       }
       
       // Create API client
-      logger.debug('Creating API client using context API key');
+      logger.debug('Creating API client using available API key');
       
       let client;
       if (ENABLE_CIRCUIT_BREAKER && ENABLE_GRACEFUL_DEGRADATION) {
@@ -838,6 +856,31 @@ export function startServer(options?: ServerOptions) {
   if (shouldLog) logger.debug("startServer function called with options:", options);
   
   try {
+    // Detect debug options
+    const debugTimeouts = options?.debugTimeouts || process.env.DEBUG_TIMEOUTS === 'true';
+    const debugInitialization = options?.debugInitialization || process.env.DEBUG_INITIALIZATION === 'true';
+    const initialRequestTimeout = options?.initialRequestTimeout || 
+                              process.env.INITIAL_REQUEST_TIMEOUT ? 
+                              parseInt(process.env.INITIAL_REQUEST_TIMEOUT) : 60000;
+    
+    if (debugTimeouts) {
+      logger.info("Timeout debugging enabled");
+      console.log("Timeout debugging enabled");
+      console.log("Initial request timeout:", initialRequestTimeout);
+      
+      // Set the environment variable for child processes
+      process.env.DEBUG_TIMEOUTS = 'true';
+      process.env.INITIAL_REQUEST_TIMEOUT = initialRequestTimeout.toString();
+    }
+    
+    if (debugInitialization) {
+      logger.info("Initialization debugging enabled");
+      console.log("Initialization debugging enabled");
+      
+      // Set the environment variable for child processes
+      process.env.DEBUG_INITIALIZATION = 'true';
+    }
+    
     // Create Express app
     if (shouldLog) logger.debug("Creating Express app...");
     const app = express();
@@ -846,7 +889,12 @@ export function startServer(options?: ServerOptions) {
 
     // Create the MCP server
     if (shouldLog) logger.debug("Creating MCP server...");
-    const serverConfig = createServer(options);
+    const serverConfig = createServer({
+      ...options,
+      initialRequestTimeout,
+      debugTimeouts,
+      debugInitialization
+    });
     
     // Add metrics middleware if enabled
     if (serverConfig.enableMetrics) {

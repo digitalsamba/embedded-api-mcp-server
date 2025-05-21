@@ -125,6 +125,12 @@ export class CircuitBreakerApiClient {
     // Helper function to delay execution
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
     
+    // Debug flag for additional logging
+    const debugInitialization = process.env.DEBUG_INITIALIZATION === 'true';
+    if (debugInitialization) {
+      logger.info('Starting API connection initialization with enhanced debugging');
+    }
+    
     // Retry loop
     while (retryCount < maxRetries) {
       try {
@@ -146,26 +152,69 @@ export class CircuitBreakerApiClient {
         // Make a simple request to verify connectivity
         await circuit.exec(
           async () => {
+            if (debugInitialization) {
+              logger.info('Executing API initialization request', {
+                apiBaseUrl: this.apiBaseUrl,
+                retry: retryCount
+              });
+            }
+            
+            // Check API key before making requests
+            const apiKey = this.getApiKey();
+            if (!apiKey) {
+              logger.warn('No API key available for initialization');
+              throw new Error('No API key available for initialization');
+            }
+            
             try {
               // Try something simple like fetching default settings
               // or just checking if the API base URL is reachable
-              return await fetch(this.apiBaseUrl, {
+              if (debugInitialization) {
+                logger.info(`Testing API connectivity to ${this.apiBaseUrl}`);
+              }
+              
+              const response = await fetch(this.apiBaseUrl, {
                 method: 'HEAD',
                 headers: {
-                  'Authorization': `Bearer ${this.getApiKey()}`
+                  'Authorization': `Bearer ${apiKey}`
                 }
               });
+              
+              if (debugInitialization) {
+                logger.info(`HEAD request status: ${response.status}`);
+              }
+              
+              if (!response.ok) {
+                throw new Error(`API HEAD request failed with status ${response.status}`);
+              }
+              
+              return response;
             } catch (error) {
               // If we can't reach the base URL, try a specific endpoint
-              return await fetch(`${this.apiBaseUrl}/rooms`, {
+              if (debugInitialization) {
+                logger.info(`HEAD request failed, trying GET /rooms endpoint`);
+              }
+              
+              const response = await fetch(`${this.apiBaseUrl}/rooms`, {
                 headers: {
-                  'Authorization': `Bearer ${this.getApiKey()}`
+                  'Authorization': `Bearer ${apiKey}`
                 }
               });
+              
+              if (debugInitialization) {
+                logger.info(`GET /rooms request status: ${response.status}`);
+              }
+              
+              if (!response.ok) {
+                throw new Error(`API GET /rooms request failed with status ${response.status}`);
+              }
+              
+              return response;
             }
           },
           [], // No arguments needed
-          true // Force no timeout
+          true, // Force no timeout
+          true  // Mark as initialization request
         );
         
         logger.info('API connection initialization successful');
@@ -174,6 +223,7 @@ export class CircuitBreakerApiClient {
         retryCount++;
         logger.warn(`API connection initialization failed (attempt ${retryCount}/${maxRetries})`, {
           error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
           apiBaseUrl: this.apiBaseUrl
         });
         
