@@ -213,19 +213,52 @@ try {
     
     // Start the server with enhanced error handling
     try {
-      const server = module.startServer();
+      // Set a handler for uncaught exceptions to prevent crash
+      process.on('uncaughtException', (err) => {
+        console.error('Uncaught exception:', err.message);
+        console.error(err.stack);
+        // Don't exit process on uncaught exceptions to maintain MCP connection
+      });
+      
+      // Set a handler for unhandled promise rejections
+      process.on('unhandledRejection', (reason, promise) => {
+        console.error('Unhandled promise rejection:', reason);
+        // Don't exit process on unhandled rejections to maintain MCP connection
+      });
+      
+      // Start server with special handling for non-TTY environments
+      const server = module.startServer({
+        enableSilentMode: isJsonRpcMode
+      });
       
       // Add error handling for the server
       if (server && typeof server.on === 'function') {
         server.on('error', (err) => {
           console.error('Server error:', err.message);
-          process.exit(1);
+          // Don't exit in JSON-RPC mode
+          if (!isJsonRpcMode) {
+            process.exit(1);
+          }
+        });
+      }
+      
+      // Keep the process alive
+      if (isJsonRpcMode) {
+        // Set up interval to keep the process alive in JSON-RPC mode
+        const keepAlive = setInterval(() => {}, 60000);
+        
+        // Clean up on SIGTERM
+        process.on('SIGTERM', () => {
+          clearInterval(keepAlive);
+          process.exit(0);
         });
       }
     } catch (startError) {
       console.error('Error starting server:', startError.message);
       console.error(startError.stack);
-      process.exit(1);
+      if (!isJsonRpcMode) {
+        process.exit(1);
+      }
     }
   }).catch(importError => {
     console.error('Failed to import server module:', importError.message);
