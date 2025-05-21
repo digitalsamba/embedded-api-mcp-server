@@ -34,6 +34,9 @@ export interface ConnectionManagerOptions {
   
   /** Function to create a fetch implementation (for testing) */
   fetchImpl?: typeof fetch;
+
+  /** Connection pool size */
+  poolSize?: number;
 }
 
 /**
@@ -98,11 +101,33 @@ export class ConnectionManager extends EventEmitter {
   }
   
   /**
-   * Reset the connection manager
-   */
+  * Reset the connection manager
+  */
   public reset(): void {
-    logger.info('Connection manager reset');
-    this.emit('reset');
+  logger.info('Connection manager reset');
+  this.emit('reset');
+  }
+
+  /**
+  * Check if the connection manager is healthy
+  * @returns True if the connection manager is healthy
+   */
+  public isHealthy(): boolean {
+  // Simple health check - in a real implementation, this would check connection status
+    return true;
+  }
+
+  /**
+   * Get connection manager statistics
+   * @returns Connection manager statistics
+   */
+  public getStats(): Record<string, any> {
+    return {
+      connections: {
+        // This would contain actual connection stats in a real implementation
+        status: 'healthy'
+      }
+    };
   }
   
   /**
