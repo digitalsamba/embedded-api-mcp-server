@@ -43,7 +43,7 @@ digital-samba-mcp --api-key YOUR_API_KEY
 
 #### Available Options
 
-- `-p, --port <port>`: Port to run the server on (default: 3000)
+- `-p, --port <port>`: Port to run the server on (default: 4521)
 - `-k, --api-key <key>`: Digital Samba API key
 - `-u, --api-url <url>`: Digital Samba API URL (default: https://api.digitalsamba.com/api/v1)
 - `-l, --log-level <level>`: Log level (default: info)
@@ -117,7 +117,7 @@ To use the Digital Samba MCP Server with Claude Desktop:
 3. Configure Claude Desktop to use the MCP server:
    - Open Claude Desktop
    - Go to Settings > Advanced > MCP Servers
-   - Add a new MCP server with the URL `http://localhost:3000/mcp` (or your custom port)
+   - Add a new MCP server with the URL `http://localhost:4521/mcp` (or your custom port)
    - Make sure to set the Authorization header to `Bearer YOUR_API_KEY`
 
 4. You should now be able to interact with Digital Samba resources and tools from Claude Desktop.

@@ -15,6 +15,18 @@ async function copyBinFiles() {
     const destFile = join(distBinDir, 'cli.js');
     
     await fs.copyFile(sourceFile, destFile);
+    
+    // Set executable permission on Unix systems
+    try {
+      const stat = await fs.stat(destFile);
+      // Add executable permission (stat.mode | 0o111)
+      await fs.chmod(destFile, stat.mode | 0o111);
+      console.log('Successfully set executable permissions on cli.js');
+    } catch (permError) {
+      // On Windows this might fail, which is OK
+      console.log('Note: Could not set executable permissions (likely on Windows)');
+    }
+    
     console.log('Successfully copied bin files to dist/bin');
   } catch (error) {
     console.error('Error copying bin files:', error);

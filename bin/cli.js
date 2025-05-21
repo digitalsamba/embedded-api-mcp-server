@@ -11,23 +11,31 @@ const __dirname = dirname(__filename);
 // Set environment variable to indicate we're in JSON-RPC mode when running via MCP
 if (!process.stdout.isTTY) {
   process.env.MCP_JSON_RPC_MODE = 'true';
+  process.env.NO_CONSOLE_OUTPUT = 'true'; // Complete silence in JSON-RPC mode
   
-  // When in JSON-RPC mode, redirect all console output to stderr
-  // to avoid interfering with the JSON-RPC protocol over stdout
-  const originalConsole = {
-    log: console.log,
-    info: console.info,
-    warn: console.warn,
-    debug: console.debug,
-    error: console.error
+  // Completely replace stdout write to ensure ONLY JSON is written
+  const originalStdoutWrite = process.stdout.write;
+  process.stdout.write = function(buffer, encoding, callback) {
+    // Only allow properly formatted JSON-RPC messages
+    const str = buffer.toString();
+    if (str.trim().startsWith('{') && str.includes('"jsonrpc":"2.0"')) {
+      return originalStdoutWrite.apply(this, arguments);
+    }
+    // For non-JSON messages, log to stderr instead
+    process.stderr.write(`[FILTERED]: ${str}\n`);
+    
+    // Pretend we wrote it to maintain the expected behavior
+    if (callback) callback();
+    return true;
   };
   
-  // Replace console methods to use stderr instead
-  console.log = (...args) => console.error('[INFO]', ...args);
-  console.info = (...args) => console.error('[INFO]', ...args);
-  console.warn = (...args) => console.error('[WARN]', ...args);
-  console.debug = (...args) => console.error('[DEBUG]', ...args);
-  // Keep error as is since it already goes to stderr
+  // Completely suppress all console output to stdout
+  console.log = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+  // Only keep minimal error logging to stderr
+  console.warn = (...args) => process.stderr.write(`[WARN] ${args.join(' ')}\n`);
+  console.error = (...args) => process.stderr.write(`[ERROR] ${args.join(' ')}\n`);
 }
 
 // Check if we're in JSON-RPC mode (for MCP communication)
@@ -56,7 +64,7 @@ const { values: args, positionals } = parseArgs({
     port: {
       type: 'string',
       short: 'p',
-      default: '3000'
+      default: '4521'
     },
     'api-key': {
       type: 'string',
@@ -102,7 +110,7 @@ Digital Samba MCP Server
 Usage: npx digital-samba-mcp-server [options] [API_KEY]
 
 Options:
-  -p, --port <port>                 Port to run the server on (default: 3000)
+  -p, --port <port>                 Port to run the server on (default: 4521)
   -k, --api-key <key>               Digital Samba API key
   -u, --api-url <url>               Digital Samba API URL (default: https://api.digitalsamba.com/api/v1)
   -l, --log-level <level>           Log level (default: info)
