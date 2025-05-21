@@ -67,6 +67,7 @@
     "test:token-refresh": "node tests/token-refresh-test.js",
     "test:resource-optimizer": "node tests/resource-optimizer-test.js",
     "test:claude-desktop-verbose": "node test-claude-desktop-verbose.js",
+    "test:claude-desktop-mock": "node test-claude-desktop-mock.js",
     "prepublishOnly": "npm run build:prod",
     "prepare": "npm run build:clean",
     "size-check": "node build-size-check.js",
