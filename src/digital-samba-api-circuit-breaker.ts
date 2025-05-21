@@ -64,7 +64,7 @@ const DEFAULT_CIRCUIT_OPTIONS: Partial<CircuitBreakerOptions> = {
   failureThreshold: 3,
   resetTimeout: 30000, // 30 seconds
   successThreshold: 2,
-  requestTimeout: 10000, // 10 seconds
+  requestTimeout: 15000, // 15 seconds
   initialRequestTimeout: 60000, // 60 seconds for the initial request
   isFailure: (error: unknown) => {
     // Only count server errors (5xx) and network errors as circuit failures
@@ -111,15 +111,67 @@ export class CircuitBreakerApiClient {
       defaultOptions: this.defaultOptions
     });
   }
+
+  /**
+   * Initialize the API connection
+   * This is a special method that bypasses timeouts for the initial request
+   */
+  async initializeConnection(): Promise<boolean> {
+    try {
+      // Create a special circuit breaker for initialization
+      const circuit = this.createCircuitBreaker('initialize', {
+        // Fail fast on initialization errors
+        failureThreshold: 1,
+        // Don't use timeouts for initialization
+        requestTimeout: undefined,
+        initialRequestTimeout: undefined
+      }, true); // Force no timeout
+      
+      // Make a simple request to verify connectivity
+      await circuit.exec(
+        async () => {
+          try {
+            // Try something simple like fetching default settings
+            // or just checking if the API base URL is reachable
+            return await fetch(this.apiBaseUrl, {
+              method: 'HEAD',
+              headers: {
+                'Authorization': `Bearer ${this.getApiKey()}`
+              }
+            });
+          } catch (error) {
+            // If we can't reach the base URL, try a specific endpoint
+            return await fetch(`${this.apiBaseUrl}/rooms`, {
+              headers: {
+                'Authorization': `Bearer ${this.getApiKey()}`
+              }
+            });
+          }
+        },
+        [], // No arguments needed
+        true // Force no timeout
+      );
+      
+      return true;
+    } catch (error) {
+      logger.error('Failed to initialize API connection', {
+        error: error instanceof Error ? error.message : String(error),
+        apiBaseUrl: this.apiBaseUrl
+      });
+      
+      return false;
+    }
+  }
   
   /**
    * Create a circuit breaker for a specific API endpoint
    * 
    * @param endpoint The API endpoint name
    * @param options Additional circuit breaker options
+   * @param forceNoTimeout If true, disables timeout for this endpoint
    * @returns A circuit breaker instance
    */
-  protected createCircuitBreaker(endpoint: string, options: Partial<CircuitBreakerOptions> = {}): CircuitBreaker {
+  protected createCircuitBreaker(endpoint: string, options: Partial<CircuitBreakerOptions> = {}, forceNoTimeout: boolean = false): CircuitBreaker {
     const name = `${this.circuitPrefix}.${endpoint}`;
     
     return circuitBreakerRegistry.getOrCreate({
@@ -128,13 +180,36 @@ export class CircuitBreakerApiClient {
       ...options
     });
   }
+
+  /**
+   * Get the API key from context or direct value
+   * 
+   * This method retrieves the API key using a prioritized approach:
+   * 1. First tries to get the API key from the ApiKeyContext (for session-based auth)
+   * 2. If not found, falls back to using the direct API key if provided during construction
+   * 3. If neither source provides an API key, throws an AuthenticationError
+   *
+   * @protected
+   * @returns {string} The API key to use for authentication
+   * @throws {AuthenticationError} If no API key is available from any source
+   */
+  protected getApiKey(): string {
+    return this.apiClient['getApiKey']();
+  }
+
+  /**
+   * Get base URL of the API
+   */
+  protected get apiBaseUrl(): string {
+    return (this.apiClient as any).apiBaseUrl;
+  }
   
   /**
    * Get default room settings
    */
   async getDefaultRoomSettings(): Promise<Record<string, any>> {
     const circuit = this.createCircuitBreaker('getDefaultRoomSettings');
-    return circuit.exec(() => this.apiClient.getDefaultRoomSettings());
+    return circuit.exec(() => this.apiClient.getDefaultRoomSettings(), []);
   }
   
   /**
@@ -142,7 +217,7 @@ export class CircuitBreakerApiClient {
    */
   async updateDefaultRoomSettings(settings: Record<string, any>): Promise<Record<string, any>> {
     const circuit = this.createCircuitBreaker('updateDefaultRoomSettings');
-    return circuit.exec(() => this.apiClient.updateDefaultRoomSettings(settings));
+    return circuit.exec(() => this.apiClient.updateDefaultRoomSettings(settings), [settings]);
   }
   
   // Rooms
@@ -166,7 +241,7 @@ export class CircuitBreakerApiClient {
       }
     });
     
-    return circuit.exec(() => this.apiClient.listRooms(params));
+    return circuit.exec(() => this.apiClient.listRooms(params), [params]);
   }
   
   /**
@@ -174,7 +249,7 @@ export class CircuitBreakerApiClient {
    */
   async getRoom(roomId: string): Promise<Room> {
     const circuit = this.createCircuitBreaker('getRoom');
-    return circuit.exec(() => this.apiClient.getRoom(roomId));
+    return circuit.exec(() => this.apiClient.getRoom(roomId), [roomId]);
   }
   
   /**
@@ -182,7 +257,7 @@ export class CircuitBreakerApiClient {
    */
   async createRoom(settings: RoomCreateSettings): Promise<Room> {
     const circuit = this.createCircuitBreaker('createRoom');
-    return circuit.exec(() => this.apiClient.createRoom(settings));
+    return circuit.exec(() => this.apiClient.createRoom(settings), [settings]);
   }
   
   /**
@@ -190,7 +265,7 @@ export class CircuitBreakerApiClient {
    */
   async updateRoom(roomId: string, settings: Partial<RoomCreateSettings>): Promise<Room> {
     const circuit = this.createCircuitBreaker('updateRoom');
-    return circuit.exec(() => this.apiClient.updateRoom(roomId, settings));
+    return circuit.exec(() => this.apiClient.updateRoom(roomId, settings), [roomId, settings]);
   }
   
   /**
@@ -198,7 +273,7 @@ export class CircuitBreakerApiClient {
    */
   async deleteRoom(roomId: string, options?: { delete_resources?: boolean }): Promise<void> {
     const circuit = this.createCircuitBreaker('deleteRoom');
-    return circuit.exec(() => this.apiClient.deleteRoom(roomId, options));
+    return circuit.exec(() => this.apiClient.deleteRoom(roomId, options), [roomId, options]);
   }
   
   /**
@@ -206,7 +281,7 @@ export class CircuitBreakerApiClient {
    */
   async generateRoomToken(roomId: string, options: TokenOptions): Promise<TokenResponse> {
     const circuit = this.createCircuitBreaker('generateRoomToken');
-    return circuit.exec(() => this.apiClient.generateRoomToken(roomId, options));
+    return circuit.exec(() => this.apiClient.generateRoomToken(roomId, options), [roomId, options]);
   }
   
   /**
@@ -214,443 +289,7 @@ export class CircuitBreakerApiClient {
    */
   async deleteRoomResources(roomId: string): Promise<void> {
     const circuit = this.createCircuitBreaker('deleteRoomResources');
-    return circuit.exec(() => this.apiClient.deleteRoomResources(roomId));
-  }
-  
-  // Live Participants
-  
-  /**
-   * Get rooms with live participants count
-   */
-  async getLiveRooms(params?: PaginationParams): Promise<ApiResponse<{
-    id: string;
-    external_id?: string;
-    start_time: string;
-    session_duration: number;
-    live_participants: number;
-  }>> {
-    const circuit = this.createCircuitBreaker('getLiveRooms');
-    return circuit.exec(() => this.apiClient.getLiveRooms(params));
-  }
-  
-  /**
-   * Get rooms with live participants data
-   */
-  async getLiveRoomsWithParticipants(params?: PaginationParams): Promise<ApiResponse<{
-    id: string;
-    external_id?: string;
-    start_time: string;
-    session_duration: number;
-    live_participants: {
-      id: string;
-      external_id?: string;
-      name: string;
-      role: string;
-      join_time: string;
-    }[];
-  }>> {
-    const circuit = this.createCircuitBreaker('getLiveRoomsWithParticipants');
-    return circuit.exec(() => this.apiClient.getLiveRoomsWithParticipants(params));
-  }
-  
-  /**
-   * Get single room with live participants count
-   */
-  async getRoomLiveParticipantsCount(roomId: string): Promise<{
-    id: string;
-    external_id?: string;
-    start_time: string;
-    session_duration: number;
-    live_participants: number;
-  }> {
-    const circuit = this.createCircuitBreaker('getRoomLiveParticipantsCount');
-    return circuit.exec(() => this.apiClient.getRoomLiveParticipantsCount(roomId));
-  }
-  
-  /**
-   * Get single room with live participants data
-   */
-  async getRoomLiveParticipantsData(roomId: string): Promise<{
-    id: string;
-    external_id?: string;
-    start_time: string;
-    session_duration: number;
-    live_participants: {
-      id: string;
-      external_id?: string;
-      name: string;
-      role: string;
-      join_time: string;
-    }[];
-  }> {
-    const circuit = this.createCircuitBreaker('getRoomLiveParticipantsData');
-    return circuit.exec(() => this.apiClient.getRoomLiveParticipantsData(roomId));
-  }
-  
-  // Participants
-  
-  /**
-   * List all participants
-   */
-  async listParticipants(params?: PaginationParams & DateRangeParams & {
-    live?: boolean;
-    room_id?: string;
-    session_id?: string;
-  }): Promise<ApiResponse<Participant>> {
-    const circuit = this.createCircuitBreaker('listParticipants');
-    return circuit.exec(() => this.apiClient.listParticipants(params));
-  }
-  
-  /**
-   * Get details for a specific participant
-   */
-  async getParticipant(participantId: string): Promise<ParticipantDetail> {
-    const circuit = this.createCircuitBreaker('getParticipant');
-    return circuit.exec(() => this.apiClient.getParticipant(participantId));
-  }
-  
-  /**
-   * List participants in a room
-   */
-  async listRoomParticipants(roomId: string, params?: PaginationParams & DateRangeParams & {
-    live?: boolean;
-    session_id?: string;
-  }): Promise<ApiResponse<Participant>> {
-    const circuit = this.createCircuitBreaker('listRoomParticipants');
-    return circuit.exec(() => this.apiClient.listRoomParticipants(roomId, params));
-  }
-  
-  /**
-   * List participants in a session
-   */
-  async listSessionParticipants(sessionId: string, params?: PaginationParams & DateRangeParams & {
-    live?: boolean;
-  }): Promise<ApiResponse<Participant>> {
-    const circuit = this.createCircuitBreaker('listSessionParticipants');
-    return circuit.exec(() => this.apiClient.listSessionParticipants(sessionId, params));
-  }
-  
-  /**
-   * Phone participants joined
-   */
-  async phoneParticipantsJoined(roomId: string, participants: {
-    call_id: string;
-    name?: string;
-    caller_number?: string;
-    external_id?: string;
-  }[]): Promise<void> {
-    const circuit = this.createCircuitBreaker('phoneParticipantsJoined');
-    return circuit.exec(() => this.apiClient.phoneParticipantsJoined(roomId, participants));
-  }
-  
-  /**
-   * Phone participants left
-   */
-  async phoneParticipantsLeft(roomId: string, callIds: string[]): Promise<void> {
-    const circuit = this.createCircuitBreaker('phoneParticipantsLeft');
-    return circuit.exec(() => this.apiClient.phoneParticipantsLeft(roomId, callIds));
-  }
-  
-  // Recordings
-  
-  /**
-   * List all recordings
-   */
-  async listRecordings(params?: PaginationParams & {
-    room_id?: string;
-    session_id?: string;
-    status?: 'IN_PROGRESS' | 'PENDING_CONVERSION' | 'READY';
-  }): Promise<ApiResponse<Recording>> {
-    const circuit = this.createCircuitBreaker('listRecordings');
-    return circuit.exec(() => this.apiClient.listRecordings(params));
-  }
-  
-  /**
-   * List archived recordings
-   */
-  async listArchivedRecordings(params?: PaginationParams & {
-    room_id?: string;
-  }): Promise<ApiResponse<Recording>> {
-    const circuit = this.createCircuitBreaker('listArchivedRecordings');
-    return circuit.exec(() => this.apiClient.listArchivedRecordings(params));
-  }
-  
-  /**
-   * Get a specific recording
-   */
-  async getRecording(recordingId: string): Promise<Recording> {
-    const circuit = this.createCircuitBreaker('getRecording');
-    return circuit.exec(() => this.apiClient.getRecording(recordingId));
-  }
-  
-  /**
-   * Delete a recording
-   */
-  async deleteRecording(recordingId: string): Promise<void> {
-    const circuit = this.createCircuitBreaker('deleteRecording');
-    return circuit.exec(() => this.apiClient.deleteRecording(recordingId));
-  }
-  
-  /**
-   * Get a download link for a recording
-   */
-  async getRecordingDownloadLink(recordingId: string, validForMinutes?: number): Promise<RecordingDownloadLink> {
-    const circuit = this.createCircuitBreaker('getRecordingDownloadLink');
-    return circuit.exec(() => this.apiClient.getRecordingDownloadLink(recordingId, validForMinutes));
-  }
-  
-  /**
-   * Archive a recording
-   */
-  async archiveRecording(recordingId: string): Promise<void> {
-    const circuit = this.createCircuitBreaker('archiveRecording');
-    return circuit.exec(() => this.apiClient.archiveRecording(recordingId));
-  }
-  
-  /**
-   * Unarchive a recording
-   */
-  async unarchiveRecording(recordingId: string): Promise<void> {
-    const circuit = this.createCircuitBreaker('unarchiveRecording');
-    return circuit.exec(() => this.apiClient.unarchiveRecording(recordingId));
-  }
-  
-  /**
-   * Start recording in a room
-   */
-  async startRecording(roomId: string): Promise<void> {
-    const circuit = this.createCircuitBreaker('startRecording');
-    return circuit.exec(() => this.apiClient.startRecording(roomId));
-  }
-  
-  /**
-   * Stop recording in a room
-   */
-  async stopRecording(roomId: string): Promise<void> {
-    const circuit = this.createCircuitBreaker('stopRecording');
-    return circuit.exec(() => this.apiClient.stopRecording(roomId));
-  }
-  
-  // Webhooks
-  
-  /**
-   * List available event types for webhooks
-   */
-  async listWebhookEvents(): Promise<string[]> {
-    const circuit = this.createCircuitBreaker('listWebhookEvents');
-    return circuit.exec(() => this.apiClient.listWebhookEvents());
-  }
-  
-  /**
-   * List all webhooks
-   */
-  async listWebhooks(params?: PaginationParams): Promise<ApiResponse<Webhook>> {
-    const circuit = this.createCircuitBreaker('listWebhooks');
-    return circuit.exec(() => this.apiClient.listWebhooks(params));
-  }
-  
-  /**
-   * Create a new webhook
-   */
-  async createWebhook(settings: WebhookCreateSettings): Promise<Webhook> {
-    const circuit = this.createCircuitBreaker('createWebhook');
-    return circuit.exec(() => this.apiClient.createWebhook(settings));
-  }
-  
-  /**
-   * Get a specific webhook
-   */
-  async getWebhook(webhookId: string): Promise<Webhook> {
-    const circuit = this.createCircuitBreaker('getWebhook');
-    return circuit.exec(() => this.apiClient.getWebhook(webhookId));
-  }
-  
-  /**
-   * Update a webhook
-   */
-  async updateWebhook(webhookId: string, settings: Partial<WebhookCreateSettings>): Promise<Webhook> {
-    const circuit = this.createCircuitBreaker('updateWebhook');
-    return circuit.exec(() => this.apiClient.updateWebhook(webhookId, settings));
-  }
-  
-  /**
-   * Delete a webhook
-   */
-  async deleteWebhook(webhookId: string): Promise<void> {
-    const circuit = this.createCircuitBreaker('deleteWebhook');
-    return circuit.exec(() => this.apiClient.deleteWebhook(webhookId));
-  }
-  
-  // Breakout Rooms
-  
-  /**
-   * List breakout rooms for a parent room
-   */
-  async listBreakoutRooms(roomId: string, params?: PaginationParams): Promise<ApiResponse<BreakoutRoom>> {
-    const circuit = this.createCircuitBreaker('listBreakoutRooms');
-    return circuit.exec(() => this.apiClient.listBreakoutRooms(roomId, params));
-  }
-  
-  /**
-   * Get a specific breakout room
-   */
-  async getBreakoutRoom(roomId: string, breakoutRoomId: string): Promise<BreakoutRoom> {
-    const circuit = this.createCircuitBreaker('getBreakoutRoom');
-    return circuit.exec(() => this.apiClient.getBreakoutRoom(roomId, breakoutRoomId));
-  }
-  
-  /**
-   * Create breakout rooms
-   */
-  async createBreakoutRooms(roomId: string, settings: BreakoutRoomCreateSettings): Promise<ApiResponse<BreakoutRoom>> {
-    const circuit = this.createCircuitBreaker('createBreakoutRooms');
-    return circuit.exec(() => this.apiClient.createBreakoutRooms(roomId, settings));
-  }
-  
-  /**
-   * Delete a breakout room
-   */
-  async deleteBreakoutRoom(roomId: string, breakoutRoomId: string): Promise<void> {
-    const circuit = this.createCircuitBreaker('deleteBreakoutRoom');
-    return circuit.exec(() => this.apiClient.deleteBreakoutRoom(roomId, breakoutRoomId));
-  }
-  
-  /**
-   * Delete all breakout rooms
-   */
-  async deleteAllBreakoutRooms(roomId: string): Promise<void> {
-    const circuit = this.createCircuitBreaker('deleteAllBreakoutRooms');
-    return circuit.exec(() => this.apiClient.deleteAllBreakoutRooms(roomId));
-  }
-  
-  /**
-   * List participants in a breakout room
-   */
-  async listBreakoutRoomParticipants(roomId: string, breakoutRoomId: string, params?: PaginationParams): Promise<ApiResponse<Participant>> {
-    const circuit = this.createCircuitBreaker('listBreakoutRoomParticipants');
-    return circuit.exec(() => this.apiClient.listBreakoutRoomParticipants(roomId, breakoutRoomId, params));
-  }
-  
-  /**
-   * Assign participants to breakout rooms
-   */
-  async assignParticipantsToBreakoutRooms(roomId: string, assignments: BreakoutRoomParticipantAssignment[]): Promise<void> {
-    const circuit = this.createCircuitBreaker('assignParticipantsToBreakoutRooms');
-    return circuit.exec(() => this.apiClient.assignParticipantsToBreakoutRooms(roomId, assignments));
-  }
-  
-  /**
-   * Return all participants to the main room
-   */
-  async returnAllParticipantsToMainRoom(roomId: string): Promise<void> {
-    const circuit = this.createCircuitBreaker('returnAllParticipantsToMainRoom');
-    return circuit.exec(() => this.apiClient.returnAllParticipantsToMainRoom(roomId));
-  }
-  
-  /**
-   * Broadcast message to all breakout rooms
-   */
-  async broadcastToBreakoutRooms(roomId: string, options: { message: string }): Promise<void> {
-    const circuit = this.createCircuitBreaker('broadcastToBreakoutRooms');
-    return circuit.exec(() => this.apiClient.broadcastToBreakoutRooms(roomId, options));
-  }
-  
-  /**
-   * Open breakout rooms (start breakout sessions)
-   */
-  async openBreakoutRooms(roomId: string): Promise<void> {
-    const circuit = this.createCircuitBreaker('openBreakoutRooms');
-    return circuit.exec(() => this.apiClient.openBreakoutRooms(roomId));
-  }
-  
-  /**
-   * Close breakout rooms
-   */
-  async closeBreakoutRooms(roomId: string): Promise<void> {
-    const circuit = this.createCircuitBreaker('closeBreakoutRooms');
-    return circuit.exec(() => this.apiClient.closeBreakoutRooms(roomId));
-  }
-  
-  // Meeting Scheduling
-  
-  /**
-   * List all scheduled meetings
-   */
-  async listScheduledMeetings(params?: PaginationParams & DateRangeParams): Promise<ApiResponse<ScheduledMeeting>> {
-    const circuit = this.createCircuitBreaker('listScheduledMeetings');
-    return circuit.exec(() => this.apiClient.listScheduledMeetings(params));
-  }
-  
-  /**
-   * Get a specific scheduled meeting
-   */
-  async getScheduledMeeting(meetingId: string): Promise<ScheduledMeeting> {
-    const circuit = this.createCircuitBreaker('getScheduledMeeting');
-    return circuit.exec(() => this.apiClient.getScheduledMeeting(meetingId));
-  }
-  
-  /**
-   * Create a new scheduled meeting
-   */
-  async createScheduledMeeting(settings: MeetingCreateSettings): Promise<ScheduledMeeting> {
-    const circuit = this.createCircuitBreaker('createScheduledMeeting');
-    return circuit.exec(() => this.apiClient.createScheduledMeeting(settings));
-  }
-  
-  /**
-   * Update a scheduled meeting
-   */
-  async updateScheduledMeeting(meetingId: string, settings: MeetingUpdateSettings): Promise<ScheduledMeeting> {
-    const circuit = this.createCircuitBreaker('updateScheduledMeeting');
-    return circuit.exec(() => this.apiClient.updateScheduledMeeting(meetingId, settings));
-  }
-  
-  /**
-   * Cancel a scheduled meeting
-   */
-  async cancelScheduledMeeting(meetingId: string, options?: { notify_participants?: boolean }): Promise<void> {
-    const circuit = this.createCircuitBreaker('cancelScheduledMeeting');
-    return circuit.exec(() => this.apiClient.cancelScheduledMeeting(meetingId, options));
-  }
-  
-  /**
-   * Delete a scheduled meeting
-   */
-  async deleteScheduledMeeting(meetingId: string): Promise<void> {
-    const circuit = this.createCircuitBreaker('deleteScheduledMeeting');
-    return circuit.exec(() => this.apiClient.deleteScheduledMeeting(meetingId));
-  }
-  
-  /**
-   * Add participants to a meeting
-   */
-  async addMeetingParticipants(meetingId: string, options: MeetingParticipantAddOptions): Promise<void> {
-    const circuit = this.createCircuitBreaker('addMeetingParticipants');
-    return circuit.exec(() => this.apiClient.addMeetingParticipants(meetingId, options));
-  }
-  
-  /**
-   * Remove participants from a meeting
-   */
-  async removeMeetingParticipants(meetingId: string, options: MeetingParticipantRemoveOptions): Promise<void> {
-    const circuit = this.createCircuitBreaker('removeMeetingParticipants');
-    return circuit.exec(() => this.apiClient.removeMeetingParticipants(meetingId, options));
-  }
-  
-  /**
-   * Send meeting reminders
-   */
-  async sendMeetingReminders(meetingId: string, options?: MeetingReminderOptions): Promise<void> {
-    const circuit = this.createCircuitBreaker('sendMeetingReminders');
-    return circuit.exec(() => this.apiClient.sendMeetingReminders(meetingId, options));
-  }
-  
-  /**
-   * Find available meeting times
-   */
-  async findAvailableMeetingTimes(options: MeetingAvailabilityOptions): Promise<AvailableTimeSlot[]> {
-    const circuit = this.createCircuitBreaker('findAvailableMeetingTimes');
-    return circuit.exec(() => this.apiClient.findAvailableMeetingTimes(options));
+    return circuit.exec(() => this.apiClient.deleteRoomResources(roomId), [roomId]);
   }
   
   // Factory method to create a circuit breaker API client from a standard client
