@@ -1079,13 +1079,13 @@ export function startServer(options?: ServerOptions) {
           components: formattedComponents
         },
         features: {
-          cache: ENABLE_CACHE,
-          circuitBreaker: ENABLE_CIRCUIT_BREAKER,
-          gracefulDegradation: ENABLE_GRACEFUL_DEGRADATION,
-          connectionManagement: ENABLE_CONNECTION_MANAGEMENT,
-          tokenManagement: ENABLE_TOKEN_MANAGEMENT,
-          resourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
-          metrics: ENABLE_METRICS
+          cache: options?.enableCache ?? (process.env.ENABLE_CACHE === 'true'),
+          circuitBreaker: options?.enableCircuitBreaker ?? (process.env.ENABLE_CIRCUIT_BREAKER === 'true'),
+          gracefulDegradation: options?.enableGracefulDegradation ?? (process.env.ENABLE_GRACEFUL_DEGRADATION === 'true'),
+          connectionManagement: options?.enableConnectionManagement ?? (process.env.ENABLE_CONNECTION_MANAGEMENT === 'true'),
+          tokenManagement: options?.enableTokenManagement ?? (process.env.ENABLE_TOKEN_MANAGEMENT === 'true'),
+          resourceOptimization: options?.enableResourceOptimization ?? (process.env.ENABLE_RESOURCE_OPTIMIZATION === 'true'),
+          metrics: options?.enableMetrics ?? (process.env.ENABLE_METRICS === 'true')
         }
       });
     });

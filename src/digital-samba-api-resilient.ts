@@ -258,13 +258,14 @@ export class ResilientApiClient {
    * @returns Created room
    */
   async createRoom(settings: RoomCreateSettings): Promise<Room> {
-    return gracefulDegradation.executeWithFallback(
+    const result = await gracefulDegradation.executeWithFallback(
       'createRoom',
       () => this.circuitBreakerClient.createRoom(settings),
       { 
         skipCache: true // Don't cache write operations
       }
     );
+    return result.data as Room;
   }
   
   /**
@@ -323,13 +324,14 @@ export class ResilientApiClient {
    * @returns Token response
    */
   async generateRoomToken(roomId: string, options: any): Promise<TokenResponse> {
-    return gracefulDegradation.executeWithFallback(
+    const result = await gracefulDegradation.executeWithFallback(
       'generateRoomToken',
       () => this.circuitBreakerClient.generateRoomToken(roomId, options),
       { 
         skipCache: true // Security tokens should not be cached
       }
     );
+    return result.data as TokenResponse;
   }
   
   /**

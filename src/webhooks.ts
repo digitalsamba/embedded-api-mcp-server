@@ -776,10 +776,9 @@ export function setupWebhookTools(
           throw new Error('Request object is undefined');
         }
         
-        // Make sure the request has a sessionId property
-        if (!request.sessionId && request.context && request.context.sessionId) {
-          request.sessionId = request.context.sessionId;
-        }
+        // Ensure request has sessionId property
+        // Note: We previously tried to get sessionId from context, but that's not available
+        // in the current version of McpServer - using only request.sessionId now
         
         // Get API key from the context
         const apiKey = getApiKeyFromRequest(request);
@@ -876,10 +875,9 @@ export function setupWebhookTools(
           throw new Error('Request object is undefined');
         }
         
-        // Make sure the request has a sessionId property
-        if (!request.sessionId && request.context && request.context.sessionId) {
-          request.sessionId = request.context.sessionId;
-        }
+        // Ensure request has sessionId property
+        // Note: We previously tried to get sessionId from context, but that's not available
+        // in the current version of McpServer - using only request.sessionId now
         
         // Get API key from the context
         const apiKey = getApiKeyFromRequest(request);
@@ -968,10 +966,9 @@ export function setupWebhookTools(
           throw new Error('Request object is undefined');
         }
         
-        // Make sure the request has a sessionId property
-        if (!request.sessionId && request.context && request.context.sessionId) {
-          request.sessionId = request.context.sessionId;
-        }
+        // Ensure request has sessionId property
+        // Note: We previously tried to get sessionId from context, but that's not available
+        // in the current version of McpServer - using only request.sessionId now
         
         // Get API key from the context
         const apiKey = getApiKeyFromRequest(request);
@@ -1049,10 +1046,9 @@ export function setupWebhookTools(
           throw new Error('Request object is undefined');
         }
         
-        // Make sure the request has a sessionId property
-        if (!request.sessionId && request.context && request.context.sessionId) {
-          request.sessionId = request.context.sessionId;
-        }
+        // Ensure request has sessionId property
+        // Note: We previously tried to get sessionId from context, but that's not available
+        // in the current version of McpServer - using only request.sessionId now
         
         // Get API key from the context
         const apiKey = getApiKeyFromRequest(request);

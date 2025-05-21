@@ -641,7 +641,7 @@ export class DigitalSambaApiClient {
       logger.debug(`Response status: ${response.status} ${response.statusText}`);
       
       // Update metrics labels with status code
-      metricsLabels = { ...metricsLabels, status: response.status.toString() };
+      metricsLabels = { ...metricsLabels, status: response.status.toString() } as typeof metricsLabels;
       
       if (!response.ok) {
         const errorText = await response.text();
