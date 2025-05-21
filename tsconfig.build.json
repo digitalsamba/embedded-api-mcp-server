@@ -8,7 +8,6 @@
     "strict": false,
     "strictNullChecks": false,
     "noImplicitAny": false,
-    "noEmitOnError": false,
     "skipLibCheck": true,
     "declaration": true,
     "declarationMap": true,
@@ -24,7 +23,10 @@
     "lib": ["ES2020"],
     "allowSyntheticDefaultImports": true,
     "removeComments": false,
-    "preserveConstEnums": true
+    "preserveConstEnums": true,
+    "noEmitOnError": false,
+    "checkJs": false,
+    "allowJs": true
   },
   "include": ["src/**/*", "bin/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "tests/**/*"]
