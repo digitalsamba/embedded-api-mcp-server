@@ -4,23 +4,38 @@ This package provides a Model Context Protocol (MCP) server that integrates with
 
 ## Installation
 
-### Global Installation
-
-```bash
-npm install -g digital-samba-mcp
-```
-
-### Local Installation
+### Local Installation (Recommended)
 
 ```bash
 npm install digital-samba-mcp
+```
+
+Then use with npx:
+
+```bash
+npx digital-samba-mcp --api-key YOUR_API_KEY
+```
+
+### Global Installation
+
+While global installation is supported, we recommend local installation for better version management and dependency control.
+
+```bash
+npm install -g digital-samba-mcp
+digital-samba-mcp --api-key YOUR_API_KEY
 ```
 
 ## Usage
 
 ### Command Line Interface
 
-Once installed globally, you can run the MCP server with the following command:
+Once installed, you can run the MCP server with the following command:
+
+```bash
+npx digital-samba-mcp --api-key YOUR_API_KEY
+```
+
+If installed globally:
 
 ```bash
 digital-samba-mcp --api-key YOUR_API_KEY
@@ -89,14 +104,14 @@ const { server } = createServer({
 
 To use the Digital Samba MCP Server with Claude Desktop:
 
-1. Install the package globally:
+1. Install the package:
    ```bash
-   npm install -g digital-samba-mcp
+   npm install digital-samba-mcp
    ```
 
 2. Start the server with your Digital Samba API key:
    ```bash
-   digital-samba-mcp --api-key YOUR_API_KEY
+   npx digital-samba-mcp --api-key YOUR_API_KEY
    ```
 
 3. Configure Claude Desktop to use the MCP server:
