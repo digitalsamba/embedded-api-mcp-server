@@ -198,17 +198,19 @@ export class CircuitBreaker extends EventEmitter {
    * 
    * @template T - The return type of the function
    * @template Args - The argument types of the function
-   * @param {(...args: Args) => Promise<T>} fn - The function to protect
-   * @param {...Args} args - Arguments to pass to the function
+   * @param {() => Promise<T>} fn - The function to protect
+   * @param {Args} args - Arguments to pass to the function (as an array)
+   * @param {boolean} [forceNoTimeout=false] - If true, disables the timeout for this call
    * @returns {Promise<T>} The result of the function or fallback
    * @throws {Error} If the circuit is open and no fallback is provided
    * @example
    * // Protect an API call
-   * const result = await circuitBreaker.exec(async () => {
-   *   return await fetch('https://api.example.com/data');
-   * });
+   * const result = await circuitBreaker.exec(
+   *   async () => { return await fetch('https://api.example.com/data'); },
+   *   [] // No args
+   * );
    */
-  async exec<T, Args extends any[]>(fn: (...args: Args) => Promise<T>, ...args: Args): Promise<T> {
+  async exec<T, Args extends any[]>(fn: () => Promise<T>, args: Args = [] as unknown as Args, forceNoTimeout: boolean = false): Promise<T> {
     // Check if the circuit is open
     if (this.state === CircuitState.OPEN) {
       // If we passed the reset timeout, transition to half-open
@@ -241,28 +243,34 @@ export class CircuitBreaker extends EventEmitter {
     try {
       let result: T;
       
-      // If this is the first request and state is CLOSED, use initialRequestTimeout
-      // otherwise use the standard requestTimeout
-      const useTimeout = this.state === CircuitState.CLOSED && this.failureCount === 0 
-                       ? this.initialRequestTimeout 
-                       : this.requestTimeout;
-      
-      if (useTimeout !== undefined) {
-        // Use Promise.race to implement timeout
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => {
-            reject(new Error(`Request timeout after ${useTimeout}ms`));
-          }, useTimeout);
-        });
-        
-        // Race the function execution against the timeout
-        result = await Promise.race([
-          fn(...args),
-          timeoutPromise
-        ]);
-      } else {
+      // If forceNoTimeout is true, skip timeout handling entirely
+      if (forceNoTimeout) {
         // No timeout, just execute the function
-        result = await fn(...args);
+        result = await fn();
+      } else {
+        // If this is the first request and state is CLOSED, use initialRequestTimeout
+        // otherwise use the standard requestTimeout
+        const useTimeout = this.state === CircuitState.CLOSED && this.failureCount === 0 
+                         ? this.initialRequestTimeout 
+                         : this.requestTimeout;
+        
+        if (useTimeout !== undefined) {
+          // Use Promise.race to implement timeout
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => {
+              reject(new Error(`Request timeout after ${useTimeout}ms`));
+            }, useTimeout);
+          });
+          
+          // Race the function execution against the timeout
+          result = await Promise.race([
+            fn(),
+            timeoutPromise
+          ]);
+        } else {
+          // No timeout, just execute the function
+          result = await fn();
+        }
       }
       
       // Success - handle based on current state

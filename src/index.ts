@@ -220,6 +220,23 @@ export function createServer(options?: ServerOptions) {
             initialRequestTimeout: 60000 // 60 second timeout for initial requests
           }
         });
+        
+        // Initialize the API connection with a timeout-bypassing request
+        // This helps prevent timeout errors during the MCP server initialization
+        try {
+          logger.info('Initializing API connection...');
+          const initResult = await client.initializeConnection();
+          if (initResult) {
+            logger.info('API connection initialized successfully');
+          } else {
+            logger.warn('API connection initialization did not complete successfully');
+          }
+        } catch (initError) {
+          logger.warn('Failed to initialize API connection', {
+            error: initError instanceof Error ? initError.message : String(initError)
+          });
+          // Continue anyway, as the regular requests might still work
+        }
       } else if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
         // Use enhanced API client
         logger.debug('Using enhanced API client with additional features enabled');
