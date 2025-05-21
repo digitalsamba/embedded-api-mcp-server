@@ -10,16 +10,22 @@
   },
   "exports": {
     ".": {
-      "import": "./dist/src/index.js",
-      "types": "./dist/src/index.d.ts"
+      "import": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      }
     },
     "./server": {
-      "import": "./dist/src/index.js",
-      "types": "./dist/src/index.d.ts"
+      "import": {
+        "types": "./dist/src/index.d.ts",
+        "default": "./dist/src/index.js"
+      }
     },
     "./client": {
-      "import": "./dist/src/digital-samba-api.js",
-      "types": "./dist/src/digital-samba-api.d.ts"
+      "import": {
+        "types": "./dist/src/digital-samba-api.d.ts",
+        "default": "./dist/src/digital-samba-api.js"
+      }
     }
   },
   "files": [
@@ -54,7 +60,8 @@
     "test:token-refresh": "node tests/token-refresh-test.js",
     "test:resource-optimizer": "node tests/resource-optimizer-test.js",
     "prepublishOnly": "npm run build:clean",
-    "postbuild": "node -e \"const fs = require('fs'); const path = require('path'); const srcPath = path.join(process.cwd(), 'bin', 'cli.js'); const destPath = path.join(process.cwd(), 'dist', 'bin', 'cli.js'); require('fs').mkdirSync(path.dirname(destPath), { recursive: true }); fs.copyFileSync(srcPath, destPath); fs.chmodSync(destPath, '755');\""
+    "postbuild": "node --eval \"import { promises as fs } from 'fs'; import path from 'path'; const srcPath = path.join(process.cwd(), 'bin', 'cli.js'); const destPath = path.join(process.cwd(), 'dist', 'bin', 'cli.js'); await fs.mkdir(path.dirname(destPath), { recursive: true }); await fs.copyFile(srcPath, destPath); await fs.chmod(destPath, '755');\"",
+    "prepare": "npm run build:clean"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.11.4",
@@ -101,5 +108,9 @@
     "url": "https://github.com/digital-samba/digital-samba-mcp-server/issues"
   },
   "homepage": "https://github.com/digital-samba/digital-samba-mcp-server#readme",
-  "sideEffects": false
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
 }

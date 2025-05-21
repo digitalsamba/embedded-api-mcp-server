@@ -98,7 +98,7 @@ if (args['api-key']) {
 }
 
 // Start the server
-import('../dist/index.js').then(module => {
+import('../dist/src/index.js').then(module => {
   console.log('Starting Digital Samba MCP Server...');
   module.startServer();
 }).catch(error => {
