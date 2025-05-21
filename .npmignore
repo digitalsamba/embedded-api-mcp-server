@@ -60,6 +60,19 @@ test.env
 *.lock
 tools/
 docs/
+build.js
+build-size-check.js
+tsconfig.build.json
+typescript-build-output.log
+.eslintrc*
+.prettierrc*
+
+# IDE files
+.idea
+.vscode
+*.iml
+*.sublime-*
+.DS_Store
 
 # Not to be packaged
 CONTRIBUTING.md

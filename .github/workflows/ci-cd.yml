@@ -40,9 +40,9 @@ jobs:
         node-version: '20.x'
         cache: 'npm'
     - run: npm ci
-    - run: npm run build
-    - name: Check bundle size
-      run: npm pack && du -h *.tgz
+    - run: npm run build:prod
+    - name: Check bundle size and content
+      run: npm run size-check
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
@@ -93,7 +93,10 @@ jobs:
         body: ${{ steps.changelog.outputs.changelog }}
     
     - name: Publish to NPM
-      run: npm publish
+      run: |
+        echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > .npmrc
+        npm publish
+        rm -f .npmrc
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
