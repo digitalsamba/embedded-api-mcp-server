@@ -177,7 +177,7 @@ test-rate-limiting-caching.bat
    - Add test coverage reporting
    - Test with MCP Inspector
    - Validate with real Digital Samba API
-   - Perform load testing with simulated traffic
+   - Test security aspects (auth token handling, API key protection)
 
 2. **Build Example Applications**
    - Create a standalone example application showcasing all features
