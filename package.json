@@ -1,6 +1,6 @@
 {
   "name": "digital-samba-mcp",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "packageManager": "npm@10.2.0",
   "description": "Digital Samba MCP Server - Model Context Protocol server for Digital Samba's video conferencing API",
   "type": "module",
