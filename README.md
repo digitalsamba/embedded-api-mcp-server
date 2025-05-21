@@ -26,24 +26,35 @@ A Model Context Protocol (MCP) server implementation for Digital Samba's video c
 
 ## Installation
 
+### Local Installation (Recommended)
+
 ```bash
 npm install digital-samba-mcp
 ```
 
-Or install globally to use the CLI:
+Then use with npx:
+
+```bash
+npx digital-samba-mcp --api-key YOUR_API_KEY
+```
+
+### Global Installation
+
+While global installation is supported, we recommend local installation for better version management and dependency control.
 
 ```bash
 npm install -g digital-samba-mcp
+digital-samba-mcp --api-key YOUR_API_KEY
 ```
 
 ## Quick Start
 
 ### Using the CLI
 
-The fastest way to get started is to use the command-line interface:
+The fastest way to get started is to use the command-line interface with npx:
 
 ```bash
-digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
+npx digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
 ```
 
 This will start the MCP server on port 3000 and expose resources and tools for Digital Samba's video conferencing functionality.
@@ -70,7 +81,7 @@ The Digital Samba MCP Server is designed to work seamlessly with Claude Desktop,
 
 1. Start the Digital Samba MCP Server locally:
    ```bash
-   digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
+   npx digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
    ```
 
 2. Open Claude Desktop and navigate to Settings > Advanced > MCP Servers:
@@ -123,7 +134,7 @@ Schedule a Digital Samba meeting called "Quarterly Review" for next Monday at 10
 ## CLI Usage
 
 ```
-digital-samba-mcp [options]
+npx digital-samba-mcp [options]
 
 Options:
   -p, --port <port>                 Port to run the server on (default: 3000)
@@ -347,13 +358,13 @@ The Digital Samba MCP Server includes built-in support for Prometheus metrics, w
 Metrics can be enabled via CLI arguments:
 
 ```bash
-digital-samba-mcp --enable-metrics --metrics-endpoint /metrics --metrics-prefix digital_samba_mcp_
+npx digital-samba-mcp --enable-metrics --metrics-endpoint /metrics --metrics-prefix digital_samba_mcp_
 ```
 
 Or via environment variables:
 
 ```bash
-ENABLE_METRICS=true METRICS_ENDPOINT=/metrics METRICS_PREFIX=digital_samba_mcp_ digital-samba-mcp
+ENABLE_METRICS=true METRICS_ENDPOINT=/metrics METRICS_PREFIX=digital_samba_mcp_ npx digital-samba-mcp
 ```
 
 Or when using the API:
@@ -535,7 +546,7 @@ You can test the Digital Samba MCP Server using the MCP Inspector tool:
 
 2. Start the Digital Samba MCP Server:
    ```bash
-   digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
+   npx digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
    ```
 
 3. Run the MCP Inspector:

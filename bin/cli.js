@@ -56,7 +56,7 @@ if (args.help) {
   console.log(`
 Digital Samba MCP Server
 
-Usage: digital-samba-mcp [options]
+Usage: npx digital-samba-mcp [options]
 
 Options:
   -p, --port <port>                 Port to run the server on (default: 3000)
@@ -78,8 +78,8 @@ Environment Variables:
   PUBLIC_URL                        Public URL for the server
 
 Examples:
-  digital-samba-mcp --api-key YOUR_API_KEY
-  digital-samba-mcp --port 4000 --api-key YOUR_API_KEY --log-level debug
+  npx digital-samba-mcp --api-key YOUR_API_KEY
+  npx digital-samba-mcp --port 4000 --api-key YOUR_API_KEY --log-level debug
   `);
   process.exit(0);
 }
