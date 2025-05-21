@@ -15,12 +15,15 @@ if "%~1"=="" (
 REM Set environment variables for MCP server
 set API_KEY=%~1
 set MCP_JSON_RPC_MODE=true
-set LOG_LEVEL=debug
+set LOG_LEVEL=error
 set NODE_ENV=production
+
+REM Completely suppress console output to prevent JSON-RPC interference
+set NO_CONSOLE_OUTPUT=true
 
 REM Setup logging
 set LOG_FILE=%~dp0claude-desktop.log
-echo %DATE% %TIME% - Starting Digital Samba MCP server for Claude Desktop >> "%LOG_FILE%"
+echo %DATE% %TIME% - Starting Digital Samba MCP server for Claude Desktop > "%LOG_FILE%"
 echo %DATE% %TIME% - API Key: %API_KEY:~0,5%... >> "%LOG_FILE%"
 
 REM Get path to this script and determine CLI script location
@@ -66,17 +69,19 @@ echo @echo off > "%TEMP_BAT%"
 echo setlocal >> "%TEMP_BAT%"
 echo cd /d "%SCRIPT_DIR%" >> "%TEMP_BAT%"
 echo set MCP_JSON_RPC_MODE=true >> "%TEMP_BAT%"
-echo set LOG_LEVEL=debug >> "%TEMP_BAT%"
+echo set LOG_LEVEL=error >> "%TEMP_BAT%"
 echo set NODE_ENV=production >> "%TEMP_BAT%"
+echo set NO_CONSOLE_OUTPUT=true >> "%TEMP_BAT%"
 echo set DIGITAL_SAMBA_API_KEY=%API_KEY% >> "%TEMP_BAT%"
-echo node "%CLI_PATH%" 2^>^>"%LOG_FILE%" >> "%TEMP_BAT%"
+echo node "%CLI_PATH%" 2^>^>"%LOG_FILE%" 1^>^>"%LOG_FILE%" >> "%TEMP_BAT%"
 echo exit /b %%ERRORLEVEL%% >> "%TEMP_BAT%"
 
 echo %DATE% %TIME% - Executing MCP server with node >> "%LOG_FILE%"
 echo %DATE% %TIME% - Command: node "%CLI_PATH%" >> "%LOG_FILE%"
 
-REM Run the temporary batch file and inherit stdin/stdout for JSON-RPC communication
-call "%TEMP_BAT%"
+REM Run the temporary batch file but REDIRECT ALL STDIO
+call "%TEMP_BAT%" > nul 2> nul
+
 set EXIT_CODE=%ERRORLEVEL%
 
 REM Clean up the temporary batch file
@@ -99,6 +104,9 @@ if %EXIT_CODE% NEQ 0 (
     echo %DATE% %TIME% - package.json not found >> "%LOG_FILE%"
   )
 )
+
+echo %DATE% %TIME% - Claude Desktop wrapper completed execution >> "%LOG_FILE%"
+exit /b %EXIT_CODE%
 
 exit /b %EXIT_CODE%
 
