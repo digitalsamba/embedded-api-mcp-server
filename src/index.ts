@@ -3,10 +3,27 @@ import { randomUUID } from 'crypto';
 import { createServer as createHttpServer } from 'http';
 import { config as loadEnv } from 'dotenv';
 
+// If NO_CONSOLE_OUTPUT is set, completely suppress console output
+if (process.env.NO_CONSOLE_OUTPUT === 'true') {
+  // Save original console methods
+  const originalConsole = {
+    log: console.log,
+    error: console.error,
+    warn: console.warn,
+    info: console.info,
+    debug: console.debug
+  };
+  
+  // Replace with no-op functions
+  console.log = () => {};
+  console.error = () => {};
+  console.warn = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+}
+
 // Load environment variables from .env file
-console.log("Loading environment variables from .env file...");
-const result = loadEnv();
-console.log(result.parsed ? "Environment loaded successfully" : "No .env file found or error loading it");
+loadEnv();
 
 // External dependencies
 import express from 'express';
@@ -783,25 +800,28 @@ export function createServer(options?: ServerOptions) {
 
 // Start a server with the provided options
 export function startServer(options?: ServerOptions) {
-  console.log("startServer function called with options:", options);
+  // Only log if not in NO_CONSOLE_OUTPUT mode
+  const shouldLog = process.env.NO_CONSOLE_OUTPUT !== 'true';
+  
+  if (shouldLog) logger.debug("startServer function called with options:", options);
   
   try {
     // Create Express app
-    console.log("Creating Express app...");
+    if (shouldLog) logger.debug("Creating Express app...");
     const app = express();
     app.use(express.json());
-    console.log("Express app created and JSON middleware added");
+    if (shouldLog) logger.debug("Express app created and JSON middleware added");
 
     // Create the MCP server
-    console.log("Creating MCP server...");
+    if (shouldLog) logger.debug("Creating MCP server...");
     const serverConfig = createServer(options);
     
     // Add metrics middleware if enabled
     if (serverConfig.enableMetrics) {
-      console.log("Adding metrics middleware...");
+      if (shouldLog) logger.debug("Adding metrics middleware...");
       app.use(metricsRegistry.createHttpMetricsMiddleware());
       metricsRegistry.registerMetricsEndpoint(app, serverConfig.metricsEndpoint);
-      console.log(`Metrics endpoint registered at ${serverConfig.metricsEndpoint}`);
+      if (shouldLog) logger.debug(`Metrics endpoint registered at ${serverConfig.metricsEndpoint}`);
     }
     const { 
       server, 
@@ -818,7 +838,7 @@ export function startServer(options?: ServerOptions) {
       metricsPrefix,
       collectDefaultMetrics
     } = serverConfig;
-    console.log("MCP server created with configuration:", { 
+    if (shouldLog) logger.debug("MCP server created with configuration:", { 
       port, 
       apiUrl, 
       webhookEndpoint, 

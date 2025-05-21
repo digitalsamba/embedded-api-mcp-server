@@ -111,6 +111,25 @@ process.env.WEBHOOK_SECRET = args['webhook-secret'];
 process.env.WEBHOOK_ENDPOINT = args['webhook-endpoint'];
 process.env.PUBLIC_URL = args['public-url'] || `http://localhost:${args.port}`;
 
+// If NO_CONSOLE_OUTPUT is set, completely suppress console output
+if (process.env.NO_CONSOLE_OUTPUT === 'true') {
+  // Save original console methods
+  const originalConsole = {
+    log: console.log,
+    error: console.error,
+    warn: console.warn,
+    info: console.info,
+    debug: console.debug
+  };
+  
+  // Replace with no-op functions
+  console.log = () => {};
+  console.error = () => {};
+  console.warn = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+}
+
 // Set API key from options or positional arguments or environment variable
 if (args['api-key']) {
   process.env.DIGITAL_SAMBA_API_KEY = args['api-key'];
