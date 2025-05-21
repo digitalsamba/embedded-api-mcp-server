@@ -8,6 +8,33 @@ import { parseArgs } from 'node:util';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Set environment variable to indicate we're in JSON-RPC mode when running via MCP
+if (!process.stdout.isTTY) {
+  process.env.MCP_JSON_RPC_MODE = 'true';
+  
+  // When in JSON-RPC mode, redirect all console output to stderr
+  // to avoid interfering with the JSON-RPC protocol over stdout
+  const originalConsole = {
+    log: console.log,
+    info: console.info,
+    warn: console.warn,
+    debug: console.debug,
+    error: console.error
+  };
+  
+  // Replace console methods to use stderr instead
+  console.log = (...args) => console.error('[INFO]', ...args);
+  console.info = (...args) => console.error('[INFO]', ...args);
+  console.warn = (...args) => console.error('[WARN]', ...args);
+  console.debug = (...args) => console.error('[DEBUG]', ...args);
+  // Keep error as is since it already goes to stderr
+}
+
+// Check if we're in JSON-RPC mode (for MCP communication)
+const isJsonRpcMode = process.env.MCP_JSON_RPC_MODE === 'true';
+
+// Parse command-line arguments
+
 // Handle positional arguments for API key
 const positionalArgs = [];
 let hasExplicitApiKey = false;
@@ -24,8 +51,6 @@ for (let i = 2; i < process.argv.length; i++) {
     positionalArgs.push(arg);
   }
 }
-
-// Parse command-line arguments
 const { values: args, positionals } = parseArgs({
   options: {
     port: {
