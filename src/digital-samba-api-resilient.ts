@@ -220,7 +220,7 @@ export class ResilientApiClient {
    * @returns Rooms response
    */
   async listRooms(params?: PaginationParams): Promise<ApiResponse<Room>> {
-    return gracefulDegradation.executeWithFallback(
+    const result = await gracefulDegradation.executeWithFallback(
       'listRooms',
       () => this.circuitBreakerClient.listRooms(params),
       { 
@@ -228,6 +228,8 @@ export class ResilientApiClient {
         cacheTTL: 300000 // 5 minutes
       }
     );
+    
+    return result.data;
   }
   
   /**
@@ -237,7 +239,7 @@ export class ResilientApiClient {
    * @returns Room details
    */
   async getRoom(roomId: string): Promise<Room> {
-    return gracefulDegradation.executeWithFallback(
+    const result = await gracefulDegradation.executeWithFallback(
       'getRoom',
       () => this.circuitBreakerClient.getRoom(roomId),
       { 
@@ -245,6 +247,8 @@ export class ResilientApiClient {
         cacheTTL: 300000 // 5 minutes
       }
     );
+    
+    return result.data;
   }
   
   /**

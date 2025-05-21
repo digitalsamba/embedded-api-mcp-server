@@ -154,10 +154,12 @@ export class CircuitBreakerApiClient {
       // Correctly type the fallback function to match the circuit breaker's exec method signature
       fallback: async <T, Args extends any[]>(_args: Args): Promise<T> => {
         const response: ApiResponse<Room> = {
-          data: [] as Room[],
+          data: [],
           total_count: 0,
           length: 0,
-          map: () => [] as Room[]
+          map: function<U>(callback: (value: any, index: number, array: any[]) => U): U[] {
+            return this.data.map(callback);
+          }
         };
         return response as unknown as T;
       }

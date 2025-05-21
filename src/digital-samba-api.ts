@@ -463,8 +463,8 @@ export interface LibraryFile {
  * });
  */
 export class DigitalSambaApiClient {
-  private apiBaseUrl: string;
-  private cache?: MemoryCache;
+  protected apiBaseUrl: string;
+  protected cache?: MemoryCache;
   
   /**
    * Creates an instance of the Digital Samba API Client
@@ -501,11 +501,11 @@ export class DigitalSambaApiClient {
    * 2. If not found, falls back to using the direct API key if provided during construction
    * 3. If neither source provides an API key, throws an AuthenticationError
    *
-   * @private
+   * @protected
    * @returns {string} The API key to use for authentication
    * @throws {AuthenticationError} If no API key is available from any source
    */
-  private getApiKey(): string {
+  protected getApiKey(): string {
     // Try to get API key from context first
     const contextApiKey = apiKeyContext.getCurrentApiKey();
     if (contextApiKey) {
@@ -529,7 +529,7 @@ export class DigitalSambaApiClient {
    * information), and processes the response. It also handles special cases like 204 No Content responses and
    * adds array-like properties to ApiResponse objects for easier consumption.
    *
-   * @private
+   * @protected
    * @template T - The expected response type
    * @param {string} endpoint - The API endpoint path (without the base URL)
    * @param {RequestInit} [options={}] - Request options, including method, body, and additional headers
@@ -543,7 +543,7 @@ export class DigitalSambaApiClient {
    * // Example internal usage
    * const rooms = await this.request<ApiResponse<Room>>('/rooms');
    */
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  protected async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.apiBaseUrl}${endpoint}`;
     const method = options.method || 'GET';
     const isCacheable = this.cache && method === 'GET';

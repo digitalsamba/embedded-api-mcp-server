@@ -226,6 +226,23 @@ export class MemoryCache<T = any> {
   }
 
   /**
+   * Invalidates a specific cache entry in a namespace
+   * @param namespace Cache namespace
+   * @param id Item identifier
+   * @returns Whether the item was invalidated
+   */
+  public invalidate(namespace: string, id: string): boolean {
+    const key = this.options.keyGenerator!(namespace, id);
+    const deleted = this.cache.delete(key);
+    
+    if (deleted) {
+      logger.debug('Cache item invalidated', { namespace, id });
+    }
+    
+    return deleted;
+  }
+
+  /**
    * Invalidates all items in a namespace
    * @param namespace Cache namespace
    * @returns Number of items invalidated
