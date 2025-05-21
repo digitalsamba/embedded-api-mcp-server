@@ -7,7 +7,7 @@
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "bin": {
-    "digital-samba-mcp-server": "./dist/bin/cli.js"
+    "digital-samba-mcp-server": "./bin/cli.js"
   },
   "exports": {
     ".": {
@@ -31,6 +31,7 @@
   },
   "files": [
     "dist",
+    "bin",
     "README.md",
     "PACKAGE.md",
     "TROUBLESHOOTING.md",
@@ -40,12 +41,12 @@
     "fix-imports": "node fix-imports.js",
     "fix-imports-2": "node fix-imports-2.js",
     "fix-sdk-paths": "node fix-sdk-paths.js",
-    "build": "tsc --skipLibCheck",
-    "build:clean": "rimraf dist && tsc --skipLibCheck",
-    "build:esbuild": "rimraf dist && node build.js",
-    "build:bundle": "rimraf dist && tsc --skipLibCheck && node build.js",
-    "build:with-bundle": "rimraf dist && tsc --skipLibCheck && node build-with-bundle.js",
-    "build:prod": "npm run fix-imports && npm run fix-imports-2 && npm run fix-sdk-paths && rimraf dist && tsc --skipLibCheck && node build.js",
+    "build": "tsc --skipLibCheck && node copy-bin.js",
+    "build:clean": "rimraf dist && tsc --skipLibCheck && node copy-bin.js",
+    "build:esbuild": "rimraf dist && node build.js && node copy-bin.js",
+    "build:bundle": "rimraf dist && tsc --skipLibCheck && node build.js && node copy-bin.js",
+    "build:with-bundle": "rimraf dist && tsc --skipLibCheck && node build-with-bundle.js && node copy-bin.js",
+    "build:prod": "npm run fix-imports && npm run fix-imports-2 && npm run fix-sdk-paths && rimraf dist && tsc --skipLibCheck && node build.js && node copy-bin.js",
     "start": "node dist/src/index.js",
     "dev": "tsx --inspect src/index.ts",
     "dev:watch": "tsx --watch --inspect src/index.ts",
