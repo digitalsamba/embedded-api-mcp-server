@@ -72,6 +72,12 @@ export interface ResilientApiClientOptions {
      * @default 10000
      */
     requestTimeout?: number;
+
+    /**
+     * Initial request timeout for circuit breaker (ms)
+     * @default 30000
+     */
+    initialRequestTimeout?: number;
   };
   
   /**
@@ -162,7 +168,8 @@ export class ResilientApiClient {
           failureThreshold: options.circuitBreaker?.failureThreshold || 3,
           resetTimeout: options.circuitBreaker?.resetTimeout || 30000,
           successThreshold: options.circuitBreaker?.successThreshold || 2,
-          requestTimeout: options.circuitBreaker?.requestTimeout || 10000
+          requestTimeout: options.circuitBreaker?.requestTimeout || 10000,
+          initialRequestTimeout: options.circuitBreaker?.initialRequestTimeout || 30000
         }
       }
     );

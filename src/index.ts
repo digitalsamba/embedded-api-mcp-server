@@ -954,8 +954,8 @@ export function startServer(options?: ServerOptions) {
                 metricsRegistry.activeSessions.inc();
               }
             },
-            // Additional options for streamable HTTP transport
-            timeout: 60000, // 60 second timeout for initial connection
+            // No timeout option is available for StreamableHTTPServerTransport
+            // We'll rely on circuit breaker timeouts instead
           });
           
           // Clean up transport when closed
