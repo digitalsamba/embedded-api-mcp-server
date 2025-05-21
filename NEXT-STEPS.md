@@ -174,8 +174,8 @@ test-rate-limiting-caching.bat
    - ✅ Set up test mocks for Digital Samba API
    - ✅ Create test fixtures and test data
    - ✅ Add end-to-end tests for MCP protocol compliance
+   - ✅ Test with MCP Inspector
    - Add test coverage reporting
-   - Test with MCP Inspector
    - Validate with real Digital Samba API
    - Test security aspects (auth token handling, API key protection)
 
