@@ -33,5 +33,5 @@ call npm link || (
 :: Done
 echo.
 echo Package linked successfully!
-echo You can now run 'digital-samba-mcp --help' to test the CLI.
+echo You can now run 'digital-samba-mcp-server --help' to test the CLI.
 echo.

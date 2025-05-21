@@ -1,5 +1,5 @@
 {
-  "name": "digital-samba-mcp",
+  "name": "digital-samba-mcp-server",
   "version": "0.1.2",
   "packageManager": "npm@10.2.0",
   "description": "Digital Samba MCP Server - Model Context Protocol server for Digital Samba's video conferencing API",
@@ -7,7 +7,7 @@
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "bin": {
-    "digital-samba-mcp": "./dist/bin/cli.js"
+    "digital-samba-mcp-server": "./dist/bin/cli.js"
   },
   "exports": {
     ".": {

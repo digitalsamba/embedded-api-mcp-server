@@ -27,7 +27,7 @@ echo Digital Samba MCP Server is now installed and ready!
 echo ====================================================
 echo.
 echo You can start the server with:
-echo   digital-samba-mcp --api-key YOUR_API_KEY
+echo   digital-samba-mcp-server --api-key YOUR_API_KEY
 echo.
 echo Configure Claude Desktop:
 echo   1. Open Claude Desktop

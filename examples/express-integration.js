@@ -7,7 +7,7 @@
 
 // Import required modules
 import express from 'express';
-import { createMcpServer, configureMcpMiddleware } from 'digital-samba-mcp';
+import { createMcpServer, configureMcpMiddleware } from 'digital-samba-mcp-server';
 import dotenv from 'dotenv';
 
 // Load environment variables

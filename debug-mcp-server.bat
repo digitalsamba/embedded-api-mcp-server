@@ -3,7 +3,7 @@ echo Digital Samba MCP Server - Debug Launcher
 echo =======================================
 echo.
 
-set LOG_FILE=%TEMP%\digital-samba-mcp-debug.log
+set LOG_FILE=%TEMP%\digital-samba-mcp-server-debug.log
 echo Logging debug information to: %LOG_FILE%
 echo.
 
