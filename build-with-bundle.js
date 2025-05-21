@@ -32,19 +32,35 @@ if (!fs.existsSync(distBinDir)) {
 fs.copyFileSync(resolve(binDir, 'cli.js'), resolve(distBinDir, 'cli.js'));
 fs.chmodSync(resolve(distBinDir, 'cli.js'), '755');
 
-// Find all TypeScript files
+// Build individual files without bundling
+console.log("Building TypeScript files without bundling...");
 const entryPoints = await glob(`${srcDir}/**/*.ts`);
 
-// Bundle and minify
+// Build non-bundled version (just compiled TypeScript)
 await esbuild.build({
   entryPoints,
   outdir: resolve(distDir, 'src'),
-  bundle: false, // Don't bundle since we're processing each file separately
-  minify: true,  // Minify for smaller file size
+  bundle: false,
+  minify: true,
   platform: 'node',
   target: 'node16',
   format: 'esm',
   sourcemap: true,
+  logLevel: 'info',
+});
+
+// Build also a bundled version as an additional option
+console.log("Building bundled version of index...");
+await esbuild.build({
+  entryPoints: [resolve(srcDir, 'index.ts')],
+  outfile: resolve(distDir, 'bundle.js'),
+  bundle: true,
+  minify: true,
+  platform: 'node',
+  target: 'node16',
+  format: 'esm',
+  sourcemap: true,
+  external, // Use external here since we're bundling
   logLevel: 'info',
 });
 
