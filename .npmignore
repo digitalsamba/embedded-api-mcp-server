@@ -76,3 +76,16 @@ link-local.bat
 link-package.bat
 run*.bat
 test*.bat
+
+# Runtime files
+node_modules/
+npm-shrinkwrap.json
+
+# Temporary files
+.tmp/
+.temp/
+
+# Specific development tools
+.nvmrc
+.npmrc
+.eslintcache

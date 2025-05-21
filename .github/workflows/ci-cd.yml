@@ -24,6 +24,7 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm run lint
+    - run: npm audit --production
     - run: npm test
       env:
         DIGITAL_SAMBA_API_KEY: ${{ secrets.TEST_API_KEY }}
@@ -40,6 +41,8 @@ jobs:
         cache: 'npm'
     - run: npm ci
     - run: npm run build
+    - name: Check bundle size
+      run: npm pack && du -h *.tgz
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
