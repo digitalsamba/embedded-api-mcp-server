@@ -23,9 +23,7 @@
     "lib": ["ES2020"],
     "allowSyntheticDefaultImports": true,
     "removeComments": false,
-    "preserveConstEnums": true,
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true
+    "preserveConstEnums": true
   },
   "include": ["src/**/*", "bin/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "tests/**/*"]
