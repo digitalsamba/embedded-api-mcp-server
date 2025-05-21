@@ -223,9 +223,14 @@ const startActualServer = () => {
   
   log('Actual server process started');
   
-  // Check if server is up
-  setTimeout(async () => {
+  // Check if server is up with retries
+  const maxRetries = 5;
+  let retryCount = 0;
+  const retryInterval = 1000; // 1 second
+  
+  const checkServerHealth = async () => {
     try {
+      log(`Attempting health check (attempt ${retryCount + 1}/${maxRetries})...`);
       const healthResponse = await httpRequest({
         hostname: 'localhost',
         port: PORT,
@@ -234,10 +239,71 @@ const startActualServer = () => {
       });
       
       log(`Server health check successful: ${healthResponse}`);
+      return true;
     } catch (error) {
       log(`Server health check failed: ${error.message}`);
+      return false;
     }
-  }, 3000);
+  };
+  
+  const retryHealthCheck = async () => {
+    if (retryCount >= maxRetries) {
+      log(`Failed to connect to server after ${maxRetries} attempts.`);
+      return;
+    }
+    
+    retryCount++;
+    const success = await checkServerHealth();
+    
+    if (!success && retryCount < maxRetries) {
+      log(`Retrying in ${retryInterval}ms...`);
+      setTimeout(retryHealthCheck, retryInterval);
+    }
+  };
+  
+  // Try alternative endpoints if the main health check fails
+  const checkRootEndpoint = async () => {
+    try {
+      log('Trying alternative health check at root endpoint...');
+      const response = await httpRequest({
+        hostname: 'localhost',
+        port: PORT,
+        path: '/',
+        method: 'GET'
+      });
+      
+      log(`Root endpoint check successful: ${response}`);
+      return true;
+    } catch (error) {
+      log(`Root endpoint check failed: ${error.message}`);
+      return false;
+    }
+  };
+  
+  // Enhanced retry function that tries multiple endpoints
+  const enhancedRetryHealthCheck = async () => {
+    if (retryCount >= maxRetries) {
+      log(`Failed to connect to server after ${maxRetries} attempts.`);
+      return;
+    }
+    
+    retryCount++;
+    let success = await checkServerHealth();
+    
+    // If the primary health check fails, try the root endpoint
+    if (!success) {
+      success = await checkRootEndpoint();
+    }
+    
+    if (!success && retryCount < maxRetries) {
+      const delay = retryInterval * retryCount; // Exponential backoff
+      log(`Retrying in ${delay}ms...`);
+      setTimeout(enhancedRetryHealthCheck, delay);
+    }
+  };
+  
+  // Start health check with a longer initial delay to ensure the server has time to start
+  setTimeout(enhancedRetryHealthCheck, 5000);
 };
 
 // Start handling messages

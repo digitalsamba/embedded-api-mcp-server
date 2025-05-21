@@ -115,52 +115,80 @@ export class CircuitBreakerApiClient {
   /**
    * Initialize the API connection
    * This is a special method that bypasses timeouts for the initial request
+   * and implements retries for better resilience during startup
    */
   async initializeConnection(): Promise<boolean> {
-    try {
-      // Create a special circuit breaker for initialization
-      const circuit = this.createCircuitBreaker('initialize', {
-        // Fail fast on initialization errors
-        failureThreshold: 1,
-        // Don't use timeouts for initialization
-        requestTimeout: undefined,
-        initialRequestTimeout: undefined
-      }, true); // Force no timeout
-      
-      // Make a simple request to verify connectivity
-      await circuit.exec(
-        async () => {
-          try {
-            // Try something simple like fetching default settings
-            // or just checking if the API base URL is reachable
-            return await fetch(this.apiBaseUrl, {
-              method: 'HEAD',
-              headers: {
-                'Authorization': `Bearer ${this.getApiKey()}`
-              }
-            });
-          } catch (error) {
-            // If we can't reach the base URL, try a specific endpoint
-            return await fetch(`${this.apiBaseUrl}/rooms`, {
-              headers: {
-                'Authorization': `Bearer ${this.getApiKey()}`
-              }
-            });
-          }
-        },
-        [], // No arguments needed
-        true // Force no timeout
-      );
-      
-      return true;
-    } catch (error) {
-      logger.error('Failed to initialize API connection', {
-        error: error instanceof Error ? error.message : String(error),
-        apiBaseUrl: this.apiBaseUrl
-      });
-      
-      return false;
+    const maxRetries = 3;
+    let retryCount = 0;
+    const retryDelay = 1000; // 1 second between retries
+    
+    // Helper function to delay execution
+    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    
+    // Retry loop
+    while (retryCount < maxRetries) {
+      try {
+        // Create a special circuit breaker for initialization
+        const circuit = this.createCircuitBreaker('initialize', {
+          // Fail fast on initialization errors
+          failureThreshold: 1,
+          // Don't use timeouts for initialization
+          requestTimeout: undefined,
+          initialRequestTimeout: undefined
+        }, true); // Force no timeout
+        
+        logger.info('Attempting API connection initialization', {
+          attempt: retryCount + 1,
+          maxRetries,
+          apiBaseUrl: this.apiBaseUrl
+        });
+        
+        // Make a simple request to verify connectivity
+        await circuit.exec(
+          async () => {
+            try {
+              // Try something simple like fetching default settings
+              // or just checking if the API base URL is reachable
+              return await fetch(this.apiBaseUrl, {
+                method: 'HEAD',
+                headers: {
+                  'Authorization': `Bearer ${this.getApiKey()}`
+                }
+              });
+            } catch (error) {
+              // If we can't reach the base URL, try a specific endpoint
+              return await fetch(`${this.apiBaseUrl}/rooms`, {
+                headers: {
+                  'Authorization': `Bearer ${this.getApiKey()}`
+                }
+              });
+            }
+          },
+          [], // No arguments needed
+          true // Force no timeout
+        );
+        
+        logger.info('API connection initialization successful');
+        return true;
+      } catch (error) {
+        retryCount++;
+        logger.warn(`API connection initialization failed (attempt ${retryCount}/${maxRetries})`, {
+          error: error instanceof Error ? error.message : String(error),
+          apiBaseUrl: this.apiBaseUrl
+        });
+        
+        if (retryCount < maxRetries) {
+          logger.info(`Retrying API connection in ${retryDelay}ms...`);
+          await delay(retryDelay);
+        }
+      }
     }
+    
+    logger.error(`Failed to initialize API connection after ${maxRetries} attempts`, {
+      apiBaseUrl: this.apiBaseUrl
+    });
+    
+    return false;
   }
   
   /**

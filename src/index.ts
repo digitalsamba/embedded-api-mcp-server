@@ -1074,14 +1074,36 @@ export function startServer(options?: ServerOptions) {
     console.log("Setting up health check endpoint...");
     app.get('/health', (req, res) => {
       console.log("Received request to /health");
-      res.status(200).json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        version: '0.1.0',
-        name: 'Digital Samba MCP Server'
-      });
+      
+      // Always respond with 200 OK for health checks
+      // This is critical for the proxy to work correctly
+      try {
+        res.status(200).json({
+          status: 'ok',
+          timestamp: new Date().toISOString(),
+          version: '0.1.0',
+          name: 'Digital Samba MCP Server',
+          port: port,
+          apiUrl: apiUrl,
+          environment: process.env.NODE_ENV || 'development'
+        });
+        console.log("Health check responded successfully");
+      } catch (error) {
+        console.error("Error in health check response:", error);
+        // Even if there's an error, still try to send a 200 response
+        if (!res.headersSent) {
+          res.status(200).send('Health check OK');
+        }
+      }
     });
     console.log("Health check endpoint set up successfully");
+    
+    // Secondary health check endpoint on root path
+    // This provides a fallback if '/health' is not accessible
+    app.get('/', (req, res) => {
+      console.log("Received request to root path");
+      res.status(200).send('Digital Samba MCP Server is running');
+    });
 
     // System health status endpoint
     console.log("Setting up system health endpoint...");
