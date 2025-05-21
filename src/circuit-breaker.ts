@@ -70,6 +70,13 @@ export interface CircuitBreakerOptions {
    * If not specified, timeouts will not be detected by the circuit breaker
    */
   requestTimeout?: number;
+
+  /**
+   * Timeout for the initial request during circuit initialization
+   * This should be longer than the regular requestTimeout to allow time for startup
+   * @default 30000 (30 seconds)
+   */
+  initialRequestTimeout?: number;
   
   /**
    * Callback function to determine if an error should be counted as a failure
@@ -120,6 +127,7 @@ export class CircuitBreaker extends EventEmitter {
   private resetTimeout: number;
   private successThreshold: number;
   private requestTimeout?: number;
+  private initialRequestTimeout: number;
   private isFailure: (error: unknown) => boolean;
   private fallback?: <T, Args extends any[]>(params: Args) => Promise<T>;
   
@@ -136,6 +144,7 @@ export class CircuitBreaker extends EventEmitter {
     this.resetTimeout = options.resetTimeout ?? 30000;
     this.successThreshold = options.successThreshold ?? 2;
     this.requestTimeout = options.requestTimeout;
+    this.initialRequestTimeout = options.initialRequestTimeout ?? 30000; // Default to 30 seconds for initial request
     this.isFailure = options.isFailure ?? (() => true);
     this.fallback = options.fallback;
     
@@ -232,12 +241,18 @@ export class CircuitBreaker extends EventEmitter {
     try {
       let result: T;
       
-      if (this.requestTimeout !== undefined) {
+      // If this is the first request and state is CLOSED, use initialRequestTimeout
+      // otherwise use the standard requestTimeout
+      const useTimeout = this.state === CircuitState.CLOSED && this.failureCount === 0 
+                       ? this.initialRequestTimeout 
+                       : this.requestTimeout;
+      
+      if (useTimeout !== undefined) {
         // Use Promise.race to implement timeout
         const timeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => {
-            reject(new Error(`Request timeout after ${this.requestTimeout}ms`));
-          }, this.requestTimeout);
+            reject(new Error(`Request timeout after ${useTimeout}ms`));
+          }, useTimeout);
         });
         
         // Race the function execution against the timeout
