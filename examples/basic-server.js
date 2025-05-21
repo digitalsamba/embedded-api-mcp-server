@@ -6,7 +6,7 @@
  */
 
 // Import the required modules
-import { startMcpServer } from 'digital-samba-mcp';
+import { startMcpServer } from 'digital-samba-mcp-server';
 
 // Set up server configuration
 const config = {

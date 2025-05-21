@@ -1,5 +1,5 @@
 @echo off
-echo Testing local digital-samba-mcp package...
+echo Testing local digital-samba-mcp-server package...
 
 if "%1"=="" (
   echo Error: API key is required
@@ -11,6 +11,6 @@ set API_KEY=%1
 echo Using API key: %API_KEY:~0,5%...
 
 :: Check if the package is linked
-npx -p . digital-samba-mcp %API_KEY% --log-level debug
+npx -p . digital-samba-mcp-server %API_KEY% --log-level debug
 
 echo Test completed.

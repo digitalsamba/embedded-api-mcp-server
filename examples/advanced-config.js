@@ -6,7 +6,7 @@
  */
 
 // Import required modules
-import { createMcpServer } from 'digital-samba-mcp';
+import { createMcpServer } from 'digital-samba-mcp-server';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import express from 'express';
 import winston from 'winston';
@@ -22,7 +22,7 @@ const logger = winston.createLogger({
     winston.format.timestamp(),
     winston.format.json()
   ),
-  defaultMeta: { service: 'digital-samba-mcp' },
+  defaultMeta: { service: 'digital-samba-mcp-server' },
   transports: [
     new winston.transports.Console({
       format: winston.format.combine(

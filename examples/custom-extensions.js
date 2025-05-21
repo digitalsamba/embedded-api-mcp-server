@@ -11,7 +11,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import express from 'express';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
-import { DigitalSambaApiClient } from 'digital-samba-mcp/client';
+import { DigitalSambaApiClient } from 'digital-samba-mcp-server/client';
 
 // Initialize Express app
 const app = express();

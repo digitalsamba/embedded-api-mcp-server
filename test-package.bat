@@ -1,11 +1,11 @@
 @echo off
 setlocal
 
-echo Installing digital-samba-mcp globally...
+echo Installing digital-samba-mcp-server globally...
 npm install -g .
 
 echo Testing CLI version...
-digital-samba-mcp --help
+digital-samba-mcp-server --help
 
 echo Creating test directory...
 mkdir test-install
@@ -14,12 +14,12 @@ cd test-install
 echo Initializing test package...
 npm init -y
 
-echo Installing digital-samba-mcp as a dependency...
+echo Installing digital-samba-mcp-server as a dependency...
 npm install --save ..\
 
 echo Creating test script...
 (
-echo import { createServer } from 'digital-samba-mcp';
+echo import { createServer } from 'digital-samba-mcp-server';
 echo.
 echo const { server, port, apiUrl } = createServer({
 echo   port: 4321,

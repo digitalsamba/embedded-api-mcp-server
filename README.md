@@ -1,8 +1,8 @@
 # Digital Samba MCP Server
 
-![Version](https://img.shields.io/npm/v/digital-samba-mcp)
-![License](https://img.shields.io/npm/l/digital-samba-mcp)
-![Node Version](https://img.shields.io/node/v/digital-samba-mcp)
+![Version](https://img.shields.io/npm/v/digital-samba-mcp-server)
+![License](https://img.shields.io/npm/l/digital-samba-mcp-server)
+![Node Version](https://img.shields.io/node/v/digital-samba-mcp-server)
 
 A Model Context Protocol (MCP) server implementation for Digital Samba's video conferencing API, allowing AI agents like Claude to seamlessly interact with Digital Samba rooms, participants, and meetings.
 
@@ -29,13 +29,13 @@ A Model Context Protocol (MCP) server implementation for Digital Samba's video c
 ### Local Installation (Recommended)
 
 ```bash
-npm install digital-samba-mcp
+npm install digital-samba-mcp-server
 ```
 
 Then use with npx:
 
 ```bash
-npx digital-samba-mcp --api-key YOUR_API_KEY
+npx digital-samba-mcp-server --api-key YOUR_API_KEY
 ```
 
 ### Global Installation
@@ -43,8 +43,8 @@ npx digital-samba-mcp --api-key YOUR_API_KEY
 While global installation is supported, we recommend local installation for better version management and dependency control.
 
 ```bash
-npm install -g digital-samba-mcp
-digital-samba-mcp --api-key YOUR_API_KEY
+npm install -g digital-samba-mcp-server
+digital-samba-mcp-server --api-key YOUR_API_KEY
 ```
 
 ## Quick Start
@@ -54,7 +54,7 @@ digital-samba-mcp --api-key YOUR_API_KEY
 The fastest way to get started is to use the command-line interface with npx:
 
 ```bash
-npx digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
+npx digital-samba-mcp-server --api-key YOUR_DIGITAL_SAMBA_API_KEY
 ```
 
 This will start the MCP server on port 3000 and expose resources and tools for Digital Samba's video conferencing functionality.
@@ -62,7 +62,7 @@ This will start the MCP server on port 3000 and expose resources and tools for D
 ### Using the API
 
 ```javascript
-import { startServer } from 'digital-samba-mcp';
+import { startServer } from 'digital-samba-mcp-server';
 
 // Start the server with options
 const server = startServer({
@@ -81,7 +81,7 @@ The Digital Samba MCP Server is designed to work seamlessly with Claude Desktop,
 
 1. Start the Digital Samba MCP Server locally:
    ```bash
-   npx digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
+   npx digital-samba-mcp-server --api-key YOUR_DIGITAL_SAMBA_API_KEY
    ```
 
 2. Open Claude Desktop and navigate to Settings > Advanced > MCP Servers:
@@ -134,7 +134,7 @@ Schedule a Digital Samba meeting called "Quarterly Review" for next Monday at 10
 ## CLI Usage
 
 ```
-npx digital-samba-mcp [options]
+npx digital-samba-mcp-server [options]
 
 Options:
   -p, --port <port>                 Port to run the server on (default: 3000)
@@ -180,7 +180,7 @@ All CLI options can also be specified as environment variables:
 ### Creating a Server
 
 ```javascript
-import { createServer } from 'digital-samba-mcp';
+import { createServer } from 'digital-samba-mcp-server';
 
 const { server, port, apiUrl } = createServer({
   port: 4000,
@@ -194,7 +194,7 @@ const { server, port, apiUrl } = createServer({
 ### Starting a Server
 
 ```javascript
-import { startServer } from 'digital-samba-mcp';
+import { startServer } from 'digital-samba-mcp-server';
 
 const httpServer = startServer({
   port: 4000,
@@ -208,7 +208,7 @@ httpServer.close();
 ### Using the Digital Samba API Client Directly
 
 ```javascript
-import { DigitalSambaApiClient } from 'digital-samba-mcp/client';
+import { DigitalSambaApiClient } from 'digital-samba-mcp-server/client';
 
 const client = new DigitalSambaApiClient(
   'your_api_key',
@@ -358,19 +358,19 @@ The Digital Samba MCP Server includes built-in support for Prometheus metrics, w
 Metrics can be enabled via CLI arguments:
 
 ```bash
-npx digital-samba-mcp --enable-metrics --metrics-endpoint /metrics --metrics-prefix digital_samba_mcp_
+npx digital-samba-mcp-server --enable-metrics --metrics-endpoint /metrics --metrics-prefix digital_samba_mcp_
 ```
 
 Or via environment variables:
 
 ```bash
-ENABLE_METRICS=true METRICS_ENDPOINT=/metrics METRICS_PREFIX=digital_samba_mcp_ npx digital-samba-mcp
+ENABLE_METRICS=true METRICS_ENDPOINT=/metrics METRICS_PREFIX=digital_samba_mcp_ npx digital-samba-mcp-server
 ```
 
 Or when using the API:
 
 ```javascript
-import { startServer } from 'digital-samba-mcp';
+import { startServer } from 'digital-samba-mcp-server';
 
 const server = startServer({
   enableMetrics: true,
@@ -406,7 +406,7 @@ import {
   DigitalSambaError, 
   AuthenticationError,
   ResourceNotFoundError
-} from 'digital-samba-mcp/server';
+} from 'digital-samba-mcp-server/server';
 
 try {
   // Some operation that might fail
@@ -427,7 +427,7 @@ try {
 
 ```javascript
 import express from 'express';
-import { WebhookService, setupWebhookTools } from 'digital-samba-mcp/server';
+import { WebhookService, setupWebhookTools } from 'digital-samba-mcp-server/server';
 
 const app = express();
 app.use(express.json());
@@ -453,7 +453,7 @@ webhookService.on('participant.joined', async (payload) => {
 ### Advanced Configuration with Rate Limiting and Caching
 
 ```javascript
-import { startServer } from 'digital-samba-mcp';
+import { startServer } from 'digital-samba-mcp-server';
 
 // Start the server with advanced configuration
 const server = startServer({
@@ -473,7 +473,7 @@ const server = startServer({
 ### Creating a Room and Generating Join Links
 
 ```javascript
-import { DigitalSambaApiClient } from 'digital-samba-mcp/client';
+import { DigitalSambaApiClient } from 'digital-samba-mcp-server/client';
 
 const client = new DigitalSambaApiClient('your_api_key');
 
@@ -506,7 +506,7 @@ createMeetingRoom().catch(console.error);
 ### Scheduling a Meeting
 
 ```javascript
-import { DigitalSambaApiClient } from 'digital-samba-mcp/client';
+import { DigitalSambaApiClient } from 'digital-samba-mcp-server/client';
 
 const client = new DigitalSambaApiClient('your_api_key');
 
@@ -546,7 +546,7 @@ You can test the Digital Samba MCP Server using the MCP Inspector tool:
 
 2. Start the Digital Samba MCP Server:
    ```bash
-   npx digital-samba-mcp --api-key YOUR_DIGITAL_SAMBA_API_KEY
+   npx digital-samba-mcp-server --api-key YOUR_DIGITAL_SAMBA_API_KEY
    ```
 
 3. Run the MCP Inspector:
@@ -569,12 +569,12 @@ If you're developing the Digital Samba MCP package locally and want to test it w
 This method creates a global link to your local package:
 
 ```bash
-# In the digital-samba-mcp directory
+# In the digital-samba-mcp-server directory
 npm run build:clean  # Build the package first
 npm link
 
 # Now you can use it from anywhere
-npx digital-samba-mcp YOUR_API_KEY
+npx digital-samba-mcp-server YOUR_API_KEY
 ```
 
 For Windows users, you can use the included script:
@@ -587,7 +587,7 @@ link-local-test.bat
 The package includes scripts for testing locally:
 
 ```bash
-# In the digital-samba-mcp directory
+# In the digital-samba-mcp-server directory
 test-local-npm.bat YOUR_API_KEY
 ```
 
@@ -602,7 +602,7 @@ For optimal Claude Desktop integration, use the dedicated Windows batch file wra
 
 ```json
 "Digital_Samba": {
-  "command": "C:\\path\\to\\digital-samba-mcp\\claude-desktop-wrapper.bat",
+  "command": "C:\\path\\to\\digital-samba-mcp-server\\claude-desktop-wrapper.bat",
   "args": ["YOUR_API_KEY"]
 }
 ```

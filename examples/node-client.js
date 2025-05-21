@@ -6,7 +6,7 @@
  */
 
 // Import the Digital Samba API client
-import { DigitalSambaApiClient } from 'digital-samba-mcp/client';
+import { DigitalSambaApiClient } from 'digital-samba-mcp-server/client';
 
 // Initialize the API client
 const apiClient = new DigitalSambaApiClient({
