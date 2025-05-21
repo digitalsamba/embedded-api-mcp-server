@@ -14,8 +14,8 @@ process.env.INITIAL_REQUEST_TIMEOUT = '90000'; // Try with even longer timeout (
 process.env.DEBUG_TIMEOUTS = 'true';
 process.env.DEBUG_INITIALIZATION = 'true';
 
-// Import the server
-const { createServer, startServer } = require('./dist/src/index.js');
+// Import the server (using ESM syntax)
+import { createServer, startServer } from './dist/src/index.js';
 
 // The API key can be provided as a command-line argument
 const apiKey = process.argv[2] || process.env.DIGITAL_SAMBA_API_KEY;
