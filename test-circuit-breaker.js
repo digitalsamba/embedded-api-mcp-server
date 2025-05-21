@@ -14,12 +14,12 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-// Local modules
-import { DigitalSambaApiClient } from './src/digital-samba-api.js';
-import { CircuitBreakerApiClient } from './src/digital-samba-api-circuit-breaker.js';
-import { circuitBreakerRegistry, CircuitState } from './src/circuit-breaker.js';
-import logger from './src/logger.js';
-import metricsRegistry, { initializeMetrics } from './src/metrics.js';
+// Local modules - use compiled versions from dist
+import { DigitalSambaApiClient } from './dist/src/digital-samba-api.js';
+import { CircuitBreakerApiClient } from './dist/src/digital-samba-api-circuit-breaker.js';
+import { circuitBreakerRegistry, CircuitState } from './dist/src/circuit-breaker.js';
+import logger from './dist/src/logger.js';
+import metricsRegistry, { initializeMetrics } from './dist/src/metrics.js';
 import express from 'express';
 
 // Initialize metrics
@@ -51,7 +51,7 @@ const app = express();
 metricsRegistry.registerMetricsEndpoint(app);
 
 // Start Express server
-const PORT = 3001;
+const PORT = 3010;
 app.listen(PORT, () => {
   console.log(`Metrics server listening on port ${PORT}`);
   console.log(`View metrics at http://localhost:${PORT}/metrics`);
@@ -115,11 +115,20 @@ async function runTests() {
     // Test 3: Making a call with an open circuit
     console.log('\nTest 3: Making a call with an open circuit...');
     try {
-      await circuitClient.listRooms();
-      console.log('  ✗ API call with open circuit succeeded (unexpected)');
+      const result = await circuitClient.listRooms();
+      console.log('  ℹ API call with open circuit succeeded - this is expected if fallback is working');
+      console.log('  ℹ Result:', JSON.stringify(result, null, 2));
+      
+      // Check if the result looks like our fallback response
+      if (result && Array.isArray(result.data) && result.data.length === 0 
+          && result.total_count === 0 && result.length === 0) {
+        console.log('  ✓ Fallback function returned empty data as expected');
+      } else {
+        console.log('  ✗ Unexpected result from fallback function');
+      }
     } catch (err) {
-      console.log('  ✓ Call was rejected by circuit breaker as expected');
-      console.log(`  ✓ Error message: ${err.message}`);
+      console.log('  ✗ Call was rejected by circuit breaker (unexpected if fallback is implemented)');
+      console.log(`  ✗ Error message: ${err.message}`);
     }
     
     // Test 4: Wait for the circuit to transition to half-open
