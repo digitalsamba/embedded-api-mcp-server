@@ -56,14 +56,16 @@ export class ConnectionManager extends EventEmitter {
     // Set default options
     this.options = {
       apiUrl: options.apiUrl,
-      fetchImpl: options.fetchImpl || fetch
+      fetchImpl: options.fetchImpl || fetch,
+      poolSize: options.poolSize || 1 // Default to 1 connection if not specified
     };
     
     // Set fetch implementation
     this._fetch = this.options.fetchImpl;
     
     logger.info('Connection Manager initialized', {
-      apiUrl: this.options.apiUrl
+      apiUrl: this.options.apiUrl,
+      poolSize: this.options.poolSize
     });
   }
   
@@ -125,7 +127,10 @@ export class ConnectionManager extends EventEmitter {
     return {
       connections: {
         // This would contain actual connection stats in a real implementation
-        status: 'healthy'
+        status: 'healthy',
+        poolSize: this.options.poolSize,
+        // In a real implementation, we would track active connections
+        active: 0
       }
     };
   }
