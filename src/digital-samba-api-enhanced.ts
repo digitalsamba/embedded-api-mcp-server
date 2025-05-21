@@ -161,10 +161,14 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
         };
         
         // Execute request through connection manager
-        const response = await this.connectionManager.fetch(url, {
+        // Type assertion to handle compatibility between node-fetch and standard fetch types
+        const fetchOptions = {
           ...options,
-          headers
-        });
+          headers: headers as Record<string, string>
+        };
+        
+        // Execute request through connection manager
+        const response = await this.connectionManager.fetch(url, fetchOptions as any);
         
         // Handle response
         if (!response.ok) {
@@ -201,7 +205,7 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
           return this.resourceOptimizer.compressResponse(responseData) as T;
         }
         
-        return responseData;
+        return responseData as T;
       } catch (error) {
         // Let parent class handle error types
         throw error;

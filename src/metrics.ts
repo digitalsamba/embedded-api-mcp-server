@@ -400,12 +400,21 @@ class MetricsRegistry {
     }
     
     if (this.options.defaultMetrics) {
-      collectDefaultMetrics({
+      // Use correctly typed options for collectDefaultMetrics
+      const metricsOpts = {
         register: this.registry,
-        prefix: this.options.prefix,
-        timestamps: true,
-        interval: this.options.defaultMetricsInterval
-      });
+        prefix: this.options.prefix
+      };
+      
+      // Call collectDefaultMetrics with valid options
+      collectDefaultMetrics(metricsOpts);
+      
+      // If interval is specified, set the collection interval
+      if (this.options.defaultMetricsInterval) {
+        // Note: setting interval is no longer supported in the configuration object
+        // If needed, use alternative approaches to control collection frequency
+        logger.debug('Note: Custom metrics collection interval is not supported in this version');
+      }
     }
     
     // Set app info
@@ -484,13 +493,14 @@ class MetricsRegistry {
       };
       
       // Override end method to track response size and finalize metrics
+      // Use type assertion to fix the TypeScript error
       res.end = function(chunk: any, ...args: any[]) {
         if (chunk) {
           responseSize += chunk.length;
         }
         
-        originalEnd.apply(res, [chunk, ...args]);
-      };
+        return originalEnd.apply(res, [chunk, ...args]);
+      } as typeof res.end;
       
       // Add response finished handler
       res.on('finish', () => {

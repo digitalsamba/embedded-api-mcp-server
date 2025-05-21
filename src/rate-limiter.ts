@@ -197,8 +197,9 @@ export class TokenBucketRateLimiter {
       }
       
       // Trust proxy if enabled
-      if (this.options.trustProxy) {
-        req.ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip;
+      let clientIp = req.ip;
+      if (this.options.trustProxy && req.headers['x-forwarded-for']) {
+        clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip;
       }
       
       // Generate client key
