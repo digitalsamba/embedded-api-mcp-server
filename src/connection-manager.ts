@@ -20,7 +20,7 @@
 import { EventEmitter } from 'events';
 
 // External dependencies
-import { RequestInfo, RequestInit, Response } from 'node-fetch';
+import fetch, { RequestInfo, RequestInit, Response } from 'node-fetch';
 
 // Local modules
 import logger from './logger.js';
@@ -315,7 +315,10 @@ export class ConnectionManager extends EventEmitter {
       } else {
         throw new ApiResponseError(
           `API returned non-OK status: ${response.status}`,
-          { statusCode: response.status }
+          { 
+            statusCode: response.status,
+            apiErrorMessage: `API returned non-OK status: ${response.status}` 
+          }
         );
       }
     } catch (error) {
