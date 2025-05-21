@@ -87,6 +87,7 @@ export interface ServerOptions {
   metricsEndpoint?: string;
   metricsPrefix?: string;
   collectDefaultMetrics?: boolean;
+  enableSilentMode?: boolean; // New option for MCP mode
 }
 
 // Create and configure the MCP server
@@ -809,8 +810,11 @@ export function createServer(options?: ServerOptions) {
 
 // Start a server with the provided options
 export function startServer(options?: ServerOptions) {
-  // Only log if not in NO_CONSOLE_OUTPUT mode
-  const shouldLog = process.env.NO_CONSOLE_OUTPUT !== 'true';
+  // Check if we should run in silent mode
+  const enableSilentMode = options?.enableSilentMode || process.env.MCP_JSON_RPC_MODE === 'true';
+  
+  // Only log if not in silent mode
+  const shouldLog = !enableSilentMode && process.env.NO_CONSOLE_OUTPUT !== 'true';
   
   if (shouldLog) logger.debug("startServer function called with options:", options);
   
