@@ -560,6 +560,58 @@ You can test the Digital Samba MCP Server using the MCP Inspector tool:
    - Explore resource URIs
    - Verify MCP protocol compliance
 
+## Local Development Testing
+
+If you're developing the Digital Samba MCP package locally and want to test it without publishing to npm, you can use the following methods:
+
+### Method 1: Using npm link
+
+This method creates a global link to your local package:
+
+```bash
+# In the digital-samba-mcp directory
+npm run build:clean  # Build the package first
+npm link
+
+# Now you can use it from anywhere
+npx digital-samba-mcp YOUR_API_KEY
+```
+
+For Windows users, you can use the included script:
+```bash
+link-local-test.bat
+```
+
+### Method 2: Using Local Test Scripts
+
+The package includes scripts for testing locally:
+
+```bash
+# In the digital-samba-mcp directory
+test-local-npm.bat YOUR_API_KEY
+```
+
+Or with additional options:
+```bash
+test-local-npm.bat YOUR_API_KEY --port 4000 --log-level debug
+```
+
+### Method 3: Direct Integration with Claude Desktop
+
+You can configure Claude Desktop to point directly to your local development version:
+
+```json
+"Digital_Samba": {
+  "command": "node",
+  "args": [
+    "C:/path/to/digital-samba-mcp/test-local-npx.js", 
+    "YOUR_API_KEY"
+  ]
+}
+```
+
+Add this configuration to Claude Desktop's MCP Server setup.
+
 ## Troubleshooting
 
 For common issues and solutions, please see the [TROUBLESHOOTING.md](TROUBLESHOOTING.md) file.
