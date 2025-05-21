@@ -75,8 +75,7 @@ const proc = spawn(process.execPath, [cliPath, apiKey], {
     MCP_JSON_RPC_MODE: 'true',
     LOG_LEVEL: 'error', // Only show errors in the log
     NODE_ENV: 'production'
-  },
-  windowsHide: true // Hide console window on Windows
+  }
 });
 
 // Handle process termination

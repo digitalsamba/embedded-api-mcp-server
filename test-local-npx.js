@@ -51,8 +51,7 @@ const proc = spawn(process.execPath, args, {
     ...process.env,
     NODE_ENV: 'development',
     MCP_JSON_RPC_MODE: isJsonRpcMode ? 'true' : 'false'
-  },
-  windowsHide: true // Hide the console window on Windows
+  }
 });
 
 // In JSON-RPC mode, we need to pipe stdio to the parent process
