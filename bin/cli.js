@@ -8,8 +8,25 @@ import { parseArgs } from 'node:util';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Handle positional arguments for API key
+const positionalArgs = [];
+let hasExplicitApiKey = false;
+
+for (let i = 2; i < process.argv.length; i++) {
+  const arg = process.argv[i];
+  if (arg === '--api-key' || arg === '-k') {
+    hasExplicitApiKey = true;
+    break;
+  }
+  
+  // If not starting with a dash, treat it as a positional argument
+  if (!arg.startsWith('-') && !process.argv[i-1]?.startsWith('-')) {
+    positionalArgs.push(arg);
+  }
+}
+
 // Parse command-line arguments
-const { values: args } = parseArgs({
+const { values: args, positionals } = parseArgs({
   options: {
     port: {
       type: 'string',
@@ -48,7 +65,8 @@ const { values: args } = parseArgs({
       short: 'h',
       default: false
     }
-  }
+  },
+  allowPositionals: true
 });
 
 // Display help information if requested
@@ -56,7 +74,7 @@ if (args.help) {
   console.log(`
 Digital Samba MCP Server
 
-Usage: npx digital-samba-mcp [options]
+Usage: npx digital-samba-mcp [options] [API_KEY]
 
 Options:
   -p, --port <port>                 Port to run the server on (default: 3000)
@@ -78,6 +96,7 @@ Environment Variables:
   PUBLIC_URL                        Public URL for the server
 
 Examples:
+  npx digital-samba-mcp YOUR_API_KEY
   npx digital-samba-mcp --api-key YOUR_API_KEY
   npx digital-samba-mcp --port 4000 --api-key YOUR_API_KEY --log-level debug
   `);
@@ -92,9 +111,17 @@ process.env.WEBHOOK_SECRET = args['webhook-secret'];
 process.env.WEBHOOK_ENDPOINT = args['webhook-endpoint'];
 process.env.PUBLIC_URL = args['public-url'] || `http://localhost:${args.port}`;
 
-// Set API key if provided
+// Set API key from options or positional arguments
 if (args['api-key']) {
   process.env.DIGITAL_SAMBA_API_KEY = args['api-key'];
+} else if (positionals && positionals.length > 0) {
+  // Use the first positional argument as the API key
+  process.env.DIGITAL_SAMBA_API_KEY = positionals[0];
+  console.log(`Using API key from positional argument: ${positionals[0].substring(0, 5)}...`);
+} else if (positionalArgs.length > 0) {
+  // Fallback for older Node.js versions
+  process.env.DIGITAL_SAMBA_API_KEY = positionalArgs[0];
+  console.log(`Using API key from positional argument: ${positionalArgs[0].substring(0, 5)}...`);
 }
 
 // Start the server
