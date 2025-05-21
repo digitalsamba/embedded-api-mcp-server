@@ -3,18 +3,27 @@ import { randomUUID } from 'crypto';
 import { createServer as createHttpServer } from 'http';
 import { config as loadEnv } from 'dotenv';
 
-// If NO_CONSOLE_OUTPUT is set, completely suppress console output
-if (process.env.NO_CONSOLE_OUTPUT === 'true') {
-  // Save original console methods
+// Check if we're in MCP JSON-RPC mode (used by Claude Desktop)
+const isMcpJsonRpcMode = process.env.MCP_JSON_RPC_MODE === 'true';
+
+// If in MCP mode, we need to be very careful about console output
+// as it would interfere with the JSON-RPC protocol
+if (isMcpJsonRpcMode) {
+  // In MCP mode, redirect all stdout console outputs to stderr
   const originalConsole = {
     log: console.log,
-    error: console.error,
-    warn: console.warn,
     info: console.info,
-    debug: console.debug
+    warn: console.warn
   };
   
-  // Replace with no-op functions
+  // Only output errors and warnings to stderr, suppress other logs
+  console.log = () => {};
+  console.info = () => {};
+  // Keep console.error and console.warn as they go to stderr
+}
+
+// If NO_CONSOLE_OUTPUT is set, completely suppress console output
+if (process.env.NO_CONSOLE_OUTPUT === 'true') {
   console.log = () => {};
   console.error = () => {};
   console.warn = () => {};
