@@ -37,6 +37,10 @@ const server = startServer({
   // Add additional debug options
   debugTimeouts: true,
   debugInitialization: true,
+  // Set the port to 5672
+  port: 5672,
+  // Set the log level to debug
+  logLevel: 'debug',
   // Provide the API key directly
   apiKey: apiKey
 });
