@@ -91,6 +91,7 @@ export interface ServerOptions {
   debugTimeouts?: boolean; // Enable timeout debugging
   debugInitialization?: boolean; // Enable initialization debugging
   initialRequestTimeout?: number; // Override initial request timeout
+  logLevel?: 'error' | 'warn' | 'info' | 'debug' | 'silly'; // Control log level
   // Direct options for testing/debugging
   apiKey?: string; // Direct API key for testing
 }

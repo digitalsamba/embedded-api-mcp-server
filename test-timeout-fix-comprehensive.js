@@ -9,7 +9,7 @@ import { createServer, startServer } from './dist/src/index.js';
 import fetch from 'node-fetch';
 
 // Configuration
-const PORT = 4523; // Use a different port for testing
+const PORT = 5672; // Use specified port 5672
 const API_KEY = process.argv[2] || process.env.DIGITAL_SAMBA_API_KEY;
 const TIMEOUT = 120000; // 2 minutes timeout for the entire test
 const RETRY_INTERVAL = 2000; // 2 seconds between health check attempts
@@ -73,6 +73,7 @@ async function runTest() {
       initialRequestTimeout: 90000, // 90 seconds
       debugTimeouts: true,
       debugInitialization: true,
+      logLevel: 'debug', // Set logging level to debug
       apiKey: API_KEY
     });
     
