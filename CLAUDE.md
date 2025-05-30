@@ -19,8 +19,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Running the Server
 - `npx digital-samba-mcp-server --api-key YOUR_KEY` - Run as CLI server
-- `npm run debug-server.bat` - Debug server with detailed logging
-- `npm run test:resilient-api` - Test resilient API features
+- `scripts/debug-server.bat` - Debug server with detailed logging
+- `scripts/test-resilient-api.bat` - Test resilient API features
+
+### Script Organization
+All build, debug, test, and utility scripts have been moved to the `scripts/` directory for better organization.
 
 ## Architecture Overview
 
@@ -86,3 +89,8 @@ Custom error types in `errors.ts`:
 - `AuthenticationError` - Auth failures
 - `ResourceNotFoundError` - 404 errors
 - Comprehensive logging with Winston
+
+## Project Management
+
+### Project Tracking
+- Project management and stats located at: `/config/Documents/Obsidian Vault/01-Projects/Work/DigitalSamba/MCP-Server-Development/`

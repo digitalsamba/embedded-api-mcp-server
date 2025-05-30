@@ -1,3 +1,0 @@
-@echo off
-echo Running token refresh tests...
-npm run test:token-refresh

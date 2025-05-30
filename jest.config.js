@@ -1,7 +1,7 @@
 /**
  * Jest configuration for Digital Samba MCP Server
  */
-module.exports = {
+export default {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/src/', '<rootDir>/tests/'],
