@@ -257,6 +257,22 @@ The Digital Samba MCP Server provides the following functionality:
 - List and access recordings
 - Manage recording settings
 
+### Analytics & Statistics ✨ **NEW**
+- Comprehensive participant analytics and statistics
+- Room-level performance metrics and usage data
+- Team-wide usage patterns and growth metrics
+- Session-specific analytics and reporting
+- Real-time and historical data analysis
+- Filtering by date ranges, rooms, sessions, participants
+
+### Session Management ✨ **NEW**
+- Complete session lifecycle management
+- Granular session data deletion (chats, Q&A, summaries, polls)
+- Bulk session data operations
+- Session summaries and statistics
+- End live sessions programmatically
+- Hard delete session resources
+
 ### Moderation Tools
 - Mute/unmute participants
 - Ban/unban participants
