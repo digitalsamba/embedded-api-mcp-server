@@ -59,6 +59,18 @@ Model Context Protocol (MCP) server for Digital Samba's video conferencing API, 
 - `get-usage-statistics` - Get comprehensive usage statistics
 - `get-session-statistics` - Get session-specific statistics
 
+### Session Management Tools ✨ **NEW**
+- `get-all-room-sessions` - List all sessions for a specific room with filtering
+- `delete-session-chats` - Delete all chat messages for a session
+- `delete-session-qa` - Delete all Q&A data for a session
+- `delete-session-summaries` - Delete all summaries for a session
+- `delete-session-polls` - Delete all polls for a session
+- `hard-delete-session-resources` - Hard delete all stored resource data for a session
+- `bulk-delete-session-data` - Delete multiple data types from a session in one operation
+- `get-session-summary` - Retrieve session summary information
+- `end-session` - End a live session
+- `get-session-statistics` - Get detailed session statistics
+
 ### Recording Tools
 - `list-recordings` - List available recordings with filters
 - `get-recording` - Retrieve specific recording details
@@ -82,6 +94,7 @@ Model Context Protocol (MCP) server for Digital Samba's video conferencing API, 
 - **Meetings**: `meetings.ts` - Meeting scheduling and management
 - **Recordings**: `recordings.ts` - Recording functionality with lifecycle management
 - **Analytics**: `analytics.ts` - ✨ **NEW** - Comprehensive analytics and statistics
+- **Sessions**: `sessions.ts` - ✨ **NEW** - Complete session management and data operations
 - **Webhooks**: `webhooks.ts` - Webhook service with Express/SSE
 - **Moderation**: `moderation.ts` - Participant moderation tools
 
@@ -149,6 +162,7 @@ interface TeamStatistics {
 - **Rooms**: Complete CRUD operations with advanced features
 - **Recordings**: Full lifecycle management
 - **Analytics**: ✨ **NEW** - Comprehensive analytics framework
+- **Sessions**: ✨ **NEW** - Complete session management and data operations
 - **Webhooks**: Event subscription and management
 - **Moderation**: Participant control and management
 - **Authentication**: Token generation and management
@@ -224,7 +238,14 @@ interface TeamStatistics {
 
 ## Recent Updates ✨
 
-### Analytics Module (Latest)
+### Session Management Module (Latest)
+- **New Tools**: 10 comprehensive session management tools
+- **Data Deletion**: Granular control over session data (chats, Q&A, summaries, polls)
+- **Bulk Operations**: Multi-type data deletion in single operations
+- **Session Control**: End sessions, get summaries, retrieve statistics
+- **Complete Coverage**: All major session operations supported
+
+### Analytics Module
 - **New Resource**: Complete analytics resource implementation
 - **Real Data Integration**: Uses existing API endpoints where possible
 - **Future-Ready Framework**: Structured for upcoming analytics endpoints
@@ -304,5 +325,5 @@ interface AnalyticsFilters {
 ---
 
 **Last Updated**: Current
-**Version**: 1.0.0-beta.20
-**Analytics Module**: ✨ **Newly Added**
+**Version**: 1.0.0-beta.21
+**Latest Addition**: ✨ **Session Management Tools**
