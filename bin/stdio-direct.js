@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
 // Direct stdio server that properly handles API keys
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { createStdioServer } from '../dist/src/create-stdio-server.js';
+import { runFullStdioServer } from '../dist/src/stdio-full-server.js';
 
-// Redirect console to stderr
+// Redirect console to stderr to avoid interfering with JSON-RPC
 console.log = (...args) => process.stderr.write(`[LOG] ${args.join(' ')}\n`);
 console.error = (...args) => process.stderr.write(`[ERROR] ${args.join(' ')}\n`);
 
@@ -19,22 +18,8 @@ async function run() {
   console.error('[INFO] Starting Digital Samba MCP Server (direct stdio)...');
   console.error('[DEBUG] API key:', apiKey.substring(0, 10) + '...');
   
-  const apiUrl = process.env.DIGITAL_SAMBA_API_URL || 'https://api.digitalsamba.com/api/v1';
-  
-  // Create server with API key
-  const server = createStdioServer(apiKey, apiUrl);
-  
-  // Create transport
-  const transport = new StdioServerTransport();
-  
-  // Connect
-  try {
-    await server.connect(transport);
-    console.error('[INFO] Server connected successfully');
-  } catch (error) {
-    console.error('[ERROR] Failed to connect:', error);
-    process.exit(1);
-  }
+  // Use the consolidated stdio server implementation
+  await runFullStdioServer();
 }
 
 run().catch(error => {

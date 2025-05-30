@@ -1,11 +1,7 @@
 #!/usr/bin/env node
 
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { createServer } from './index.js';
-
-// Redirect console to stderr
-console.log = (...args: any[]) => process.stderr.write(`[LOG] ${args.join(' ')}\n`);
-console.error = (...args: any[]) => process.stderr.write(`[ERROR] ${args.join(' ')}\n`);
+import { runStdioServer, validateStdioConfig } from './transports/stdio-transport.js';
+import logger from './logger.js';
 
 export async function runFullStdioServer(): Promise<void> {
   const apiKey = process.env.DIGITAL_SAMBA_API_KEY;
@@ -18,31 +14,29 @@ export async function runFullStdioServer(): Promise<void> {
   console.error('[INFO] Starting Digital Samba MCP Server (full stdio mode)...');
   console.error('[DEBUG] API Key found:', apiKey.substring(0, 5) + '...');
 
-  // Create server with full configuration
-  const serverConfig = createServer({
-    apiKey, // Pass API key directly to server
-    apiUrl: process.env.DIGITAL_SAMBA_API_URL || 'https://api.digitalsamba.com/api/v1',
-    enableCache: process.env.ENABLE_CACHE !== 'false',
-    cacheTtl: process.env.CACHE_TTL ? parseInt(process.env.CACHE_TTL) : 300000,
-    enableConnectionManagement: false, // Disable for faster startup
-    enableTokenManagement: false,
-    enableResourceOptimization: false,
-    enableCircuitBreaker: false,
-    enableGracefulDegradation: false,
-    enableSilentMode: true,
-    logLevel: process.env.LOG_LEVEL as any || 'info'
-  });
-
-  const { server } = serverConfig;
-
-  // Create stdio transport
-  const transport = new StdioServerTransport();
-  
-  // Connect server to transport
   try {
-    await server.connect(transport);
+    // Create configuration for STDIO transport
+    const stdioConfig = {
+      apiKey,
+      apiUrl: process.env.DIGITAL_SAMBA_API_URL,
+      serverOptions: {
+        enableCache: process.env.ENABLE_CACHE !== 'false',
+        cacheTtl: process.env.CACHE_TTL ? parseInt(process.env.CACHE_TTL) : 300000,
+        logLevel: (process.env.LOG_LEVEL as any) || 'info'
+      }
+    };
+
+    // Validate configuration
+    validateStdioConfig(stdioConfig);
+
+    // Run the STDIO server using the transport wrapper
+    await runStdioServer(stdioConfig);
+    
     console.error('[INFO] MCP server connected successfully with full features');
   } catch (error) {
+    logger.error('Failed to start STDIO server', { 
+      error: error instanceof Error ? error.message : String(error) 
+    });
     console.error('[ERROR] Failed to connect:', error);
     process.exit(1);
   }
