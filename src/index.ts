@@ -59,6 +59,7 @@ import { setupRecordingFunctionality } from './recordings.js';
 import WebhookService, { setupWebhookTools } from './webhooks.js';
 import gracefulDegradation, { ServiceHealthStatus } from './graceful-degradation.js';
 import AnalyticsResource from './analytics.js';
+import { setupSessionTools } from './sessions.js';
 
 // Type definitions for server options
 export interface ServerOptions {
@@ -154,6 +155,9 @@ export function createServer(options?: ServerOptions) {
   
   // Set up recording functionality
   setupRecordingFunctionality(server, API_URL);
+  
+  // Set up session tools
+  setupSessionTools(server, API_URL);
 
   // -------------------------------------------------------------------
   // Analytics Resources
