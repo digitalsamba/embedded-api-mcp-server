@@ -58,6 +58,7 @@ import { createApiKeyRateLimiter } from './rate-limiter.js';
 import { setupRecordingFunctionality } from './recordings.js';
 import WebhookService, { setupWebhookTools } from './webhooks.js';
 import gracefulDegradation, { ServiceHealthStatus } from './graceful-degradation.js';
+import AnalyticsResource from './analytics.js';
 
 // Type definitions for server options
 export interface ServerOptions {
@@ -153,6 +154,134 @@ export function createServer(options?: ServerOptions) {
   
   // Set up recording functionality
   setupRecordingFunctionality(server, API_URL);
+
+  // -------------------------------------------------------------------
+  // Analytics Resources
+  // -------------------------------------------------------------------
+
+  // Resource for analytics - all participants
+  server.resource(
+    'analytics-participants',
+    new ResourceTemplate('digitalsamba://analytics/participants', { list: undefined }),
+    async (uri, _params, request) => {
+      logger.info('Fetching all participants analytics');
+      
+      const apiKey = getApiKeyFromRequest(request);
+      if (!apiKey) {
+        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
+      }
+      
+      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
+      const analyticsResource = new AnalyticsResource(client);
+      
+      try {
+        const participants = await analyticsResource.getAllParticipants();
+        
+        const contents = participants.map(participant => ({
+          uri: `digitalsamba://analytics/participants/${participant.participant_id}`,
+          text: JSON.stringify(participant, null, 2),
+        }));
+        
+        return { contents };
+      } catch (error) {
+        logger.error('Error fetching participants analytics', { error: error instanceof Error ? error.message : String(error) });
+        throw error;
+      }
+    }
+  );
+
+  // Resource for analytics - usage statistics
+  server.resource(
+    'analytics-usage',
+    new ResourceTemplate('digitalsamba://analytics/usage', { list: undefined }),
+    async (uri, _params, request) => {
+      logger.info('Fetching usage analytics');
+      
+      const apiKey = getApiKeyFromRequest(request);
+      if (!apiKey) {
+        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
+      }
+      
+      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
+      const analyticsResource = new AnalyticsResource(client);
+      
+      try {
+        const usage = await analyticsResource.getUsageStatistics();
+        
+        const content = {
+          uri: uri.href,
+          text: JSON.stringify(usage, null, 2),
+        };
+        
+        return { contents: [content] };
+      } catch (error) {
+        logger.error('Error fetching usage analytics', { error: error instanceof Error ? error.message : String(error) });
+        throw error;
+      }
+    }
+  );
+
+  // Resource for analytics - room analytics
+  server.resource(
+    'analytics-rooms',
+    new ResourceTemplate('digitalsamba://analytics/rooms', { list: undefined }),
+    async (uri, _params, request) => {
+      logger.info('Fetching room analytics');
+      
+      const apiKey = getApiKeyFromRequest(request);
+      if (!apiKey) {
+        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
+      }
+      
+      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
+      const analyticsResource = new AnalyticsResource(client);
+      
+      try {
+        const rooms = await analyticsResource.getRoomAnalytics();
+        
+        const contents = rooms.map(room => ({
+          uri: `digitalsamba://analytics/rooms/${room.room_id}`,
+          text: JSON.stringify(room, null, 2),
+        }));
+        
+        return { contents };
+      } catch (error) {
+        logger.error('Error fetching room analytics', { error: error instanceof Error ? error.message : String(error) });
+        throw error;
+      }
+    }
+  );
+
+  // Resource for analytics - team statistics
+  server.resource(
+    'analytics-team',
+    new ResourceTemplate('digitalsamba://analytics/team', { list: undefined }),
+    async (uri, _params, request) => {
+      logger.info('Fetching team analytics');
+      
+      const apiKey = getApiKeyFromRequest(request);
+      if (!apiKey) {
+        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
+      }
+      
+      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
+      const analyticsResource = new AnalyticsResource(client);
+      
+      try {
+        const team = await analyticsResource.getTeamGlobalStatisticsCurrent();
+        
+        const content = {
+          uri: uri.href,
+          text: JSON.stringify(team, null, 2),
+        };
+        
+        return { contents: [content] };
+      } catch (error) {
+        logger.error('Error fetching team analytics', { error: error instanceof Error ? error.message : String(error) });
+        throw error;
+      }
+    }
+  );
 
   // -------------------------------------------------------------------
   // Resources
@@ -738,6 +867,229 @@ export function createServer(options?: ServerOptions) {
               text: `Error deleting room: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // -------------------------------------------------------------------
+  // Analytics Tools
+  // -------------------------------------------------------------------
+
+  // Tool for getting participant statistics
+  server.tool(
+    'get-participant-statistics',
+    {
+      participantId: z.string().optional(),
+      roomId: z.string().optional(),
+      sessionId: z.string().optional(),
+      dateStart: z.string().optional(),
+      dateEnd: z.string().optional(),
+    },
+    async (params, request) => {
+      const { participantId, roomId, sessionId, dateStart, dateEnd } = params;
+      
+      logger.info('Getting participant statistics', { participantId, roomId, sessionId });
+      
+      const apiKey = getApiKeyFromRequest(request);
+      if (!apiKey) {
+        return {
+          content: [{ 
+            type: 'text', 
+            text: 'No API key found. Please include an Authorization header with a Bearer token.'
+          }],
+          isError: true,
+        };
+      }
+      
+      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
+      const analyticsResource = new AnalyticsResource(client);
+      
+      try {
+        const filters = { date_start: dateStart, date_end: dateEnd, room_id: roomId, session_id: sessionId };
+        const statistics = await analyticsResource.getParticipantStatistics(participantId, filters);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(statistics, null, 2),
+          }],
+        };
+      } catch (error) {
+        logger.error('Error getting participant statistics', { 
+          participantId,
+          error: error instanceof Error ? error.message : String(error) 
+        });
+        
+        return {
+          content: [{
+            type: 'text',
+            text: `Error getting participant statistics: ${error instanceof Error ? error.message : String(error)}`,
+          }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Tool for getting room analytics
+  server.tool(
+    'get-room-analytics',
+    {
+      roomId: z.string().optional(),
+      dateStart: z.string().optional(),
+      dateEnd: z.string().optional(),
+    },
+    async (params, request) => {
+      const { roomId, dateStart, dateEnd } = params;
+      
+      logger.info('Getting room analytics', { roomId });
+      
+      const apiKey = getApiKeyFromRequest(request);
+      if (!apiKey) {
+        return {
+          content: [{ 
+            type: 'text', 
+            text: 'No API key found. Please include an Authorization header with a Bearer token.'
+          }],
+          isError: true,
+        };
+      }
+      
+      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
+      const analyticsResource = new AnalyticsResource(client);
+      
+      try {
+        const filters = { date_start: dateStart, date_end: dateEnd };
+        const analytics = await analyticsResource.getRoomAnalytics(roomId, filters);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(analytics, null, 2),
+          }],
+        };
+      } catch (error) {
+        logger.error('Error getting room analytics', { 
+          roomId,
+          error: error instanceof Error ? error.message : String(error) 
+        });
+        
+        return {
+          content: [{
+            type: 'text',
+            text: `Error getting room analytics: ${error instanceof Error ? error.message : String(error)}`,
+          }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Tool for getting usage statistics
+  server.tool(
+    'get-usage-statistics',
+    {
+      period: z.enum(['day', 'week', 'month', 'year']).optional(),
+      dateStart: z.string().optional(),
+      dateEnd: z.string().optional(),
+    },
+    async (params, request) => {
+      const { period, dateStart, dateEnd } = params;
+      
+      logger.info('Getting usage statistics', { period });
+      
+      const apiKey = getApiKeyFromRequest(request);
+      if (!apiKey) {
+        return {
+          content: [{ 
+            type: 'text', 
+            text: 'No API key found. Please include an Authorization header with a Bearer token.'
+          }],
+          isError: true,
+        };
+      }
+      
+      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
+      const analyticsResource = new AnalyticsResource(client);
+      
+      try {
+        const filters = { period, date_start: dateStart, date_end: dateEnd };
+        const statistics = await analyticsResource.getUsageStatistics(filters);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(statistics, null, 2),
+          }],
+        };
+      } catch (error) {
+        logger.error('Error getting usage statistics', { 
+          period,
+          error: error instanceof Error ? error.message : String(error) 
+        });
+        
+        return {
+          content: [{
+            type: 'text',
+            text: `Error getting usage statistics: ${error instanceof Error ? error.message : String(error)}`,
+          }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Tool for getting session statistics
+  server.tool(
+    'get-session-statistics',
+    {
+      sessionId: z.string().optional(),
+      roomId: z.string().optional(),
+      dateStart: z.string().optional(),
+      dateEnd: z.string().optional(),
+    },
+    async (params, request) => {
+      const { sessionId, roomId, dateStart, dateEnd } = params;
+      
+      logger.info('Getting session statistics', { sessionId, roomId });
+      
+      const apiKey = getApiKeyFromRequest(request);
+      if (!apiKey) {
+        return {
+          content: [{ 
+            type: 'text', 
+            text: 'No API key found. Please include an Authorization header with a Bearer token.'
+          }],
+          isError: true,
+        };
+      }
+      
+      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
+      const analyticsResource = new AnalyticsResource(client);
+      
+      try {
+        const filters = { date_start: dateStart, date_end: dateEnd, room_id: roomId };
+        const statistics = await analyticsResource.getSessionStatistics(sessionId, filters);
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify(statistics, null, 2),
+          }],
+        };
+      } catch (error) {
+        logger.error('Error getting session statistics', { 
+          sessionId,
+          error: error instanceof Error ? error.message : String(error) 
+        });
+        
+        return {
+          content: [{
+            type: 'text',
+            text: `Error getting session statistics: ${error instanceof Error ? error.message : String(error)}`,
+          }],
           isError: true,
         };
       }
