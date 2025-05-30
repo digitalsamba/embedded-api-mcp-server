@@ -124,6 +124,37 @@ function setupResources(server: McpServer, apiKey: string, apiUrl: string, cache
 }
 
 function setupTools(server: McpServer, apiKey: string, apiUrl: string, cache: MemoryCache<any>): void {
+  // List rooms tool (explicit tool for Claude to use)
+  server.tool(
+    'list-rooms',
+    {
+      limit: z.number().optional(),
+      page: z.number().optional()
+    },
+    async (params) => {
+      const client = new DigitalSambaApiClient(apiKey, apiUrl, cache);
+      try {
+        const response = await client.listRooms();
+        const rooms = response.data || [];
+        
+        return {
+          content: [{
+            type: 'text',
+            text: `Found ${rooms.length} rooms:\n\n${JSON.stringify(rooms, null, 2)}`
+          }]
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: 'text',
+            text: `Error listing rooms: ${error instanceof Error ? error.message : String(error)}`
+          }],
+          isError: true
+        };
+      }
+    }
+  );
+
   // Create room
   server.tool(
     'create-room',
