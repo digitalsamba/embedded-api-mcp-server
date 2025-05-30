@@ -6,9 +6,6 @@ import { z } from 'zod';
 import { DigitalSambaApiClient } from './digital-samba-api.js';
 import { MemoryCache } from './cache.js';
 import { setupRecordingFunctionality } from './recordings.js';
-import { setupModerationFunctionality } from './moderation.js';
-import { setupBreakoutRoomsFunctionality } from './breakout-rooms.js';
-import { setupMeetingSchedulingFunctionality } from './meetings.js';
 import { getApiKeyFromRequest } from './auth.js';
 import logger from './logger.js';
 
@@ -49,9 +46,6 @@ export async function runFullStdioServer(): Promise<void> {
 
   // Setup additional functionality
   setupRecordingFunctionality(server, API_URL);
-  setupModerationFunctionality(server, API_URL);
-  setupBreakoutRoomsFunctionality(server, API_URL);
-  setupMeetingSchedulingFunctionality(server, API_URL);
 
   // Create stdio transport
   const transport = new StdioServerTransport();

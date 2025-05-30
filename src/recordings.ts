@@ -2,20 +2,19 @@
  * Digital Samba MCP Server - Recording Functionality
  * 
  * This module implements resources and tools for managing Digital Samba room recordings.
- * It provides capabilities for listing, retrieving, creating, and managing recordings
+ * It provides capabilities for listing, retrieving, and managing recordings
  * through the MCP interface, exposing the Digital Samba recording API to MCP clients.
  * 
  * Features include:
  * - Listing all recordings (standard and archived)
  * - Retrieving specific recording details
- * - Starting and stopping recordings
  * - Generating download links
  * - Archiving and unarchiving recordings
  * - Deleting recordings
  * 
  * @module recordings
  * @author Digital Samba Team
- * @version 0.1.0
+ * @version 1.0.0
  */
 // External dependencies
 import { z } from 'zod';
@@ -429,196 +428,6 @@ export function setupRecordingFunctionality(server: McpServer, apiUrl: string) {
           // Use the original error message for any other cases
           else {
             errorMessage = `Error retrieving recordings: ${error.message}`;
-          }
-        }
-        
-        return {
-          content: [{ type: 'text', text: errorMessage }],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  // Tool for starting a recording in a room
-  server.tool(
-    'start-recording',
-    {
-      roomId: z.string(),
-    },
-    async (params, request) => {
-      const { roomId } = params;
-      
-      if (!roomId) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'Room ID is required.' 
-          }],
-          isError: true,
-        };
-      }
-      
-      logger.info('Starting recording for room', { roomId });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      // Create API client
-      logger.debug('Creating API client using context API key');
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
-      
-      try {
-        // Start recording
-        await client.startRecording(roomId);
-        logger.info('Recording started successfully', { roomId });
-        
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Recording started successfully for room ${roomId}. The recording will be available in the list of recordings when it's ready.`,
-            },
-          ],
-        };
-      } catch (error) {
-        logger.error('Error starting recording', { 
-          roomId,
-          error: error instanceof Error ? error.message : String(error) 
-        });
-        
-        // Format error message based on error type
-        let errorMessage = 'Error starting recording. Please try again.';
-        
-        if (error instanceof Error) {
-          // Handle 404 errors specifically for better user experience
-          if (error.message.includes('404') || error.message.includes('not found')) {
-            errorMessage = `Room with ID ${roomId} not found.`;
-          }
-          
-          // Handle authentication errors
-          else if (error.message.includes('401') || error.message.includes('unauthorized')) {
-            errorMessage = 'Authentication failed. Please check your API key.';
-          }
-          
-          // Handle permission errors
-          else if (error.message.includes('403') || error.message.includes('forbidden')) {
-            errorMessage = 'You do not have permission to start recordings in this room.';
-          }
-          
-          // Handle already recording errors
-          else if (error.message.toLowerCase().includes('already recording') || 
-                   error.message.toLowerCase().includes('recording in progress')) {
-            errorMessage = `A recording is already in progress for room ${roomId}.`;
-          }
-          
-          // Use the original error message for any other cases
-          else {
-            errorMessage = `Error starting recording: ${error.message}`;
-          }
-        }
-        
-        return {
-          content: [{ type: 'text', text: errorMessage }],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  // Tool for stopping a recording in a room
-  server.tool(
-    'stop-recording',
-    {
-      roomId: z.string(),
-    },
-    async (params, request) => {
-      const { roomId } = params;
-      
-      if (!roomId) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'Room ID is required.' 
-          }],
-          isError: true,
-        };
-      }
-      
-      logger.info('Stopping recording for room', { roomId });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      // Create API client
-      logger.debug('Creating API client using context API key');
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
-      
-      try {
-        // Stop recording
-        await client.stopRecording(roomId);
-        logger.info('Recording stopped successfully', { roomId });
-        
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Recording stopped successfully for room ${roomId}. The recording will be processed and available in the list of recordings.`,
-            },
-          ],
-        };
-      } catch (error) {
-        logger.error('Error stopping recording', { 
-          roomId,
-          error: error instanceof Error ? error.message : String(error) 
-        });
-        
-        // Format error message based on error type
-        let errorMessage = 'Error stopping recording. Please try again.';
-        
-        if (error instanceof Error) {
-          // Handle 404 errors specifically for better user experience
-          if (error.message.includes('404') || error.message.includes('not found')) {
-            errorMessage = `Room with ID ${roomId} not found.`;
-          }
-          
-          // Handle authentication errors
-          else if (error.message.includes('401') || error.message.includes('unauthorized')) {
-            errorMessage = 'Authentication failed. Please check your API key.';
-          }
-          
-          // Handle permission errors
-          else if (error.message.includes('403') || error.message.includes('forbidden')) {
-            errorMessage = 'You do not have permission to stop recordings in this room.';
-          }
-          
-          // Handle no active recording errors
-          else if (error.message.toLowerCase().includes('no recording') || 
-                   error.message.toLowerCase().includes('not recording')) {
-            errorMessage = `There is no active recording in room ${roomId} to stop.`;
-          }
-          
-          // Use the original error message for any other cases
-          else {
-            errorMessage = `Error stopping recording: ${error.message}`;
           }
         }
         

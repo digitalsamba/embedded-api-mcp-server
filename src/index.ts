@@ -50,13 +50,10 @@ import { createResourceOptimizer } from './resource-optimizer.js';
 import { createEnhancedApiClient, EnhancedDigitalSambaApiClient } from './digital-samba-api-enhanced.js';
 import { CircuitBreakerApiClient } from './digital-samba-api-circuit-breaker.js';
 import ResilientApiClient from './digital-samba-api-resilient.js';
-import { setupBreakoutRoomsFunctionality } from './breakout-rooms.js';
 import { MemoryCache } from './cache.js';
 import { DigitalSambaApiClient } from './digital-samba-api.js';
 import logger from './logger.js';
 import metricsRegistry, { initializeMetrics } from './metrics.js';
-import { setupMeetingSchedulingFunctionality } from './meetings.js';
-import { setupModerationFunctionality } from './moderation.js';
 import { createApiKeyRateLimiter } from './rate-limiter.js';
 import { setupRecordingFunctionality } from './recordings.js';
 import WebhookService, { setupWebhookTools } from './webhooks.js';
@@ -156,15 +153,6 @@ export function createServer(options?: ServerOptions) {
   
   // Set up recording functionality
   setupRecordingFunctionality(server, API_URL);
-  
-  // Set up moderation functionality
-  setupModerationFunctionality(server, API_URL);
-  
-  // Set up breakout rooms functionality
-  setupBreakoutRoomsFunctionality(server, API_URL);
-  
-  // Set up meeting scheduling functionality
-  setupMeetingSchedulingFunctionality(server, API_URL);
 
   // -------------------------------------------------------------------
   // Resources
@@ -358,73 +346,6 @@ export function createServer(options?: ServerOptions) {
     }
   );
 
-  // Resource for listing participants in a room
-  server.resource(
-    'participants',
-    new ResourceTemplate('digitalsamba://rooms/{roomId}/participants', { list: undefined }),
-    async (uri, params, request) => {
-      const { roomId } = params;
-      
-      if (!roomId) {
-        throw new Error('Room ID is required.');
-      }
-      
-      logger.info('Listing participants', { roomId });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
-      }
-      
-      // Create API client with the provided key
-      logger.debug('Creating API client with key', { 
-        apiKeyLength: apiKey ? apiKey.length : 0,
-        apiUrl: API_URL
-      });
-      
-      let client;
-      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
-        // Use enhanced API client
-        logger.debug('Using enhanced API client with additional features enabled');
-        client = new EnhancedDigitalSambaApiClient(
-          apiKey,
-          API_URL,
-          apiCache,
-          {
-            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
-            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
-            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
-            connectionPoolSize: CONNECTION_POOL_SIZE
-          }
-        );
-      } else {
-        // Use standard API client
-        client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
-      }
-      
-      try {
-        // Get participants from API
-        const response = await client.listRoomParticipants(roomId as string);
-        const participants = response.data || [];
-        logger.debug(`Found ${participants.length} participants in room ${roomId}`);
-        
-        // Format participants as resource contents
-        const contents = participants.map(participant => ({
-          uri: `digitalsamba://rooms/${roomId}/participants/${participant.id}`,
-          text: JSON.stringify(participant, null, 2),
-        }));
-        
-        return { contents };
-      } catch (error) {
-        logger.error('Error fetching participants', { 
-          roomId, 
-          error: error instanceof Error ? error.message : String(error) 
-        });
-        throw error;
-      }
-    }
-  );
 
   // -------------------------------------------------------------------
   // Tools

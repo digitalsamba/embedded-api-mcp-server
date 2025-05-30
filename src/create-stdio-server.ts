@@ -5,7 +5,7 @@ import { MemoryCache } from './cache.js';
 import logger from './logger.js';
 
 // Import all setup functions but we'll implement our own versions that properly handle API keys
-import type { Room, Recording, Participant, ScheduledMeeting } from './digital-samba-api.js';
+import type { Room, Recording, Participant } from './digital-samba-api.js';
 
 export function createStdioServer(apiKey: string, apiUrl: string = 'https://api.digitalsamba.com/api/v1'): McpServer {
   const server = new McpServer({
@@ -105,22 +105,6 @@ function setupResources(server: McpServer, apiKey: string, apiUrl: string, cache
     }
   );
 
-  // Meetings resource
-  server.resource(
-    'meetings',
-    'digitalsamba://meetings',
-    async () => {
-      const client = new DigitalSambaApiClient(apiKey, apiUrl, cache);
-      const response = await client.listScheduledMeetings({});
-      return {
-        contents: [{
-          uri: 'digitalsamba://meetings',
-          text: JSON.stringify(response.data || [], null, 2),
-          mimeType: 'application/json'
-        }]
-      };
-    }
-  );
 }
 
 function setupTools(server: McpServer, apiKey: string, apiUrl: string, cache: MemoryCache<any>): void {
@@ -384,44 +368,4 @@ function setupTools(server: McpServer, apiKey: string, apiUrl: string, cache: Me
     }
   );
 
-  // Create meeting
-  server.tool(
-    'create-meeting',
-    {
-      title: z.string().min(3).max(200),
-      description: z.string().max(1000).optional(),
-      start_time: z.string(),
-      end_time: z.string().optional(),
-      timezone: z.string().optional(),
-      host_name: z.string().optional(),
-      host_email: z.string().email().optional(),
-      participants: z.array(z.object({
-        name: z.string(),
-        email: z.string().email()
-      })).optional(),
-      recurring: z.boolean().optional(),
-      recurrence_pattern: z.string().optional()
-    },
-    async (params) => {
-      const client = new DigitalSambaApiClient(apiKey, apiUrl, cache);
-      
-      try {
-        const meeting = await client.createScheduledMeeting(params as any);
-        return {
-          content: [{
-            type: 'text',
-            text: `Meeting scheduled successfully!\n\n${JSON.stringify(meeting, null, 2)}`
-          }]
-        };
-      } catch (error) {
-        return {
-          content: [{
-            type: 'text',
-            text: `Error creating meeting: ${error instanceof Error ? error.message : String(error)}`
-          }],
-          isError: true
-        };
-      }
-    }
-  );
 }
