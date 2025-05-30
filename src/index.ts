@@ -1192,6 +1192,10 @@ export function startServer(options?: ServerOptions) {
   }
 }
 
+// Export transport functions for unified API
+export { runStdioServer, validateStdioConfig } from './transports/stdio-transport.js';
+export { runHttpServer, createHttpServerConfig, validateHttpConfig } from './transports/http-transport.js';
+
 // If this file is executed directly or via npm run dev, start the server
 // Only start if the file is executed directly, not when imported
 // The module initialization check had to be rewritten to work with tsx
