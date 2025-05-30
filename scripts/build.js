@@ -9,9 +9,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Define paths
-const srcDir = resolve(__dirname, 'src');
-const distDir = resolve(__dirname, 'dist');
-const packageJson = JSON.parse(fs.readFileSync(resolve(__dirname, 'package.json'), 'utf-8'));
+const projectRoot = resolve(__dirname, '..');
+const srcDir = resolve(projectRoot, 'src');
+const distDir = resolve(projectRoot, 'dist');
+const packageJson = JSON.parse(fs.readFileSync(resolve(projectRoot, 'package.json'), 'utf-8'));
 const dependencies = Object.keys(packageJson.dependencies || {});
 const peerDependencies = Object.keys(packageJson.peerDependencies || {});
 const external = [...dependencies, ...peerDependencies];
@@ -22,7 +23,7 @@ if (!fs.existsSync(distDir)) {
 }
 
 // Copy binary files
-const binDir = resolve(__dirname, 'bin');
+const binDir = resolve(projectRoot, 'bin');
 const distBinDir = resolve(distDir, 'bin');
 if (!fs.existsSync(distBinDir)) {
   fs.mkdirSync(distBinDir, { recursive: true });
