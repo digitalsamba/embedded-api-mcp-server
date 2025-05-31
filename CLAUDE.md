@@ -37,6 +37,29 @@ The project implements a Model Context Protocol (MCP) server for Digital Samba's
   - `digital-samba-api-resilient.ts` - Full resilience features
   - `digital-samba-api-enhanced.ts` - Enhanced with rate limiting/caching
 
+### V2 Directory Structure (In Progress)
+The codebase is being restructured to separate Resources (read-only) from Tools (actions):
+
+#### Completed Modules ✅
+- **Resources**: `src/resources/` - GET endpoints for data retrieval
+  - `analytics/` - Team, room, session analytics (✅ Migrated)
+  - `rooms/` - Room listing and details (✅ Migrated)
+- **Tools**: `src/tools/` - POST/PATCH/DELETE for actions
+  - `room-management/` - Room CRUD operations (✅ Migrated)
+  - `session-management/` - Session operations (✅ Migrated)
+  - `analytics-tools/` - Analytics query tools (✅ Migrated)
+
+#### Pending Modules 🔄
+- **Resources**:
+  - `recordings/` - Recording listings
+  - `sessions/` - Session listings
+  - `data/` - General data endpoints
+- **Tools**:
+  - `recording-management/` - Recording controls
+  - `webhook-management/` - Webhook operations
+
+See `docs/v2-restructuring-progress.md` for detailed migration status.
+
 ### Key Patterns
 - **Circuit Breaker**: Prevents cascading failures (CLOSED/OPEN/HALF-OPEN states)
 - **Connection Pooling**: HTTP agent pooling in `connection-manager.ts`
@@ -94,3 +117,18 @@ Custom error types in `errors.ts`:
 
 ### Project Tracking
 - Project management and stats located at: `/config/Documents/Obsidian Vault/01-Projects/Work/DigitalSamba/MCP-Server-Development/`
+
+## Implementation Guidelines
+
+### Phase 1 Requirements (Current Phase)
+- **Backward Compatibility**: NEVER break existing v1.0 functionality
+- **Test First**: Run tests before and after any restructuring
+- **Incremental Changes**: Move files one at a time, verifying functionality
+- **Import Updates**: Update all import paths when moving files
+- **Export Preservation**: Maintain all public exports in src/index.ts
+
+### Critical Constraints
+- NPM package size must stay under 250KB packed
+- All 21 existing endpoints must continue working
+- Zero breaking changes allowed
+- Maintain existing error handling patterns
