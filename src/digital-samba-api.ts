@@ -2418,4 +2418,71 @@ export class DigitalSambaApiClient {
       body: JSON.stringify(options)
     });
   }
+
+  // Communication Management Methods
+
+  /**
+   * Delete session chats
+   */
+  async deleteSessionChats(sessionId: string): Promise<void> {
+    // Invalidate cache when deleting resources
+    if (this.cache) {
+      this.cache.invalidateNamespace('api');
+    }
+    
+    await this.request<void>(`/sessions/${sessionId}/chats`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Delete session Q&A
+   */
+  async deleteSessionQA(sessionId: string): Promise<void> {
+    // Invalidate cache when deleting resources
+    if (this.cache) {
+      this.cache.invalidateNamespace('api');
+    }
+    
+    await this.request<void>(`/sessions/${sessionId}/qa`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Delete session summaries
+   */
+  async deleteSessionSummaries(sessionId: string): Promise<void> {
+    // Invalidate cache when deleting resources
+    if (this.cache) {
+      this.cache.invalidateNamespace('api');
+    }
+    
+    await this.request<void>(`/sessions/${sessionId}/summaries`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Delete session polls
+   */
+  async deleteSessionPolls(sessionId: string): Promise<void> {
+    // Invalidate cache when deleting resources
+    if (this.cache) {
+      this.cache.invalidateNamespace('api');
+    }
+    
+    await this.request<void>(`/sessions/${sessionId}/polls`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Publish poll results
+   */
+  async publishPollResults(pollId: string, sessionId: string): Promise<void> {
+    await this.request<void>(`/sessions/${sessionId}/polls/${pollId}/publish-results`, {
+      method: 'POST'
+    });
+  }
 }

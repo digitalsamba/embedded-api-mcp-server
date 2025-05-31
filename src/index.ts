@@ -70,6 +70,8 @@ import { registerRoomTools, executeRoomTool } from './tools/room-management/inde
 import { registerSessionResources, handleSessionResource } from './resources/sessions/index.js';
 import { registerExportResources, ExportResources } from './resources/exports/index.js';
 import { registerLiveSessionTools, executeLiveSessionTool } from './tools/live-session-controls/index.js';
+import { registerCommunicationTools, executeCommunicationTool } from './tools/communication-management/index.js';
+import { registerPollTools, executePollTool } from './tools/poll-management/index.js';
 
 // Type definitions for server options
 export interface ServerOptions {
@@ -498,6 +500,76 @@ export function createServer(options?: ServerOptions) {
         
         // Execute the tool using the modular function
         return executeLiveSessionTool(tool.name, params, apiClient);
+      }
+    );
+  });
+
+  // -------------------------------------------------------------------
+  // Communication Management Tools (Modular)
+  // -------------------------------------------------------------------
+
+  // Register communication management tools using the modular approach
+  const communicationTools = registerCommunicationTools();
+
+  // Register each communication tool with the server
+  communicationTools.forEach(tool => {
+    server.tool(
+      tool.name,
+      tool.inputSchema,
+      async (params, request) => {
+        logger.info(`Executing communication tool: ${tool.name}`);
+        
+        // Create API client
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          return {
+            content: [{ 
+              type: 'text', 
+              text: 'No API key found. Please include an Authorization header with a Bearer token.'
+            }],
+            isError: true,
+          };
+        }
+        
+        const apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+        
+        // Execute the tool using the modular function
+        return executeCommunicationTool(tool.name, params, apiClient);
+      }
+    );
+  });
+
+  // -------------------------------------------------------------------
+  // Poll Management Tools (Modular)
+  // -------------------------------------------------------------------
+
+  // Register poll management tools using the modular approach
+  const pollTools = registerPollTools();
+
+  // Register each poll tool with the server
+  pollTools.forEach(tool => {
+    server.tool(
+      tool.name,
+      tool.inputSchema,
+      async (params, request) => {
+        logger.info(`Executing poll tool: ${tool.name}`);
+        
+        // Create API client
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          return {
+            content: [{ 
+              type: 'text', 
+              text: 'No API key found. Please include an Authorization header with a Bearer token.'
+            }],
+            isError: true,
+          };
+        }
+        
+        const apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+        
+        // Execute the tool using the modular function
+        return executePollTool(tool.name, params, apiClient);
       }
     );
   });
