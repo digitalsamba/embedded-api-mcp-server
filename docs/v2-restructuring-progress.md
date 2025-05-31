@@ -109,6 +109,8 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
   - `update-library-file` - Update file details
   - `delete-library-file` - Delete a file from a library
   - `get-file-links` - Get viewing and thumbnail links for a file
+  - `create-webapp` - Create a new webapp in a library
+  - `create-whiteboard` - Create a new whiteboard in a library
 
 ##### Recording Management
 - **Resources** (`src/resources/recordings/`)
@@ -165,7 +167,7 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
 | Phase 2 | ✅ Complete | v1.1.0-beta.1 | Export Resources (7 endpoints) |
 | Phase 3 | ✅ Complete | v1.3.0-beta.1 | Live Session Controls (4 endpoints) |
 | Phase 4 | ✅ Complete | v1.4.0-beta.1 | Communication Management (8 tools), Poll Management (6 tools) |
-| Phase 5 | ✅ Complete | v1.5.0-beta.1 | Library & Content Management (7 resources, 10 tools) |
+| Phase 5 | ✅ Complete | v1.5.0-beta.1 | Library & Content Management (7 resources, 12 tools including webapp/whiteboard) |
 
 ### Next Steps (Phase 6)
 

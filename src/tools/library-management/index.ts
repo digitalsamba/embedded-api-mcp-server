@@ -142,6 +142,26 @@ export function registerLibraryTools(): ToolDefinition[] {
         libraryId: z.string().describe('The ID of the library'),
         fileId: z.string().describe('The ID of the file'),
       }
+    },
+    
+    // Webapp and Whiteboard Creation
+    {
+      name: 'create-webapp',
+      description: 'Create a new webapp in a library',
+      inputSchema: {
+        libraryId: z.string().describe('The ID of the library'),
+        name: z.string().describe('Name of the webapp'),
+        folderId: z.string().optional().describe('Folder ID to place the webapp in'),
+      }
+    },
+    {
+      name: 'create-whiteboard',
+      description: 'Create a new whiteboard in a library',
+      inputSchema: {
+        libraryId: z.string().describe('The ID of the library'),
+        name: z.string().describe('Name of the whiteboard'),
+        folderId: z.string().optional().describe('Folder ID to place the whiteboard in'),
+      }
     }
   ];
 }
@@ -185,6 +205,12 @@ export async function executeLibraryTool(
       return handleDeleteLibraryFile(params, apiClient);
     case 'get-file-links':
       return handleGetFileLinks(params, apiClient);
+    
+    // Webapp and Whiteboard Creation
+    case 'create-webapp':
+      return handleCreateWebapp(params, apiClient);
+    case 'create-whiteboard':
+      return handleCreateWhiteboard(params, apiClient);
     
     default:
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
@@ -834,6 +860,148 @@ async function handleGetFileLinks(
     
     if (errorMessage.includes('404') || errorMessage.includes('not found')) {
       displayMessage = `File with ID ${fileId} not found in library ${libraryId}`;
+    }
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: displayMessage
+      }],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle create webapp
+ */
+async function handleCreateWebapp(
+  params: { libraryId: string; name: string; folderId?: string },
+  apiClient: DigitalSambaApiClient
+): Promise<any> {
+  const { libraryId, name, folderId } = params;
+  
+  if (!libraryId || libraryId.trim() === '') {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: 'Library ID is required to create a webapp.'
+      }],
+      isError: true,
+    };
+  }
+  
+  if (!name || name.trim() === '') {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: 'Webapp name is required.'
+      }],
+      isError: true,
+    };
+  }
+  
+  logger.info('Creating webapp', { libraryId, name, folderId });
+  
+  try {
+    const webappData: any = { name };
+    if (folderId !== undefined) webappData.folder_id = folderId;
+    
+    const result = await apiClient.createWebapp(libraryId, webappData);
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Successfully created webapp "${name}" in library ${libraryId}.\n` +
+              `Webapp ID: ${result.file_id}\n` +
+              `Upload URL: ${result.external_storage_url}\n` +
+              `Upload Token: ${result.token}\n` +
+              `Token expires at: ${new Date(result.expiration_timestamp * 1000).toISOString()}`
+      }],
+    };
+  } catch (error) {
+    logger.error('Error creating webapp', { 
+      libraryId,
+      name,
+      error: error instanceof Error ? error.message : String(error) 
+    });
+    
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    let displayMessage = `Error creating webapp: ${errorMessage}`;
+    
+    if (errorMessage.includes('404') || errorMessage.includes('Library not found')) {
+      displayMessage = `Library with ID ${libraryId} not found`;
+    }
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: displayMessage
+      }],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle create whiteboard
+ */
+async function handleCreateWhiteboard(
+  params: { libraryId: string; name: string; folderId?: string },
+  apiClient: DigitalSambaApiClient
+): Promise<any> {
+  const { libraryId, name, folderId } = params;
+  
+  if (!libraryId || libraryId.trim() === '') {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: 'Library ID is required to create a whiteboard.'
+      }],
+      isError: true,
+    };
+  }
+  
+  if (!name || name.trim() === '') {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: 'Whiteboard name is required.'
+      }],
+      isError: true,
+    };
+  }
+  
+  logger.info('Creating whiteboard', { libraryId, name, folderId });
+  
+  try {
+    const whiteboardData: any = { name };
+    if (folderId !== undefined) whiteboardData.folder_id = folderId;
+    
+    const result = await apiClient.createWhiteboard(libraryId, whiteboardData);
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Successfully created whiteboard "${name}" in library ${libraryId}.\n` +
+              `Whiteboard ID: ${result.file_id}\n` +
+              `Upload URL: ${result.external_storage_url}\n` +
+              `Upload Token: ${result.token}\n` +
+              `Token expires at: ${new Date(result.expiration_timestamp * 1000).toISOString()}`
+      }],
+    };
+  } catch (error) {
+    logger.error('Error creating whiteboard', { 
+      libraryId,
+      name,
+      error: error instanceof Error ? error.message : String(error) 
+    });
+    
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    let displayMessage = `Error creating whiteboard: ${errorMessage}`;
+    
+    if (errorMessage.includes('404') || errorMessage.includes('Library not found')) {
+      displayMessage = `Library with ID ${libraryId} not found`;
     }
     
     return {

@@ -2000,6 +2000,60 @@ export class DigitalSambaApiClient {
     }>(`/libraries/${libraryId}/files/${fileId}/links`);
   }
   
+  // Webapps
+  
+  /**
+   * Create a webapp in a library
+   */
+  async createWebapp(libraryId: string, settings: {
+    name: string;
+    folder_id?: string;
+  }): Promise<{
+    file_id: string;
+    file_name: string;
+    external_storage_url: string;
+    token: string;
+    expiration_timestamp: number;
+  }> {
+    return this.request<{
+      file_id: string;
+      file_name: string;
+      external_storage_url: string;
+      token: string;
+      expiration_timestamp: number;
+    }>(`/libraries/${libraryId}/webapps`, {
+      method: 'POST',
+      body: JSON.stringify(settings)
+    });
+  }
+  
+  // Whiteboards
+  
+  /**
+   * Create a whiteboard in a library
+   */
+  async createWhiteboard(libraryId: string, settings: {
+    name: string;
+    folder_id?: string;
+  }): Promise<{
+    file_id: string;
+    file_name: string;
+    external_storage_url: string;
+    token: string;
+    expiration_timestamp: number;
+  }> {
+    return this.request<{
+      file_id: string;
+      file_name: string;
+      external_storage_url: string;
+      token: string;
+      expiration_timestamp: number;
+    }>(`/libraries/${libraryId}/whiteboards`, {
+      method: 'POST',
+      body: JSON.stringify(settings)
+    });
+  }
+  
   // Moderation
   
   /**
