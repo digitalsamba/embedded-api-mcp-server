@@ -176,6 +176,10 @@ export function getApiKeyFromRequest(request: RequestMeta & { sessionId?: string
     sessionId = request.context.sessionId;
     logger.debug(`Got sessionId from request.context: ${sessionId}`);
   }
+  if (!sessionId && (request as any).transport && (request as any).transport.sessionId) {
+    sessionId = (request as any).transport.sessionId;
+    logger.debug(`Got sessionId from request.transport: ${sessionId}`);
+  }
   
   if (sessionId) {
     logger.debug(`Looking for API key for session ID: ${sessionId}`);

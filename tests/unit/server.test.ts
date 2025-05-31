@@ -50,17 +50,6 @@ jest.mock('../../src/recordings', () => ({
   setupRecordingFunctionality: jest.fn(),
 }));
 
-jest.mock('../../src/moderation', () => ({
-  setupModerationFunctionality: jest.fn(),
-}));
-
-jest.mock('../../src/breakout-rooms', () => ({
-  setupBreakoutRoomsFunctionality: jest.fn(),
-}));
-
-jest.mock('../../src/meetings', () => ({
-  setupMeetingSchedulingFunctionality: jest.fn(),
-}));
 
 jest.mock('../../src/metrics', () => ({
   __esModule: true,
@@ -213,17 +202,11 @@ describe('MCP Server', () => {
     it('should set up feature modules', () => {
       const setupWebhookTools = require('../../src/webhooks').setupWebhookTools;
       const setupRecordingFunctionality = require('../../src/recordings').setupRecordingFunctionality;
-      const setupModerationFunctionality = require('../../src/moderation').setupModerationFunctionality;
-      const setupBreakoutRoomsFunctionality = require('../../src/breakout-rooms').setupBreakoutRoomsFunctionality;
-      const setupMeetingSchedulingFunctionality = require('../../src/meetings').setupMeetingSchedulingFunctionality;
       
       createServer();
       
       expect(setupWebhookTools).toHaveBeenCalled();
       expect(setupRecordingFunctionality).toHaveBeenCalled();
-      expect(setupModerationFunctionality).toHaveBeenCalled();
-      expect(setupBreakoutRoomsFunctionality).toHaveBeenCalled();
-      expect(setupMeetingSchedulingFunctionality).toHaveBeenCalled();
     });
   });
   

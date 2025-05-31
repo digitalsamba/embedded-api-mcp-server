@@ -18,7 +18,7 @@
  */
 
 // Node.js built-in modules
-import { randomBytes } from 'crypto';
+import { createHash } from 'crypto';
 
 // External dependencies
 // None for now
@@ -112,9 +112,8 @@ export class MemoryCache<T = any> {
       ? value 
       : this.options.serializer!(value);
     
-    // Simple ETag generation using a hash of the content
-    // In production, consider using a more robust algorithm
-    return randomBytes(8).toString('hex');
+    // Generate deterministic ETag based on content hash
+    return createHash('md5').update(serialized).digest('hex').substring(0, 16);
   }
 
   /**
