@@ -72,6 +72,8 @@ import { registerExportResources, ExportResources } from './resources/exports/in
 import { registerLiveSessionTools, executeLiveSessionTool } from './tools/live-session-controls/index.js';
 import { registerCommunicationTools, executeCommunicationTool } from './tools/communication-management/index.js';
 import { registerPollTools, executePollTool } from './tools/poll-management/index.js';
+import { registerLibraryTools, executeLibraryTool } from './tools/library-management/index.js';
+import { registerContentResources, handleContentResource } from './resources/content/index.js';
 
 // Type definitions for server options
 export interface ServerOptions {
@@ -570,6 +572,84 @@ export function createServer(options?: ServerOptions) {
         
         // Execute the tool using the modular function
         return executePollTool(tool.name, params, apiClient);
+      }
+    );
+  });
+
+  // -------------------------------------------------------------------
+  // Library Management Tools (Modular)
+  // -------------------------------------------------------------------
+
+  // Register library management tools using the modular approach
+  const libraryTools = registerLibraryTools();
+
+  // Register each library tool with the server
+  libraryTools.forEach(tool => {
+    server.tool(
+      tool.name,
+      tool.inputSchema,
+      async (params, request) => {
+        logger.info(`Executing library tool: ${tool.name}`);
+        
+        // Create API client
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          return {
+            content: [{ 
+              type: 'text', 
+              text: 'No API key found. Please include an Authorization header with a Bearer token.'
+            }],
+            isError: true,
+          };
+        }
+        
+        const apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+        
+        // Execute the tool using the modular function
+        return executeLibraryTool(tool.name, params, apiClient);
+      }
+    );
+  });
+
+  // -------------------------------------------------------------------
+  // Content Resources (Modular)
+  // -------------------------------------------------------------------
+
+  // Register content resources using the modular approach
+  const contentResources = registerContentResources();
+
+  // Register each content resource with the server
+  contentResources.forEach(resource => {
+    server.resource(
+      resource.name,
+      new ResourceTemplate(resource.uri, { list: undefined }),
+      async (uri, params, request) => {
+        logger.info(`Handling content resource: ${resource.name}`);
+        
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                error: 'No API key found. Please include an Authorization header with a Bearer token.',
+                timestamp: new Date().toISOString()
+              }, null, 2)
+            }]
+          };
+        }
+        
+        const apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+        
+        try {
+          return await handleContentResource(uri.href, apiClient);
+        } catch (error) {
+          logger.error('Error handling content resource', { 
+            uri: uri.href,
+            error: error instanceof Error ? error.message : String(error) 
+          });
+          throw error;
+        }
       }
     );
   });
