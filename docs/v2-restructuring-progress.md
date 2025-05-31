@@ -130,14 +130,16 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
 
 ### Pending 🔄
 
-#### Webhooks
-- Move webhook tools from `src/webhooks.ts`
-- All webhook operations are tools (no read-only resources)
-
-#### Core Integration
-- Clean up duplicate tool registrations
+#### Core Integration & Cleanup
+- Clean up duplicate tool registrations in `src/index.ts`
 - Remove deprecated inline implementations
+- Consolidate webhook tool registration (tools already exist in `src/tools/webhook-management/`)
+- Fix connection between old webhook service and new modular tools
+
+#### Testing
 - Update tests to handle modular structure
+- Fix 24 failing tests (critical blocker per SESSION-HANDOVER.md)
+- Tests failing in: auth.test.ts, rate-limiter.test.ts, server.test.ts
 
 ### Implementation Guidelines Followed
 
@@ -171,9 +173,38 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
 
 ### Next Steps (Phase 6)
 
-1. Implement Role & Permission Management tools (6 endpoints) 
-2. Implement Remaining Recording Management tools
-3. Clean up and consolidate webhook management tools
+1. **CRITICAL**: Fix 24 failing tests before proceeding (see SESSION-HANDOVER.md)
+2. Implement Role & Permission Management tools (6 endpoints):
+   - `list-roles` - List all available roles
+   - `get-role` - Get details of a specific role  
+   - `create-role` - Create a custom role
+   - `update-role` - Update role permissions
+   - `delete-role` - Delete a custom role
+   - `list-permissions` - List all available permissions
+3. Complete core integration cleanup:
+   - Remove duplicate tool registrations
+   - Consolidate webhook management (tools already exist)
+   - Remove deprecated inline implementations
+
+### Known Issues & Technical Debt
+
+1. **Testing (CRITICAL BLOCKER)**
+   - 24 tests failing (not a Jest config issue)
+   - Affected files: auth.test.ts, rate-limiter.test.ts, server.test.ts
+   - Must be fixed before further development
+
+2. **Duplicate Tool Registrations**
+   - Some tools may be registered multiple times in `src/index.ts`
+   - Need to audit and remove duplicates
+
+3. **Webhook Management**
+   - Tools exist in `src/tools/webhook-management/`
+   - Old implementation in `src/webhooks.ts` needs consolidation
+   - Connection between old service and new tools needs fixing
+
+4. **Recording Management**
+   - Listed as "pending" in Next Steps but appears complete
+   - Need to verify all recording tools are properly migrated
 
 ### Technical Notes
 
