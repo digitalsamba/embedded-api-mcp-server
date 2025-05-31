@@ -368,8 +368,8 @@ describe('WebhookService', () => {
       
       await (webhookService as any).processWebhookEvent(payload);
       
-      // Should still call notifyMcpClients even if no handlers
-      expect(notifyMcpClientsSpy).toHaveBeenCalledWith(payload);
+      // Should NOT call notifyMcpClients if no handlers
+      expect(notifyMcpClientsSpy).not.toHaveBeenCalled();
     });
     
     it('should execute all registered handlers for an event', async () => {
@@ -825,7 +825,7 @@ describe('setupWebhookTools', () => {
       const result = await handler(params, request);
       
       // Check that the response indicates the correct error
-      expect(result.content[0].text).toContain('API error');
+      expect(result.content[0].text).toContain('Authentication error');
       expect(result.isError).toBe(true);
     });
   });

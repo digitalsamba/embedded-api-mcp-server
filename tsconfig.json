@@ -10,6 +10,7 @@
     "noImplicitAny": false,
     "noEmitOnError": false,
     "skipLibCheck": true,
+    "isolatedModules": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,

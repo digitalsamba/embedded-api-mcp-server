@@ -397,6 +397,11 @@ export class WebhookService {
           error: notifyError instanceof Error ? notifyError.message : String(notifyError)
         });
         
+        // Re-throw ConfigurationError as-is, wrap others in ApiRequestError
+        if (notifyError instanceof ConfigurationError) {
+          throw notifyError;
+        }
+        
         throw new ApiRequestError(`Failed to send notification: ${notifyError instanceof Error ? notifyError.message : String(notifyError)}`, {
           cause: notifyError instanceof Error ? notifyError : undefined
         });
