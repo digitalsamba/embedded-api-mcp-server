@@ -24,8 +24,9 @@ module.exports = {
   },
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^node-fetch$': '<rootDir>/tests/mocks/node-fetch.ts',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(@modelcontextprotocol)/)'
+    'node_modules/(?!(@modelcontextprotocol|node-fetch))'
   ],
 };

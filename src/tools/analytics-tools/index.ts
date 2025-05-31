@@ -98,32 +98,6 @@ export function registerAnalyticsTools(): Tool[] {
         },
         required: []
       }
-    },
-    {
-      name: 'get-session-statistics',
-      description: 'Get session statistics with optional filters',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          session_id: {
-            type: 'string',
-            description: 'Specific session ID (optional)'
-          },
-          room_id: {
-            type: 'string',
-            description: 'Filter by room ID'
-          },
-          date_start: {
-            type: 'string',
-            description: 'Start date in YYYY-MM-DD format'
-          },
-          date_end: {
-            type: 'string',
-            description: 'End date in YYYY-MM-DD format'
-          }
-        },
-        required: []
-      }
     }
   ];
 }
@@ -172,10 +146,6 @@ export async function executeAnalyticsTool(
     case 'get-usage-statistics':
       logger.info('Executing usage statistics query', { args });
       return await analytics.getUsageStatistics(filters);
-      
-    case 'get-session-statistics':
-      logger.info('Executing session statistics query', { args });
-      return await analytics.getSessionStatistics(args.session_id, filters);
       
     default:
       throw new Error(`Unknown analytics tool: ${toolName}`);
