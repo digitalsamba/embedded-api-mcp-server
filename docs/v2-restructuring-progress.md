@@ -3,7 +3,7 @@
 ## Overview
 This document tracks the progress of restructuring the Digital Samba MCP Server from v1 to v2, separating Resources (read-only GET operations) from Tools (action operations - POST/PATCH/DELETE).
 
-## Status: Phase 4 Complete 🎉
+## Status: Phase 5 Complete 🎉
 
 ### Completed ✅
 
@@ -89,6 +89,27 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
   - `delete-room-polls` - Delete all polls for all sessions in a room
   - `publish-poll-results` - Publish poll results to participants
 
+##### Library & Content Management (Phase 5)
+- **Resources** (`src/resources/content/`)
+  - `libraries` - List all content libraries
+  - `library` - Get details of a specific library
+  - `library-hierarchy` - Get complete hierarchy of a library
+  - `library-folders` - List folders in a library
+  - `library-folder` - Get details of a specific folder
+  - `library-files` - List files in a library
+  - `library-file` - Get details of a specific file
+- **Tools** (`src/tools/library-management/`)
+  - `create-library` - Create a new content library
+  - `update-library` - Update library details
+  - `delete-library` - Delete a content library
+  - `create-library-folder` - Create a new folder in a library
+  - `update-library-folder` - Update folder details
+  - `delete-library-folder` - Delete a folder from a library
+  - `create-library-file` - Create a new file entry and get upload URL
+  - `update-library-file` - Update file details
+  - `delete-library-file` - Delete a file from a library
+  - `get-file-links` - Get viewing and thumbnail links for a file
+
 ##### Recording Management
 - **Resources** (`src/resources/recordings/`)
   - `recordings` - List all recordings
@@ -133,6 +154,7 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
 | After Phase 2 | ~175 KB | ✅ Under limit |
 | After Phase 3 | ~180 KB | ✅ Under limit |
 | After Phase 4 | ~190 KB | ✅ Under limit |
+| After Phase 5 | ~200 KB | ✅ Under limit |
 | Target | < 250 KB | ✅ Meeting requirement |
 
 ### Phase Completion Summary
@@ -143,12 +165,13 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
 | Phase 2 | ✅ Complete | v1.1.0-beta.1 | Export Resources (7 endpoints) |
 | Phase 3 | ✅ Complete | v1.3.0-beta.1 | Live Session Controls (4 endpoints) |
 | Phase 4 | ✅ Complete | v1.4.0-beta.1 | Communication Management (8 tools), Poll Management (6 tools) |
+| Phase 5 | ✅ Complete | v1.5.0-beta.1 | Library & Content Management (7 resources, 10 tools) |
 
-### Next Steps (Phase 5)
+### Next Steps (Phase 6)
 
-1. Implement Library & Content Management tools (17 endpoints)
-2. Implement Role & Permission Management tools (6 endpoints) 
-3. Implement Session Resource Management tools (1 endpoint)
+1. Implement Role & Permission Management tools (6 endpoints) 
+2. Implement Remaining Recording Management tools
+3. Clean up and consolidate webhook management tools
 
 ### Technical Notes
 
@@ -171,7 +194,9 @@ src/
 │   │   └── index.ts
 │   ├── sessions/
 │   │   └── index.ts
-│   └── exports/
+│   ├── exports/
+│   │   └── index.ts
+│   └── content/
 │       └── index.ts
 └── tools/
     ├── analytics-tools/
@@ -188,9 +213,11 @@ src/
     │   └── index.ts
     ├── poll-management/
     │   └── index.ts
+    ├── library-management/
+    │   └── index.ts
     └── webhook-management/ (pending)
 ```
 
 ---
 *Last Updated: 2025-05-31*
-*Phase 4 Complete*
+*Phase 5 Complete*
