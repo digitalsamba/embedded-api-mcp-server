@@ -61,6 +61,13 @@ import gracefulDegradation, { ServiceHealthStatus } from './graceful-degradation
 import AnalyticsResource from './analytics.js';
 import { setupSessionTools } from './sessions.js';
 
+// Import modular resources and tools
+import { registerAnalyticsResources, handleAnalyticsResource } from './resources/analytics/index.js';
+import { registerAnalyticsTools, executeAnalyticsTool } from './tools/analytics-tools/index.js';
+import { registerSessionTools, executeSessionTool } from './tools/session-management/index.js';
+import { registerRoomResources, handleRoomResource } from './resources/rooms/index.js';
+import { registerRoomTools, executeRoomTool } from './tools/room-management/index.js';
+
 // Type definitions for server options
 export interface ServerOptions {
   port?: number;
