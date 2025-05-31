@@ -3,7 +3,7 @@
 ## Overview
 This document tracks the progress of restructuring the Digital Samba MCP Server from v1 to v2, separating Resources (read-only GET operations) from Tools (action operations - POST/PATCH/DELETE).
 
-## Status: Phase 3 Complete 🎉
+## Status: Phase 4 Complete 🎉
 
 ### Completed ✅
 
@@ -69,6 +69,26 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
   - `phone-participants-joined` - Register phone participants joining
   - `phone-participants-left` - Register phone participants leaving
 
+##### Communication Management (Phase 4)
+- **Tools** (`src/tools/communication-management/`)
+  - `delete-session-chats` - Delete chat messages for a session
+  - `delete-room-chats` - Delete chat messages for all sessions in a room
+  - `delete-session-qa` - Delete Q&A for a session
+  - `delete-room-qa` - Delete Q&A for all sessions in a room
+  - `delete-session-transcripts` - Delete transcripts for a session
+  - `delete-room-transcripts` - Delete transcripts for all sessions in a room
+  - `delete-session-summaries` - Delete AI summaries for a session
+  - `delete-room-summaries` - Delete AI summaries for all sessions in a room
+
+##### Poll Management (Phase 4)
+- **Tools** (`src/tools/poll-management/`)
+  - `create-poll` - Create a new poll in a room
+  - `update-poll` - Update an existing poll
+  - `delete-poll` - Delete a specific poll
+  - `delete-session-polls` - Delete all polls for a session
+  - `delete-room-polls` - Delete all polls for all sessions in a room
+  - `publish-poll-results` - Publish poll results to participants
+
 ##### Recording Management
 - **Resources** (`src/resources/recordings/`)
   - `recordings` - List all recordings
@@ -112,6 +132,7 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
 | After Phase 1 | 171.2 KB | ✅ Under limit |
 | After Phase 2 | ~175 KB | ✅ Under limit |
 | After Phase 3 | ~180 KB | ✅ Under limit |
+| After Phase 4 | ~190 KB | ✅ Under limit |
 | Target | < 250 KB | ✅ Meeting requirement |
 
 ### Phase Completion Summary
@@ -120,14 +141,14 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
 |-------|--------|-------------|--------------|
 | Phase 1 | ✅ Complete | v1.1.0-beta.1 | V2 Architecture, Analytics, Rooms, Sessions |
 | Phase 2 | ✅ Complete | v1.1.0-beta.1 | Export Resources (7 endpoints) |
-| Phase 3 | ✅ Complete | TBD | Live Session Controls (6 endpoints) |
+| Phase 3 | ✅ Complete | v1.3.0-beta.1 | Live Session Controls (4 endpoints) |
+| Phase 4 | ✅ Complete | v1.4.0-beta.1 | Communication Management (8 tools), Poll Management (6 tools) |
 
-### Next Steps (Phase 4)
+### Next Steps (Phase 5)
 
-1. Implement Communication Management tools
-2. Add Chat & Q&A management
-3. Implement Poll management
-4. Create transcript management tools
+1. Implement Library & Content Management tools (17 endpoints)
+2. Implement Role & Permission Management tools (6 endpoints) 
+3. Implement Session Resource Management tools (1 endpoint)
 
 ### Technical Notes
 
@@ -163,9 +184,13 @@ src/
     │   └── index.ts
     ├── live-session-controls/
     │   └── index.ts
+    ├── communication-management/
+    │   └── index.ts
+    ├── poll-management/
+    │   └── index.ts
     └── webhook-management/ (pending)
 ```
 
 ---
 *Last Updated: 2025-05-31*
-*Phase 3 Complete*
+*Phase 4 Complete*
