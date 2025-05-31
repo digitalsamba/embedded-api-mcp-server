@@ -145,13 +145,13 @@ describe('Authentication Module Tests', () => {
       // Reset the singleton instance
       (ApiKeyContext as any).instance = undefined;
       
-      // Save the original env
-      process.env.DIGITAL_SAMBA_API_KEY = undefined;
+      // Clear the environment variable
+      delete process.env.DIGITAL_SAMBA_API_KEY;
     });
     
     afterEach(() => {
-      // Restore the env
-      process.env.DIGITAL_SAMBA_API_KEY = undefined;
+      // Clear the environment variable
+      delete process.env.DIGITAL_SAMBA_API_KEY;
     });
     
     it('should get API key from session context', () => {
@@ -174,6 +174,9 @@ describe('Authentication Module Tests', () => {
       });
       
       expect(apiKey).toBe('env-api-key');
+      
+      // Clean up immediately after this test
+      delete process.env.DIGITAL_SAMBA_API_KEY;
     });
     
     it('should store environment API key in session context if sessionId exists', () => {
@@ -191,9 +194,15 @@ describe('Authentication Module Tests', () => {
       // Should have stored the API key
       const storedKey = context.getApiKey('new-session-id');
       expect(storedKey).toBe('env-api-key');
+      
+      // Clean up immediately after this test
+      delete process.env.DIGITAL_SAMBA_API_KEY;
     });
     
     it('should return null if no API key is available', () => {
+      // Make sure environment variable is not set
+      delete process.env.DIGITAL_SAMBA_API_KEY;
+      
       const apiKey = getApiKeyFromRequest({
         ...mockRequestMeta,
         transport: {
@@ -205,6 +214,9 @@ describe('Authentication Module Tests', () => {
     });
     
     it('should handle request with no sessionId gracefully', () => {
+      // Make sure environment variable is not set
+      delete process.env.DIGITAL_SAMBA_API_KEY;
+      
       // No sessionId in the request
       const apiKey = getApiKeyFromRequest({
         id: 'request-id',
@@ -216,6 +228,9 @@ describe('Authentication Module Tests', () => {
     });
     
     it('should handle request with empty sessionId gracefully', () => {
+      // Make sure environment variable is not set
+      delete process.env.DIGITAL_SAMBA_API_KEY;
+      
       // Empty sessionId in the request
       const apiKey = getApiKeyFromRequest({
         id: 'request-id',
@@ -238,6 +253,9 @@ describe('Authentication Module Tests', () => {
       
       // Should use context value
       expect(apiKey).toBe('context-api-key');
+      
+      // Clean up immediately after this test
+      delete process.env.DIGITAL_SAMBA_API_KEY;
     });
   });
   
@@ -246,7 +264,7 @@ describe('Authentication Module Tests', () => {
     beforeEach(() => {
       // Reset the singleton instance
       (ApiKeyContext as any).instance = undefined;
-      process.env.DIGITAL_SAMBA_API_KEY = undefined;
+      delete process.env.DIGITAL_SAMBA_API_KEY;
     });
     
     it('should handle the full authentication flow correctly', () => {

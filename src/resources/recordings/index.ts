@@ -54,21 +54,16 @@ export function setupRecordingResources(server: McpServer, apiUrl: string): void
         const apiClient = new DigitalSambaApiClient(apiKey, apiUrl);
         const recordings = await apiClient.listRecordings();
         
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(recordings, null, 2),
-          }],
-        };
+        // Format recordings as resource contents with URIs
+        const contents = recordings.data.map(recording => ({
+          uri: `digitalsamba://recordings/${recording.id}`,
+          text: JSON.stringify(recording, null, 2),
+        }));
+        
+        return { contents };
       } catch (error) {
         logger.error('Error in recordings resource', { error: error instanceof Error ? error.message : String(error) });
-        return {
-          content: [{
-            type: 'text',
-            text: `Error fetching recordings: ${error instanceof Error ? error.message : String(error)}`,
-          }],
-          isError: true,
-        };
+        throw error;
       }
     }
   );
@@ -95,31 +90,14 @@ export function setupRecordingResources(server: McpServer, apiUrl: string): void
         const recording = await apiClient.getRecording(recordingId);
         
         return {
-          content: [{
-            type: 'text',
+          contents: [{
+            uri: `digitalsamba://recordings/${recordingId}`,
             text: JSON.stringify(recording, null, 2),
           }],
         };
       } catch (error) {
         logger.error('Error in recording resource', { error: error instanceof Error ? error.message : String(error) });
-        
-        if (error instanceof ResourceNotFoundError) {
-          return {
-            content: [{
-              type: 'text',
-              text: `Recording not found: ${error.message}`,
-            }],
-            isError: true,
-          };
-        }
-        
-        return {
-          content: [{
-            type: 'text',
-            text: `Error fetching recording: ${error instanceof Error ? error.message : String(error)}`,
-          }],
-          isError: true,
-        };
+        throw error;
       }
     }
   );
@@ -145,21 +123,16 @@ export function setupRecordingResources(server: McpServer, apiUrl: string): void
         const apiClient = new DigitalSambaApiClient(apiKey, apiUrl);
         const recordings = await apiClient.listRecordings({ room_id: roomId });
         
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(recordings, null, 2),
-          }],
-        };
+        // Format recordings as resource contents with URIs
+        const contents = recordings.data.map(recording => ({
+          uri: `digitalsamba://recordings/${recording.id}`,
+          text: JSON.stringify(recording, null, 2),
+        }));
+        
+        return { contents };
       } catch (error) {
         logger.error('Error in room-recordings resource', { error: error instanceof Error ? error.message : String(error) });
-        return {
-          content: [{
-            type: 'text',
-            text: `Error fetching room recordings: ${error instanceof Error ? error.message : String(error)}`,
-          }],
-          isError: true,
-        };
+        throw error;
       }
     }
   );
@@ -178,21 +151,16 @@ export function setupRecordingResources(server: McpServer, apiUrl: string): void
         const apiClient = new DigitalSambaApiClient(apiKey, apiUrl);
         const recordings = await apiClient.listArchivedRecordings();
         
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(recordings, null, 2),
-          }],
-        };
+        // Format recordings as resource contents with URIs
+        const contents = recordings.data.map(recording => ({
+          uri: `digitalsamba://recordings/${recording.id}`,
+          text: JSON.stringify(recording, null, 2),
+        }));
+        
+        return { contents };
       } catch (error) {
         logger.error('Error in archived-recordings resource', { error: error instanceof Error ? error.message : String(error) });
-        return {
-          content: [{
-            type: 'text',
-            text: `Error fetching archived recordings: ${error instanceof Error ? error.message : String(error)}`,
-          }],
-          isError: true,
-        };
+        throw error;
       }
     }
   );

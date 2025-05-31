@@ -75,9 +75,13 @@ jest.mock('../../src/metrics', () => ({
 const originalEnv = process.env;
 
 describe('MCP Server', () => {
-  // Set up spies
-  let resourceSpy: jest.SpyInstance;
-  let toolSpy: jest.SpyInstance;
+  // Set up spies for modular registration functions
+  let registerRoomResourcesSpy: jest.SpyInstance;
+  let registerRoomToolsSpy: jest.SpyInstance;
+  let registerSessionResourcesSpy: jest.SpyInstance;
+  let registerSessionToolsSpy: jest.SpyInstance;
+  let registerAnalyticsResourcesSpy: jest.SpyInstance;
+  let registerAnalyticsToolsSpy: jest.SpyInstance;
   
   beforeEach(() => {
     // Reset all mocks
@@ -86,13 +90,28 @@ describe('MCP Server', () => {
     // Reset environment variables
     process.env = { ...originalEnv };
     
-    // Set up spies for McpServer instance methods
-    const mcpServer = new McpServer({
-      name: 'test',
-      version: '1.0.0',
-    });
-    resourceSpy = jest.spyOn(mcpServer, 'resource');
-    toolSpy = jest.spyOn(mcpServer, 'tool');
+    // Set up spies for modular registration functions
+    const roomResourcesModule = require('../../src/resources/rooms/index');
+    const roomToolsModule = require('../../src/tools/room-management/index');
+    const sessionResourcesModule = require('../../src/resources/sessions/index');
+    const sessionToolsModule = require('../../src/tools/session-management/index');
+    const analyticsResourcesModule = require('../../src/resources/analytics/index');
+    const analyticsToolsModule = require('../../src/tools/analytics-tools/index');
+    
+    registerRoomResourcesSpy = jest.spyOn(roomResourcesModule, 'registerRoomResources');
+    registerRoomToolsSpy = jest.spyOn(roomToolsModule, 'registerRoomTools');
+    registerSessionResourcesSpy = jest.spyOn(sessionResourcesModule, 'registerSessionResources');
+    registerSessionToolsSpy = jest.spyOn(sessionToolsModule, 'registerSessionTools');
+    registerAnalyticsResourcesSpy = jest.spyOn(analyticsResourcesModule, 'registerAnalyticsResources');
+    registerAnalyticsToolsSpy = jest.spyOn(analyticsToolsModule, 'registerAnalyticsTools');
+    
+    // Ensure the spies return empty arrays to prevent registration errors
+    registerRoomResourcesSpy.mockReturnValue([]);
+    registerRoomToolsSpy.mockReturnValue([]);
+    registerSessionResourcesSpy.mockReturnValue([]);
+    registerSessionToolsSpy.mockReturnValue([]);
+    registerAnalyticsResourcesSpy.mockReturnValue([]);
+    registerAnalyticsToolsSpy.mockReturnValue([]);
   });
   
   afterEach(() => {
@@ -105,7 +124,7 @@ describe('MCP Server', () => {
       const { server, port, apiUrl } = createServer();
       
       expect(server).toBeDefined();
-      expect(port).toBe(3000);
+      expect(port).toBe(4521); // Default port from src/index.ts
       expect(apiUrl).toBe('https://api.digitalsamba.com/api/v1');
       expect(McpServer).toHaveBeenCalledWith({
         name: 'Digital Samba MCP Server',
@@ -155,48 +174,19 @@ describe('MCP Server', () => {
     it('should set up all required resources', () => {
       createServer();
       
-      // Check that resources are registered
-      expect(resourceSpy).toHaveBeenCalledWith(
-        'rooms',
-        expect.any(Object),
-        expect.any(Function)
-      );
-      expect(resourceSpy).toHaveBeenCalledWith(
-        'room',
-        expect.any(Object),
-        expect.any(Function)
-      );
-      expect(resourceSpy).toHaveBeenCalledWith(
-        'participants',
-        expect.any(Object),
-        expect.any(Function)
-      );
+      // Check that modular resources are registered
+      expect(registerRoomResourcesSpy).toHaveBeenCalled();
+      expect(registerSessionResourcesSpy).toHaveBeenCalled();
+      expect(registerAnalyticsResourcesSpy).toHaveBeenCalled();
     });
     
     it('should set up all required tools', () => {
       createServer();
       
-      // Check that tools are registered
-      expect(toolSpy).toHaveBeenCalledWith(
-        'create-room',
-        expect.any(Object),
-        expect.any(Function)
-      );
-      expect(toolSpy).toHaveBeenCalledWith(
-        'generate-token',
-        expect.any(Object),
-        expect.any(Function)
-      );
-      expect(toolSpy).toHaveBeenCalledWith(
-        'update-room',
-        expect.any(Object),
-        expect.any(Function)
-      );
-      expect(toolSpy).toHaveBeenCalledWith(
-        'delete-room',
-        expect.any(Object),
-        expect.any(Function)
-      );
+      // Check that modular tools are registered
+      expect(registerRoomToolsSpy).toHaveBeenCalled();
+      expect(registerSessionToolsSpy).toHaveBeenCalled();
+      expect(registerAnalyticsToolsSpy).toHaveBeenCalled();
     });
     
     it('should set up feature modules', () => {

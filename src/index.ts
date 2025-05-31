@@ -67,6 +67,7 @@ import { registerAnalyticsTools, executeAnalyticsTool } from './tools/analytics-
 import { registerSessionTools, executeSessionTool } from './tools/session-management/index.js';
 import { registerRoomResources, handleRoomResource } from './resources/rooms/index.js';
 import { registerRoomTools, executeRoomTool } from './tools/room-management/index.js';
+import { registerSessionResources, handleSessionResource } from './resources/sessions/index.js';
 
 // Type definitions for server options
 export interface ServerOptions {
@@ -167,945 +168,274 @@ export function createServer(options?: ServerOptions) {
   setupSessionTools(server, API_URL);
 
   // -------------------------------------------------------------------
-  // Analytics Resources
+  // Analytics Resources (Modular)
   // -------------------------------------------------------------------
 
-  // Resource for analytics - all participants
-  server.resource(
-    'analytics-participants',
-    new ResourceTemplate('digitalsamba://analytics/participants', { list: undefined }),
-    async (uri, _params, request) => {
-      logger.info('Fetching all participants analytics');
-      
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
-      }
-      
-      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
-      const analyticsResource = new AnalyticsResource(client);
-      
-      try {
-        const participants = await analyticsResource.getAllParticipants();
+  // Register analytics resources using the modular approach
+  const analyticsResources = registerAnalyticsResources(new DigitalSambaApiClient(undefined, API_URL, apiCache));
+  
+  // Register each analytics resource with the server
+  analyticsResources.forEach(resource => {
+    server.resource(
+      resource.name,
+      new ResourceTemplate(resource.uri, { list: undefined }),
+      async (uri, params, request) => {
+        logger.info(`Handling analytics resource: ${resource.name}`);
         
-        const contents = participants.map(participant => ({
-          uri: `digitalsamba://analytics/participants/${participant.participant_id}`,
-          text: JSON.stringify(participant, null, 2),
-        }));
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
+        }
         
-        return { contents };
-      } catch (error) {
-        logger.error('Error fetching participants analytics', { error: error instanceof Error ? error.message : String(error) });
-        throw error;
-      }
-    }
-  );
-
-  // Resource for analytics - usage statistics
-  server.resource(
-    'analytics-usage',
-    new ResourceTemplate('digitalsamba://analytics/usage', { list: undefined }),
-    async (uri, _params, request) => {
-      logger.info('Fetching usage analytics');
-      
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
-      }
-      
-      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
-      const analyticsResource = new AnalyticsResource(client);
-      
-      try {
-        const usage = await analyticsResource.getUsageStatistics();
+        const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
         
-        const content = {
-          uri: uri.href,
-          text: JSON.stringify(usage, null, 2),
-        };
-        
-        return { contents: [content] };
-      } catch (error) {
-        logger.error('Error fetching usage analytics', { error: error instanceof Error ? error.message : String(error) });
-        throw error;
-      }
-    }
-  );
-
-  // Resource for analytics - room analytics
-  server.resource(
-    'analytics-rooms',
-    new ResourceTemplate('digitalsamba://analytics/rooms', { list: undefined }),
-    async (uri, _params, request) => {
-      logger.info('Fetching room analytics');
-      
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
-      }
-      
-      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
-      const analyticsResource = new AnalyticsResource(client);
-      
-      try {
-        const rooms = await analyticsResource.getRoomAnalytics();
-        
-        const contents = rooms.map(room => ({
-          uri: `digitalsamba://analytics/rooms/${room.room_id}`,
-          text: JSON.stringify(room, null, 2),
-        }));
-        
-        return { contents };
-      } catch (error) {
-        logger.error('Error fetching room analytics', { error: error instanceof Error ? error.message : String(error) });
-        throw error;
-      }
-    }
-  );
-
-  // Resource for analytics - team statistics
-  server.resource(
-    'analytics-team',
-    new ResourceTemplate('digitalsamba://analytics/team', { list: undefined }),
-    async (uri, _params, request) => {
-      logger.info('Fetching team analytics');
-      
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
-      }
-      
-      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
-      const analyticsResource = new AnalyticsResource(client);
-      
-      try {
-        const team = await analyticsResource.getTeamGlobalStatisticsCurrent();
-        
-        const content = {
-          uri: uri.href,
-          text: JSON.stringify(team, null, 2),
-        };
-        
-        return { contents: [content] };
-      } catch (error) {
-        logger.error('Error fetching team analytics', { error: error instanceof Error ? error.message : String(error) });
-        throw error;
-      }
-    }
-  );
-
-  // -------------------------------------------------------------------
-  // Resources
-  // -------------------------------------------------------------------
-
-  // Resource for listing rooms
-  server.resource(
-    'rooms',
-    new ResourceTemplate('digitalsamba://rooms', { list: undefined }),
-    async (uri, _params, request) => {
-      logger.info('Listing rooms');
-      
-      // Get API key from various sources in priority order:
-      // 1. Direct API key passed in options during server creation 
-      // 2. API key from session context
-      // 3. Environment variable
-      let apiKey = options?.apiKey;
-      
-      if (!apiKey) {
-        apiKey = getApiKeyFromRequest(request);
-      }
-      
-      if (!apiKey && process.env.DIGITAL_SAMBA_API_KEY) {
-        apiKey = process.env.DIGITAL_SAMBA_API_KEY;
-        logger.debug('Using API key from environment variable');
-      }
-      
-      if (!apiKey) {
-        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
-      }
-      
-      // Create API client
-      logger.debug('Creating API client using available API key');
-      
-      let client;
-      if (ENABLE_CIRCUIT_BREAKER && ENABLE_GRACEFUL_DEGRADATION) {
-        // Use resilient API client with circuit breaker and graceful degradation
-        logger.debug('Using resilient API client with circuit breaker and graceful degradation');
-        
-        // First create the base client
-        const baseClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
-        
-        // Then wrap it with resilient client
-        client = ResilientApiClient.withResilience(baseClient, {
-          cache: apiCache,
-          circuitBreaker: {
-            failureThreshold: CIRCUIT_BREAKER_FAILURE_THRESHOLD,
-            resetTimeout: CIRCUIT_BREAKER_RESET_TIMEOUT,
-            requestTimeout: 15000, // 15 second timeout for requests
-            initialRequestTimeout: 60000 // 60 second timeout for initial requests
-          },
-          gracefulDegradation: {
-            maxRetryAttempts: GRACEFUL_DEGRADATION_MAX_RETRIES,
-            initialRetryDelay: GRACEFUL_DEGRADATION_INITIAL_DELAY,
-            retryBackoffFactor: 2,
-            maxRetryDelay: 30000
-          }
-        });
-      } else if (ENABLE_CIRCUIT_BREAKER) {
-        // Use circuit breaker API client
-        logger.debug('Using circuit breaker API client');
-        
-        // First create the base client
-        const baseClient = new DigitalSambaApiClient(undefined, API_URL, apiCache);
-        
-        // Then wrap it with circuit breaker
-        client = CircuitBreakerApiClient.withCircuitBreaker(baseClient, {
-          defaultOptions: {
-            failureThreshold: CIRCUIT_BREAKER_FAILURE_THRESHOLD,
-            resetTimeout: CIRCUIT_BREAKER_RESET_TIMEOUT,
-            requestTimeout: 15000, // 15 second timeout for requests
-            initialRequestTimeout: 60000 // 60 second timeout for initial requests
-          }
-        });
-        
-        // Initialize the API connection with a timeout-bypassing request
-        // This helps prevent timeout errors during the MCP server initialization
         try {
-          logger.info('Initializing API connection...');
-          const initResult = await client.initializeConnection();
-          if (initResult) {
-            logger.info('API connection initialized successfully');
+          // Use the modular handler
+          const data = await handleAnalyticsResource(uri.href, client);
+          
+          // Format the response based on the resource type
+          if (resource.name === 'analytics-participants') {
+            const contents = data.map(participant => ({
+              uri: `digitalsamba://analytics/participants/${participant.participant_id}`,
+              text: JSON.stringify(participant, null, 2),
+            }));
+            return { contents };
+          } else if (resource.name === 'analytics-rooms') {
+            const contents = data.map(room => ({
+              uri: `digitalsamba://analytics/rooms/${room.room_id}`,
+              text: JSON.stringify(room, null, 2),
+            }));
+            return { contents };
           } else {
-            logger.warn('API connection initialization did not complete successfully');
+            // For single resources like usage and team
+            return {
+              contents: [{
+                uri: uri.href,
+                text: JSON.stringify(data, null, 2),
+              }]
+            };
           }
-        } catch (initError) {
-          logger.warn('Failed to initialize API connection', {
-            error: initError instanceof Error ? initError.message : String(initError)
+        } catch (error) {
+          logger.error(`Error in analytics resource ${resource.name}`, { 
+            error: error instanceof Error ? error.message : String(error) 
           });
-          // Continue anyway, as the regular requests might still work
+          throw error;
         }
-      } else if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
-        // Use enhanced API client
-        logger.debug('Using enhanced API client with additional features enabled');
-        client = new EnhancedDigitalSambaApiClient(
-          undefined,
-          API_URL,
-          apiCache,
-          {
-            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
-            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
-            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
-            connectionPoolSize: CONNECTION_POOL_SIZE
-          }
-        );
-      } else {
-        // Use standard API client
-        client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
       }
-      
-      try {
-        // Get rooms from API
-        const response = await client.listRooms();
-        const rooms = response.data || [];
-        logger.debug(`Found ${rooms.length} rooms`);
-        
-        // Format rooms as resource contents
-        const contents = rooms.map(room => ({
-          uri: `digitalsamba://rooms/${room.id}`,
-          text: JSON.stringify(room, null, 2),
-        }));
-        
-        return { contents };
-      } catch (error) {
-        logger.error('Error fetching rooms', { error: error instanceof Error ? error.message : String(error) });
-        throw error;
-      }
-    }
-  );
+    );
+  });
 
-  // Resource for getting a specific room
-  server.resource(
-    'room',
-    new ResourceTemplate('digitalsamba://rooms/{roomId}', { list: undefined }),
-    async (uri, params, request) => {
-      const { roomId } = params;
-      
-      if (!roomId) {
-        throw new Error('Room ID is required.');
-      }
-      
-      logger.info('Getting room details', { roomId });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
-      }
-      
-      // Create API client
-      logger.debug('Creating API client using context API key');
-      
-      let client;
-      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
-        // Use enhanced API client
-        logger.debug('Using enhanced API client with additional features enabled');
-        client = new EnhancedDigitalSambaApiClient(
-          undefined,
-          API_URL,
-          apiCache,
-          {
-            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
-            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
-            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
-            connectionPoolSize: CONNECTION_POOL_SIZE
-          }
-        );
-      } else {
-        // Use standard API client
-        client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
-      }
-      
-      try {
-        // Get room from API
-        const room = await client.getRoom(roomId as string);
+  // -------------------------------------------------------------------
+  // Room Resources (Modular)
+  // -------------------------------------------------------------------
+
+  // Register room resources using the modular approach
+  const roomResources = registerRoomResources();
+  
+  // Register each room resource with the server
+  roomResources.forEach(resource => {
+    server.resource(
+      resource.name,
+      new ResourceTemplate(resource.uri, { list: undefined }),
+      async (uri, params, request) => {
+        logger.info(`Handling room resource: ${resource.name}`);
         
-        // Format room as resource content
-        const content = {
-          uri: uri.href,
-          text: JSON.stringify(room, null, 2),
-        };
-        
-        return { contents: [content] };
-      } catch (error) {
-        logger.error('Error fetching room', { 
-          roomId, 
-          error: error instanceof Error ? error.message : String(error) 
-        });
-        throw error;
+        try {
+          // Use the modular handler with all the configuration options
+          const result = await handleRoomResource(
+            uri.href,
+            params,
+            request,
+            {
+              apiUrl: API_URL,
+              apiKey: options?.apiKey,
+              apiCache,
+              enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+              enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
+              enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+              connectionPoolSize: CONNECTION_POOL_SIZE
+            }
+          );
+          
+          return result;
+        } catch (error) {
+          logger.error(`Error in room resource ${resource.name}`, { 
+            error: error instanceof Error ? error.message : String(error) 
+          });
+          throw error;
+        }
       }
-    }
-  );
+    );
+  });
+
+  // -------------------------------------------------------------------
+  // Session Resources (Modular)
+  // -------------------------------------------------------------------
+
+  // Register session resources using the modular approach
+  const sessionResources = registerSessionResources();
+  
+  // Register each session resource with the server
+  sessionResources.forEach(resource => {
+    server.resource(
+      resource.name,
+      new ResourceTemplate(resource.uri, { list: undefined }),
+      async (uri, params, request) => {
+        logger.info(`Handling session resource: ${resource.name}`);
+        
+        try {
+          // Use the modular handler
+          const result = await handleSessionResource(
+            uri.href,
+            params,
+            request,
+            {
+              apiUrl: API_URL,
+              apiCache
+            }
+          );
+          
+          return result;
+        } catch (error) {
+          logger.error(`Error in session resource ${resource.name}`, { 
+            error: error instanceof Error ? error.message : String(error) 
+          });
+          throw error;
+        }
+      }
+    );
+  });
 
 
   // -------------------------------------------------------------------
-  // Tools
+  // Room Management Tools (Modular)
   // -------------------------------------------------------------------
 
-  // Tool for creating a room
-  server.tool(
-    'create-room',
-    {
-      name: z.string().min(3).max(100).optional(),
-      description: z.string().max(500).optional(),
-      friendly_url: z.string().min(3).max(32).optional(),
-      privacy: z.enum(['public', 'private']).default('public'),
-      max_participants: z.number().min(2).max(2000).optional(),
-    },
-    async (params, request) => {
-      const { name, description, friendly_url, privacy, max_participants } = params;
-      
-      logger.info('Creating room', { 
-        roomName: name, 
-        privacy
-      });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      // Create API client with the provided key
-      logger.debug('Creating API client with key', { 
-        apiKeyLength: apiKey ? apiKey.length : 0,
-        apiUrl: API_URL
-      });
-      
-      let client;
-      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
-        // Use enhanced API client
-        logger.debug('Using enhanced API client with additional features enabled');
-        client = new EnhancedDigitalSambaApiClient(
-          apiKey,
-          API_URL,
-          apiCache,
-          {
-            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
-            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
-            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
-            connectionPoolSize: CONNECTION_POOL_SIZE
-          }
-        );
-      } else {
-        // Use standard API client
-        client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
-      }
-      
-      try {
-        // Create room settings object
-        const roomSettings = {
-          name: name || 'Test Room',  // Ensure we have a name
-          description,
-          friendly_url,
-          privacy,
-          max_participants,
-        };
+  // Register room management tools using the modular approach
+  const roomTools = registerRoomTools();
+  
+  // Register each room tool with the server
+  roomTools.forEach(tool => {
+    server.tool(
+      tool.name,
+      tool.inputSchema,
+      async (params, request) => {
+        logger.info(`Executing room tool: ${tool.name}`);
         
-        // Create room
-        const room = await client.createRoom(roomSettings);
-        logger.info('Room created successfully', { roomId: room.id });
+        // Create API client with appropriate configuration
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          return {
+            content: [{ 
+              type: 'text', 
+              text: 'No API key found. Please include an Authorization header with a Bearer token.'
+            }],
+            isError: true,
+          };
+        }
         
-        return {
-          content: [
+        let apiClient;
+        if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
+          apiClient = new EnhancedDigitalSambaApiClient(
+            apiKey,
+            API_URL,
+            apiCache,
             {
-              type: 'text',
-              text: `Room created successfully!\n\n${JSON.stringify(room, null, 2)}`,
-            },
-          ],
-        };
-      } catch (error) {
-        logger.error('Error creating room', { 
-          error: error instanceof Error ? error.message : String(error) 
-        });
-        
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error creating room: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  // Tool for generating a room token
-  server.tool(
-    'generate-token',
-    {
-      roomId: z.string(),
-      userName: z.string().min(1).max(100).optional(),
-      role: z.string().optional(),
-      externalId: z.string().optional(),
-    },
-    async (params, request) => {
-      const { roomId, userName, role, externalId } = params;
-      
-      logger.info('Generating room token', { 
-        roomId, 
-        userName, 
-        role
-      });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      // Create API client with the provided key
-      logger.debug('Creating API client with key', { 
-        apiKeyLength: apiKey ? apiKey.length : 0,
-        apiUrl: API_URL
-      });
-      
-      let client;
-      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
-        // Use enhanced API client
-        logger.debug('Using enhanced API client with additional features enabled');
-        client = new EnhancedDigitalSambaApiClient(
-          apiKey,
-          API_URL,
-          apiCache,
-          {
-            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
-            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
-            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
-            connectionPoolSize: CONNECTION_POOL_SIZE
-          }
-        );
-      } else {
-        // Use standard API client
-        client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
-      }
-      
-      try {
-        // Generate token options
-        const tokenOptions = {
-          u: userName || undefined,
-          role: role || undefined,
-          ud: externalId || undefined,
-        };
-        
-        // Generate token - use token refresh if enabled
-        let token;
-        if (ENABLE_TOKEN_MANAGEMENT && client instanceof EnhancedDigitalSambaApiClient && request.sessionId) {
-          // Use token refresh
-          token = await client.generateRoomTokenWithRefresh(roomId, tokenOptions, request.sessionId);
-          logger.info('Generated token with auto-refresh', { roomId, expiresAt: token.expiresAt });
+              enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+              enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
+              enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+              connectionPoolSize: CONNECTION_POOL_SIZE
+            }
+          );
         } else {
-          // Standard token generation
-          token = await client.generateRoomToken(roomId, tokenOptions);  
+          apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
         }
-        logger.info('Token generated successfully', { roomId });
         
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Token generated successfully!\n\n${JSON.stringify(token, null, 2)}`,
-            },
-          ],
-        };
-      } catch (error) {
-        logger.error('Error generating token', { 
-          roomId, 
-          error: error instanceof Error ? error.message : String(error) 
-        });
-        
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error generating token: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
-
-  // Update room tool
-  server.tool(
-    'update-room',
-    {
-      roomId: z.string(),
-      name: z.string().min(3).max(100).optional(),
-      description: z.string().max(500).optional(),
-      friendly_url: z.string().min(3).max(32).optional(),
-      privacy: z.enum(['public', 'private']).optional(),
-      max_participants: z.number().min(2).max(2000).optional(),
-    },
-    async (params, request) => {
-      const { roomId, name, description, friendly_url, privacy, max_participants } = params;
-      
-      if (!roomId) {
-        return {
-          content: [{ type: 'text', text: 'Room ID is required.' }],
-          isError: true,
-        };
-      }
-      
-      logger.info('Updating room', { 
-        roomId, 
-        name, 
-        privacy
-      });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      // Create API client with the provided key
-      logger.debug('Creating API client with key', { 
-        apiKeyLength: apiKey ? apiKey.length : 0,
-        apiUrl: API_URL
-      });
-      
-      let client;
-      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
-        // Use enhanced API client
-        logger.debug('Using enhanced API client with additional features enabled');
-        client = new EnhancedDigitalSambaApiClient(
-          apiKey,
-          API_URL,
+        // Execute the tool using the modular function
+        return executeRoomTool(tool.name, params, request, {
+          apiUrl: API_URL,
           apiCache,
-          {
-            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
-            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
-            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
-            connectionPoolSize: CONNECTION_POOL_SIZE
-          }
-        );
-      } else {
-        // Use standard API client
-        client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
-      }
-      
-      try {
-        // Create room settings object
-        const roomSettings = {
-          name,
-          description,
-          friendly_url,
-          privacy,
-          max_participants,
-        };
-        
-        // Update room
-        const room = await client.updateRoom(roomId, roomSettings);
-        logger.info('Room updated successfully', { roomId: room.id });
-        
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Room updated successfully!\n\n${JSON.stringify(room, null, 2)}`,
-            },
-          ],
-        };
-      } catch (error) {
-        logger.error('Error updating room', { 
-          roomId,
-          error: error instanceof Error ? error.message : String(error) 
+          enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+          enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
+          enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+          connectionPoolSize: CONNECTION_POOL_SIZE
         });
-        
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error updating room: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
-          isError: true,
-        };
       }
-    }
-  );
-
-  // Delete room tool
-  server.tool(
-    'delete-room',
-    {
-      roomId: z.string(),
-    },
-    async (params, request) => {
-      const { roomId } = params;
-      
-      if (!roomId) {
-        return {
-          content: [{ type: 'text', text: 'Room ID is required.' }],
-          isError: true,
-        };
-      }
-      
-      logger.info('Deleting room', { roomId });
-      
-      // Get API key from session context
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      // Create API client with the provided key
-      logger.debug('Creating API client with key', { 
-        apiKeyLength: apiKey ? apiKey.length : 0,
-        apiUrl: API_URL
-      });
-      
-      let client;
-      if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
-        // Use enhanced API client
-        logger.debug('Using enhanced API client with additional features enabled');
-        client = new EnhancedDigitalSambaApiClient(
-          apiKey,
-          API_URL,
-          apiCache,
-          {
-            enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
-            enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
-            enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
-            connectionPoolSize: CONNECTION_POOL_SIZE
-          }
-        );
-      } else {
-        // Use standard API client
-        client = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
-      }
-      
-      try {
-        // Delete room
-        await client.deleteRoom(roomId);
-        logger.info('Room deleted successfully', { roomId });
-        
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Room ${roomId} deleted successfully!`,
-            },
-          ],
-        };
-      } catch (error) {
-        logger.error('Error deleting room', { 
-          roomId,
-          error: error instanceof Error ? error.message : String(error) 
-        });
-        
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error deleting room: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    }
-  );
+    );
+  });
 
   // -------------------------------------------------------------------
-  // Analytics Tools
+  // Analytics Tools (Modular)
   // -------------------------------------------------------------------
 
-  // Tool for getting participant statistics
-  server.tool(
-    'get-participant-statistics',
-    {
-      participantId: z.string().optional(),
-      roomId: z.string().optional(),
-      sessionId: z.string().optional(),
-      dateStart: z.string().optional(),
-      dateEnd: z.string().optional(),
-    },
-    async (params, request) => {
-      const { participantId, roomId, sessionId, dateStart, dateEnd } = params;
-      
-      logger.info('Getting participant statistics', { participantId, roomId, sessionId });
-      
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
-      const analyticsResource = new AnalyticsResource(client);
-      
-      try {
-        const filters = { date_start: dateStart, date_end: dateEnd, room_id: roomId, session_id: sessionId };
-        const statistics = await analyticsResource.getParticipantStatistics(participantId, filters);
+  // Register analytics tools using the modular approach
+  const analyticsTools = registerAnalyticsTools();
+  
+  // Register each analytics tool with the server
+  analyticsTools.forEach(tool => {
+    server.tool(
+      tool.name,
+      tool.inputSchema,
+      async (params, request) => {
+        logger.info(`Executing analytics tool: ${tool.name}`);
         
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(statistics, null, 2),
-          }],
-        };
-      } catch (error) {
-        logger.error('Error getting participant statistics', { 
-          participantId,
-          error: error instanceof Error ? error.message : String(error) 
-        });
+        // Create API client
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          return {
+            content: [{ 
+              type: 'text', 
+              text: 'No API key found. Please include an Authorization header with a Bearer token.'
+            }],
+            isError: true,
+          };
+        }
         
-        return {
-          content: [{
-            type: 'text',
-            text: `Error getting participant statistics: ${error instanceof Error ? error.message : String(error)}`,
-          }],
-          isError: true,
-        };
+        const apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+        
+        // Execute the tool using the modular function
+        return executeAnalyticsTool(tool.name, params, apiClient);
       }
-    }
-  );
+    );
+  });
 
-  // Tool for getting room analytics
-  server.tool(
-    'get-room-analytics',
-    {
-      roomId: z.string().optional(),
-      dateStart: z.string().optional(),
-      dateEnd: z.string().optional(),
-    },
-    async (params, request) => {
-      const { roomId, dateStart, dateEnd } = params;
-      
-      logger.info('Getting room analytics', { roomId });
-      
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
-      const analyticsResource = new AnalyticsResource(client);
-      
-      try {
-        const filters = { date_start: dateStart, date_end: dateEnd };
-        const analytics = await analyticsResource.getRoomAnalytics(roomId, filters);
-        
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(analytics, null, 2),
-          }],
-        };
-      } catch (error) {
-        logger.error('Error getting room analytics', { 
-          roomId,
-          error: error instanceof Error ? error.message : String(error) 
-        });
-        
-        return {
-          content: [{
-            type: 'text',
-            text: `Error getting room analytics: ${error instanceof Error ? error.message : String(error)}`,
-          }],
-          isError: true,
-        };
-      }
-    }
-  );
+  // -------------------------------------------------------------------
+  // Session Management Tools (Modular)
+  // -------------------------------------------------------------------
 
-  // Tool for getting usage statistics
-  server.tool(
-    'get-usage-statistics',
-    {
-      period: z.enum(['day', 'week', 'month', 'year']).optional(),
-      dateStart: z.string().optional(),
-      dateEnd: z.string().optional(),
-    },
-    async (params, request) => {
-      const { period, dateStart, dateEnd } = params;
-      
-      logger.info('Getting usage statistics', { period });
-      
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
-      const analyticsResource = new AnalyticsResource(client);
-      
-      try {
-        const filters = { period, date_start: dateStart, date_end: dateEnd };
-        const statistics = await analyticsResource.getUsageStatistics(filters);
-        
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(statistics, null, 2),
-          }],
-        };
-      } catch (error) {
-        logger.error('Error getting usage statistics', { 
-          period,
-          error: error instanceof Error ? error.message : String(error) 
-        });
-        
-        return {
-          content: [{
-            type: 'text',
-            text: `Error getting usage statistics: ${error instanceof Error ? error.message : String(error)}`,
-          }],
-          isError: true,
-        };
-      }
-    }
-  );
+  // Register session management tools using the modular approach
+  const sessionTools = registerSessionTools();
 
-  // Tool for getting session statistics
-  server.tool(
-    'get-session-statistics',
-    {
-      sessionId: z.string().optional(),
-      roomId: z.string().optional(),
-      dateStart: z.string().optional(),
-      dateEnd: z.string().optional(),
-    },
-    async (params, request) => {
-      const { sessionId, roomId, dateStart, dateEnd } = params;
-      
-      logger.info('Getting session statistics', { sessionId, roomId });
-      
-      const apiKey = getApiKeyFromRequest(request);
-      if (!apiKey) {
-        return {
-          content: [{ 
-            type: 'text', 
-            text: 'No API key found. Please include an Authorization header with a Bearer token.'
-          }],
-          isError: true,
-        };
-      }
-      
-      const client = new DigitalSambaApiClient(undefined, API_URL, apiCache);
-      const analyticsResource = new AnalyticsResource(client);
-      
-      try {
-        const filters = { date_start: dateStart, date_end: dateEnd, room_id: roomId };
-        const statistics = await analyticsResource.getSessionStatistics(sessionId, filters);
+  // Register each session tool with the server
+  sessionTools.forEach(tool => {
+    server.tool(
+      tool.name,
+      tool.inputSchema,
+      async (params, request) => {
+        logger.info(`Executing session tool: ${tool.name}`);
         
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(statistics, null, 2),
-          }],
-        };
-      } catch (error) {
-        logger.error('Error getting session statistics', { 
-          sessionId,
-          error: error instanceof Error ? error.message : String(error) 
-        });
+        // Create API client
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          return {
+            content: [{ 
+              type: 'text', 
+              text: 'No API key found. Please include an Authorization header with a Bearer token.'
+            }],
+            isError: true,
+          };
+        }
         
-        return {
-          content: [{
-            type: 'text',
-            text: `Error getting session statistics: ${error instanceof Error ? error.message : String(error)}`,
-          }],
-          isError: true,
-        };
+        const apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+        
+        // Execute the tool using the modular function
+        return executeSessionTool(tool.name, params, apiClient, request);
       }
-    }
-  );
+    );
+  });
+
+  // [INLINE TOOLS REMOVED - Now using modular approach]
+  // All tools are registered through their respective modules above
 
   return { 
     server, 

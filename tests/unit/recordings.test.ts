@@ -184,7 +184,7 @@ describe('Recordings Module', () => {
       });
       
       it('should handle authentication errors correctly', async () => {
-        mockApiClient.listRecordings.mockRejectedValueOnce(new Error('Unauthorized (401)'));
+        mockApiClient.listRecordings.mockRejectedValueOnce(new AuthenticationError('Unauthorized (401)'));
         
         await expect(resourceHandlers['recordings'](
           mockUri, 
@@ -194,7 +194,10 @@ describe('Recordings Module', () => {
       });
 
       it('should handle API errors correctly', async () => {
-        mockApiClient.listRecordings.mockRejectedValueOnce(new Error('Internal server error (500)'));
+        mockApiClient.listRecordings.mockRejectedValueOnce(new ApiResponseError('Internal server error (500)', {
+          statusCode: 500,
+          apiErrorMessage: 'Internal server error'
+        }));
         
         await expect(resourceHandlers['recordings'](
           mockUri, 
@@ -254,7 +257,10 @@ describe('Recordings Module', () => {
       });
       
       it('should handle recording not found errors', async () => {
-        mockApiClient.getRecording.mockRejectedValueOnce(new Error('Recording not found (404)'));
+        mockApiClient.getRecording.mockRejectedValueOnce(new ResourceNotFoundError('Recording not found (404)', {
+          resourceType: 'recording',
+          resourceId: 'rec1'
+        }));
         
         await expect(resourceHandlers['recording'](
           mockUri, 
@@ -309,7 +315,10 @@ describe('Recordings Module', () => {
       });
       
       it('should handle room not found errors', async () => {
-        mockApiClient.listRecordings.mockRejectedValueOnce(new Error('Room not found (404)'));
+        mockApiClient.listRecordings.mockRejectedValueOnce(new ResourceNotFoundError('Room not found (404)', {
+          resourceType: 'room',
+          resourceId: 'room1'
+        }));
         
         await expect(resourceHandlers['room-recordings'](
           mockUri, 

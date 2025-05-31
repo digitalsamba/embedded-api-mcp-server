@@ -183,7 +183,7 @@ export function getApiKeyFromRequest(request: RequestMeta & { sessionId?: string
   
   if (sessionId) {
     logger.debug(`Looking for API key for session ID: ${sessionId}`);
-    const contextApiKey = apiKeyContext.getApiKey(sessionId);
+    const contextApiKey = ApiKeyContext.getInstance().getApiKey(sessionId);
     if (contextApiKey) {
       logger.debug(`Found API key in session context for ${sessionId}`);
       return contextApiKey;
@@ -199,7 +199,7 @@ export function getApiKeyFromRequest(request: RequestMeta & { sessionId?: string
     
     // If we have a session ID, store this API key for future use
     if (sessionId) {
-      apiKeyContext.setApiKey(sessionId, envApiKey);
+      ApiKeyContext.getInstance().setApiKey(sessionId, envApiKey);
     }
     
     return envApiKey;

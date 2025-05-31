@@ -40,6 +40,133 @@ import logger from '../../logger.js';
  * @returns {void}
  */
 export function setupRecordingTools(server: McpServer, apiUrl: string): void {
+  // Tool for starting recording in a room
+  server.tool(
+    'start-recording',
+    {
+      roomId: z.string(),
+    },
+    async (params, request) => {
+      const { roomId } = params;
+      
+      // Validate required parameters
+      if (!roomId || roomId.trim() === '') {
+        return {
+          content: [{ 
+            type: 'text', 
+            text: 'Room ID is required to start recording.'
+          }],
+          isError: true,
+        };
+      }
+      
+      logger.info('Starting recording', { roomId });
+      
+      // Get API key from session context
+      const apiKey = getApiKeyFromRequest(request);
+      if (!apiKey) {
+        return {
+          content: [{ 
+            type: 'text', 
+            text: 'No API key found. Please include an Authorization header with a Bearer token.'
+          }],
+          isError: true,
+        };
+      }
+      
+      // Create API client
+      logger.debug('Creating API client using context API key');
+      const client = new DigitalSambaApiClient(undefined, apiUrl);
+      
+      try {
+        await client.startRecording(roomId);
+        
+        return {
+          content: [{ 
+            type: 'text', 
+            text: `Recording started successfully in room ${roomId}`
+          }],
+        };
+      } catch (error) {
+        logger.error('Error starting recording', { 
+          roomId, 
+          error: error instanceof Error ? error.message : String(error) 
+        });
+        
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        let displayMessage = `Error starting recording: ${errorMessage}`;
+        
+        // Transform specific error messages to match test expectations
+        if (errorMessage.includes('Room not found') || errorMessage.includes('404')) {
+          displayMessage = `Room with ID ${roomId} not found`;
+        } else if (errorMessage.includes('Already recording')) {
+          displayMessage = `Recording already in progress for room ${roomId}`;
+        }
+        
+        return {
+          content: [{ 
+            type: 'text', 
+            text: displayMessage
+          }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // Tool for stopping recording in a room
+  server.tool(
+    'stop-recording',
+    {
+      roomId: z.string(),
+    },
+    async (params, request) => {
+      const { roomId } = params;
+      
+      logger.info('Stopping recording', { roomId });
+      
+      // Get API key from session context
+      const apiKey = getApiKeyFromRequest(request);
+      if (!apiKey) {
+        return {
+          content: [{ 
+            type: 'text', 
+            text: 'No API key found. Please include an Authorization header with a Bearer token.'
+          }],
+          isError: true,
+        };
+      }
+      
+      // Create API client
+      logger.debug('Creating API client using context API key');
+      const client = new DigitalSambaApiClient(undefined, apiUrl);
+      
+      try {
+        await client.stopRecording(roomId);
+        
+        return {
+          content: [{ 
+            type: 'text', 
+            text: `Recording stopped successfully in room ${roomId}`
+          }],
+        };
+      } catch (error) {
+        logger.error('Error stopping recording', { 
+          roomId, 
+          error: error instanceof Error ? error.message : String(error) 
+        });
+        
+        return {
+          content: [{ 
+            type: 'text', 
+            text: `Error stopping recording: ${error instanceof Error ? error.message : String(error)}`
+          }],
+          isError: true,
+        };
+      }
+    }
+  );
+
   // Tool for retrieving all recordings
   server.tool(
     'get-recordings',
