@@ -69,6 +69,7 @@ import { registerRoomResources, handleRoomResource } from './resources/rooms/ind
 import { registerRoomTools, executeRoomTool } from './tools/room-management/index.js';
 import { registerSessionResources, handleSessionResource } from './resources/sessions/index.js';
 import { registerExportResources, ExportResources } from './resources/exports/index.js';
+import { registerLiveSessionTools, executeLiveSessionTool } from './tools/live-session-controls/index.js';
 
 // Type definitions for server options
 export interface ServerOptions {
@@ -165,8 +166,8 @@ export function createServer(options?: ServerOptions) {
   // Set up recording functionality
   setupRecordingFunctionality(server, API_URL);
   
-  // Set up session tools
-  setupSessionTools(server, API_URL);
+  // Note: Session tools are now registered through the modular system below
+  // setupSessionTools(server, API_URL) - removed to avoid duplicate registration
 
   // -------------------------------------------------------------------
   // Analytics Resources (Modular)
@@ -462,6 +463,41 @@ export function createServer(options?: ServerOptions) {
         
         // Execute the tool using the modular function
         return executeSessionTool(tool.name, params, apiClient, request);
+      }
+    );
+  });
+
+  // -------------------------------------------------------------------
+  // Live Session Control Tools (Modular)
+  // -------------------------------------------------------------------
+
+  // Register live session control tools using the modular approach
+  const liveSessionTools = registerLiveSessionTools();
+
+  // Register each live session tool with the server
+  liveSessionTools.forEach(tool => {
+    server.tool(
+      tool.name,
+      tool.inputSchema,
+      async (params, request) => {
+        logger.info(`Executing live session tool: ${tool.name}`);
+        
+        // Create API client
+        const apiKey = getApiKeyFromRequest(request);
+        if (!apiKey) {
+          return {
+            content: [{ 
+              type: 'text', 
+              text: 'No API key found. Please include an Authorization header with a Bearer token.'
+            }],
+            isError: true,
+          };
+        }
+        
+        const apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+        
+        // Execute the tool using the modular function
+        return executeLiveSessionTool(tool.name, params, apiClient);
       }
     );
   });

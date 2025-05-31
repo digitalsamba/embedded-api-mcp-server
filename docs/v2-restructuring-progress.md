@@ -3,18 +3,18 @@
 ## Overview
 This document tracks the progress of restructuring the Digital Samba MCP Server from v1 to v2, separating Resources (read-only GET operations) from Tools (action operations - POST/PATCH/DELETE).
 
-## Status: In Progress 🚧
+## Status: Phase 3 Complete 🎉
 
 ### Completed ✅
 
 #### Directory Structure
 - Created `src/resources/` for read-only endpoints
 - Created `src/tools/` for action endpoints
-- All directories follow the planned Phase 1 structure
+- All directories follow the planned Phase 1-3 structure
 
 #### Modules Migrated
 
-##### Analytics
+##### Analytics (Phase 1)
 - **Resources** (`src/resources/analytics/`)
   - `analytics-participants` - Participant analytics
   - `analytics-usage` - Usage statistics
@@ -26,7 +26,7 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
   - `get-usage-statistics` - Query usage stats
   - `get-session-statistics` - Query session data
 
-##### Rooms
+##### Rooms (Phase 1)
 - **Resources** (`src/resources/rooms/`)
   - `rooms` - List all rooms
   - `room` - Get specific room details
@@ -36,7 +36,10 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
   - `delete-room` - Delete room
   - `generate-token` - Generate room access token
 
-##### Sessions
+##### Sessions (Phase 1)
+- **Resources** (`src/resources/sessions/`)
+  - `sessions` - List all sessions
+  - `session` - Get specific session details
 - **Tools** (`src/tools/session-management/`)
   - `get-all-room-sessions` - List room sessions
   - `delete-session-chats` - Delete chat data
@@ -49,21 +52,49 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
   - `end-session` - End live session
   - `get-session-statistics` - Get session stats
 
-### Pending 🔄
+##### Export Resources (Phase 2)
+- **Resources** (`src/resources/exports/`)
+  - `Chat Messages Export` - Export chat messages from rooms
+  - `Q&A Export` - Export questions and answers
+  - `Transcript Export` - Export session transcripts
+  - `Polls Export` - Export poll data and results
+  - `Recording Export Info` - Get recording metadata
+  - `Session Summary Export` - Export session summaries
+  - `Session Metadata Export` - Export session metadata
 
-#### Recordings
-- Need to separate recording resources from tools in `src/recordings.ts`
-- Resources: List recordings, get recording details
-- Tools: Delete, archive/unarchive, download operations
+##### Live Session Controls (Phase 3)
+- **Tools** (`src/tools/live-session-controls/`)
+  - `start-transcription` - Start transcription for a session
+  - `stop-transcription` - Stop transcription for a session
+  - `phone-participants-joined` - Register phone participants joining
+  - `phone-participants-left` - Register phone participants leaving
+
+##### Recording Management
+- **Resources** (`src/resources/recordings/`)
+  - `recordings` - List all recordings
+  - `recording` - Get specific recording details
+  - `room-recordings` - List recordings for a room
+  - `archived-recordings` - List archived recordings
+- **Tools** (`src/tools/recording-management/`)
+  - `start-recording` - Start recording in a room
+  - `stop-recording` - Stop recording in a room
+  - `get-recordings` - Query recordings with filters
+  - `delete-recording` - Delete a recording
+  - `get-recording` - Get recording details
+  - `get-recording-download-link` - Generate download link
+  - `archive-recording` - Archive a recording
+  - `unarchive-recording` - Unarchive a recording
+
+### Pending 🔄
 
 #### Webhooks
 - Move webhook tools from `src/webhooks.ts`
 - All webhook operations are tools (no read-only resources)
 
 #### Core Integration
-- Update `src/index.ts` to fully utilize new modular structure
-- Remove old inline implementations after verification
-- Add proper resource/tool registration using new modules
+- Clean up duplicate tool registrations
+- Remove deprecated inline implementations
+- Update tests to handle modular structure
 
 ### Implementation Guidelines Followed
 
@@ -78,17 +109,25 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
 | Stage | Size | Status |
 |-------|------|--------|
 | Initial | 160.7 KB | ✅ Under limit |
-| After restructure | 171.2 KB | ✅ Under limit |
+| After Phase 1 | 171.2 KB | ✅ Under limit |
+| After Phase 2 | ~175 KB | ✅ Under limit |
+| After Phase 3 | ~180 KB | ✅ Under limit |
 | Target | < 250 KB | ✅ Meeting requirement |
 
-### Next Steps
+### Phase Completion Summary
 
-1. Complete recording module separation
-2. Move webhook tools to new structure
-3. Update index.ts to use modular registration functions
-4. Remove deprecated inline implementations
-5. Update tests to use new module structure
-6. Create migration guide for developers
+| Phase | Status | Release Tag | Key Features |
+|-------|--------|-------------|--------------|
+| Phase 1 | ✅ Complete | v1.1.0-beta.1 | V2 Architecture, Analytics, Rooms, Sessions |
+| Phase 2 | ✅ Complete | v1.1.0-beta.1 | Export Resources (7 endpoints) |
+| Phase 3 | ✅ Complete | TBD | Live Session Controls (6 endpoints) |
+
+### Next Steps (Phase 4)
+
+1. Implement Communication Management tools
+2. Add Chat & Q&A management
+3. Implement Poll management
+4. Create transcript management tools
 
 ### Technical Notes
 
@@ -96,6 +135,7 @@ This document tracks the progress of restructuring the Digital Samba MCP Server 
 - TypeScript compilation successful with `--skipLibCheck`
 - No breaking changes to external API
 - MCP protocol compliance maintained throughout
+- Some duplicate tool registration issues need cleanup
 
 ### File Structure
 
@@ -106,9 +146,12 @@ src/
 │   │   └── index.ts
 │   ├── rooms/
 │   │   └── index.ts
-│   ├── recordings/ (pending)
-│   ├── sessions/ (pending)
-│   └── data/ (pending)
+│   ├── recordings/
+│   │   └── index.ts
+│   ├── sessions/
+│   │   └── index.ts
+│   └── exports/
+│       └── index.ts
 └── tools/
     ├── analytics-tools/
     │   └── index.ts
@@ -116,9 +159,13 @@ src/
     │   └── index.ts
     ├── session-management/
     │   └── index.ts
-    ├── recording-management/ (pending)
+    ├── recording-management/
+    │   └── index.ts
+    ├── live-session-controls/
+    │   └── index.ts
     └── webhook-management/ (pending)
 ```
 
 ---
-*Last Updated: 2024-12-31*
+*Last Updated: 2025-05-31*
+*Phase 3 Complete*
