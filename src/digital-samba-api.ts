@@ -1495,39 +1495,6 @@ export class DigitalSambaApiClient {
   }
   
   /**
-   * Export chat messages
-   */
-  async exportChatMessages(roomId: string, options?: {
-    session_id?: string;
-    format?: 'txt' | 'json';
-  }): Promise<string> {
-    const queryParams = new URLSearchParams();
-    if (options) {
-      Object.entries(options).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, String(value));
-        }
-      });
-    }
-    
-    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
-    
-    const apiKey = this.getApiKey();
-    const response = await fetch(`${this.apiBaseUrl}/rooms/${roomId}/chat/export${query}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Digital Samba API error (${response.status}): ${errorText}`);
-    }
-    
-    return response.text();
-  }
-  
-  /**
    * Get Q&A
    */
   async getQuestionsAndAnswers(roomId: string, params?: PaginationParams & {
@@ -1583,39 +1550,6 @@ export class DigitalSambaApiClient {
     await this.request<void>(`/rooms/${roomId}/questions`, {
       method: 'DELETE'
     });
-  }
-  
-  /**
-   * Export Q&A
-   */
-  async exportQA(roomId: string, options?: {
-    session_id?: string;
-    format?: 'txt' | 'json';
-  }): Promise<string> {
-    const queryParams = new URLSearchParams();
-    if (options) {
-      Object.entries(options).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, String(value));
-        }
-      });
-    }
-    
-    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
-    
-    const apiKey = this.getApiKey();
-    const response = await fetch(`${this.apiBaseUrl}/rooms/${roomId}/questions/export${query}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`
-      }
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Digital Samba API error (${response.status}): ${errorText}`);
-    }
-    
-    return response.text();
   }
   
   // Polls
@@ -1740,6 +1674,104 @@ export class DigitalSambaApiClient {
     
     const apiKey = this.getApiKey();
     const response = await fetch(`${this.apiBaseUrl}/rooms/${roomId}/polls/export${query}`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Digital Samba API error (${response.status}): ${errorText}`);
+    }
+    
+    return response.text();
+  }
+
+  /**
+   * Export chat messages
+   */
+  async exportChatMessages(roomId: string, options?: {
+    session_id?: string;
+    format?: 'txt' | 'json';
+  }): Promise<string> {
+    const queryParams = new URLSearchParams();
+    if (options) {
+      Object.entries(options).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    
+    const apiKey = this.getApiKey();
+    const response = await fetch(`${this.apiBaseUrl}/rooms/${roomId}/chat/export${query}`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Digital Samba API error (${response.status}): ${errorText}`);
+    }
+    
+    return response.text();
+  }
+
+  /**
+   * Export Q&A (questions and answers)
+   */
+  async exportQA(roomId: string, options?: {
+    session_id?: string;
+    format?: 'txt' | 'json';
+  }): Promise<string> {
+    const queryParams = new URLSearchParams();
+    if (options) {
+      Object.entries(options).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    
+    const apiKey = this.getApiKey();
+    const response = await fetch(`${this.apiBaseUrl}/rooms/${roomId}/questions/export${query}`, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Digital Samba API error (${response.status}): ${errorText}`);
+    }
+    
+    return response.text();
+  }
+
+  /**
+   * Export session transcripts
+   */
+  async exportTranscripts(sessionId: string, options?: {
+    format?: 'txt' | 'json';
+  }): Promise<string> {
+    const queryParams = new URLSearchParams();
+    if (options) {
+      Object.entries(options).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+    
+    const apiKey = this.getApiKey();
+    const response = await fetch(`${this.apiBaseUrl}/sessions/${sessionId}/transcripts/export${query}`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`
       }
