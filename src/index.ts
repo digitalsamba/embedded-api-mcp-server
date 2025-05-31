@@ -68,6 +68,7 @@ import { registerSessionTools, executeSessionTool } from './tools/session-manage
 import { registerRoomResources, handleRoomResource } from './resources/rooms/index.js';
 import { registerRoomTools, executeRoomTool } from './tools/room-management/index.js';
 import { registerSessionResources, handleSessionResource } from './resources/sessions/index.js';
+import { registerExportResources, ExportResources } from './resources/exports/index.js';
 
 // Type definitions for server options
 export interface ServerOptions {
@@ -298,6 +299,37 @@ export function createServer(options?: ServerOptions) {
           return result;
         } catch (error) {
           logger.error(`Error in session resource ${resource.name}`, { 
+            error: error instanceof Error ? error.message : String(error) 
+          });
+          throw error;
+        }
+      }
+    );
+  });
+
+  // -------------------------------------------------------------------
+  // Export Resources (Modular)
+  // -------------------------------------------------------------------
+
+  // Register export resources using the modular approach
+  const exportResources = registerExportResources();
+  const exportResourceHandler = new ExportResources(new DigitalSambaApiClient(undefined, API_URL, apiCache));
+  
+  // Register each export resource with the server
+  exportResources.forEach(resource => {
+    server.resource(
+      resource.name,
+      new ResourceTemplate(resource.uri, { list: undefined }),
+      async (uri, params, request) => {
+        logger.info(`Handling export resource: ${resource.name}`);
+        
+        try {
+          // Use the export resource handler
+          const result = await exportResourceHandler.handleResourceRequest(uri.href);
+          
+          return result;
+        } catch (error) {
+          logger.error(`Error in export resource ${resource.name}`, { 
             error: error instanceof Error ? error.message : String(error) 
           });
           throw error;
