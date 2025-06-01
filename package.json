@@ -43,7 +43,7 @@
     "build:esbuild": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\" && node scripts/build.js && node scripts/copy-bin.js",
     "build:bundle": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\" && tsc --skipLibCheck && node scripts/build.js && node scripts/copy-bin.js",
     "build:with-bundle": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\" && tsc --skipLibCheck && node scripts/build-with-bundle.js && node scripts/copy-bin.js",
-    "build:prod": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\" && tsc --project tsconfig.prod.json --skipLibCheck && node scripts/build.js && node scripts/copy-bin.js",
+    "build:prod": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\" && npx -p @babel/core -p @babel/cli -p @babel/preset-typescript babel src --out-dir dist/src --extensions '.ts' --presets @babel/preset-typescript && node scripts/copy-bin.js",
     "start": "node dist/src/index.js",
     "dev": "tsx --inspect src/index.ts",
     "dev:watch": "tsx --watch --inspect src/index.ts",
@@ -60,7 +60,7 @@
     "test:unit": "jest --testPathPattern=tests/unit --forceExit",
     "test:integration": "jest --testPathPattern=tests/integration --forceExit",
     "prepublishOnly": "npm run build:prod",
-    "prepare": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\" && tsc --project tsconfig.prod.json --skipLibCheck && node scripts/copy-bin.js",
+    "prepare": "npm run build:prod",
     "size-check": "node scripts/build-size-check.js",
     "package-test": "npm pack && (if exist *.tgz del /q *.tgz)"
   },
