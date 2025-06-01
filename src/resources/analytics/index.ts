@@ -67,19 +67,19 @@ export async function handleAnalyticsResource(uri: string, apiClient: DigitalSam
   switch (resourceType) {
     case 'participants':
       logger.info('Fetching participant analytics');
-      return await analytics.getAllParticipants();
+      return await _analytics.getAllParticipants();
       
     case 'usage':
       logger.info('Fetching usage statistics');
-      return await analytics.getUsageStatistics();
+      return await _analytics.getUsageStatistics();
       
     case 'rooms':
       logger.info('Fetching room analytics');
-      return await analytics.getRoomAnalytics();
+      return await _analytics.getRoomAnalytics();
       
     case 'team':
       logger.info('Fetching team statistics');
-      return await analytics.getTeamGlobalStatistics();
+      return await _analytics.getTeamGlobalStatistics();
       
     default:
       throw new Error(`Unknown analytics resource: ${resourceType}`);

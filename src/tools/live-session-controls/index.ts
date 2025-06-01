@@ -110,13 +110,13 @@ export async function executeLiveSessionTool(
 ): Promise<any> {
   switch (toolName) {
     case 'start-transcription':
-      return handleStartTranscription(params, apiClient);
+      return handleStartTranscription(params, _apiClient);
     case 'stop-transcription':
-      return handleStopTranscription(params, apiClient);
+      return handleStopTranscription(params, _apiClient);
     case 'phone-participants-joined':
-      return handlePhoneParticipantsJoined(params, apiClient);
+      return handlePhoneParticipantsJoined(params, _apiClient);
     case 'phone-participants-left':
-      return handlePhoneParticipantsLeft(params, apiClient);
+      return handlePhoneParticipantsLeft(params, _apiClient);
     default:
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
   }
@@ -189,7 +189,7 @@ async function handleStartTranscription(
  */
 async function handleStopTranscription(
   params: { roomId: string },
-  apiClient: DigitalSambaApiClient
+  _apiClient: DigitalSambaApiClient
 ): Promise<any> {
   const { roomId } = params;
   
@@ -250,7 +250,7 @@ async function handlePhoneParticipantsJoined(
       external_id?: string;
     }>;
   },
-  apiClient: DigitalSambaApiClient
+  _apiClient: DigitalSambaApiClient
 ): Promise<any> {
   const { roomId, participants } = params;
   
@@ -280,7 +280,7 @@ async function handlePhoneParticipantsJoined(
   });
   
   try {
-    await apiClient.phoneParticipantsJoined(roomId, participants);
+    await _apiClient.phoneParticipantsJoined(roomId, participants);
     
     const participantNames = participants
       .map(p => p.name || p.caller_number || p.call_id)
@@ -323,7 +323,7 @@ async function handlePhoneParticipantsLeft(
     roomId: string;
     callIds: string[];
   },
-  apiClient: DigitalSambaApiClient
+  _apiClient: DigitalSambaApiClient
 ): Promise<any> {
   const { roomId, callIds } = params;
   
@@ -353,7 +353,7 @@ async function handlePhoneParticipantsLeft(
   });
   
   try {
-    await apiClient.phoneParticipantsLeft(roomId, callIds);
+    await _apiClient.phoneParticipantsLeft(roomId, callIds);
     
     return {
       content: [{ 
