@@ -14,7 +14,7 @@
 
 // Local modules
 import { DigitalSambaApiClient } from './digital-samba-api.js';
-import { ConnectionManager, ConnectionState } from './connection-manager.js';
+import { ConnectionManager } from './connection-manager.js';
 import { TokenManager } from './token-manager.js';
 import { ResourceOptimizer } from './resource-optimizer.js';
 import { MemoryCache } from './cache.js';
@@ -147,69 +147,64 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
   protected async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     // Use connection manager if enabled
     if (this.enabledFeatures.connectionManagement && this.connectionManager) {
-      try {
-        const url = endpoint.startsWith('http') ? endpoint : `${this.apiBaseUrl}${endpoint}`;
+      const url = endpoint.startsWith('http') ? endpoint : `${this.apiBaseUrl}${endpoint}`;
+      
+      // Get API key
+      const apiKey = this.getApiKey();
+      
+      // Set authorization header
+      const headers = {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        ...options.headers
+      };
+      
+      // Execute request through connection manager
+      // Type assertion to handle compatibility between node-fetch and standard fetch types
+      const fetchOptions = {
+        ...options,
+        headers: headers as Record<string, string>
+      };
+      
+      // Execute request through connection manager
+      const response = await this.connectionManager.fetch(url, fetchOptions as RequestInit);
+      
+      // Handle response
+      if (!response.ok) {
+        const errorText = await response.text();
         
-        // Get API key
-        const apiKey = this.getApiKey();
+        logger.error(`API Error Response: ${errorText}`, {
+          status: response.status,
+          statusText: response.statusText
+        });
         
-        // Set authorization header
-        const headers = {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-          ...options.headers
-        };
-        
-        // Execute request through connection manager
-        // Type assertion to handle compatibility between node-fetch and standard fetch types
-        const fetchOptions = {
-          ...options,
-          headers: headers as Record<string, string>
-        };
-        
-        // Execute request through connection manager
-        const response = await this.connectionManager.fetch(url, fetchOptions as any);
-        
-        // Handle response
-        if (!response.ok) {
-          const errorText = await response.text();
-          
-          logger.error(`API Error Response: ${errorText}`, {
-            status: response.status,
-            statusText: response.statusText
-          });
-          
-          // Parse error text as JSON if possible
-          let errorData;
-          try {
-            errorData = JSON.parse(errorText);
-          } catch {
-            // Not JSON, use as plain text
-            errorData = { message: errorText };
-          }
-          
-          // Handle specific error types (reusing the parent class logic)
-          throw this.handleErrorResponse(response.status, errorData, errorText, endpoint);
+        // Parse error text as JSON if possible
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          // Not JSON, use as plain text
+          errorData = { message: errorText };
         }
         
-        // Return empty object for 204 No Content responses
-        if (response.status === 204) {
-          return {} as T;
-        }
-        
-        // Parse response
-        const responseData = await response.json();
-        
-        // Apply resource optimization if enabled
-        if (this.enabledFeatures.resourceOptimization && this.resourceOptimizer) {
-          return this.resourceOptimizer.compressResponse(responseData) as T;
-        }
-        
-        return responseData as T;
-      } catch (error) {
-        // Let parent class handle error types
-        throw error;
+        // Handle specific error types (reusing the parent class logic)
+        throw this.handleErrorResponse(response.status, errorData, errorText, endpoint);
       }
+      
+      // Return empty object for 204 No Content responses
+      if (response.status === 204) {
+        return {} as T;
+      }
+      
+      // Parse response
+      const responseData = await response.json();
+      
+      // Apply resource optimization if enabled
+      if (this.enabledFeatures.resourceOptimization && this.resourceOptimizer) {
+        return this.resourceOptimizer.compressResponse(responseData) as T;
+      }
+      
+      return responseData as T;
     } else {
       // Fall back to parent implementation
       return super.request<T>(endpoint, options);
@@ -219,7 +214,7 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
   /**
    * Handle error response - helper method to match parent class behavior
    */
-  private handleErrorResponse(status: number, errorData: any, errorText: string, endpoint: string): Error {
+  private handleErrorResponse(status: number, errorData: unknown, errorText: string, endpoint: string): Error {
     // This method simulates the error handling in the parent class
     // In a real implementation, consider refactoring to avoid duplication
     
@@ -231,7 +226,7 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
       return new Error(`Authentication error: ${errorData.message || errorText}`);
     } else if (status === 404) {
       // Not Found error
-      const matches = endpoint.match(/\/([^\/]+)\/([^\/]+)/);
+      const matches = endpoint.match(/\/([^/]+)\/([^/]+)/);
       const resourceType = matches ? matches[1] : 'resource';
       const resourceId = matches ? matches[2] : 'unknown';
       
@@ -249,7 +244,7 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
    * @param tokenOptions Token options
    * @returns Token manager for the room
    */
-  public createTokenManager(roomId: string, sessionId: string, tokenOptions: any = {}): TokenManager {
+  public createTokenManager(roomId: string, sessionId: string, tokenOptions: unknown = {}): TokenManager {
     // Skip if token management is disabled
     if (!this.enabledFeatures.tokenManagement) {
       throw new Error('Token management is disabled for this client');
@@ -295,7 +290,7 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
    * @param sessionId Session ID for token context
    * @returns Promise resolving to token response
    */
-  public async generateRoomTokenWithRefresh(roomId: string, options: any = {}, sessionId: string): Promise<any> {
+  public async generateRoomTokenWithRefresh(roomId: string, options: unknown = {}, sessionId: string): Promise<unknown> {
     // Skip if token management is disabled
     if (!this.enabledFeatures.tokenManagement) {
       // Fall back to standard token generation
@@ -372,7 +367,7 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
    * @returns Client statistics
    */
   public getStats() {
-    const stats: Record<string, any> = {};
+    const stats: Record<string, unknown> = {};
     
     if (this.enabledFeatures.connectionManagement && this.connectionManager) {
       stats.connectionManager = this.connectionManager.getStats();
