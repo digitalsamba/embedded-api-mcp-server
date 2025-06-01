@@ -138,6 +138,9 @@ jobs:
       - name: Publish beta to NPM
         run: |
           echo "Publishing beta version: $BETA_VERSION"
+          # Ensure we're using the right registry
+          npm config set registry https://registry.npmjs.org/
+          # Publish with explicit access setting
           npm publish --tag beta --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -242,6 +245,9 @@ jobs:
       - name: Publish production to NPM
         run: |
           echo "Publishing production version: ${{ needs.build.outputs.package-version }}"
+          # Ensure we're using the right registry
+          npm config set registry https://registry.npmjs.org/
+          # Publish with explicit access setting
           npm publish --tag latest --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
