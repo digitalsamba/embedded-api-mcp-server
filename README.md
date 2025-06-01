@@ -70,7 +70,8 @@ Once connected, you can ask Claude to perform various tasks:
 ```
 "End all active sessions in the Training room"
 "Who's currently in my meetings?"
-"Mute all participants in room xyz"
+"Start transcription for the meeting"
+"Stop transcription in room xyz"
 ```
 
 ### Content Management
@@ -148,10 +149,21 @@ console.log('Join URL:', token.link);
 - **Room Tools**: create-room, update-room, delete-room, generate-room-token
 - **Session Tools**: end-session, get-session-statistics, bulk-delete-session-data
 - **Analytics Tools**: get-participant-stats, get-room-analytics, get-usage-report
-- **Recording Tools**: start-recording, stop-recording, delete-recording
-- **Content Tools**: upload-document, create-whiteboard, delete-content
-- **Communication Tools**: delete-session-chats, delete-session-qa
-- **Poll Tools**: create-poll, publish-poll-results, delete-poll
+- **Recording Tools**: toggle-room-recording, toggle-session-recording, start-recording, stop-recording, download-recording, delete-recording
+- **Live Session Controls**: start-transcription, stop-transcription, phone-participants-joined, phone-participants-left
+- **Communication Tools**: delete-session-chats, delete-room-chats, delete-session-qa, delete-room-qa, delete-session-transcripts, delete-room-transcripts
+- **Poll Tools**: create-poll, update-poll, delete-poll, publish-poll-results
+- **Content Tools**: upload-document, upload-whiteboard, upload-video, delete-document
+- **Webhook Tools**: list-webhooks, register-webhook, update-webhook, delete-webhook, get-webhook-logs
+
+## Coming Soon
+
+The following features are planned for future releases:
+- **Live Participant Control**: Mute/unmute participants, promote to moderator, remove from session
+- **Breakout Rooms**: Create and manage breakout rooms during live sessions
+- **Live Streaming**: Start/stop streaming to external platforms
+- **Waiting Room**: Manage participants in waiting room
+- **Real-time Events**: Subscribe to live session events via webhooks
 
 ## Environment Variables
 
