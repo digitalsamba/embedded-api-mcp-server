@@ -91,7 +91,7 @@ export interface CircuitBreakerOptions {
    * @param params - The parameters that would have been passed to the protected function
    * @returns The fallback result
    */
-  fallback?: <T, Args extends any[]>(params: Args) => Promise<T>;
+  fallback?: <T, Args extends unknown[]>(params: Args) => Promise<T>;
 }
 
 /**
@@ -129,7 +129,7 @@ export class CircuitBreaker extends EventEmitter {
   private requestTimeout?: number;
   private initialRequestTimeout: number;
   private isFailure: (error: unknown) => boolean;
-  private fallback?: <T, Args extends any[]>(params: Args) => Promise<T>;
+  private fallback?: <T, Args extends unknown[]>(params: Args) => Promise<T>;
   
   /**
    * Creates a new CircuitBreaker instance
@@ -211,7 +211,7 @@ export class CircuitBreaker extends EventEmitter {
    *   [] // No args
    * );
    */
-  async exec<T, Args extends any[]>(
+  async exec<T, Args extends unknown[]>(
     fn: () => Promise<T>, 
     args: Args = [] as unknown as Args, 
     forceNoTimeout: boolean = false,
@@ -561,7 +561,7 @@ export class CircuitBreaker extends EventEmitter {
    */
   private async updateMetrics(
     event: 'created' | 'success' | 'failure' | 'state_change' | 'reset' | 'trip',
-    labels?: Record<string, any>
+    labels?: Record<string, unknown>
   ): Promise<void> {
     try {
       const metricsRegistry = await import('./metrics.js').then(m => m.default);

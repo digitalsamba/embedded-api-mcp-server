@@ -12,7 +12,7 @@ import fetch, { RequestInfo, RequestInit, Response } from 'node-fetch';
 
 // Local modules
 import logger from './logger.js';
-import { ApiRequestError, ApiResponseError } from './errors.js';
+import { ApiRequestError } from './errors.js';
 
 /**
  * Connection state enum
@@ -123,7 +123,7 @@ export class ConnectionManager extends EventEmitter {
    * Get connection manager statistics
    * @returns Connection manager statistics
    */
-  public getStats(): Record<string, any> {
+  public getStats(): Record<string, unknown> {
     return {
       connections: {
         // This would contain actual connection stats in a real implementation

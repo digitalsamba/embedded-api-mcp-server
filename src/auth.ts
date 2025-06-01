@@ -176,8 +176,8 @@ export function getApiKeyFromRequest(request: RequestMeta & { sessionId?: string
     sessionId = request.context.sessionId;
     logger.debug(`Got sessionId from request.context: ${sessionId}`);
   }
-  if (!sessionId && (request as any).transport && (request as any).transport.sessionId) {
-    sessionId = (request as any).transport.sessionId;
+  if (!sessionId && (request as unknown as { transport?: { sessionId?: string } }).transport?.sessionId) {
+    sessionId = (request as unknown as { transport: { sessionId: string } }).transport.sessionId;
     logger.debug(`Got sessionId from request.transport: ${sessionId}`);
   }
   
