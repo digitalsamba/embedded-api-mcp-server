@@ -86,8 +86,11 @@ export function setupRecordingResources(server: McpServer, apiUrl: string): void
           });
         }
 
+        // Handle string | string[] type - take first value if array
+        const recordingIdStr = Array.isArray(recordingId) ? recordingId[0] : recordingId;
+
         const apiClient = new DigitalSambaApiClient(apiKey, apiUrl);
-        const recording = await apiClient.getRecording(recordingId);
+        const recording = await apiClient.getRecording(recordingIdStr);
         
         return {
           contents: [{
@@ -120,8 +123,11 @@ export function setupRecordingResources(server: McpServer, apiUrl: string): void
           });
         }
 
+        // Handle string | string[] type - take first value if array
+        const roomIdStr = Array.isArray(roomId) ? roomId[0] : roomId;
+
         const apiClient = new DigitalSambaApiClient(apiKey, apiUrl);
-        const recordings = await apiClient.listRecordings({ room_id: roomId });
+        const recordings = await apiClient.listRecordings({ room_id: roomIdStr });
         
         // Format recordings as resource contents with URIs
         const contents = recordings.data.map(recording => ({
