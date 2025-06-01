@@ -13,10 +13,13 @@ execSync('npm pack', { stdio: 'inherit' });
 
 // Get the package name
 const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
-const packageName = `${packageJson.name}-${packageJson.version}.tgz`;
+// For scoped packages, npm pack replaces @ and / with -
+const tarballName = packageJson.name.startsWith('@') 
+  ? `${packageJson.name.substring(1).replace('/', '-')}-${packageJson.version}.tgz`
+  : `${packageJson.name}-${packageJson.version}.tgz`;
 
 // Get the file stats
-const stats = fs.statSync(packageName);
+const stats = fs.statSync(tarballName);
 
 // Convert bytes to human-readable format
 function formatSize(bytes) {
@@ -50,12 +53,12 @@ if (stats.size > MAX_SIZE) {
 
 // Display the package contents (top-level only)
 console.log('\nPackage contents (top-level directories):');
-const output = execSync(`tar -tf ${packageName} | grep -v "/" | sort`).toString();
+const output = execSync(`tar -tf ${tarballName} | grep -v "/" | sort`).toString();
 console.log(output);
 
 // Count files by type
 console.log('File type breakdown:');
-const allFiles = execSync(`tar -tf ${packageName}`).toString().split('\n').filter(Boolean);
+const allFiles = execSync(`tar -tf ${tarballName}`).toString().split('\n').filter(Boolean);
 
 const extensions = {};
 allFiles.forEach(file => {
@@ -74,5 +77,5 @@ console.log(sortedExtensions.join('\n'));
 
 // Clean up the temporary package
 console.log('\nCleaning up...');
-fs.unlinkSync(packageName);
+fs.unlinkSync(tarballName);
 console.log('Done!');
