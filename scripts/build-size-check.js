@@ -12,7 +12,7 @@ console.log('Creating temporary package for size analysis...');
 execSync('npm pack', { stdio: 'inherit' });
 
 // Get the package name
-const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
 const packageName = `${packageJson.name}-${packageJson.version}.tgz`;
 
 // Get the file stats
