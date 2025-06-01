@@ -1,8 +1,8 @@
 # Digital Samba MCP Server
 
-[![npm version](https://img.shields.io/npm/v/digital-samba-mcp-server.svg)](https://www.npmjs.com/package/digital-samba-mcp-server)
+[![npm version](https://img.shields.io/npm/v/@digitalsamba/mcp-server.svg)](https://www.npmjs.com/package/@digitalsamba/mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/node/v/digital-samba-mcp-server.svg)](https://nodejs.org)
+[![Node.js Version](https://img.shields.io/node/v/@digitalsamba/mcp-server.svg)](https://nodejs.org)
 
 A Model Context Protocol (MCP) server that enables AI assistants like Claude to interact with Digital Samba's video conferencing API. Create rooms, manage sessions, analyze usage, and control every aspect of your video conferences through natural language.
 
@@ -20,7 +20,7 @@ A Model Context Protocol (MCP) server that enables AI assistants like Claude to 
 ## Installation
 
 ```bash
-npm install digital-samba-mcp-server
+npm install @digitalsamba/mcp-server
 ```
 
 ## Quick Start
@@ -32,7 +32,9 @@ Sign up at [Digital Samba](https://www.digitalsamba.com) and obtain your API key
 ### 2. Start the Server
 
 ```bash
-npx digital-samba-mcp-server --api-key YOUR_API_KEY
+npx @digitalsamba/mcp-server
+# or after installation:
+digitalsamba-mcp --api-key YOUR_API_KEY
 ```
 
 The server will start on `http://localhost:3000` by default.
@@ -81,7 +83,7 @@ Once connected, you can ask Claude to perform various tasks:
 ## CLI Options
 
 ```bash
-npx digital-samba-mcp-server [options]
+digitalsamba-mcp [options]
 
 Options:
   -p, --port <port>                 Server port (default: 3000)
@@ -98,7 +100,7 @@ Options:
 ### As an MCP Server
 
 ```javascript
-import { startServer } from 'digital-samba-mcp-server';
+import { startServer } from '@digitalsamba/mcp-server';
 
 const server = startServer({
   port: 4000,
@@ -111,7 +113,7 @@ const server = startServer({
 ### Direct API Client
 
 ```javascript
-import { DigitalSambaApiClient } from 'digital-samba-mcp-server/client';
+import { DigitalSambaApiClient } from '@digitalsamba/mcp-server/client';
 
 const client = new DigitalSambaApiClient(apiKey);
 
