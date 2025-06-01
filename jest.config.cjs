@@ -29,4 +29,8 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!(@modelcontextprotocol|node-fetch))'
   ],
+  testTimeout: 30000, // 30 seconds timeout per test
+  // Global setup/teardown timeout
+  globalSetup: undefined,
+  globalTeardown: undefined,
 };
