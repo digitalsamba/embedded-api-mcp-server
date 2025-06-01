@@ -21,7 +21,6 @@
     "paths": {
       "*": ["node_modules/*"]
     },
-    "types": ["node", "jest"],
     "lib": ["ES2020"],
     "allowSyntheticDefaultImports": true,
     "removeComments": false,
