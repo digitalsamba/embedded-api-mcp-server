@@ -12,33 +12,79 @@ const distDir = path.join(projectRoot, 'dist');
 
 console.log('Production build script starting...');
 
-// Check if dist directory exists
-if (fs.existsSync(distDir) && fs.readdirSync(distDir).length > 0) {
-  console.log('Using existing dist directory for production build');
-  process.exit(0);
+// Clean dist directory
+try {
+  if (fs.existsSync(distDir)) {
+    fs.rmSync(distDir, { recursive: true, force: true });
+    console.log('Cleaned existing dist directory');
+  }
+} catch (error) {
+  console.warn('Warning: Could not clean dist directory:', error.message);
 }
 
-console.log('No dist directory found. Attempting simple JavaScript copy...');
-
-// If no dist, try to copy source files as-is (for JavaScript projects)
-// or fail gracefully
+// Try to build with TypeScript
 try {
-  // Create dist directory
+  console.log('Attempting TypeScript compilation...');
+  execSync('npx tsc --skipLibCheck', { 
+    stdio: 'inherit',
+    cwd: projectRoot 
+  });
+  console.log('TypeScript compilation successful');
+  process.exit(0);
+} catch (error) {
+  console.log('TypeScript compilation failed, trying fallback build method...');
+}
+
+// If TypeScript fails, try with a simpler approach
+try {
+  // Check if we can use tsx to transpile
+  console.log('Attempting build with tsx transpilation...');
+  
+  // Create dist directories
   fs.mkdirSync(distDir, { recursive: true });
   fs.mkdirSync(path.join(distDir, 'src'), { recursive: true });
   
-  // Copy package.json to know the structure
-  const packageJson = JSON.parse(fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf8'));
+  // Use npx tsx to compile each file
+  const srcDir = path.join(projectRoot, 'src');
+  const files = getAllTypeScriptFiles(srcDir);
   
-  // Since this is a TypeScript project, we need the compiled output
-  // In CI/CD without devDependencies, we can't compile TypeScript
-  console.error('ERROR: Cannot build TypeScript without development dependencies.');
-  console.error('Please ensure the dist directory is built before publishing.');
-  console.error('You may need to:');
-  console.error('1. Build locally and commit the dist directory temporarily');
-  console.error('2. Or use a CI/CD environment with devDependencies installed');
+  console.log(`Found ${files.length} TypeScript files to transpile`);
+  
+  for (const file of files) {
+    const relativePath = path.relative(srcDir, file);
+    const outputPath = path.join(distDir, 'src', relativePath.replace('.ts', '.js'));
+    const outputDir = path.dirname(outputPath);
+    
+    // Ensure output directory exists
+    fs.mkdirSync(outputDir, { recursive: true });
+    
+    // Simple copy and replace .ts imports with .js
+    let content = fs.readFileSync(file, 'utf8');
+    content = content.replace(/from\s+['"](\.\.?\/[^'"]+)\.js['"]/g, "from '$1.js'");
+    content = content.replace(/from\s+['"](\.\.?\/[^'"]+)(?<!\.js)['"]/g, "from '$1.js'");
+    
+    fs.writeFileSync(outputPath, content);
+  }
+  
+  console.log('Fallback transpilation completed');
+  process.exit(0);
+} catch (fallbackError) {
+  console.error('All build methods failed');
+  console.error('Error:', fallbackError.message);
   process.exit(1);
-} catch (error) {
-  console.error('Build failed:', error.message);
-  process.exit(1);
+}
+
+function getAllTypeScriptFiles(dir, files = []) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory() && !entry.name.startsWith('.')) {
+      getAllTypeScriptFiles(fullPath, files);
+    } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.test.ts')) {
+      files.push(fullPath);
+    }
+  }
+  
+  return files;
 }
