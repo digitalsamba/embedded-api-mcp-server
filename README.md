@@ -41,12 +41,21 @@ The server will start on `http://localhost:4521` by default.
 
 ### 3. Connect to Claude Desktop
 
-1. Open Claude Desktop settings
-2. Navigate to MCP Servers
-3. Add a new server:
-   - Name: `Digital Samba`
-   - URL: `http://localhost:4521/mcp`
-   - Header: `Authorization: Bearer YOUR_API_KEY`
+Add the following to your Claude Desktop configuration file:
+
+```json
+{
+  "mcpServers": {
+    "digital-samba": {
+      "command": "npx",
+      "args": ["@digitalsamba/mcp-server", "--api-key", "YOUR_API_KEY"],
+      "env": {}
+    }
+  }
+}
+```
+
+Replace `YOUR_API_KEY` with your actual Digital Samba API key.
 
 ## Usage Examples
 
