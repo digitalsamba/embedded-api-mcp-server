@@ -19,38 +19,11 @@
 import { 
   DigitalSambaApiClient, 
   type ApiResponse, 
-  type PaginationParams, 
-  type DateRangeParams,
+  type PaginationParams,
   type Room,
   type RoomCreateSettings,
   type TokenOptions,
-  type TokenResponse,
-  type Recording,
-  type RecordingDownloadLink,
-  type Participant,
-  type ParticipantDetail,
-  type Session,
-  type SessionStatistics,
-  type Webhook,
-  type WebhookCreateSettings,
-  type BreakoutRoom,
-  type BreakoutRoomCreateSettings,
-  type BreakoutRoomParticipantAssignment,
-  type ScheduledMeeting,
-  type MeetingCreateSettings,
-  type MeetingUpdateSettings,
-  type MeetingParticipantAddOptions,
-  type MeetingParticipantRemoveOptions,
-  type MeetingReminderOptions,
-  type MeetingAvailabilityOptions,
-  type AvailableTimeSlot,
-  type Poll,
-  type PollCreateSettings,
-  type Role,
-  type RoleCreateSettings,
-  type Library,
-  type LibraryFolder,
-  type LibraryFile
+  type TokenResponse
 } from './digital-samba-api.js';
 import { MemoryCache } from './cache.js';
 import { ApiRequestError, ApiResponseError } from './errors.js';
@@ -249,7 +222,7 @@ export class CircuitBreakerApiClient {
    * @param forceNoTimeout If true, disables timeout for this endpoint
    * @returns A circuit breaker instance
    */
-  protected createCircuitBreaker(endpoint: string, options: Partial<CircuitBreakerOptions> = {}, forceNoTimeout: boolean = false): CircuitBreaker {
+  protected createCircuitBreaker(endpoint: string, options: Partial<CircuitBreakerOptions> = {}): CircuitBreaker {
     const name = `${this.circuitPrefix}.${endpoint}`;
     
     return circuitBreakerRegistry.getOrCreate({
@@ -279,13 +252,14 @@ export class CircuitBreakerApiClient {
    * Get base URL of the API
    */
   protected get apiBaseUrl(): string {
-    return (this.apiClient as any).apiBaseUrl;
+    // Type assertion needed as apiBaseUrl is a private property
+    return (this.apiClient as unknown as { apiBaseUrl: string }).apiBaseUrl;
   }
   
   /**
    * Get default room settings
    */
-  async getDefaultRoomSettings(): Promise<Record<string, any>> {
+  async getDefaultRoomSettings(): Promise<Record<string, unknown>> {
     const circuit = this.createCircuitBreaker('getDefaultRoomSettings');
     return circuit.exec(() => this.apiClient.getDefaultRoomSettings(), []);
   }
@@ -293,7 +267,7 @@ export class CircuitBreakerApiClient {
   /**
    * Update default room settings
    */
-  async updateDefaultRoomSettings(settings: Record<string, any>): Promise<Record<string, any>> {
+  async updateDefaultRoomSettings(settings: Record<string, unknown>): Promise<Record<string, unknown>> {
     const circuit = this.createCircuitBreaker('updateDefaultRoomSettings');
     return circuit.exec(() => this.apiClient.updateDefaultRoomSettings(settings), [settings]);
   }
@@ -306,12 +280,12 @@ export class CircuitBreakerApiClient {
   async listRooms(params?: PaginationParams): Promise<ApiResponse<Room>> {
     const circuit = this.createCircuitBreaker('listRooms', {
       // Correctly type the fallback function to match the circuit breaker's exec method signature
-      fallback: async <T, Args extends any[]>(_args: Args): Promise<T> => {
+      fallback: async <T, Args extends unknown[]>(_args: Args): Promise<T> => {
         const response: ApiResponse<Room> = {
           data: [],
           total_count: 0,
           length: 0,
-          map: function<U>(callback: (value: any, index: number, array: any[]) => U): U[] {
+          map: function<U>(callback: (value: Room, index: number, array: Room[]) => U): U[] {
             return this.data.map(callback);
           }
         };
