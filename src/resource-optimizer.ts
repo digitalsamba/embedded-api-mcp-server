@@ -210,7 +210,7 @@ export class ResourceOptimizer extends EventEmitter {
     const cached = this.cache.get(`batch:${batchId}`, key);
     if (cached) {
       logger.debug('Batch request cache hit', { batchId, key });
-      return Promise.resolve(cached.value);
+      return Promise.resolve(cached.value as T);
     }
     
     return new Promise<T>((resolve, reject) => {

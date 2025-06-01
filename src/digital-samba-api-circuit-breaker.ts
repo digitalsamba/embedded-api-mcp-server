@@ -114,7 +114,7 @@ export class CircuitBreakerApiClient {
           // Don't use timeouts for initialization
           requestTimeout: undefined,
           initialRequestTimeout: undefined
-        }, true); // Force no timeout
+        });
         
         logger.info('Attempting API connection initialization', {
           attempt: retryCount + 1,
