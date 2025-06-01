@@ -47,6 +47,7 @@
     "start": "node dist/src/index.js",
     "dev": "tsx --inspect src/index.ts",
     "dev:watch": "tsx --watch --inspect src/index.ts",
+    "dev:clean": "rimraf dist && npm run build && npm run dev",
     "debug": "npx tsx --inspect src/index.ts",
     "lint": "eslint src --ext .ts",
     "lint:analyze": "node scripts/eslint-fix.cjs",
