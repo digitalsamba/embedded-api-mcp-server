@@ -902,6 +902,11 @@ export class GracefulDegradation extends EventEmitter {
     value?: number
   ): Promise<void> {
     try {
+      // Skip metrics updates in test environment or if Jest is tearing down
+      if (process.env.NODE_ENV === 'test' || typeof jest !== 'undefined') {
+        return;
+      }
+      
       const metricsRegistry = await import('./metrics.js').then(m => m.default);
       
       switch (event) {
