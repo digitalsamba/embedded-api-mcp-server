@@ -12,6 +12,9 @@
  * @version 0.1.0
  */
 
+// External dependencies
+import type { RequestInit } from 'node-fetch';
+
 // Local modules
 import { DigitalSambaApiClient } from './digital-samba-api.js';
 import { ConnectionManager } from './connection-manager.js';
@@ -144,7 +147,7 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
    * @param options Request options
    * @returns Promise resolving to the response data
    */
-  protected async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  protected async request<T>(endpoint: string, options: any = {}): Promise<T> {
     // Use connection manager if enabled
     if (this.enabledFeatures.connectionManagement && this.connectionManager) {
       const url = endpoint.startsWith('http') ? endpoint : `${this.apiBaseUrl}${endpoint}`;
@@ -160,14 +163,17 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
       };
       
       // Execute request through connection manager
-      // Type assertion to handle compatibility between node-fetch and standard fetch types
-      const fetchOptions = {
-        ...options,
-        headers: headers as Record<string, string>
+      // Create options compatible with node-fetch
+      const fetchOptions: RequestInit = {
+        method: options.method,
+        headers: headers as Record<string, string>,
+        body: options.body as string | undefined,
+        signal: options.signal,
+        redirect: options.redirect
       };
       
       // Execute request through connection manager
-      const response = await this.connectionManager.fetch(url, fetchOptions as RequestInit);
+      const response = await this.connectionManager.fetch(url, fetchOptions);
       
       // Handle response
       if (!response.ok) {
@@ -218,12 +224,14 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
     // This method simulates the error handling in the parent class
     // In a real implementation, consider refactoring to avoid duplication
     
+    const errorMessage = (errorData as { message?: string })?.message || errorText;
+    
     if (status === 400) {
       // Validation error
-      return new Error(`Validation error: ${errorData.message || errorText}`);
+      return new Error(`Validation error: ${errorMessage}`);
     } else if (status === 401 || status === 403) {
       // Authentication error
-      return new Error(`Authentication error: ${errorData.message || errorText}`);
+      return new Error(`Authentication error: ${errorMessage}`);
     } else if (status === 404) {
       // Not Found error
       const matches = endpoint.match(/\/([^/]+)\/([^/]+)/);
@@ -233,7 +241,7 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
       return new Error(`Resource not found: ${resourceType} ${resourceId}`);
     } else {
       // Generic API error
-      return new Error(`Digital Samba API error (${status}): ${errorData.message || errorText}`);
+      return new Error(`Digital Samba API error (${status}): ${errorMessage}`);
     }
   }
   
@@ -257,11 +265,12 @@ export class EnhancedDigitalSambaApiClient extends DigitalSambaApiClient {
     }
     
     // Create new token manager
+    const tokenOpts = typeof tokenOptions === 'object' && tokenOptions !== null ? tokenOptions : {};
     const tokenManager = new TokenManager({
       roomId,
       tokenOptions: {
-        ...tokenOptions,
-        exp: tokenOptions.exp || '60' // Default to 1 hour
+        ...(tokenOpts as Record<string, unknown>),
+        exp: (tokenOpts as { exp?: string }).exp || '60' // Default to 1 hour
       },
       apiUrl: this.apiBaseUrl
     });
