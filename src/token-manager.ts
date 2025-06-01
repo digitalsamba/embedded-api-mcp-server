@@ -23,7 +23,7 @@ import { EventEmitter } from 'events';
 import logger from './logger.js';
 import apiKeyContext from './auth.js';
 import { AuthenticationError } from './errors.js';
-import { DigitalSambaApiClient, TokenOptions, TokenResponse } from './digital-samba-api.js';
+import { DigitalSambaApiClient, TokenOptions } from './digital-samba-api.js';
 
 /**
  * Token manager options interface

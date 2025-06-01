@@ -48,8 +48,8 @@ import { createConnectionManager } from './connection-manager.js';
 import { createTokenManager } from './token-manager.js';
 import { createResourceOptimizer } from './resource-optimizer.js';
 import { createEnhancedApiClient, EnhancedDigitalSambaApiClient } from './digital-samba-api-enhanced.js';
-import { CircuitBreakerApiClient } from './digital-samba-api-circuit-breaker.js';
-import ResilientApiClient from './digital-samba-api-resilient.js';
+// import { CircuitBreakerApiClient } from './digital-samba-api-circuit-breaker.js'; // Removed: unused
+// import ResilientApiClient from './digital-samba-api-resilient.js'; // Removed: unused
 import { MemoryCache } from './cache.js';
 import { DigitalSambaApiClient } from './digital-samba-api.js';
 import logger from './logger.js';
@@ -58,8 +58,8 @@ import { createApiKeyRateLimiter } from './rate-limiter.js';
 import { setupRecordingFunctionality } from './recordings.js';
 import WebhookService, { setupWebhookTools } from './webhooks.js';
 import gracefulDegradation, { ServiceHealthStatus } from './graceful-degradation.js';
-import AnalyticsResource from './analytics.js';
-import { setupSessionTools } from './sessions.js';
+// import AnalyticsResource from './analytics.js'; // Removed: unused
+// import { setupSessionTools } from './sessions.js'; // Removed: unused
 
 // Import modular resources and tools
 import { registerAnalyticsResources, handleAnalyticsResource } from './resources/analytics/index.js';
@@ -185,7 +185,7 @@ export function createServer(options?: ServerOptions) {
     server.resource(
       resource.name,
       new ResourceTemplate(resource.uri, { list: undefined }),
-      async (uri, params, request) => {
+      async (uri, _params, _request) => {
         logger.info(`Handling analytics resource: ${resource.name}`);
         
         const apiKey = getApiKeyFromRequest(request);
@@ -243,7 +243,7 @@ export function createServer(options?: ServerOptions) {
     server.resource(
       resource.name,
       new ResourceTemplate(resource.uri, { list: undefined }),
-      async (uri, params, request) => {
+      async (uri, _params, _request) => {
         logger.info(`Handling room resource: ${resource.name}`);
         
         try {
@@ -428,7 +428,7 @@ export function createServer(options?: ServerOptions) {
           };
         }
         
-        const apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+        const _apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
         
         // Execute the tool using the modular function
         return executeAnalyticsTool(tool.name, params, apiClient);

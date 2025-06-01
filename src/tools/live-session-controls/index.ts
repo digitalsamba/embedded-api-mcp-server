@@ -106,7 +106,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
 export async function executeLiveSessionTool(
   toolName: string,
   params: any,
-  apiClient: DigitalSambaApiClient
+  _apiClient: DigitalSambaApiClient
 ): Promise<any> {
   switch (toolName) {
     case 'start-transcription':
@@ -127,7 +127,7 @@ export async function executeLiveSessionTool(
  */
 async function handleStartTranscription(
   params: { roomId: string },
-  apiClient: DigitalSambaApiClient
+  _apiClient: DigitalSambaApiClient
 ): Promise<any> {
   const { roomId } = params;
   

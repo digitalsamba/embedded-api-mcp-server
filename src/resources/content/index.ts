@@ -19,7 +19,7 @@
  */
 
 // External dependencies
-import { z } from 'zod';
+// import { z } from 'zod'; // Removed: unused
 
 // MCP SDK imports
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -32,10 +32,6 @@ import {
 // Local modules
 import { 
   DigitalSambaApiClient, 
-  Library, 
-  LibraryFolder,
-  LibraryFile,
-  ApiResponse 
 } from '../../digital-samba-api.js';
 import logger from '../../logger.js';
 
