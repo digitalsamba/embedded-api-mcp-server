@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "digital-samba": {
+      "command": "npx",
+      "args": ["@digitalsamba/mcp-server", "--api-key", "YOUR_API_KEY"],
+      "env": {}
+    }
+  }
+}
