@@ -20,7 +20,7 @@ import express, { Request, Response } from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 // Local modules
-import { getApiKeyFromRequest } from '../auth.js';
+// import { getApiKeyFromRequest } from '../auth.js'; // Removed: unused
 import { DigitalSambaApiClient } from '../digital-samba-api.js';
 import {
   ApiRequestError,

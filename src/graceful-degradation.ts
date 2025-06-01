@@ -24,7 +24,7 @@ import { EventEmitter } from 'events';
 // Local modules
 import { MemoryCache } from './cache.js';
 import logger from './logger.js';
-import { ApiRequestError, DegradedServiceError } from './errors.js';
+import { DegradedServiceError } from './errors.js';
 import circuitBreakerRegistry, { CircuitBreaker, CircuitState } from './circuit-breaker.js';
 
 /**
@@ -792,7 +792,7 @@ export class GracefulDegradation extends EventEmitter {
       
       // Check if component has a fallback
       const hasFallback = Array.from(this.fallbacks.entries())
-        .some(([opName, config]) => opName === componentName);
+        .some(([opName, _config]) => opName === componentName);
       
       // Get the fallback config if it exists
       const fallbackConfig = Array.from(this.fallbacks.entries())

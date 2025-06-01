@@ -10,7 +10,7 @@ const isMcpJsonRpcMode = process.env.MCP_JSON_RPC_MODE === 'true';
 // as it would interfere with the JSON-RPC protocol
 if (isMcpJsonRpcMode) {
   // In MCP mode, redirect all stdout console outputs to stderr
-  const originalConsole = {
+  const _originalConsole = {
     log: console.log,
     info: console.info,
     warn: console.warn
@@ -36,7 +36,7 @@ loadEnv();
 
 // External dependencies
 import express from 'express';
-import { z } from 'zod';
+// import { z } from 'zod'; // Removed: unused
 
 // MCP SDK imports
 import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';

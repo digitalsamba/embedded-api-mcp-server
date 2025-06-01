@@ -29,7 +29,7 @@ export class DigitalSambaError extends Error {
    * @param {Object} [options] - Additional error options
    * @param {Error} [options.cause] - The error that caused this error
    */
-  constructor(message: string, options?: { cause?: Error }) {
+  constructor(message: string, _options?: { cause?: Error }) {
     super(message);
     this.name = 'DigitalSambaError';
   }
@@ -53,7 +53,7 @@ export class AuthenticationError extends DigitalSambaError {
    * @param {Object} [options] - Additional error options
    * @param {Error} [options.cause] - The error that caused this error
    */
-  constructor(message: string, options?: { cause?: Error }) {
+  constructor(message: string, _options?: { cause?: Error }) {
     super(message);
     this.name = 'AuthenticationError';
   }
@@ -78,7 +78,7 @@ export class ApiRequestError extends DigitalSambaError {
    * @param {Object} [options] - Additional error options
    * @param {Error} [options.cause] - The error that caused this error
    */
-  constructor(message: string, options?: { cause?: Error }) {
+  constructor(message: string, _options?: { cause?: Error }) {
     super(message);
     this.name = 'ApiRequestError';
   }
@@ -225,7 +225,7 @@ export class NotImplementedError extends DigitalSambaError {
    * @param {Object} [options] - Additional error options
    * @param {Error} [options.cause] - The error that caused this error
    */
-  constructor(message: string, options?: { cause?: Error }) {
+  constructor(message: string, _options?: { cause?: Error }) {
     super(message);
     this.name = 'NotImplementedError';
   }
@@ -249,7 +249,7 @@ export class ConfigurationError extends DigitalSambaError {
    * @param {Object} [options] - Additional error options
    * @param {Error} [options.cause] - The error that caused this error
    */
-  constructor(message: string, options?: { cause?: Error }) {
+  constructor(message: string, _options?: { cause?: Error }) {
     super(message);
     this.name = 'ConfigurationError';
   }

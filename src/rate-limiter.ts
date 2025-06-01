@@ -268,7 +268,7 @@ export class RedisRateLimiter {
   // Redis implementation would go here
   // This is a placeholder class to show the interface
   
-  constructor(options: Partial<RateLimiterOptions> = {}) {
+  constructor(_options: Partial<RateLimiterOptions> = {}) {
     // Initialize with Redis client
     logger.info('Redis rate limiter initialized');
     
