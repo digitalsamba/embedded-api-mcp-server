@@ -37,7 +37,7 @@ npx @digitalsamba/mcp-server
 digitalsamba-mcp --api-key YOUR_API_KEY
 ```
 
-The server will start on `http://localhost:3000` by default.
+The server will start on `http://localhost:4521` by default.
 
 ### 3. Connect to Claude Desktop
 
@@ -45,7 +45,7 @@ The server will start on `http://localhost:3000` by default.
 2. Navigate to MCP Servers
 3. Add a new server:
    - Name: `Digital Samba`
-   - URL: `http://localhost:3000/mcp`
+   - URL: `http://localhost:4521/mcp`
    - Header: `Authorization: Bearer YOUR_API_KEY`
 
 ## Usage Examples
@@ -87,7 +87,7 @@ Once connected, you can ask Claude to perform various tasks:
 digitalsamba-mcp [options]
 
 Options:
-  -p, --port <port>                 Server port (default: 3000)
+  -p, --port <port>                 Server port (default: 4521)
   -k, --api-key <key>               Digital Samba API key (required)
   -u, --api-url <url>               API base URL
   --enable-cache                    Enable response caching
@@ -169,7 +169,7 @@ The following features are planned for future releases:
 
 ```bash
 DIGITAL_SAMBA_API_KEY=your_api_key
-PORT=3000
+PORT=4521
 ENABLE_CACHE=true
 ENABLE_RATE_LIMITING=true
 CACHE_TTL=300000
