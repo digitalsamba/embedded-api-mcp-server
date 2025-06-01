@@ -903,7 +903,7 @@ export class GracefulDegradation extends EventEmitter {
   ): Promise<void> {
     try {
       // Skip metrics updates in test environment or if Jest is tearing down
-      if (process.env.NODE_ENV === 'test' || typeof jest !== 'undefined') {
+      if (process.env.NODE_ENV === 'test' || (typeof globalThis !== 'undefined' && (globalThis as any).jest)) {
         return;
       }
       
