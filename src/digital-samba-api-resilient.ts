@@ -16,22 +16,17 @@
  * @version 0.1.0
  */
 
-// Node.js modules
-import { EventEmitter } from 'events';
-
 // Local modules
 import { 
   DigitalSambaApiClient, 
   ApiResponse, 
-  PaginationParams, 
-  DateRangeParams,
+  PaginationParams,
   Room,
   RoomCreateSettings,
   TokenResponse,
 } from './digital-samba-api.js';
 import { CircuitBreakerApiClient } from './digital-samba-api-circuit-breaker.js';
 import { MemoryCache } from './cache.js';
-import { ApiRequestError, ApiResponseError, DegradedServiceError } from './errors.js';
 import logger from './logger.js';
 import { gracefulDegradation, FallbackConfig, ServiceHealthStatus } from './graceful-degradation.js';
 
@@ -126,7 +121,7 @@ export interface ResilientApiClientOptions {
     /**
      * Add other operation fallbacks as needed
      */
-    [key: string]: FallbackConfig<any> | undefined;
+    [key: string]: FallbackConfig<unknown> | undefined;
   };
   
   /**
@@ -191,7 +186,7 @@ export class ResilientApiClient {
    * @private
    * @param fallbacks Fallback configurations
    */
-  private registerFallbacks(fallbacks: Record<string, FallbackConfig<any> | undefined>): void {
+  private registerFallbacks(fallbacks: Record<string, FallbackConfig<unknown> | undefined>): void {
     // Register standard fallbacks
     
     // Fallback for listRooms
@@ -330,7 +325,7 @@ export class ResilientApiClient {
    * @param options Token options
    * @returns Token response
    */
-  async generateRoomToken(roomId: string, options: any): Promise<TokenResponse> {
+  async generateRoomToken(roomId: string, options: unknown): Promise<TokenResponse> {
     const result = await gracefulDegradation.executeWithFallback(
       'generateRoomToken',
       () => this.circuitBreakerClient.generateRoomToken(roomId, options),
