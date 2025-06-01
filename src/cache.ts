@@ -43,10 +43,10 @@ export interface CacheOptions {
   keyGenerator?: (namespace: string, id: string) => string;
   
   /** Custom serialization function */
-  serializer?: (value: any) => string;
+  serializer?: (value: unknown) => string;
   
   /** Custom deserialization function */
-  deserializer?: (value: string) => any;
+  deserializer?: (value: string) => unknown;
 }
 
 /**
@@ -81,7 +81,7 @@ export const defaultCacheOptions: CacheOptions = {
 /**
  * Memory-based cache implementation
  */
-export class MemoryCache<T = any> {
+export class MemoryCache<T = unknown> {
   private cache: Map<string, CacheEntry<T>>;
   private options: CacheOptions;
 
@@ -107,7 +107,7 @@ export class MemoryCache<T = any> {
    * @param value Value to generate ETag for
    * @returns ETag string
    */
-  private generateEtag(value: any): string {
+  private generateEtag(value: unknown): string {
     const serialized = typeof value === 'string' 
       ? value 
       : this.options.serializer!(value);
@@ -366,8 +366,8 @@ export class MemoryCache<T = any> {
  * Note: This is a placeholder for the Redis implementation.
  * The actual implementation would use a Redis client library.
  */
-export class RedisCache<T = any> {
-  constructor(options: Partial<CacheOptions> = {}) {
+export class RedisCache {
+  constructor(_options: Partial<CacheOptions> = {}) {
     // Initialize with Redis client
     logger.info('Redis cache initialized');
     
@@ -388,8 +388,8 @@ export function createCacheMiddleware(options: Partial<CacheOptions> = {}) {
   
   return {
     cache,
-    middleware: (namespace: string) => {
-      return (req: any, res: any, next: any) => {
+    middleware: (_namespace: string) => {
+      return (_req: unknown, _res: unknown, next: () => void) => {
         // Middleware implementation
         next();
       };
