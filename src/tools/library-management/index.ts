@@ -32,7 +32,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 
 // Local modules
-import { getApiKeyFromRequest } from '../../auth.js';
+// import { getApiKeyFromRequest } from '../../auth.js'; // Removed: unused
 import { DigitalSambaApiClient } from '../../digital-samba-api.js';
 import logger from '../../logger.js';
 

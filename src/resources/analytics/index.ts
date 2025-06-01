@@ -20,7 +20,7 @@ import logger from '../../logger.js';
  * @returns Array of MCP Resource definitions
  */
 export function registerAnalyticsResources(apiClient: DigitalSambaApiClient): Resource[] {
-  const analytics = new AnalyticsResource(apiClient);
+  const _analytics = new AnalyticsResource(apiClient);
   
   return [
     {
@@ -58,7 +58,7 @@ export function registerAnalyticsResources(apiClient: DigitalSambaApiClient): Re
  * @returns The resource content
  */
 export async function handleAnalyticsResource(uri: string, apiClient: DigitalSambaApiClient): Promise<any> {
-  const analytics = new AnalyticsResource(apiClient);
+  const _analytics = new AnalyticsResource(apiClient);
   
   // Parse the URI to determine which resource is being requested
   const uriParts = uri.split('/');

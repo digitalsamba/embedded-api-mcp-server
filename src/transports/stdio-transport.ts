@@ -103,7 +103,7 @@ export async function runStdioServer(options: StdioTransportOptions): Promise<vo
  * console output must be redirected to stderr to avoid protocol conflicts.
  */
 function setupConsoleRedirection(): void {
-  const originalConsole = {
+  const _originalConsole = {
     log: console.log,
     info: console.info,
     warn: console.warn,

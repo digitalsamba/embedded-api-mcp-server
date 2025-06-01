@@ -22,9 +22,7 @@ import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mc
 import { getApiKeyFromRequest } from '../../auth.js';
 import { DigitalSambaApiClient } from '../../digital-samba-api.js';
 import { 
-  ApiResponseError,
   AuthenticationError,
-  ResourceNotFoundError, 
   ValidationError
 } from '../../errors.js';
 import logger from '../../logger.js';

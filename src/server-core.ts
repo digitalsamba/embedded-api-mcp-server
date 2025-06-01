@@ -30,7 +30,7 @@ export interface ServerCoreConfig {
   /** Base URL for Digital Samba API */
   apiUrl?: string;
   /** Cache instance to use */
-  cache?: MemoryCache;
+  _cache?: MemoryCache;
   /** Whether to enable webhook functionality */
   enableWebhooks?: boolean;
   /** Webhook secret for verification */
@@ -99,9 +99,9 @@ export function createServerCore(config: ServerCoreConfig): McpServer {
  * Set up core resources that are available in both HTTP and STDIO modes
  */
 function setupCoreResources(
-  server: McpServer, 
+  _server: McpServer, 
   apiKey: string | undefined, 
-  apiUrl: string, 
+  _apiUrl: string, 
   cache?: MemoryCache
 ): void {
   // Import the resource setup from the main index file
