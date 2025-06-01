@@ -16,6 +16,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { getApiKeyFromRequest } from '../../auth.js';
 import { DigitalSambaApiClient } from '../../digital-samba-api.js';
 import {
+  AuthenticationError,
+  ApiResponseError,
   ResourceNotFoundError,
   ValidationError
 } from '../../errors.js';

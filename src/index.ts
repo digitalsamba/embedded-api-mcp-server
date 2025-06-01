@@ -188,7 +188,7 @@ export function createServer(options?: ServerOptions) {
       async (uri, _params, _request) => {
         logger.info(`Handling analytics resource: ${resource.name}`);
         
-        const apiKey = getApiKeyFromRequest(request);
+        const apiKey = getApiKeyFromRequest(_request);
         if (!apiKey) {
           throw new Error('No API key found. Please include an Authorization header with a Bearer token.');
         }
@@ -250,8 +250,8 @@ export function createServer(options?: ServerOptions) {
           // Use the modular handler with all the configuration options
           const result = await handleRoomResource(
             uri.href,
-            params,
-            request,
+            _params,
+            _request,
             {
               apiUrl: API_URL,
               apiKey: options?.apiKey,
@@ -428,7 +428,7 @@ export function createServer(options?: ServerOptions) {
           };
         }
         
-        const _apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+        const apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
         
         // Execute the tool using the modular function
         return executeAnalyticsTool(tool.name, params, apiClient);

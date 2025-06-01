@@ -54,7 +54,7 @@ export function createServerCore(config: ServerCoreConfig): McpServer {
   const {
     apiKey,
     apiUrl = 'https://api.digitalsamba.com/api/v1',
-    cache,
+    _cache,
     enableWebhooks = false,
     webhookSecret,
     webhookEndpoint = '/webhooks/digitalsamba',
@@ -64,7 +64,7 @@ export function createServerCore(config: ServerCoreConfig): McpServer {
   logger.info('Creating server core', {
     apiUrl,
     hasApiKey: !!apiKey,
-    hasCache: !!cache,
+    hasCache: !!_cache,
     enableWebhooks
   });
 
@@ -75,8 +75,8 @@ export function createServerCore(config: ServerCoreConfig): McpServer {
   });
 
   // Set up core functionality that applies to all transport types
-  setupCoreResources(server, apiKey, apiUrl, cache);
-  setupCoreTools(server, apiKey, apiUrl, cache);
+  setupCoreResources(server, apiKey, apiUrl, _cache);
+  setupCoreTools(server, apiKey, apiUrl, _cache);
   
   // Set up recording functionality (v1.0 scope - no live recording controls)
   setupRecordingFunctionality(server, apiUrl);
