@@ -8,7 +8,7 @@
  */
 
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
+// import { z } from 'zod'; // Removed: unused
 import { DigitalSambaApiClient } from '../../digital-samba-api.js';
 import { EnhancedDigitalSambaApiClient } from '../../digital-samba-api-enhanced.js';
 import { getApiKeyFromRequest } from '../../auth.js';

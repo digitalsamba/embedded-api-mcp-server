@@ -103,7 +103,7 @@ export function setupWebhookManagementTools(
           error: error instanceof Error ? error.message : String(error) 
         });
         
-        let errorResponse: { text: string, isError: boolean } = {
+        const errorResponse: { text: string, isError: boolean } = {
           text: `Error registering webhook: ${error instanceof Error ? error.message : String(error)}`,
           isError: true
         };
@@ -197,7 +197,7 @@ export function setupWebhookManagementTools(
           error: error instanceof Error ? error.message : String(error) 
         });
         
-        let errorResponse: { text: string, isError: boolean } = {
+        const errorResponse: { text: string, isError: boolean } = {
           text: `Error deleting webhook: ${error instanceof Error ? error.message : String(error)}`,
           isError: true
         };
@@ -288,7 +288,7 @@ export function setupWebhookManagementTools(
           error: error instanceof Error ? error.message : String(error) 
         });
         
-        let errorResponse: { text: string, isError: boolean } = {
+        const errorResponse: { text: string, isError: boolean } = {
           text: `Error listing webhooks: ${error instanceof Error ? error.message : String(error)}`,
           isError: true
         };
@@ -373,7 +373,7 @@ export function setupWebhookManagementTools(
           error: error instanceof Error ? error.message : String(error) 
         });
         
-        let errorResponse: { text: string, isError: boolean } = {
+        const errorResponse: { text: string, isError: boolean } = {
           text: `Error listing webhook events: ${error instanceof Error ? error.message : String(error)}`,
           isError: true
         };

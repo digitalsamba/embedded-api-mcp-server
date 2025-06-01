@@ -687,9 +687,9 @@ export class DigitalSambaApiClient {
         } else if (response.status === 404) {
           // Not Found error
           // Try to extract resource type and ID from the endpoint
-          const matches = endpoint.match(/\/([^\/]+)\/([^\/]+)/);
-          const resourceType = matches ? matches[1] : 'resource';
-          const resourceId = matches ? matches[2] : 'unknown';
+          const matches = endpoint.match(/\/([^/]+)\/([^/]+)/);
+          const _resourceType = matches ? matches[1] : 'resource';
+          const _resourceId = matches ? matches[2] : 'unknown';
           
           // For backwards compatibility with tests, throw a generic API error
           throw new ApiResponseError(

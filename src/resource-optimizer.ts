@@ -497,7 +497,7 @@ export class ResourceOptimizer extends EventEmitter {
       
       // Next page
       page++;
-    } while (true);
+    } while (page < 1000); // Safety limit to prevent infinite loops
     
     // Emit completion event
     this.emit('incremental:complete', {
