@@ -62,15 +62,19 @@ export function registerAnalyticsResources(apiClient: DigitalSambaApiClient): Re
 export async function handleAnalyticsResource(uri: string, apiClient: DigitalSambaApiClient): Promise<any> {
   const _analytics = new AnalyticsResource(apiClient);
   
-  // Parse the URI to determine which resource is being requested
+  // Parse the URI - handle digitalsamba:// protocol
+  // For digitalsamba://analytics/team, the URL parser treats 'analytics' as hostname
   const url = new URL(uri);
-  const pathParts = url.pathname.split('/').filter(Boolean);
   
-  if (pathParts[0] !== 'analytics' || pathParts.length < 2) {
+  // Extract path from the URI properly
+  // For digitalsamba://analytics/team, url.hostname = 'analytics' and url.pathname = '/team'
+  const pathParts = [url.hostname, ...url.pathname.split('/').filter(Boolean)];
+  
+  if (pathParts[0] !== 'analytics') {
     throw new Error(`Invalid analytics resource URI: ${uri}`);
   }
   
-  const resourceType = pathParts[1];
+  const resourceType = pathParts[1] || 'team'; // Default to team if no subpath
   
   switch (resourceType) {
     case 'team':
