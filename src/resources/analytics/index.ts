@@ -48,6 +48,30 @@ export function registerAnalyticsResources(apiClient: DigitalSambaApiClient): Re
       name: 'analytics-team',
       description: 'Get team-wide statistics and metrics',
       mimeType: 'application/json'
+    },
+    {
+      uri: 'digitalsamba://analytics/live',
+      name: 'analytics-live',
+      description: 'Get live session analytics for all rooms',
+      mimeType: 'application/json'
+    },
+    {
+      uri: 'digitalsamba://analytics/live/{roomId}',
+      name: 'analytics-live-room',
+      description: 'Get live session analytics for a specific room',
+      mimeType: 'application/json'
+    },
+    {
+      uri: 'digitalsamba://analytics/sessions/{sessionId}',
+      name: 'analytics-session',
+      description: 'Get analytics for a specific session',
+      mimeType: 'application/json'
+    },
+    {
+      uri: 'digitalsamba://analytics/participants/{participantId}',
+      name: 'analytics-participant',
+      description: 'Get analytics for a specific participant',
+      mimeType: 'application/json'
     }
   ];
 }
@@ -113,6 +137,50 @@ export async function handleAnalyticsResource(uri: string, apiClient: DigitalSam
         contents: [{
           type: 'application/json',
           text: JSON.stringify(sessionData, null, 2)
+        }]
+      };
+      
+    case 'participants':
+      // Check if specific participant ID is provided
+      const participantId = pathParts[2];
+      if (participantId) {
+        logger.info(`Fetching analytics for participant ${participantId}`);
+      } else {
+        logger.info('Fetching all participants analytics');
+      }
+      const participantData = await _analytics.getParticipantAnalytics(participantId);
+      return {
+        contents: [{
+          type: 'application/json',
+          text: JSON.stringify(participantData, null, 2)
+        }]
+      };
+      
+    case 'usage':
+      logger.info('Fetching usage analytics');
+      const usageFilters = Object.fromEntries(url.searchParams);
+      const usageData = await _analytics.getUsageAnalytics(usageFilters);
+      return {
+        contents: [{
+          type: 'application/json',
+          text: JSON.stringify(usageData, null, 2)
+        }]
+      };
+      
+    case 'live':
+      // Handle live analytics for rooms
+      const liveRoomId = pathParts[2];
+      const includeParticipants = url.searchParams.get('includeParticipants') === 'true';
+      if (liveRoomId) {
+        logger.info(`Fetching live analytics for room ${liveRoomId}`);
+      } else {
+        logger.info('Fetching live analytics for all rooms');
+      }
+      const liveData = await _analytics.getLiveAnalytics(liveRoomId, includeParticipants);
+      return {
+        contents: [{
+          type: 'application/json',
+          text: JSON.stringify(liveData, null, 2)
         }]
       };
       

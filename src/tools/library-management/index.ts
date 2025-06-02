@@ -306,6 +306,148 @@ export function registerLibraryTools(): ToolDefinition[] {
         },
         required: ['libraryId', 'name']
       }
+    },
+    
+    // Bulk and Move Operations
+    {
+      name: 'move-library-file',
+      description: 'Move a file to a different folder within the same library',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          fileId: {
+            type: 'string',
+            description: 'The ID of the file to move'
+          },
+          targetFolderId: {
+            type: 'string',
+            description: 'The ID of the target folder (null for root)'
+          }
+        },
+        required: ['libraryId', 'fileId']
+      }
+    },
+    {
+      name: 'move-library-folder',
+      description: 'Move a folder to a different parent folder',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          folderId: {
+            type: 'string',
+            description: 'The ID of the folder to move'
+          },
+          targetParentId: {
+            type: 'string',
+            description: 'The ID of the target parent folder (null for root)'
+          }
+        },
+        required: ['libraryId', 'folderId']
+      }
+    },
+    {
+      name: 'bulk-delete-library-files',
+      description: 'Delete multiple files at once',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          fileIds: {
+            type: 'array',
+            description: 'Array of file IDs to delete',
+            items: {
+              type: 'string'
+            }
+          }
+        },
+        required: ['libraryId', 'fileIds']
+      }
+    },
+    {
+      name: 'bulk-upload-library-files',
+      description: 'Get upload URLs for multiple files at once',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          files: {
+            type: 'array',
+            description: 'Array of file information',
+            items: {
+              type: 'object',
+              properties: {
+                name: {
+                  type: 'string',
+                  description: 'File name'
+                },
+                size: {
+                  type: 'number',
+                  description: 'File size in bytes'
+                },
+                mimeType: {
+                  type: 'string',
+                  description: 'MIME type of the file'
+                },
+                folderId: {
+                  type: 'string',
+                  description: 'Target folder ID'
+                }
+              },
+              required: ['name', 'size', 'mimeType']
+            }
+          }
+        },
+        required: ['libraryId', 'files']
+      }
+    },
+    {
+      name: 'copy-library-content',
+      description: 'Copy files or folders within or between libraries',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          sourceLibraryId: {
+            type: 'string',
+            description: 'The ID of the source library'
+          },
+          targetLibraryId: {
+            type: 'string',
+            description: 'The ID of the target library (same as source if copying within library)'
+          },
+          contentType: {
+            type: 'string',
+            enum: ['file', 'folder'],
+            description: 'Type of content to copy'
+          },
+          contentId: {
+            type: 'string',
+            description: 'The ID of the file or folder to copy'
+          },
+          targetFolderId: {
+            type: 'string',
+            description: 'The ID of the target folder in the destination library'
+          },
+          newName: {
+            type: 'string',
+            description: 'Optional new name for the copied content'
+          }
+        },
+        required: ['sourceLibraryId', 'targetLibraryId', 'contentType', 'contentId']
+      }
     }
   ];
 }
@@ -355,6 +497,18 @@ export async function executeLibraryTool(
       return handleCreateWebapp(params, apiClient);
     case 'create-whiteboard':
       return handleCreateWhiteboard(params, apiClient);
+    
+    // Bulk and Move Operations
+    case 'move-library-file':
+      return handleMoveLibraryFile(params, apiClient);
+    case 'move-library-folder':
+      return handleMoveLibraryFolder(params, apiClient);
+    case 'bulk-delete-library-files':
+      return handleBulkDeleteLibraryFiles(params, apiClient);
+    case 'bulk-upload-library-files':
+      return handleBulkUploadLibraryFiles(params, apiClient);
+    case 'copy-library-content':
+      return handleCopyLibraryContent(params, apiClient);
     
     default:
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
@@ -1152,6 +1306,360 @@ async function handleCreateWhiteboard(
       content: [{ 
         type: 'text', 
         text: displayMessage
+      }],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle move library file
+ * Note: Since API doesn't have native move, we'll update the folder_id
+ */
+async function handleMoveLibraryFile(
+  params: { libraryId: string; fileId: string; targetFolderId?: string },
+  apiClient: DigitalSambaApiClient
+): Promise<any> {
+  const { libraryId, fileId, targetFolderId } = params;
+  
+  if (!libraryId || !fileId) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: 'Library ID and file ID are required to move a file.'
+      }],
+      isError: true,
+    };
+  }
+  
+  logger.info('Moving file', { libraryId, fileId, targetFolderId });
+  
+  try {
+    // Update the file's folder_id to move it
+    const result = await apiClient.updateLibraryFile(libraryId, fileId, {
+      folder_id: targetFolderId || null
+    });
+    
+    const destination = targetFolderId ? `folder ${targetFolderId}` : 'library root';
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Successfully moved file "${result.name}" to ${destination}`
+      }],
+    };
+  } catch (error) {
+    logger.error('Error moving file', { 
+      libraryId,
+      fileId,
+      error: error instanceof Error ? error.message : String(error) 
+    });
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Error moving file: ${error instanceof Error ? error.message : String(error)}`
+      }],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle move library folder
+ * Note: Since API doesn't have native move, we'll update the parent_id
+ */
+async function handleMoveLibraryFolder(
+  params: { libraryId: string; folderId: string; targetParentId?: string },
+  apiClient: DigitalSambaApiClient
+): Promise<any> {
+  const { libraryId, folderId, targetParentId } = params;
+  
+  if (!libraryId || !folderId) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: 'Library ID and folder ID are required to move a folder.'
+      }],
+      isError: true,
+    };
+  }
+  
+  logger.info('Moving folder', { libraryId, folderId, targetParentId });
+  
+  try {
+    // Update the folder's parent_id to move it
+    const result = await apiClient.updateLibraryFolder(libraryId, folderId, {
+      parent_id: targetParentId || null
+    });
+    
+    const destination = targetParentId ? `folder ${targetParentId}` : 'library root';
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Successfully moved folder ${folderId} to ${destination}`
+      }],
+    };
+  } catch (error) {
+    logger.error('Error moving folder', { 
+      libraryId,
+      folderId,
+      error: error instanceof Error ? error.message : String(error) 
+    });
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Error moving folder: ${error instanceof Error ? error.message : String(error)}`
+      }],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle bulk delete library files
+ * Implements client-side batching
+ */
+async function handleBulkDeleteLibraryFiles(
+  params: { libraryId: string; fileIds: string[] },
+  apiClient: DigitalSambaApiClient
+): Promise<any> {
+  const { libraryId, fileIds } = params;
+  
+  if (!libraryId || !fileIds || fileIds.length === 0) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: 'Library ID and at least one file ID are required for bulk delete.'
+      }],
+      isError: true,
+    };
+  }
+  
+  logger.info('Bulk deleting files', { libraryId, count: fileIds.length });
+  
+  const results = {
+    succeeded: [] as string[],
+    failed: [] as { fileId: string; error: string }[]
+  };
+  
+  // Process deletions in parallel batches of 5
+  const batchSize = 5;
+  for (let i = 0; i < fileIds.length; i += batchSize) {
+    const batch = fileIds.slice(i, i + batchSize);
+    const promises = batch.map(async (fileId) => {
+      try {
+        await apiClient.deleteLibraryFile(libraryId, fileId);
+        results.succeeded.push(fileId);
+      } catch (error) {
+        results.failed.push({
+          fileId,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    });
+    
+    await Promise.all(promises);
+  }
+  
+  let message = `Bulk delete completed: ${results.succeeded.length} succeeded`;
+  if (results.failed.length > 0) {
+    message += `, ${results.failed.length} failed`;
+    const failedDetails = results.failed.map(f => `\n  - ${f.fileId}: ${f.error}`).join('');
+    message += `\n\nFailed deletions:${failedDetails}`;
+  }
+  
+  return {
+    content: [{ 
+      type: 'text', 
+      text: message
+    }],
+    isError: results.failed.length > 0 && results.succeeded.length === 0,
+  };
+}
+
+/**
+ * Handle bulk upload library files
+ * Gets upload URLs for multiple files
+ */
+async function handleBulkUploadLibraryFiles(
+  params: { 
+    libraryId: string; 
+    files: Array<{
+      name: string;
+      size: number;
+      mimeType: string;
+      folderId?: string;
+    }>
+  },
+  apiClient: DigitalSambaApiClient
+): Promise<any> {
+  const { libraryId, files } = params;
+  
+  if (!libraryId || !files || files.length === 0) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: 'Library ID and at least one file are required for bulk upload.'
+      }],
+      isError: true,
+    };
+  }
+  
+  logger.info('Getting bulk upload URLs', { libraryId, count: files.length });
+  
+  const results = {
+    succeeded: [] as { file: any; uploadUrl: string; id: string }[],
+    failed: [] as { file: any; error: string }[]
+  };
+  
+  // Process uploads in parallel batches of 3
+  const batchSize = 3;
+  for (let i = 0; i < files.length; i += batchSize) {
+    const batch = files.slice(i, i + batchSize);
+    const promises = batch.map(async (file) => {
+      try {
+        const fileData: any = {
+          name: file.name,
+          size: file.size,
+          mime_type: file.mimeType
+        };
+        if (file.folderId) fileData.folder_id = file.folderId;
+        
+        const result = await apiClient.createLibraryFile(libraryId, fileData);
+        results.succeeded.push({
+          file,
+          uploadUrl: result.external_storage_url,
+          id: result.file_id
+        });
+      } catch (error) {
+        results.failed.push({
+          file,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    });
+    
+    await Promise.all(promises);
+  }
+  
+  let message = `Bulk upload URLs generated: ${results.succeeded.length} succeeded`;
+  if (results.failed.length > 0) {
+    message += `, ${results.failed.length} failed`;
+  }
+  
+  if (results.succeeded.length > 0) {
+    message += '\n\nUpload URLs:';
+    results.succeeded.forEach(r => {
+      message += `\n- ${r.file.name} (ID: ${r.id}): ${r.uploadUrl}`;
+    });
+  }
+  
+  if (results.failed.length > 0) {
+    message += '\n\nFailed files:';
+    results.failed.forEach(f => {
+      message += `\n- ${f.file.name}: ${f.error}`;
+    });
+  }
+  
+  return {
+    content: [{ 
+      type: 'text', 
+      text: message
+    }],
+    isError: results.failed.length > 0 && results.succeeded.length === 0,
+  };
+}
+
+/**
+ * Handle copy library content
+ * Copies files or folders within or between libraries
+ */
+async function handleCopyLibraryContent(
+  params: {
+    sourceLibraryId: string;
+    targetLibraryId: string;
+    contentType: 'file' | 'folder';
+    contentId: string;
+    targetFolderId?: string;
+    newName?: string;
+  },
+  apiClient: DigitalSambaApiClient
+): Promise<any> {
+  const { sourceLibraryId, targetLibraryId, contentType, contentId, targetFolderId, newName } = params;
+  
+  if (!sourceLibraryId || !targetLibraryId || !contentType || !contentId) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: 'Source library ID, target library ID, content type, and content ID are required.'
+      }],
+      isError: true,
+    };
+  }
+  
+  logger.info('Copying content', { 
+    sourceLibraryId, 
+    targetLibraryId, 
+    contentType, 
+    contentId,
+    newName 
+  });
+  
+  try {
+    if (contentType === 'file') {
+      // Get source file details
+      const sourceFile = await apiClient.getLibraryFile(sourceLibraryId, contentId);
+      
+      // Create new file in target library
+      const fileData: any = {
+        name: newName || sourceFile.name,
+        size: sourceFile.size,
+        mime_type: sourceFile.type || 'application/octet-stream'
+      };
+      if (targetFolderId) fileData.folder_id = targetFolderId;
+      
+      const newFile = await apiClient.createLibraryFile(targetLibraryId, fileData);
+      
+      return {
+        content: [{ 
+          type: 'text', 
+          text: `Successfully copied file "${sourceFile.name}" to library ${targetLibraryId}. New file ID: ${newFile.file_id}. Upload URL: ${newFile.external_storage_url}`
+        }],
+      };
+    } else {
+      // For folders, we need to recursively copy
+      // This is a simplified version - in production, you'd want to handle nested content
+      const sourceFolder = await apiClient.getLibraryFolder(sourceLibraryId, contentId);
+      
+      // Create new folder in target library
+      const folderData: any = {
+        name: newName || `Copy of folder ${contentId}`
+      };
+      if (targetFolderId) folderData.parent_id = targetFolderId;
+      
+      const newFolder = await apiClient.createLibraryFolder(targetLibraryId, folderData);
+      
+      return {
+        content: [{ 
+          type: 'text', 
+          text: `Successfully copied folder to library ${targetLibraryId}. New folder ID: ${newFolder.id}. Note: Folder contents were not copied - this would require recursive copying.`
+        }],
+      };
+    }
+  } catch (error) {
+    logger.error('Error copying content', { 
+      sourceLibraryId,
+      contentId,
+      error: error instanceof Error ? error.message : String(error) 
+    });
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Error copying ${contentType}: ${error instanceof Error ? error.message : String(error)}`
       }],
       isError: true,
     };

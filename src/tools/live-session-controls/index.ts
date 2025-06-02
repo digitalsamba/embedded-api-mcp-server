@@ -198,19 +198,14 @@ async function handleStartTranscription(
   logger.info('Starting transcription', { roomId });
   
   try {
-    // Note: The Digital Samba API might not have direct transcription endpoints yet
-    // This is a placeholder implementation that would need to be updated when the API is available
-    // For now, we'll simulate the expected behavior
+    await _apiClient.startTranscription(roomId);
     
-    // In a real implementation, this would be:
-    // await apiClient.startTranscription(roomId);
-    
-    logger.warn('Transcription API endpoint not yet available in Digital Samba API');
+    logger.info('Transcription started successfully', { roomId });
     
     return {
       content: [{ 
         type: 'text', 
-        text: `Transcription start requested for room ${roomId}. Note: This feature is pending Digital Samba API support.`
+        text: `Successfully started transcription for room ${roomId}.`
       }],
     };
   } catch (error) {
@@ -260,19 +255,14 @@ async function handleStopTranscription(
   logger.info('Stopping transcription', { roomId });
   
   try {
-    // Note: The Digital Samba API might not have direct transcription endpoints yet
-    // This is a placeholder implementation that would need to be updated when the API is available
-    // For now, we'll simulate the expected behavior
+    await _apiClient.stopTranscription(roomId);
     
-    // In a real implementation, this would be:
-    // await apiClient.stopTranscription(roomId);
-    
-    logger.warn('Transcription API endpoint not yet available in Digital Samba API');
+    logger.info('Transcription stopped successfully', { roomId });
     
     return {
       content: [{ 
         type: 'text', 
-        text: `Transcription stop requested for room ${roomId}. Note: This feature is pending Digital Samba API support.`
+        text: `Successfully stopped transcription for room ${roomId}.`
       }],
     };
   } catch (error) {

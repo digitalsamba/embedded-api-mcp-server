@@ -1,6 +1,6 @@
 {
   "name": "@digitalsamba/mcp-server",
-  "version": "1.5.1-beta.2",
+  "version": "2.0.0-beta.1",
   "packageManager": "npm@10.2.0",
   "description": "Digital Samba MCP Server - Model Context Protocol server for Digital Samba's video conferencing API",
   "type": "module",

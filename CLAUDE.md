@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 Digital Samba MCP Server - A lightweight Model Context Protocol server for Digital Samba's video conferencing API.
 
+## API Reference
+
+- Official OpenAPI Specification: https://developer.digitalsamba.com/rest-api/openapi.yaml
+- Note: Some endpoints documented locally may not exist in the official API
+
 ## Development Commands
 
 ### Build & Development

@@ -1244,6 +1244,24 @@ export class DigitalSambaApiClient {
     });
   }
   
+  /**
+   * Start transcription in a room
+   */
+  async startTranscription(roomId: string): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/transcription/start`, {
+      method: 'POST'
+    });
+  }
+  
+  /**
+   * Stop transcription in a room
+   */
+  async stopTranscription(roomId: string): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/transcription/stop`, {
+      method: 'POST'
+    });
+  }
+  
   // Webhooks
   
   /**
