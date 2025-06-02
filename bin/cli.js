@@ -156,7 +156,8 @@ process.env.WEBHOOK_SECRET = args['webhook-secret'];
 process.env.WEBHOOK_ENDPOINT = args['webhook-endpoint'];
 process.env.PUBLIC_URL = args['public-url'] || `http://localhost:${args.port}`;
 
-// If NO_CONSOLE_OUTPUT is set, completely suppress console output
+// If NO_CONSOLE_OUTPUT is set, redirect console to stderr for debugging
+// This allows error messages to still be visible in logs while keeping stdout clean
 if (process.env.NO_CONSOLE_OUTPUT === 'true') {
   // Save original console methods
   const originalConsole = {
@@ -167,12 +168,12 @@ if (process.env.NO_CONSOLE_OUTPUT === 'true') {
     debug: console.debug
   };
   
-  // Replace with no-op functions
-  console.log = () => {};
-  console.error = () => {};
-  console.warn = () => {};
-  console.info = () => {};
-  console.debug = () => {};
+  // Redirect to stderr instead of silencing completely
+  console.log = (...args) => process.stderr.write(`[LOG] ${args.join(' ')}\n`);
+  console.error = (...args) => process.stderr.write(`[ERROR] ${args.join(' ')}\n`);
+  console.warn = (...args) => process.stderr.write(`[WARN] ${args.join(' ')}\n`);
+  console.info = (...args) => process.stderr.write(`[INFO] ${args.join(' ')}\n`);
+  console.debug = (...args) => process.stderr.write(`[DEBUG] ${args.join(' ')}\n`);
 }
 
 // Set API key from options or positional arguments or environment variable
