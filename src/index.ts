@@ -42,6 +42,7 @@ import { registerLiveSessionTools, executeLiveSessionTool } from './tools/live-s
 import { registerCommunicationTools, executeCommunicationTool } from './tools/communication-management/index.js';
 import { registerPollTools, executePollTool } from './tools/poll-management/index.js';
 import { registerLibraryTools, executeLibraryTool } from './tools/library-management/index.js';
+import { registerRoleTools, executeRoleTool } from './tools/role-management/index.js';
 
 // Create MCP server
 const server = new Server({
@@ -134,7 +135,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       ...registerLiveSessionTools(),
       ...registerCommunicationTools(),
       ...registerPollTools(),
-      ...registerLibraryTools()
+      ...registerLibraryTools(),
+      ...registerRoleTools()
     ]
   };
 });
@@ -151,28 +153,52 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   logger.debug(`Executing tool: ${name}`);
   
   try {
-    // Route to appropriate tool handler based on name prefix
-    if (name.startsWith('create-room') || name.startsWith('update-room') || 
-        name.startsWith('delete-room') || name === 'generate-room-token') {
+    // Route to appropriate tool handler based on name
+    // Room management tools
+    if (name === 'create-room' || name === 'update-room' || 
+        name === 'delete-room' || name === 'generate-token') {
       return await executeRoomTool(name, args || {}, request, {
         apiUrl: process.env.DIGITAL_SAMBA_API_URL || 'https://api.digitalsamba.com/api/v1'
       });
-    } else if (name.startsWith('get-') && name.includes('-analytics')) {
+    } 
+    // Analytics tools
+    else if (name === 'get-participant-statistics' || name === 'get-room-analytics' || 
+             name === 'get-usage-statistics') {
       return await executeAnalyticsTool(name, args || {}, client);
-    } else if (name === 'end-session' || name === 'get-session-summary') {
+    } 
+    // Session management tools
+    else if (name === 'end-session' || name === 'get-session-summary' ||
+             name === 'get-all-room-sessions' || name === 'hard-delete-session-resources' ||
+             name === 'bulk-delete-session-data' || name === 'get-session-statistics') {
       return await executeSessionTool(name, args || {}, client, request);
-    } else if (name.includes('recording')) {
+    } 
+    // Recording management tools
+    else if (name.includes('recording') || name === 'get-recordings' || 
+             name === 'archive-recording' || name === 'unarchive-recording') {
       return await executeRecordingTool(name, args || {}, client);
-    } else if (name.includes('participant') || name === 'set-room-lock' || 
-               name === 'update-room-media-settings') {
+    } 
+    // Live session control tools
+    else if (name === 'start-transcription' || name === 'stop-transcription' ||
+             name === 'phone-participants-joined' || name === 'phone-participants-left') {
       return await executeLiveSessionTool(name, args || {}, client);
-    } else if (name.includes('chat') || name.includes('question') || 
-               name.includes('transcript')) {
+    } 
+    // Communication management tools
+    else if (name.includes('-chats') || name.includes('-qa') || 
+             name.includes('-transcripts') || name.includes('-summaries')) {
       return await executeCommunicationTool(name, args || {}, client);
-    } else if (name.includes('poll')) {
+    } 
+    // Poll management tools
+    else if (name.includes('poll')) {
       return await executePollTool(name, args || {}, client);
-    } else if (name.includes('library')) {
+    } 
+    // Library management tools
+    else if (name.includes('library') || name.includes('webapp') || 
+             name.includes('whiteboard') || name === 'get-file-links') {
       return await executeLibraryTool(name, args || {}, client);
+    }
+    // Role management tools
+    else if (name.includes('role') || name === 'get-permissions') {
+      return await executeRoleTool(name, args || {}, client);
     }
     
     throw new McpError(ErrorCode.InvalidRequest, `Unknown tool: ${name}`);

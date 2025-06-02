@@ -16,16 +16,64 @@
 
 ## Overview
 
-The Digital Samba MCP Server is a lightweight Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's video conferencing API.
+The Digital Samba MCP Server is a comprehensive Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's video conferencing API. With support for 95+ endpoints, it provides complete control over rooms, sessions, recordings, analytics, and more.
 
 ## Features
 
-- **Room Management** - Create, update, delete rooms and generate access tokens
-- **Session Control** - End sessions and retrieve session summaries  
-- **Analytics** - Access team, room, and session analytics
-- **Recordings** - List and manage meeting recordings
-- **Live Controls** - Manage participants, chat, polls, and transcripts
-- **Content Library** - Upload and manage documents
+### 🏠 **Room Management**
+- Create, update, and delete rooms
+- Generate secure access tokens
+- Configure room settings and permissions
+- Manage breakout rooms
+
+### 📊 **Analytics & Reporting**
+- Team-wide usage statistics
+- Room and session analytics
+- Participant analytics and tracking
+- Live session monitoring
+- Custom period reporting
+
+### 🎥 **Recording Management**
+- List and manage recordings
+- Start/stop recording sessions
+- Archive and unarchive recordings
+- Download recording links
+- Bulk recording operations
+
+### 👥 **Live Session Controls**
+- End active sessions
+- Manage participants (mute, remove)
+- Start/stop transcription
+- Phone participant integration
+- Real-time session monitoring
+
+### 💬 **Communication Tools**
+- Chat message management
+- Q&A session handling
+- Transcript management
+- AI-generated summaries
+- Poll creation and management
+
+### 📚 **Content Library**
+- Create and manage libraries
+- Upload files and documents
+- Organize with folders
+- Create webapps and whiteboards
+- Bulk file operations
+- Move and copy content
+
+### 🔐 **Role & Permission Management**
+- Create custom roles
+- Manage permissions
+- Assign roles to participants
+- List available permissions
+
+### 📤 **Export Capabilities**
+- Export chat messages
+- Export Q&A sessions
+- Export transcripts
+- Export poll results
+- Session summaries and metadata
 
 ## Installation
 
@@ -67,44 +115,141 @@ Restart Claude Desktop and you can now:
 "Show me analytics for yesterday's meetings"  
 "List all recordings from last week"
 "Generate a join link for john@example.com"
+"Create a poll asking about meeting preferences"
+"Export the chat transcript from today's session"
+"Upload our presentation to the content library"
 ```
 
 ## API Reference
 
-### Resources (Read-Only)
+### Resources (Read-Only) - 29 Available
 
+#### Room Resources
 - `digitalsamba://rooms` - List all rooms
 - `digitalsamba://rooms/{id}` - Get room details
-- `digitalsamba://sessions` - List sessions
-- `digitalsamba://recordings` - List recordings
-- `digitalsamba://analytics/team` - Team analytics
-- `digitalsamba://analytics/rooms` - Room analytics
-- `digitalsamba://analytics/sessions` - Session analytics
 
-### Tools (Actions)
+#### Session Resources
+- `digitalsamba://sessions` - List all sessions
+- `digitalsamba://sessions/{id}` - Get session summary
+- `digitalsamba://sessions/{id}/participants` - List session participants
+- `digitalsamba://sessions/{id}/statistics` - Get session statistics
+- `digitalsamba://rooms/{id}/sessions` - List sessions for a room
+
+#### Recording Resources
+- `digitalsamba://recordings` - List all recordings
+- `digitalsamba://recordings/{id}` - Get recording details
+- `digitalsamba://recordings/archived` - List archived recordings
+- `digitalsamba://rooms/{id}/recordings` - List recordings for a room
+
+#### Analytics Resources
+- `digitalsamba://analytics/team` - Team-wide statistics
+- `digitalsamba://analytics/rooms` - Room analytics
+- `digitalsamba://analytics/sessions/{id}` - Session analytics
+- `digitalsamba://analytics/participants` - Participant analytics
+- `digitalsamba://analytics/participants/{id}` - Specific participant stats
+- `digitalsamba://analytics/usage` - Usage statistics
+- `digitalsamba://analytics/live` - Live session analytics
+- `digitalsamba://analytics/live/{roomId}` - Live analytics for specific room
+
+#### Content Library Resources
+- `digitalsamba://libraries` - List all libraries
+- `digitalsamba://libraries/{id}` - Library details
+- `digitalsamba://libraries/{id}/hierarchy` - Library folder structure
+- `digitalsamba://libraries/{id}/folders` - List folders
+- `digitalsamba://libraries/{id}/folders/{folderId}` - Folder details
+- `digitalsamba://libraries/{id}/files` - List files
+- `digitalsamba://libraries/{id}/files/{fileId}` - File details
+
+#### Export Resources
+- `digitalsamba://exports/communications/{roomId}/chat` - Export chat
+- `digitalsamba://exports/communications/{roomId}/qa` - Export Q&A
+- `digitalsamba://exports/communications/{sessionId}/transcripts` - Export transcripts
+- `digitalsamba://exports/polls/{roomId}` - Export polls
+- `digitalsamba://exports/recordings/{recordingId}` - Export recording metadata
+- `digitalsamba://exports/sessions/{sessionId}/summary` - Export session summary
+- `digitalsamba://exports/sessions/{sessionId}/metadata` - Export session metadata
+
+### Tools (Actions) - 50+ Available
 
 #### Room Management
 - `create-room` - Create a new room
 - `update-room` - Update room settings
 - `delete-room` - Delete a room
-- `generate-room-token` - Generate access token
+- `generate-token` - Generate access token
 
 #### Session Management  
 - `end-session` - End a live session
 - `get-session-summary` - Get session details
+- `get-all-room-sessions` - List all sessions for a room
+- `hard-delete-session-resources` - Permanently delete session data
+- `bulk-delete-session-data` - Delete multiple session data types
+- `get-session-statistics` - Get detailed session statistics
+
+#### Recording Management
+- `start-recording` - Start recording a session
+- `stop-recording` - Stop recording
+- `get-recordings` - List recordings with filters
+- `delete-recording` - Delete a recording
+- `get-recording` - Get recording details
+- `get-recording-download-link` - Get download URL
+- `archive-recording` - Archive a recording
+- `unarchive-recording` - Unarchive a recording
 
 #### Live Session Controls
-- `remove-participant` - Remove a participant
-- `mute-all-participants` - Mute all participants
-- `set-room-lock` - Lock/unlock room
-- `send-chat-message` - Send chat message
-- `create-poll` - Create a poll
-- `manage-transcription` - Control transcription
+- `start-transcription` - Start live transcription
+- `stop-transcription` - Stop transcription
+- `phone-participants-joined` - Register phone participants joining
+- `phone-participants-left` - Register phone participants leaving
 
 #### Analytics Tools
-- `get-team-analytics` - Team usage statistics
-- `get-room-analytics` - Room-specific analytics
-- `get-session-analytics` - Session analytics
+- `get-participant-statistics` - Participant analytics
+- `get-room-analytics` - Room usage analytics
+- `get-usage-statistics` - Overall usage metrics
+
+#### Communication Management
+- `delete-session-chats` - Delete chat messages for a session
+- `delete-room-chats` - Delete all chats for a room
+- `delete-session-qa` - Delete Q&A for a session
+- `delete-room-qa` - Delete all Q&A for a room
+- `delete-session-transcripts` - Delete transcripts
+- `delete-room-transcripts` - Delete all transcripts for a room
+- `delete-session-summaries` - Delete AI summaries
+- `delete-room-summaries` - Delete all summaries for a room
+
+#### Poll Management
+- `create-poll` - Create a new poll
+- `update-poll` - Update poll settings
+- `delete-poll` - Delete a poll
+- `delete-session-polls` - Delete all polls for a session
+- `delete-room-polls` - Delete all polls for a room
+- `publish-poll-results` - Publish results to participants
+
+#### Content Library Management
+- `create-library` - Create content library
+- `update-library` - Update library details
+- `delete-library` - Delete a library
+- `create-library-folder` - Create folder
+- `update-library-folder` - Update folder
+- `delete-library-folder` - Delete folder
+- `create-library-file` - Upload file
+- `update-library-file` - Update file details
+- `delete-library-file` - Delete file
+- `get-file-links` - Get file viewing links
+- `create-webapp` - Create webapp
+- `create-whiteboard` - Create whiteboard
+- `move-library-file` - Move file between folders
+- `move-library-folder` - Move folder
+- `bulk-delete-library-files` - Delete multiple files
+- `bulk-upload-library-files` - Upload multiple files
+- `copy-library-content` - Copy files/folders
+
+#### Role & Permission Management
+- `create-role` - Create custom role
+- `update-role` - Update role settings
+- `delete-role` - Delete a role
+- `get-roles` - List all roles
+- `get-role` - Get role details
+- `get-permissions` - List available permissions
 
 ## Environment Variables
 
@@ -124,7 +269,8 @@ Restart Claude Desktop and you can now:
 const room = await client.createRoom({
   friendly_url: 'executive-meeting',
   description: 'Executive team weekly sync',
-  privacy: 'private'
+  privacy: 'private',
+  max_participants: 10
 });
 ```
 
@@ -138,6 +284,38 @@ const room = await client.createRoom({
 const token = await client.generateRoomToken(roomId, {
   userName: 'Sarah Johnson',
   role: 'moderator'
+});
+```
+
+### Manage Content Library
+
+```javascript
+// Via Claude Desktop
+"Create a library for our training materials and upload the onboarding presentation"
+
+// Direct API usage
+const library = await client.createLibrary({
+  name: 'Training Materials',
+  external_id: 'training-2024'
+});
+
+const file = await client.createLibraryFile(library.id, {
+  name: 'onboarding.pdf',
+  size: 1024000,
+  mime_type: 'application/pdf'
+});
+```
+
+### Analytics and Reporting
+
+```javascript
+// Via Claude Desktop
+"Show me participant statistics for last month's sessions"
+
+// Direct API usage
+const stats = await client.getParticipantStatistics({
+  date_start: '2024-01-01',
+  date_end: '2024-01-31'
 });
 ```
 
@@ -156,6 +334,39 @@ npm run dev -- --api-key YOUR_API_KEY
 
 # Build for production
 npm run build
+
+# Run tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+## Architecture
+
+The server follows a modular architecture:
+
+```
+src/
+├── index.ts              # Main MCP server entry
+├── digital-samba-api.ts  # API client wrapper
+├── resources/            # Read-only MCP resources
+│   ├── rooms/           # Room listings
+│   ├── sessions/        # Session data
+│   ├── analytics/       # Analytics data
+│   ├── recordings/      # Recording listings
+│   ├── content/         # Content libraries
+│   └── exports/         # Export functionality
+└── tools/               # MCP tools (actions)
+    ├── room-management/
+    ├── session-management/
+    ├── recording-management/
+    ├── analytics-tools/
+    ├── live-session-controls/
+    ├── communication-management/
+    ├── poll-management/
+    ├── library-management/
+    └── role-management/
 ```
 
 ## Contributing
