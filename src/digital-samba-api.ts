@@ -672,20 +672,23 @@ export class DigitalSambaApiClient {
         }
         
         // Handle specific error types based on status code
+        // This provides better error context for API consumers
         if (response.status === 400) {
           // Bad Request - typically validation errors
+          // Digital Samba API returns validation errors in the 'errors' field
           const validationErrors = errorData.errors || {};
           throw new ValidationError(
             `Validation error: ${errorData.message || errorText}`,
             { validationErrors: validationErrors }
           );
         } else if (response.status === 401 || response.status === 403) {
-          // Authentication or authorization error
+          // 401: Missing or invalid API key
+          // 403: Valid API key but insufficient permissions
           throw new AuthenticationError(
             `Authentication error: ${errorData.message || errorText}`
           );
         } else if (response.status === 404) {
-          // Not Found error
+          // Not Found error - resource doesn't exist
           // Try to extract resource type and ID from the endpoint for future error enhancement
           const matches = endpoint.match(/\/([^/]+)\/([^/]+)/);
           // Resource type and ID extraction - currently unused but kept for future error details
@@ -831,6 +834,27 @@ export class DigitalSambaApiClient {
   
   /**
    * List all rooms
+   * 
+   * Retrieves a paginated list of all rooms in your Digital Samba account.
+   * Supports pagination, filtering, and sorting options.
+   * 
+   * @param {PaginationParams} [params] - Optional pagination parameters
+   * @param {number} [params.limit] - Number of items per page (default: 10)
+   * @param {number} [params.offset] - Number of items to skip
+   * @param {'asc'|'desc'} [params.order] - Sort order
+   * @param {string} [params.after] - Cursor for pagination
+   * @returns {Promise<ApiResponse<Room>>} Paginated list of rooms
+   * 
+   * @example
+   * // Get first 20 rooms
+   * const rooms = await client.listRooms({ limit: 20 });
+   * 
+   * @example
+   * // Get next page
+   * const nextPage = await client.listRooms({ 
+   *   limit: 20, 
+   *   after: rooms.data[rooms.data.length - 1].id 
+   * });
    */
   async listRooms(params?: PaginationParams): Promise<ApiResponse<Room>> {
     const queryParams = new URLSearchParams();
@@ -855,6 +879,37 @@ export class DigitalSambaApiClient {
   
   /**
    * Create a new room
+   * 
+   * Creates a new video conferencing room with the specified settings.
+   * Only the 'name' field is required; all other settings are optional.
+   * 
+   * @param {RoomCreateSettings} settings - Room configuration
+   * @param {string} settings.name - Room name (required)
+   * @param {string} [settings.description] - Room description
+   * @param {'public'|'private'} [settings.privacy] - Room privacy setting
+   * @param {number} [settings.max_participants] - Maximum participants (2-2000)
+   * @param {string} [settings.friendly_url] - Custom URL slug
+   * @returns {Promise<Room>} The created room object
+   * @throws {ValidationError} If required fields are missing or invalid
+   * @throws {ApiResponseError} If room creation fails
+   * 
+   * @example
+   * // Create a basic room
+   * const room = await client.createRoom({
+   *   name: 'Team Standup'
+   * });
+   * 
+   * @example
+   * // Create a fully configured room
+   * const room = await client.createRoom({
+   *   name: 'All Hands Meeting',
+   *   description: 'Monthly company meeting',
+   *   privacy: 'private',
+   *   max_participants: 200,
+   *   friendly_url: 'all-hands',
+   *   recordings_enabled: true,
+   *   chat_enabled: true
+   * });
    */
   async createRoom(settings: RoomCreateSettings): Promise<Room> {
     // Make sure name is defined (it's required by the API)
@@ -896,6 +951,33 @@ export class DigitalSambaApiClient {
   
   /**
    * Generate a token for joining a room
+   * 
+   * Creates a secure access token that allows a user to join a specific room.
+   * Tokens can include user information, roles, and expiration settings.
+   * 
+   * @param {string} roomId - The ID of the room to generate a token for
+   * @param {TokenOptions} options - Token configuration options
+   * @param {string} [options.u] - User name to display
+   * @param {string} [options.ud] - External user identifier
+   * @param {string} [options.role] - User role (e.g., 'moderator', 'participant')
+   * @param {string} [options.avatar] - URL to user's avatar image
+   * @param {string} [options.exp] - Token expiration in minutes
+   * @returns {Promise<TokenResponse>} Object containing token and join link
+   * 
+   * @example
+   * // Generate a basic participant token
+   * const { token, link } = await client.generateRoomToken('room-123', {
+   *   u: 'John Doe'
+   * });
+   * 
+   * @example
+   * // Generate a moderator token with expiration
+   * const { token, link } = await client.generateRoomToken('room-123', {
+   *   u: 'Jane Smith',
+   *   ud: 'user-456',
+   *   role: 'moderator',
+   *   exp: '120' // Expires in 2 hours
+   * });
    */
   async generateRoomToken(roomId: string, options: TokenOptions): Promise<TokenResponse> {
     return this.request<TokenResponse>(`/rooms/${roomId}/token`, {

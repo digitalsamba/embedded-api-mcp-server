@@ -104,8 +104,13 @@ export class MemoryCache<T = unknown> {
 
   /**
    * Generates an ETag for a value
-   * @param value Value to generate ETag for
-   * @returns ETag string
+   * 
+   * Creates a unique identifier based on the content hash that can be used
+   * for HTTP conditional requests (If-None-Match header).
+   * 
+   * @param {unknown} value - Value to generate ETag for
+   * @returns {string} ETag string (MD5 hash truncated to 16 chars)
+   * @private
    */
   private generateEtag(value: unknown): string {
     const serialized = typeof value === 'string' 
@@ -148,11 +153,24 @@ export class MemoryCache<T = unknown> {
 
   /**
    * Sets a value in the cache
-   * @param namespace Cache namespace
-   * @param id Item identifier
-   * @param value Value to cache
-   * @param ttl Optional TTL override
-   * @returns The cached entry
+   * 
+   * This method stores a value in the cache with automatic expiration and optional
+   * ETag generation for conditional requests. It handles cache size limits by
+   * evicting the oldest entries when necessary.
+   * 
+   * @param {string} namespace - Cache namespace (e.g., 'rooms', 'sessions')
+   * @param {string} id - Unique identifier within the namespace
+   * @param {T} value - Value to cache
+   * @param {number} [ttl] - Optional TTL override in milliseconds
+   * @returns {CacheEntry<T>} The cached entry with metadata
+   * 
+   * @example
+   * // Cache a room object for 10 minutes
+   * cache.set('rooms', 'room-123', roomData, 600000);
+   * 
+   * @example
+   * // Cache with default TTL
+   * cache.set('sessions', 'session-456', sessionData);
    */
   public set(namespace: string, id: string, value: T, ttl?: number): CacheEntry<T> {
     const key = this.options.keyGenerator!(namespace, id);
@@ -169,7 +187,8 @@ export class MemoryCache<T = unknown> {
       lastModified: new Date()
     };
     
-    // Check if we need to evict items
+    // Check if we need to evict items to stay within size limits
+    // Only evict if we're adding a new item (not updating existing)
     if (this.options.maxItems && this.cache.size >= this.options.maxItems && !this.cache.has(key)) {
       this.evictOldest();
     }
