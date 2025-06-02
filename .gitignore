@@ -12,6 +12,23 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 .pnpm-debug.log*
+combined.log
+error.log
+
+# ESLint reports
+eslint-report-*.json
+eslint-report-*.md
+eslint-manual-fixes-*.md
+
+# Test files in root (should be in tests/)
+test-*.cjs
+test-*.js
+
+# Temporary files
+*-original.*
+*.tmp
+*.temp
+SESSION-HANDOVER.md
 
 # Environment variables
 .env

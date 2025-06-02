@@ -1,3 +1,0 @@
-@echo off
-echo Starting Digital Samba MCP Server in development mode...
-npm run dev
