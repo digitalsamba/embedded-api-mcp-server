@@ -1,28 +1,10 @@
 #!/usr/bin/env node
 
-// Direct stdio server that properly handles API keys
-import { runFullStdioServer } from '../dist/src/stdio-full-server.js';
+// Direct stdio server for Claude Desktop
+// Simply imports and runs the main server which already handles stdio
 
-// Redirect console to stderr to avoid interfering with JSON-RPC
-console.log = (...args) => process.stderr.write(`[LOG] ${args.join(' ')}\n`);
-console.error = (...args) => process.stderr.write(`[ERROR] ${args.join(' ')}\n`);
+// Import the main server entry point
+import '../dist/src/index.js';
 
-async function run() {
-  const apiKey = process.env.DIGITAL_SAMBA_API_KEY;
-  
-  if (!apiKey) {
-    console.error('No API key provided. Set DIGITAL_SAMBA_API_KEY environment variable.');
-    process.exit(1);
-  }
-  
-  console.error('[INFO] Starting Digital Samba MCP Server (direct stdio)...');
-  console.error('[DEBUG] API key:', apiKey.substring(0, 10) + '...');
-  
-  // Use the consolidated stdio server implementation
-  await runFullStdioServer();
-}
-
-run().catch(error => {
-  console.error('[FATAL] Server failed:', error);
-  process.exit(1);
-});
+// The main server handles everything including stdio transport
+// No additional setup needed

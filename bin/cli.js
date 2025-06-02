@@ -199,10 +199,11 @@ if (args['api-key']) {
     console.log(`Using API key from environment: ${process.env.DIGITAL_SAMBA_API_KEY.substring(0, 5)}...`);
   }
 } else {
-  if (!process.env.MCP_JSON_RPC_MODE) {
+  if (!process.env.MCP_JSON_RPC_MODE && !isStdioMode) {
     console.error('No API key provided. Please specify an API key using --api-key or as a positional argument, or set DIGITAL_SAMBA_API_KEY environment variable.');
+    process.exit(1);
   }
-  process.exit(1);
+  // In stdio mode, API key is optional - will be checked when needed
 }
 
 // Start the server
