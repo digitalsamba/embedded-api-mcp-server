@@ -1,47 +1,80 @@
 # Digital Samba MCP Server
 
-[![npm version](https://img.shields.io/npm/v/@digitalsamba/mcp-server.svg)](https://www.npmjs.com/package/@digitalsamba/mcp-server)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js Version](https://img.shields.io/node/v/@digitalsamba/mcp-server.svg)](https://nodejs.org)
+<div align="center">
+  <img src="https://digitalsamba.com/logo.png" alt="Digital Samba Logo" width="200"/>
+  
+  **Empower AI assistants to control video conferencing with natural language**
 
-A Model Context Protocol (MCP) server that enables AI assistants like Claude to interact with Digital Samba's video conferencing API. Create rooms, manage sessions, analyze usage, and control every aspect of your video conferences through natural language.
+  [![npm version](https://img.shields.io/npm/v/@digitalsamba/mcp-server.svg)](https://www.npmjs.com/package/@digitalsamba/mcp-server)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+  [![Node.js Version](https://img.shields.io/node/v/@digitalsamba/mcp-server.svg)](https://nodejs.org)
+  [![Build Status](https://img.shields.io/github/actions/workflow/status/digitalsamba/digital-samba-mcp-server/npm-deploy.yml?branch=main)](https://github.com/digitalsamba/digital-samba-mcp-server/actions)
+  [![Documentation](https://img.shields.io/badge/docs-comprehensive-blue)](https://github.com/digitalsamba/digital-samba-mcp-server/tree/main/docs)
+  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-## Features
+  [Installation](#installation) • [Quick Start](#quick-start) • [Features](#features) • [Documentation](docs/) • [Examples](examples/) • [Contributing](CONTRIBUTING.md)
+</div>
 
-- 🏠 **Room Management** - Create, update, delete rooms and generate access tokens
-- 📅 **Session Control** - Manage live sessions, participants, and session data
-- 📊 **Analytics & Insights** - Comprehensive usage statistics and participant analytics
-- 🎥 **Recording Management** - Control recordings and access recording data
-- 🗳️ **Polls & Q&A** - Create polls, manage Q&A sessions, and collect feedback
-- 📚 **Content Library** - Upload and manage whiteboards, documents, and media
-- 🔔 **Webhook Management** - Register and configure webhooks in Digital Samba
-- ⚡ **Performance Optimized** - Built-in caching, rate limiting, and circuit breakers
+---
 
-## Installation
+## 🚀 Overview
+
+The Digital Samba MCP Server bridges the gap between AI assistants and video conferencing, enabling natural language control of Digital Samba's powerful video conferencing platform through the Model Context Protocol (MCP). 
+
+Perfect for:
+- 🤖 **AI-Powered Meeting Management** - Let Claude schedule, control, and analyze meetings
+- 📊 **Automated Analytics** - Generate usage reports and insights with simple prompts
+- 🔧 **DevOps Integration** - Automate video infrastructure through conversational AI
+- 🎯 **Customer Support** - Enable support agents to manage sessions via natural language
+
+## ✨ Features
+
+<table>
+<tr>
+<td width="50%">
+
+### 🏗️ Core Capabilities
+- **Room Management** - Full CRUD operations
+- **Session Control** - Live meeting management
+- **Analytics Engine** - Deep usage insights
+- **Recording System** - Complete recording control
+- **Content Library** - Document & media management
+- **Webhook Integration** - Real-time event handling
+
+</td>
+<td width="50%">
+
+### 🛡️ Enterprise Ready
+- **Circuit Breakers** - Fault tolerance built-in
+- **Rate Limiting** - API protection included
+- **Response Caching** - Performance optimized
+- **Connection Pooling** - Efficient resource usage
+- **Graceful Degradation** - High availability
+- **Comprehensive Logging** - Full observability
+
+</td>
+</tr>
+</table>
+
+## 📦 Installation
 
 ```bash
-npm install @digitalsamba/mcp-server
+# Install globally
+npm install -g @digitalsamba/mcp-server
+
+# Or use directly with npx
+npx @digitalsamba/mcp-server --api-key YOUR_API_KEY
 ```
 
-## Quick Start
+## 🚀 Quick Start
 
-### 1. Get Your API Key
+### 1️⃣ Get Your API Key
 
-Sign up at [Digital Samba](https://www.digitalsamba.com) and obtain your API key from the dashboard.
+Sign up for free at [Digital Samba](https://www.digitalsamba.com) and obtain your API key from the dashboard.
 
-### 2. Start the Server
+### 2️⃣ Configure Claude Desktop
 
-```bash
-npx @digitalsamba/mcp-server
-# or after installation:
-digitalsamba-mcp --api-key YOUR_API_KEY
-```
-
-The server will start on `http://localhost:4521` by default.
-
-### 3. Connect to Claude Desktop
-
-Add the following to your Claude Desktop configuration file:
+Add to your Claude Desktop configuration:
 
 ```json
 {
@@ -55,68 +88,71 @@ Add the following to your Claude Desktop configuration file:
 }
 ```
 
-Replace `YOUR_API_KEY` with your actual Digital Samba API key.
+### 3️⃣ Start Using Natural Language
 
-## Usage Examples
-
-Once connected, you can ask Claude to perform various tasks:
-
-### Room Management
 ```
-"Create a meeting room called 'Team Standup' with 10 participant limit"
-"List all my Digital Samba rooms"
-"Generate a join link for the Team Standup room"
-```
+You: "Create a team meeting room for 20 people"
+Claude: ✅ Created room "Team Meeting" with capacity for 20 participants
 
-### Session Analytics
-```
-"Show me participant statistics for yesterday's meeting"
-"What's my team's usage pattern this month?"
-"Get detailed analytics for room abc-123"
+You: "Who joined yesterday's engineering standup?"
+Claude: 📊 15 participants joined yesterday's standup...
+
+You: "Start recording the current product demo"
+Claude: 🎥 Recording started for "Product Demo" session
 ```
 
-### Live Session Control
-```
-"End all active sessions in the Training room"
-"Who's currently in my meetings?"
-"Start transcription for the meeting"
-"Stop transcription in room xyz"
-```
+## 🎯 Real-World Use Cases
 
-### Content Management
-```
-"Upload whiteboard.pdf to my resource library"
-"Show all documents in the Training room"
-"Delete old recordings from last month"
+### 🏢 Meeting Automation
+```javascript
+// Natural language meeting management
+"Schedule a weekly standup room with 15 participant limit"
+"Generate moderator links for the leadership team"
+"End all sessions older than 2 hours"
 ```
 
-## CLI Options
-
-```bash
-digitalsamba-mcp [options]
-
-Options:
-  -p, --port <port>                 Server port (default: 4521)
-  -k, --api-key <key>               Digital Samba API key (required)
-  -u, --api-url <url>               API base URL
-  --enable-cache                    Enable response caching
-  --enable-rate-limiting            Enable rate limiting
-  --enable-metrics                  Enable Prometheus metrics
-  -h, --help                        Display help
+### 📊 Analytics & Reporting
+```javascript
+// Instant insights with simple queries
+"Show participation trends for this quarter"
+"Which rooms had the most engagement last week?"
+"Export attendance data for the training sessions"
 ```
 
-## Programmatic Usage
+### 🎥 Recording Management
+```javascript
+// Complete recording control
+"Start recording the product demo"
+"Download all recordings from yesterday"
+"Delete recordings older than 30 days"
+```
 
-### As an MCP Server
+## 🛠️ Advanced Configuration
+
+### Programmatic Usage
 
 ```javascript
 import { startServer } from '@digitalsamba/mcp-server';
 
 const server = startServer({
-  port: 4000,
+  // Core Configuration
   apiKey: process.env.DIGITAL_SAMBA_API_KEY,
+  port: 4521,
+  
+  // Performance Features
   enableCache: true,
-  enableRateLimiting: true
+  cacheTtl: 300000, // 5 minutes
+  enableRateLimiting: true,
+  rateLimitRequestsPerMinute: 60,
+  
+  // Resilience Features
+  enableCircuitBreaker: true,
+  circuitBreakerThreshold: 5,
+  circuitBreakerTimeout: 30000,
+  
+  // Monitoring
+  enableMetrics: true,
+  metricsEndpoint: '/metrics'
 });
 ```
 
@@ -131,7 +167,7 @@ const client = new DigitalSambaApiClient(apiKey);
 const room = await client.createRoom({
   name: 'Engineering Sync',
   privacy: 'private',
-  max_participants: 20
+  max_participants: 50
 });
 
 // Generate access token
@@ -143,109 +179,82 @@ const token = await client.generateRoomToken(room.id, {
 console.log('Join URL:', token.link);
 ```
 
-## Available Resources & Tools
+## 📚 API Reference
 
 ### Resources (Read Operations)
-- `digitalsamba://rooms` - List all rooms
-- `digitalsamba://rooms/{id}/participants` - View room participants
-- `digitalsamba://sessions` - List sessions
-- `digitalsamba://analytics/usage` - Usage statistics
-- `digitalsamba://analytics/team` - Team analytics
-- `digitalsamba://recordings` - List recordings
-- `digitalsamba://content/library` - Content library
+| Resource | Description |
+|----------|-------------|
+| `digitalsamba://rooms` | List all rooms |
+| `digitalsamba://sessions` | Active sessions |
+| `digitalsamba://analytics/usage` | Usage statistics |
+| `digitalsamba://recordings` | Recording library |
 
-### Tools (Actions)
-- **Room Tools**: create-room, update-room, delete-room, generate-room-token
-- **Session Tools**: end-session, get-session-statistics, bulk-delete-session-data
-- **Analytics Tools**: get-participant-stats, get-room-analytics, get-usage-report
-- **Recording Tools**: toggle-room-recording, toggle-session-recording, start-recording, stop-recording, download-recording, delete-recording
-- **Live Session Controls**: start-transcription, stop-transcription, phone-participants-joined, phone-participants-left
-- **Communication Tools**: delete-session-chats, delete-room-chats, delete-session-qa, delete-room-qa, delete-session-transcripts, delete-room-transcripts
-- **Poll Tools**: create-poll, update-poll, delete-poll, publish-poll-results
-- **Content Tools**: upload-document, upload-whiteboard, upload-video, delete-document
-- **Webhook Tools**: list-webhooks, register-webhook, update-webhook, delete-webhook, get-webhook-logs
+### Tools (Write Operations)
+| Category | Available Tools |
+|----------|----------------|
+| **Rooms** | create-room, update-room, delete-room, generate-token |
+| **Sessions** | end-session, bulk-delete, get-statistics |
+| **Analytics** | usage-report, participant-stats, room-analytics |
+| **Recordings** | start/stop-recording, download, delete |
 
-## Coming Soon
+[View Full API Documentation →](docs/api-reference.md)
 
-The following features are planned for future releases:
-- **Live Participant Control**: Mute/unmute participants, promote to moderator, remove from session
-- **Breakout Rooms**: Create and manage breakout rooms during live sessions
-- **Live Streaming**: Start/stop streaming to external platforms
-- **Waiting Room**: Manage participants in waiting room
-- **Real-time Events**: Subscribe to live session events via webhooks
+## 🏗️ Architecture
 
-## Environment Variables
+Built with modern JavaScript and TypeScript, featuring:
+
+- **MCP SDK Integration** - Native Model Context Protocol support
+- **Modular Design** - Clean separation of resources and tools
+- **Resilience Patterns** - Circuit breakers, retries, and fallbacks
+- **Performance Optimized** - Caching, connection pooling, and lazy loading
+- **Type Safety** - Full TypeScript coverage with strict mode
+- **Test Coverage** - Comprehensive unit and integration tests
+
+[Architecture Overview →](docs/architecture-overview.md)
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ```bash
-DIGITAL_SAMBA_API_KEY=your_api_key
-PORT=4521
-ENABLE_CACHE=true
-ENABLE_RATE_LIMITING=true
-CACHE_TTL=300000
-RATE_LIMIT_REQUESTS_PER_MINUTE=60
-LOG_LEVEL=info
+# Clone the repository
+git clone https://github.com/digitalsamba/digital-samba-mcp-server.git
+
+# Install dependencies
+npm install
+
+# Run tests
+npm test
+
+# Start development server
+npm run dev
 ```
 
-## Advanced Configuration
+## 📖 Documentation
 
-### Performance Features
+- [Getting Started Guide](docs/getting-started.md)
+- [Usage Examples](docs/usage-examples.md)
+- [API Reference](docs/api-reference.md)
+- [Architecture Overview](docs/architecture-overview.md)
+- [Troubleshooting](TROUBLESHOOTING.md)
 
-```javascript
-const server = startServer({
-  // Caching
-  enableCache: true,
-  cacheTtl: 5 * 60 * 1000, // 5 minutes
-  
-  // Rate Limiting
-  enableRateLimiting: true,
-  rateLimitRequestsPerMinute: 60,
-  
-  // Circuit Breaker
-  enableCircuitBreaker: true,
-  circuitBreakerFailureThreshold: 5,
-  circuitBreakerResetTimeout: 30000,
-  
-  // Metrics
-  enableMetrics: true,
-  metricsEndpoint: '/metrics'
-});
-```
+## 🔧 Support
 
-### Webhook Management
+- 📧 Email: support@digitalsamba.com
+- 💬 [Discussions](https://github.com/digitalsamba/digital-samba-mcp-server/discussions)
+- 🐛 [Issue Tracker](https://github.com/digitalsamba/digital-samba-mcp-server/issues)
+- 📚 [Digital Samba Docs](https://docs.digitalsamba.com)
 
-```javascript
-// Using the API client to manage webhooks
-const client = new DigitalSambaApiClient(apiKey);
+## 📄 License
 
-// Register a webhook
-const webhook = await client.createWebhook({
-  url: 'https://your-server.com/webhook-handler',
-  events: ['room.created', 'participant.joined']
-});
+MIT © [Digital Samba](https://digitalsamba.com)
 
-// List webhooks
-const webhooks = await client.listWebhooks();
-
-// Delete a webhook
-await client.deleteWebhook(webhook.id);
-```
-
-## Requirements
-
-- Node.js 16.0.0 or higher
-- Digital Samba API key
-- 50MB disk space
-
-## Support
-
-- 📖 [Documentation](https://github.com/digital-samba/digital-samba-mcp-server#readme)
-- 🐛 [Issue Tracker](https://github.com/digital-samba/digital-samba-mcp-server/issues)
-- 💬 [Discussions](https://github.com/digital-samba/digital-samba-mcp-server/discussions)
-
-## License
-
-MIT © Digital Samba
+See [LICENSE](LICENSE) for details.
 
 ---
 
-Built with ❤️ for the MCP ecosystem
+<div align="center">
+  <strong>Built with ❤️ by Digital Samba</strong>
+  <br>
+  <sub>Empowering developers to build the future of video conferencing</sub>
+</div>
