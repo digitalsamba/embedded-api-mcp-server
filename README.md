@@ -3,62 +3,31 @@
 <div align="center">
   <img src="https://digitalsamba.com/logo.png" alt="Digital Samba Logo" width="200"/>
   
-  **Empower AI assistants to control video conferencing with natural language**
+  **Connect AI assistants to Digital Samba video conferencing**
 
   [![npm version](https://img.shields.io/npm/v/@digitalsamba/mcp-server.svg)](https://www.npmjs.com/package/@digitalsamba/mcp-server)
   [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
   [![Node.js Version](https://img.shields.io/node/v/@digitalsamba/mcp-server.svg)](https://nodejs.org)
-  [![Build Status](https://img.shields.io/github/actions/workflow/status/digitalsamba/digital-samba-mcp-server/npm-deploy.yml?branch=main)](https://github.com/digitalsamba/digital-samba-mcp-server/actions)
-  [![Documentation](https://img.shields.io/badge/docs-comprehensive-blue)](https://github.com/digitalsamba/digital-samba-mcp-server/tree/main/docs)
-  [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-  [Installation](#installation) • [Quick Start](#quick-start) • [Features](#features) • [Documentation](docs/) • [Examples](examples/) • [Contributing](CONTRIBUTING.md)
+  [Installation](#installation) • [Quick Start](#quick-start) • [Features](#features) • [API Reference](#api-reference)
 </div>
 
 ---
 
-## 🚀 Overview
+## Overview
 
-The Digital Samba MCP Server bridges the gap between AI assistants and video conferencing, enabling natural language control of Digital Samba's powerful video conferencing platform through the Model Context Protocol (MCP). 
+The Digital Samba MCP Server is a lightweight Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's video conferencing API.
 
-> **🚧 Beta Notice**: We're actively simplifying the architecture for better performance and easier maintenance. The core functionality remains stable while we optimize the codebase.
+## Features
 
-Perfect for:
-- 🤖 **AI-Powered Meeting Management** - Let Claude schedule, control, and analyze meetings
-- 📊 **Automated Analytics** - Generate usage reports and insights with simple prompts
-- 🔧 **DevOps Integration** - Automate video infrastructure through conversational AI
-- 🎯 **Customer Support** - Enable support agents to manage sessions via natural language
+- **Room Management** - Create, update, delete rooms and generate access tokens
+- **Session Control** - End sessions and retrieve session summaries  
+- **Analytics** - Access team, room, and session analytics
+- **Recordings** - List and manage meeting recordings
+- **Live Controls** - Manage participants, chat, polls, and transcripts
+- **Content Library** - Upload and manage documents
 
-## ✨ Features
-
-<table>
-<tr>
-<td width="50%">
-
-### 🏗️ Core Capabilities
-- **Room Management** - Full CRUD operations
-- **Session Control** - Live meeting management
-- **Analytics Engine** - Deep usage insights
-- **Recording System** - Complete recording control
-- **Content Library** - Document & media management
-- **Webhook Integration** - Real-time event handling
-
-</td>
-<td width="50%">
-
-### 🛡️ Enterprise Ready
-- **Circuit Breakers** - Fault tolerance built-in
-- **Rate Limiting** - API protection included
-- **Response Caching** - Performance optimized
-- **Connection Pooling** - Efficient resource usage
-- **Graceful Degradation** - High availability
-- **Comprehensive Logging** - Full observability
-
-</td>
-</tr>
-</table>
-
-## 📦 Installation
+## Installation
 
 ```bash
 # Install globally
@@ -68,195 +37,142 @@ npm install -g @digitalsamba/mcp-server
 npx @digitalsamba/mcp-server --api-key YOUR_API_KEY
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
-### 1️⃣ Get Your API Key
+### 1. Get Your API Key
 
-Sign up for free at [Digital Samba](https://www.digitalsamba.com) and obtain your API key from the dashboard.
+Sign up at [Digital Samba](https://www.digitalsamba.com) and get your API key from the dashboard.
 
-### 2️⃣ Configure Claude Desktop
+### 2. Configure Claude Desktop
 
-Add to your Claude Desktop configuration:
+Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on Mac):
 
 ```json
 {
   "mcpServers": {
     "digital-samba": {
       "command": "npx",
-      "args": ["@digitalsamba/mcp-server", "--api-key", "YOUR_API_KEY"],
-      "env": {}
+      "args": ["@digitalsamba/mcp-server", "--api-key", "YOUR_API_KEY"]
     }
   }
 }
 ```
 
-### 3️⃣ Start Using Natural Language
+### 3. Start Using
+
+Restart Claude Desktop and you can now:
 
 ```
-You: "Create a team meeting room for 20 people"
-Claude: ✅ Created room "Team Meeting" with capacity for 20 participants
-
-You: "Who joined yesterday's engineering standup?"
-Claude: 📊 15 participants joined yesterday's standup...
-
-You: "Start recording the current product demo"
-Claude: 🎥 Recording started for "Product Demo" session
+"Create a meeting room for our team standup"
+"Show me analytics for yesterday's meetings"  
+"List all recordings from last week"
+"Generate a join link for john@example.com"
 ```
 
-## 🎯 Real-World Use Cases
+## API Reference
 
-### 🏢 Meeting Automation
-```javascript
-// Natural language meeting management
-"Schedule a weekly standup room with 15 participant limit"
-"Generate moderator links for the leadership team"
-"End all sessions older than 2 hours"
-```
+### Resources (Read-Only)
 
-### 📊 Analytics & Reporting
-```javascript
-// Instant insights with simple queries
-"Show participation trends for this quarter"
-"Which rooms had the most engagement last week?"
-"Export attendance data for the training sessions"
-```
+- `digitalsamba://rooms` - List all rooms
+- `digitalsamba://rooms/{id}` - Get room details
+- `digitalsamba://sessions` - List sessions
+- `digitalsamba://recordings` - List recordings
+- `digitalsamba://analytics/team` - Team analytics
+- `digitalsamba://analytics/rooms` - Room analytics
+- `digitalsamba://analytics/sessions` - Session analytics
 
-### 🎥 Recording Management
-```javascript
-// Complete recording control
-"Start recording the product demo"
-"Download all recordings from yesterday"
-"Delete recordings older than 30 days"
-```
+### Tools (Actions)
 
-## 🛠️ Advanced Configuration
+#### Room Management
+- `create-room` - Create a new room
+- `update-room` - Update room settings
+- `delete-room` - Delete a room
+- `generate-room-token` - Generate access token
 
-### Programmatic Usage
+#### Session Management  
+- `end-session` - End a live session
+- `get-session-summary` - Get session details
 
-```javascript
-import { startServer } from '@digitalsamba/mcp-server';
+#### Live Session Controls
+- `remove-participant` - Remove a participant
+- `mute-all-participants` - Mute all participants
+- `set-room-lock` - Lock/unlock room
+- `send-chat-message` - Send chat message
+- `create-poll` - Create a poll
+- `manage-transcription` - Control transcription
 
-const server = startServer({
-  // Core Configuration
-  apiKey: process.env.DIGITAL_SAMBA_API_KEY,
-  port: 4521,
-  
-  // Performance Features
-  enableCache: true,
-  cacheTtl: 300000, // 5 minutes
-  enableRateLimiting: true,
-  rateLimitRequestsPerMinute: 60,
-  
-  // Resilience Features
-  enableCircuitBreaker: true,
-  circuitBreakerThreshold: 5,
-  circuitBreakerTimeout: 30000,
-  
-  // Monitoring
-  enableMetrics: true,
-  metricsEndpoint: '/metrics'
-});
-```
+#### Analytics Tools
+- `get-team-analytics` - Team usage statistics
+- `get-room-analytics` - Room-specific analytics
+- `get-session-analytics` - Session analytics
 
-### Direct API Client
+## Environment Variables
+
+- `DIGITAL_SAMBA_API_KEY` - Your Digital Samba API key
+- `DIGITAL_SAMBA_API_URL` - API base URL (optional, defaults to production)
+- `DS_LOG_LEVEL` - Logging level (error, warn, info, debug)
+
+## Examples
+
+### Basic Room Creation
 
 ```javascript
-import { DigitalSambaApiClient } from '@digitalsamba/mcp-server/client';
+// Via Claude Desktop
+"Create a private room called 'Executive Meeting' with space for 10 people"
 
-const client = new DigitalSambaApiClient(apiKey);
-
-// Create a room
+// Direct API usage
 const room = await client.createRoom({
-  name: 'Engineering Sync',
-  privacy: 'private',
-  max_participants: 50
+  friendly_url: 'executive-meeting',
+  description: 'Executive team weekly sync',
+  privacy: 'private'
 });
-
-// Generate access token
-const token = await client.generateRoomToken(room.id, {
-  role: 'moderator',
-  username: 'John Doe'
-});
-
-console.log('Join URL:', token.link);
 ```
 
-## 📚 API Reference
+### Generate Access Token
 
-### Resources (Read Operations)
-| Resource | Description |
-|----------|-------------|
-| `digitalsamba://rooms` | List all rooms |
-| `digitalsamba://sessions` | Active sessions |
-| `digitalsamba://analytics/usage` | Usage statistics |
-| `digitalsamba://recordings` | Recording library |
+```javascript
+// Via Claude Desktop  
+"Generate a moderator token for sarah@company.com to join the executive meeting"
 
-### Tools (Write Operations)
-| Category | Available Tools |
-|----------|----------------|
-| **Rooms** | create-room, update-room, delete-room, generate-token |
-| **Sessions** | end-session, bulk-delete, get-statistics |
-| **Analytics** | usage-report, participant-stats, room-analytics |
-| **Recordings** | start/stop-recording, download, delete |
+// Direct API usage
+const token = await client.generateRoomToken(roomId, {
+  userName: 'Sarah Johnson',
+  role: 'moderator'
+});
+```
 
-[View Full API Documentation →](docs/api-reference.md)
-
-## 🏗️ Architecture
-
-Built with modern JavaScript and TypeScript, featuring:
-
-- **MCP SDK Integration** - Native Model Context Protocol support
-- **Modular Design** - Clean separation of resources and tools
-- **Resilience Patterns** - Circuit breakers, retries, and fallbacks
-- **Performance Optimized** - Caching, connection pooling, and lazy loading
-- **Type Safety** - Full TypeScript coverage with strict mode
-- **Test Coverage** - Comprehensive unit and integration tests
-
-[Architecture Overview →](docs/architecture-overview.md)
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+## Development
 
 ```bash
 # Clone the repository
 git clone https://github.com/digitalsamba/digital-samba-mcp-server.git
+cd digital-samba-mcp-server
 
 # Install dependencies
 npm install
 
-# Run tests
-npm test
+# Run in development mode
+npm run dev -- --api-key YOUR_API_KEY
 
-# Start development server
-npm run dev
+# Build for production
+npm run build
 ```
 
-## 📖 Documentation
+## Contributing
 
-- [Getting Started Guide](docs/getting-started.md)
-- [Usage Examples](docs/usage-examples.md)
-- [API Reference](docs/api-reference.md)
-- [Architecture Overview](docs/architecture-overview.md)
-- [Troubleshooting](TROUBLESHOOTING.md)
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-## 🔧 Support
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.
+
+## Support
 
 - 📧 Email: support@digitalsamba.com
-- 💬 [Discussions](https://github.com/digitalsamba/digital-samba-mcp-server/discussions)
+- 💬 [Community Forum](https://community.digitalsamba.com)
+- 📚 [API Documentation](https://docs.digitalsamba.com)
 - 🐛 [Issue Tracker](https://github.com/digitalsamba/digital-samba-mcp-server/issues)
-- 📚 [Digital Samba Docs](https://docs.digitalsamba.com)
-
-## 📄 License
-
-MIT © [Digital Samba](https://digitalsamba.com)
-
-See [LICENSE](LICENSE) for details.
 
 ---
 
-<div align="center">
-  <strong>Built with ❤️ by Digital Samba</strong>
-  <br>
-  <sub>Empowering developers to build the future of video conferencing</sub>
-</div>
+Built with ❤️ by the Digital Samba team
