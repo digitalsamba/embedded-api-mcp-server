@@ -3,7 +3,7 @@
 // Direct stdio server for Claude Desktop
 // This handles the case where we need to find the correct path to index.js
 
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { dirname, resolve } from 'path';
 import { existsSync } from 'fs';
 
@@ -22,12 +22,17 @@ async function startStdioServer() {
     if (existsSync(path)) {
       console.error(`[INFO] Loading server from: ${path}`);
       try {
-        const serverModule = await import(path);
+        // Convert to file URL for Windows compatibility using Node.js built-in
+        const fileUrl = pathToFileURL(path).href;
+        console.error(`[INFO] Importing as URL: ${fileUrl}`);
+        
+        const serverModule = await import(fileUrl);
         
         // The index.js file checks if it's being run directly
         // When imported, we need to manually start the server
         if (serverModule.main && typeof serverModule.main === 'function') {
           // If main is exported, call it
+          console.error('[INFO] Calling main() function...');
           await serverModule.main();
         } else {
           // Otherwise, the server should have started on import
