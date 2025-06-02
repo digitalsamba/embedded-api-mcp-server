@@ -21,6 +21,8 @@
 
 The Digital Samba MCP Server bridges the gap between AI assistants and video conferencing, enabling natural language control of Digital Samba's powerful video conferencing platform through the Model Context Protocol (MCP). 
 
+> **🚧 Beta Notice**: We're actively simplifying the architecture for better performance and easier maintenance. The core functionality remains stable while we optimize the codebase.
+
 Perfect for:
 - 🤖 **AI-Powered Meeting Management** - Let Claude schedule, control, and analyze meetings
 - 📊 **Automated Analytics** - Generate usage reports and insights with simple prompts
