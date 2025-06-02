@@ -1,134 +1,116 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with this repository.
+
+## Project Overview
+
+Digital Samba MCP Server - A lightweight Model Context Protocol server for Digital Samba's video conferencing API.
 
 ## Development Commands
 
 ### Build & Development
-- `npm run build` - TypeScript build to dist/
+- `npm run build` - Build TypeScript to dist/
 - `npm run build:clean` - Clean build (removes dist/)
-- `npm run dev` - Development mode with tsx
-- `npm run dev:clean` - Restart development environment
-- `npm run dev:watch` - Development with file watching
+- `npm run dev` - Development mode
+- `npm run dev:clean` - Clean restart of development environment
 
-### Testing
-- `npm test` - Run all Jest tests
+### Testing  
+- `npm test` - Run all tests
 - `npm run test:coverage` - Tests with coverage report
-- `npm run test:server` - Test MCP server functionality
-- `npm run test:claude-desktop-*` - Claude Desktop integration tests
 
 ### Running the Server
-- `npx digital-samba-mcp-server --api-key YOUR_KEY` - Run as CLI server
-- `scripts/debug-server.bat` - Debug server with detailed logging
-- `scripts/test-resilient-api.bat` - Test resilient API features
+- `npx @digitalsamba/mcp-server --api-key YOUR_KEY` - Run as MCP server
+- `npm run dev -- --api-key YOUR_KEY` - Run in development mode
 
-### Script Organization
-All build, debug, test, and utility scripts have been moved to the `scripts/` directory for better organization.
+## Architecture
 
-## Architecture Overview
+### Simplified Structure (Post-Refactor)
+```
+src/
+├── index.ts              # Main MCP server entry point
+├── digital-samba-api.ts  # Simple API client wrapper
+├── logger.ts            # Console logger (46 lines)
+├── auth.ts              # Environment-based auth
+├── cache.ts             # Simple memory cache
+├── errors.ts            # Error type definitions
+├── types/               # TypeScript type definitions
+├── resources/           # Read-only MCP resources
+│   ├── rooms/          # Room listings
+│   ├── sessions/       # Session data
+│   ├── analytics/      # Analytics data
+│   ├── recordings/     # Recording listings
+│   ├── content/        # Content resources
+│   └── exports/        # Export functionality
+└── tools/              # MCP tools (actions)
+    ├── room-management/      # Room CRUD operations
+    ├── session-management/   # Session control
+    ├── analytics-tools/      # Analytics queries
+    ├── recording-management/ # Recording tools
+    ├── live-session-controls/# Live session controls
+    ├── communication-management/# Chat/Q&A/Transcripts
+    ├── poll-management/      # Poll tools
+    └── library-management/   # Content library
+```
 
-### Core Structure
-The project implements a Model Context Protocol (MCP) server for Digital Samba's video conferencing API with resilience patterns:
+### Key Design Principles
+1. **Lightweight** - No unnecessary dependencies or complexity
+2. **MCP-focused** - Built specifically for stdio-based MCP protocol
+3. **Simple auth** - Uses environment variables for API keys
+4. **Direct API calls** - No complex abstractions over the API
+5. **Modular structure** - Clear separation of resources and tools
 
-- **Main Entry**: `src/index.ts` - MCP server implementation using `@modelcontextprotocol/sdk`
-- **API Clients**: Multiple layers of API clients with increasing resilience:
-  - `digital-samba-api.ts` - Base API client
-  - `digital-samba-api-circuit-breaker.ts` - Circuit breaker pattern
-  - `digital-samba-api-resilient.ts` - Full resilience features
-  - `digital-samba-api-enhanced.ts` - Enhanced with rate limiting/caching
-
-### V2 Directory Structure (In Progress)
-The codebase is being restructured to separate Resources (read-only) from Tools (actions):
-
-#### Completed Modules ✅
-- **Resources**: `src/resources/` - GET endpoints for data retrieval
-  - `analytics/` - Team, room, session analytics (✅ Migrated)
-  - `rooms/` - Room listing and details (✅ Migrated)
-- **Tools**: `src/tools/` - POST/PATCH/DELETE for actions
-  - `room-management/` - Room CRUD operations (✅ Migrated)
-  - `session-management/` - Session operations (✅ Migrated)
-  - `analytics-tools/` - Analytics query tools (✅ Migrated)
-
-#### Pending Modules 🔄
-- **Resources**:
-  - `recordings/` - Recording listings
-  - `sessions/` - Session listings
-  - `data/` - General data endpoints
-- **Tools**:
-  - `recording-management/` - Recording controls
-  - `webhook-management/` - Webhook operations
-
-See `docs/v2-restructuring-progress.md` for detailed migration status.
-
-### Key Patterns
-- **Circuit Breaker**: Prevents cascading failures (CLOSED/OPEN/HALF-OPEN states)
-- **Connection Pooling**: HTTP agent pooling in `connection-manager.ts`
-- **Token Management**: Auto-refresh in `token-manager.ts`
-- **Graceful Degradation**: Fallback strategies in `graceful-degradation.ts`
-- **Rate Limiting**: Token bucket algorithm in `rate-limiter.ts`
-- **Caching**: Memory cache with ETags in `cache.ts`
-
-### Feature Modules
-- `meetings.ts` - Meeting scheduling and management
-- `recordings.ts` - Recording functionality
-- `webhooks.ts` - Webhook service with Express/SSE
-- `moderation.ts` - Participant moderation tools
-- `breakout-rooms.ts` - Breakout room management
-- `metrics.ts` - Prometheus metrics collection
+### What Was Removed
+- All enterprise patterns (circuit breakers, rate limiting, metrics)
+- Complex API client layers (enhanced, resilient versions)
+- HTTP transport (MCP uses stdio only)
+- Winston logging (replaced with simple console logger)
+- Connection management and pooling
+- Token management complexity
+- Webhooks functionality
+- Resource optimization
+- Graceful degradation patterns
 
 ## MCP Implementation
 
-### Resources
-- `digitalsamba://rooms` - Room listings
-- `digitalsamba://rooms/{id}/participants` - Participants
-- `digitalsamba://recordings` - Recording access
-- `digitalsamba://meetings` - Scheduled meetings
+### Resources (Read-Only)
+- `digitalsamba://rooms` - List all rooms
+- `digitalsamba://rooms/{id}` - Room details
+- `digitalsamba://sessions` - List sessions
+- `digitalsamba://recordings` - List recordings
+- `digitalsamba://analytics/team` - Team analytics
+- `digitalsamba://analytics/rooms` - Room analytics
+- `digitalsamba://analytics/sessions` - Session analytics
+- `digitalsamba://content` - Content library
+- `digitalsamba://exports/*` - Various exports
 
-### Tools
-- Room CRUD operations
-- Token generation
-- Webhook management
-- Recording control
-- Moderation features
-- Meeting scheduling
+### Tools (Actions)
+- Room management (create, update, delete, generate tokens)
+- Session control (end session, get summary)
+- Recording management (delete recordings)
+- Live session controls (participants, chat, polls, transcripts)
+- Analytics queries (team, room, session analytics)
+- Content library management
 
 ## Import Guidelines
-When adding imports to TypeScript files:
 1. Node.js built-ins first
-2. External dependencies second
+2. External dependencies second  
 3. MCP SDK imports third
 4. Local modules last
-5. Alphabetize within sections
+5. Use .js extensions for local imports
 
 ## Testing Strategy
-- Unit tests in `tests/unit/`
-- Integration tests in `tests/integration/`
-- E2E tests in `tests/e2e/`
-- Mock API server in `tests/mocks/mock-api-server.ts`
+- Unit tests for core functionality
+- Integration tests for API interactions
+- E2E tests for MCP protocol compliance
+- Mock API responses for testing
 
-## Error Handling
-Custom error types in `errors.ts`:
-- `DigitalSambaError` - Base error class
-- `AuthenticationError` - Auth failures
-- `ResourceNotFoundError` - 404 errors
-- Comprehensive logging with Winston
+## Deployment
+- Beta versions deployed automatically from `develop` branch
+- Stable versions deployed from `main` branch
+- Package name: `@digitalsamba/mcp-server`
 
-## Project Management
-
-### Project Tracking
-- Project management and stats located at: `/config/Documents/Obsidian Vault/01-Projects/Work/DigitalSamba/MCP-Server-Development/`
-
-## Implementation Guidelines
-
-### Phase 1 Requirements (Current Phase)
-- **Backward Compatibility**: NEVER break existing v1.0 functionality
-- **Test First**: Run tests before and after any restructuring
-- **Incremental Changes**: Move files one at a time, verifying functionality
-- **Import Updates**: Update all import paths when moving files
-- **Export Preservation**: Maintain all public exports in src/index.ts
-
-### Critical Constraints
-- NPM package size must stay under 250KB packed
-- All 21 existing endpoints must continue working
-- Zero breaking changes allowed
-- Maintain existing error handling patterns
+## Critical Constraints
+- Keep package size minimal (under 250KB packed)
+- Maintain backward compatibility
+- No breaking changes to existing functionality
+- Simple, maintainable code over complex patterns
