@@ -9,7 +9,8 @@
 
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { DigitalSambaApiClient } from '../../digital-samba-api.js';
-import { AnalyticsResource, AnalyticsFilters } from '../../analytics.js';
+import { AnalyticsResource } from '../../types/analytics-resource.js';
+import { AnalyticsFilters } from '../../types/analytics.js';
 import logger from '../../logger.js';
 
 /**
@@ -135,17 +136,35 @@ export async function executeAnalyticsTool(
   });
   
   switch (toolName) {
-    case 'get-participant-statistics':
-      logger.info('Executing participant statistics query', { args });
-      return await analytics.getParticipantStatistics(args.participant_id, filters);
+    case 'get-team-analytics':
+      logger.info('Executing team analytics query', { args });
+      const teamResult = await analytics.getTeamAnalytics(filters);
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(teamResult, null, 2)
+        }]
+      };
       
     case 'get-room-analytics':
       logger.info('Executing room analytics query', { args });
-      return await analytics.getRoomAnalytics(args.room_id, filters);
+      const roomResult = await analytics.getRoomAnalytics(args.room_id, filters);
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(roomResult, null, 2)
+        }]
+      };
       
-    case 'get-usage-statistics':
-      logger.info('Executing usage statistics query', { args });
-      return await analytics.getUsageStatistics(filters);
+    case 'get-session-analytics':
+      logger.info('Executing session analytics query', { args });
+      const sessionResult = await analytics.getSessionAnalytics(args.session_id, filters);
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(sessionResult, null, 2)
+        }]
+      };
       
     default:
       throw new Error(`Unknown analytics tool: ${toolName}`);

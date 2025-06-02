@@ -507,7 +507,7 @@ export class DigitalSambaApiClient {
    */
   protected getApiKey(): string {
     // Try to get API key from context first
-    const contextApiKey = apiKeyContext.getCurrentApiKey();
+    const contextApiKey = apiKeyContext.getStore();
     if (contextApiKey) {
       return contextApiKey;
     }
@@ -559,29 +559,16 @@ export class DigitalSambaApiClient {
       if (cachedResponse) {
         logger.debug(`Cache hit for ${endpoint}`);
         
-        // Record cache hit in metrics if available
-        try {
-          const metricsRegistry = await import('./metrics.js').then(m => m.default);
-          metricsRegistry.cacheHitsTotal.inc({ namespace: cacheNamespace });
-        } catch (error) {
-          // Ignore metrics errors - they shouldn't affect normal operation
-        }
+        // Metrics recording removed - metrics.js no longer exists
         
         return cachedResponse.value as T;
       } else if (this.cache) {
-        // Record cache miss in metrics if available
-        try {
-          const metricsRegistry = await import('./metrics.js').then(m => m.default);
-          metricsRegistry.cacheMissesTotal.inc({ namespace: cacheNamespace });
-        } catch (error) {
-          // Ignore metrics errors
-        }
+        // Metrics recording removed - metrics.js no longer exists
       }
     }
     
-    // Start timer for metrics
+    // Start timer (kept for potential future use)
     const startTime = Date.now();
-    let metricsLabels = { endpoint, method: method.toLowerCase() };
     
     try {
       const apiKey = this.getApiKey();
@@ -599,13 +586,7 @@ export class DigitalSambaApiClient {
         cacheStatus: isCacheable ? 'miss' : 'disabled'
       });
       
-      // Track API request in metrics
-      try {
-        const metricsRegistry = await import('./metrics.js').then(m => m.default);
-        metricsRegistry.apiRequestsTotal.inc(metricsLabels);
-      } catch (error) {
-        // Ignore metrics errors
-      }
+      // Metrics tracking removed - metrics.js no longer exists
       
       let response;
       try {
@@ -621,16 +602,7 @@ export class DigitalSambaApiClient {
           error: error instanceof Error ? error.message : String(error)
         });
         
-        // Track API error in metrics
-        try {
-          const metricsRegistry = await import('./metrics.js').then(m => m.default);
-          metricsRegistry.apiErrorsTotal.inc({
-            ...metricsLabels,
-            error_type: 'network_error'
-          });
-        } catch (metricsError) {
-          // Ignore metrics errors
-        }
+        // Metrics tracking removed - metrics.js no longer exists
         
         throw new ApiRequestError(
           `Network error while connecting to Digital Samba API: ${error instanceof Error ? error.message : String(error)}`,
@@ -641,8 +613,7 @@ export class DigitalSambaApiClient {
       // Log response details
       logger.debug(`Response status: ${response.status} ${response.statusText}`);
       
-      // Update metrics labels with status code
-      metricsLabels = { ...metricsLabels, status: response.status.toString() } as typeof metricsLabels;
+      // Status code handling - metrics removed
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -651,16 +622,7 @@ export class DigitalSambaApiClient {
           statusText: response.statusText
         });
         
-        // Track API error in metrics
-        try {
-          const metricsRegistry = await import('./metrics.js').then(m => m.default);
-          metricsRegistry.apiErrorsTotal.inc({
-            ...metricsLabels,
-            error_type: `status_${response.status}`
-          });
-        } catch (metricsError) {
-          // Ignore metrics errors
-        }
+        // Metrics tracking removed - metrics.js no longer exists
         
         // Parse error text as JSON if possible
         let errorData;
@@ -717,14 +679,7 @@ export class DigitalSambaApiClient {
       
       // Return empty object for 204 No Content responses
       if (response.status === 204) {
-        // Record request duration in metrics
-        try {
-          const duration = (Date.now() - startTime) / 1000; // Convert to seconds
-          const metricsRegistry = await import('./metrics.js').then(m => m.default);
-          metricsRegistry.apiRequestDuration.observe(metricsLabels, duration);
-        } catch (error) {
-          // Ignore metrics errors
-        }
+        // Metrics tracking removed - metrics.js no longer exists
         
         return {} as T;
       }
@@ -742,39 +697,19 @@ export class DigitalSambaApiClient {
         };
       }
       
-      // Record request duration in metrics
-      try {
-        const duration = (Date.now() - startTime) / 1000; // Convert to seconds
-        const metricsRegistry = await import('./metrics.js').then(m => m.default);
-        metricsRegistry.apiRequestDuration.observe(metricsLabels, duration);
-      } catch (error) {
-        // Ignore metrics errors
-      }
+      // Metrics tracking removed - metrics.js no longer exists
       
       // Store successful GET responses in cache
       if (isCacheable) {
         logger.debug(`Caching response for ${endpoint}`);
         this.cache!.set(cacheNamespace, cacheKey, responseData);
         
-        // Update cache metrics
-        try {
-          const metricsRegistry = await import('./metrics.js').then(m => m.default);
-          metricsRegistry.cacheEntriesCount.inc({ namespace: cacheNamespace });
-        } catch (error) {
-          // Ignore metrics errors
-        }
+        // Metrics tracking removed - metrics.js no longer exists
       }
       
       return responseData;
     } catch (error) {
-      // Record request duration in metrics even for errors
-      try {
-        const duration = (Date.now() - startTime) / 1000; // Convert to seconds
-        const metricsRegistry = await import('./metrics.js').then(m => m.default);
-        metricsRegistry.apiRequestDuration.observe(metricsLabels, duration);
-      } catch (metricsError) {
-        // Ignore metrics errors
-      }
+      // Metrics tracking removed - metrics.js no longer exists
       
       // Catch and re-throw errors that aren't already one of our custom types
       if (!(error instanceof AuthenticationError) && 
@@ -789,16 +724,7 @@ export class DigitalSambaApiClient {
           error: error instanceof Error ? error.message : String(error)
         });
         
-        // Track API error in metrics
-        try {
-          const metricsRegistry = await import('./metrics.js').then(m => m.default);
-          metricsRegistry.apiErrorsTotal.inc({
-            ...metricsLabels,
-            error_type: 'unexpected'
-          });
-        } catch (metricsError) {
-          // Ignore metrics errors
-        }
+        // Metrics tracking removed - metrics.js no longer exists
         
         throw new ApiRequestError(
           `Unexpected error in Digital Samba API request: ${error instanceof Error ? error.message : String(error)}`,

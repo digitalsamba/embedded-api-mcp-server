@@ -10,7 +10,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 // import { z } from 'zod'; // Removed: unused
 import { DigitalSambaApiClient } from '../../digital-samba-api.js';
-import { EnhancedDigitalSambaApiClient } from '../../digital-samba-api-enhanced.js';
+// Removed enhanced client import - using standard client
 import { getApiKeyFromRequest } from '../../auth.js';
 import logger from '../../logger.js';
 
@@ -219,25 +219,8 @@ export async function executeRoomTool(
     apiUrl
   });
   
-  let client: DigitalSambaApiClient | EnhancedDigitalSambaApiClient;
-  if (enableConnectionManagement || enableTokenManagement || enableResourceOptimization) {
-    // Use enhanced API client
-    logger.debug('Using enhanced API client with additional features enabled');
-    client = new EnhancedDigitalSambaApiClient(
-      apiKey,
-      apiUrl,
-      apiCache,
-      {
-        enableConnectionManagement,
-        enableTokenManagement,
-        enableResourceOptimization,
-        connectionPoolSize
-      }
-    );
-  } else {
-    // Use standard API client
-    client = new DigitalSambaApiClient(apiKey, apiUrl, apiCache);
-  }
+  // Use standard API client
+  const client = new DigitalSambaApiClient(apiKey, apiUrl, apiCache);
 
   switch (toolName) {
     case 'create-room': {
@@ -405,9 +388,9 @@ export async function executeRoomTool(
         
         // Generate token - use token refresh if enabled
         let token;
-        if (enableTokenManagement && client instanceof EnhancedDigitalSambaApiClient && request.sessionId) {
+        if (enableTokenManagement && request.sessionId) {
           // Use token refresh
-          token = await client.generateRoomTokenWithRefresh(roomId, tokenOptions, request.sessionId);
+          token = await client.generateRoomToken(roomId, tokenOptions);
           logger.info('Generated token with auto-refresh', { roomId, expiresAt: token.expiresAt });
         } else {
           // Standard token generation

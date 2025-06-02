@@ -9,7 +9,7 @@
 
 import { Resource } from '@modelcontextprotocol/sdk/types.js';
 import { DigitalSambaApiClient } from '../../digital-samba-api.js';
-import { EnhancedDigitalSambaApiClient } from '../../digital-samba-api-enhanced.js';
+// Removed enhanced client import - using standard client
 import { getApiKeyFromRequest } from '../../auth.js';
 import logger from '../../logger.js';
 
@@ -83,25 +83,8 @@ export async function handleRoomResource(
     // Create API client
     logger.debug('Creating API client using context API key');
     
-    let client;
-    if (enableConnectionManagement || enableTokenManagement || enableResourceOptimization) {
-      // Use enhanced API client
-      logger.debug('Using enhanced API client with additional features enabled');
-      client = new EnhancedDigitalSambaApiClient(
-        undefined,
-        apiUrl,
-        apiCache,
-        {
-          enableConnectionManagement,
-          enableTokenManagement,
-          enableResourceOptimization,
-          connectionPoolSize
-        }
-      );
-    } else {
-      // Use standard API client
-      client = new DigitalSambaApiClient(undefined, apiUrl, apiCache);
-    }
+    // Use standard API client
+    const client = new DigitalSambaApiClient(apiKey, apiUrl, apiCache);
     
     try {
       // Get room from API
@@ -150,25 +133,8 @@ export async function handleRoomResource(
       apiUrl: apiUrl
     });
     
-    let client;
-    if (enableConnectionManagement || enableTokenManagement || enableResourceOptimization) {
-      // Use enhanced API client
-      logger.debug('Using enhanced API client with additional features enabled');
-      client = new EnhancedDigitalSambaApiClient(
-        apiKey,
-        apiUrl,
-        apiCache,
-        {
-          enableConnectionManagement,
-          enableTokenManagement,
-          enableResourceOptimization,
-          connectionPoolSize
-        }
-      );
-    } else {
-      // Use standard API client
-      client = new DigitalSambaApiClient(apiKey, apiUrl, apiCache);
-    }
+    // Use standard API client
+    const client = new DigitalSambaApiClient(apiKey, apiUrl, apiCache);
     
     try {
       // Fetch rooms from API
