@@ -27,16 +27,16 @@ import { DigitalSambaApiClient } from './digital-samba-api.js';
 import logger from './logger.js';
 
 // Import resources and tools
-import { registerRoomResources, handleRoomResource } from './resources/rooms-handler.js';
-import { registerSessionResources, handleSessionResource } from './resources/sessions-handler.js';
-import { registerAnalyticsResources, handleAnalyticsResource } from './resources/analytics-handler.js';
-import { registerRecordingResources, handleRecordingResource } from './resources/recordings-handler.js';
+import { registerRoomResources, handleRoomResource } from './resources/rooms/index.js';
+import { registerSessionResources, handleSessionResource } from './resources/sessions/index.js';
+import { registerAnalyticsResources, handleAnalyticsResource } from './resources/analytics/index.js';
+import { registerRecordingResources, handleRecordingResource } from './resources/recordings-adapter.js';
 import { ExportResources, registerExportResources } from './resources/exports/index.js';
-import { registerContentResources, handleContentResource } from './resources/content-handler.js';
+import { registerContentResources, handleContentResource } from './resources/content/index.js';
 
-import { registerRoomTools, executeRoomTool } from './tools/room-tools-handler.js';
-import { registerSessionTools, executeSessionTool } from './tools/session-tools-handler.js';
-import { registerRecordingTools, executeRecordingTool } from './tools/recording-tools-handler.js';
+import { registerRoomTools, executeRoomTool } from './tools/room-management/index.js';
+import { registerSessionTools, executeSessionTool } from './tools/session-management/index.js';
+import { registerRecordingTools, executeRecordingTool } from './tools/recording-tools-adapter.js';
 import { registerAnalyticsTools, executeAnalyticsTool } from './tools/analytics-tools/index.js';
 import { registerLiveSessionTools, executeLiveSessionTool } from './tools/live-session-controls/index.js';
 import { registerCommunicationTools, executeCommunicationTool } from './tools/communication-management/index.js';
@@ -82,7 +82,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
       ...registerRoomResources(),
       ...registerSessionResources(),
       ...registerRecordingResources(),
-      ...registerAnalyticsResources(),
+      ...registerAnalyticsResources(client),
       ...registerExportResources(),
       ...registerContentResources()
     ]
@@ -102,9 +102,9 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   
   // Route to appropriate handler based on URI prefix
   if (uri.startsWith('digitalsamba://rooms')) {
-    return handleRoomResource(uri, client);
+    return handleRoomResource(uri, {}, request, { apiUrl: process.env.DIGITAL_SAMBA_API_URL || 'https://api.digitalsamba.com/api/v1' });
   } else if (uri.startsWith('digitalsamba://sessions')) {
-    return handleSessionResource(uri, client);
+    return handleSessionResource(uri, {}, request, { apiUrl: process.env.DIGITAL_SAMBA_API_URL || 'https://api.digitalsamba.com/api/v1' });
   } else if (uri.startsWith('digitalsamba://recordings')) {
     return handleRecordingResource(uri, client);
   } else if (uri.startsWith('digitalsamba://analytics')) {
@@ -154,11 +154,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Route to appropriate tool handler based on name prefix
     if (name.startsWith('create-room') || name.startsWith('update-room') || 
         name.startsWith('delete-room') || name === 'generate-room-token') {
-      return await executeRoomTool(name, args || {}, client);
+      return await executeRoomTool(name, args || {}, request, {
+        apiUrl: process.env.DIGITAL_SAMBA_API_URL || 'https://api.digitalsamba.com/api/v1'
+      });
     } else if (name.startsWith('get-') && name.includes('-analytics')) {
       return await executeAnalyticsTool(name, args || {}, client);
     } else if (name === 'end-session' || name === 'get-session-summary') {
-      return await executeSessionTool(name, args || {}, client);
+      return await executeSessionTool(name, args || {}, client, request);
     } else if (name.includes('recording')) {
       return await executeRecordingTool(name, args || {}, client);
     } else if (name.includes('participant') || name === 'set-room-lock' || 
