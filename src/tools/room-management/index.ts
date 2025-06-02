@@ -150,11 +150,41 @@ export function registerRoomTools(): Tool[] {
 /**
  * Execute a room management tool
  * 
- * @param toolName - The name of the tool to execute
- * @param args - The tool arguments
- * @param request - The MCP request object for authentication
- * @param options - Server options including API configuration
- * @returns The tool execution result
+ * This function handles the execution of room-related tools such as creating,
+ * updating, deleting rooms, and generating access tokens. It manages API client
+ * creation and error handling for all room operations.
+ * 
+ * @param {string} toolName - Name of the tool to execute
+ * @param {any} args - Tool arguments specific to each tool
+ * @param {any} request - MCP request object containing session context
+ * @param {Object} options - Execution options
+ * @param {string} options.apiUrl - Digital Samba API base URL
+ * @param {any} [options.apiCache] - Cache instance for API responses
+ * @param {boolean} [options.enableConnectionManagement] - Enable connection pooling
+ * @param {boolean} [options.enableTokenManagement] - Enable automatic token refresh
+ * @param {boolean} [options.enableResourceOptimization] - Enable resource optimization
+ * @param {number} [options.connectionPoolSize] - Size of connection pool
+ * @returns {Promise<Object>} Tool execution result with content array
+ * 
+ * @example
+ * // Create a room
+ * const result = await executeRoomTool('create-room', {
+ *   name: 'Team Meeting',
+ *   privacy: 'private',
+ *   max_participants: 50
+ * }, request, { apiUrl: 'https://api.digitalsamba.com/api/v1' });
+ * 
+ * @example
+ * // Generate access token
+ * const result = await executeRoomTool('generate-token', {
+ *   roomId: 'room-123',
+ *   options: {
+ *     u: 'John Doe',
+ *     role: 'moderator'
+ *   }
+ * }, request, { apiUrl: 'https://api.digitalsamba.com/api/v1' });
+ * 
+ * @since 1.0.0
  */
 export async function executeRoomTool(
   toolName: string,

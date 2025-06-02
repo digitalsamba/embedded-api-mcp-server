@@ -80,41 +80,144 @@ import { registerPollTools, executePollTool } from './tools/poll-management/inde
 import { registerLibraryTools, executeLibraryTool } from './tools/library-management/index.js';
 import { registerContentResources, handleContentResource } from './resources/content/index.js';
 
-// Type definitions for server options
+/**
+ * Configuration options for the Digital Samba MCP Server
+ * 
+ * This interface defines all available configuration options for creating and running
+ * the MCP server. Options can be provided programmatically or through environment variables.
+ * 
+ * @interface ServerOptions
+ * @since 1.0.0
+ */
 export interface ServerOptions {
+  /** Port number for the HTTP server (default: 4521 or PORT env var) */
   port?: number;
+  
+  /** Base URL for Digital Samba API (default: https://api.digitalsamba.com/api/v1) */
   apiUrl?: string;
+  
+  /** Secret key for webhook signature verification */
   webhookSecret?: string;
+  
+  /** Endpoint path for receiving webhooks (default: /webhooks/digitalsamba) */
   webhookEndpoint?: string;
+  
+  /** Public URL of this server for webhook registration (default: http://localhost:PORT) */
   publicUrl?: string;
+  
+  /** Enable rate limiting for API requests (default: false) */
   enableRateLimiting?: boolean;
+  
+  /** Maximum requests per minute when rate limiting is enabled (default: 60) */
   rateLimitRequestsPerMinute?: number;
+  
+  /** Enable response caching to reduce API calls (default: false) */
   enableCache?: boolean;
+  
+  /** Cache time-to-live in milliseconds (default: 300000 - 5 minutes) */
   cacheTtl?: number;
+  
+  /** Enable HTTP connection pooling for better performance (default: false) */
   enableConnectionManagement?: boolean;
+  
+  /** Enable automatic token refresh and management (default: false) */
   enableTokenManagement?: boolean;
+  
+  /** Enable resource usage optimization (default: false) */
   enableResourceOptimization?: boolean;
+  
+  /** Enable circuit breaker pattern for fault tolerance (default: false) */
   enableCircuitBreaker?: boolean;
+  
+  /** Number of failures before circuit breaker opens (default: 5) */
   circuitBreakerFailureThreshold?: number;
+  
+  /** Time in ms before attempting to close circuit breaker (default: 30000) */
   circuitBreakerResetTimeout?: number;
+  
+  /** Enable graceful degradation for service resilience (default: false) */
   enableGracefulDegradation?: boolean;
+  
+  /** Maximum retry attempts for degraded operations (default: 3) */
   gracefulDegradationMaxRetries?: number;
+  
+  /** Initial delay in ms between retries (default: 1000) */
   gracefulDegradationInitialDelay?: number;
+  
+  /** Size of the HTTP connection pool (default: 5) */
   connectionPoolSize?: number;
+  
+  /** Enable Prometheus metrics collection (default: false) */
   enableMetrics?: boolean;
+  
+  /** Endpoint path for metrics export (default: /metrics) */
   metricsEndpoint?: string;
+  
+  /** Prefix for all metric names (default: digital_samba_mcp_) */
   metricsPrefix?: string;
+  
+  /** Collect default Node.js metrics (default: false) */
   collectDefaultMetrics?: boolean;
-  enableSilentMode?: boolean; // Option for MCP mode
-  debugTimeouts?: boolean; // Enable timeout debugging
-  debugInitialization?: boolean; // Enable initialization debugging
-  initialRequestTimeout?: number; // Override initial request timeout
-  logLevel?: 'error' | 'warn' | 'info' | 'debug' | 'silly'; // Control log level
-  // Direct options for testing/debugging
-  apiKey?: string; // Direct API key for testing
+  
+  /** Enable silent mode for MCP JSON-RPC compatibility (default: false) */
+  enableSilentMode?: boolean;
+  
+  /** Enable detailed timeout debugging logs (default: false) */
+  debugTimeouts?: boolean;
+  
+  /** Enable initialization debugging logs (default: false) */
+  debugInitialization?: boolean;
+  
+  /** Override default request timeout in ms (default: 60000) */
+  initialRequestTimeout?: number;
+  
+  /** Set logging level (default: 'info') */
+  logLevel?: 'error' | 'warn' | 'info' | 'debug' | 'silly';
+  
+  /** Direct API key for testing/debugging (normally provided via headers) */
+  apiKey?: string;
 }
 
-// Create and configure the MCP server
+/**
+ * Create and configure the MCP server instance
+ * 
+ * This function initializes the Digital Samba MCP server with the provided options.
+ * It sets up all resources, tools, and middleware based on the configuration.
+ * 
+ * @param {ServerOptions} [options] - Optional server configuration
+ * @returns {Object} Server configuration object containing:
+ *   - server: The MCP server instance
+ *   - port: The configured port number
+ *   - apiUrl: The Digital Samba API URL
+ *   - webhookEndpoint: The webhook endpoint path
+ *   - publicUrl: The public URL for webhooks
+ *   - cache: The cache instance (if enabled)
+ *   - ...other configuration properties
+ * 
+ * @example
+ * // Basic server creation
+ * const { server, port } = createServer();
+ * 
+ * @example
+ * // Server with caching and rate limiting
+ * const config = createServer({
+ *   enableCache: true,
+ *   cacheTtl: 600000, // 10 minutes
+ *   enableRateLimiting: true,
+ *   rateLimitRequestsPerMinute: 120
+ * });
+ * 
+ * @example
+ * // Server with full resilience features
+ * const config = createServer({
+ *   enableCircuitBreaker: true,
+ *   enableGracefulDegradation: true,
+ *   enableConnectionManagement: true,
+ *   connectionPoolSize: 10
+ * });
+ * 
+ * @since 1.0.0
+ */
 export function createServer(options?: ServerOptions) {
   // Configure environment
   let PORT = 4521; // Uncommon port to avoid conflicts
@@ -684,7 +787,48 @@ export function createServer(options?: ServerOptions) {
   };
 }
 
-// Start a server with the provided options
+/**
+ * Start the MCP server with HTTP transport
+ * 
+ * This function creates and starts an HTTP server that handles MCP protocol requests.
+ * It sets up Express middleware, WebSocket support for SSE, and all configured features.
+ * 
+ * @param {ServerOptions} [options] - Optional server configuration
+ * @returns {http.Server} The HTTP server instance
+ * @throws {Error} If server fails to start or configuration is invalid
+ * 
+ * @example
+ * // Start server with default options
+ * const server = startServer();
+ * 
+ * @example
+ * // Start server with custom configuration
+ * const server = startServer({
+ *   port: 8080,
+ *   enableCache: true,
+ *   enableMetrics: true,
+ *   metricsEndpoint: '/metrics'
+ * });
+ * 
+ * @example
+ * // Start server in production mode
+ * const server = startServer({
+ *   enableRateLimiting: true,
+ *   enableCircuitBreaker: true,
+ *   enableGracefulDegradation: true,
+ *   logLevel: 'warn'
+ * });
+ * 
+ * // Graceful shutdown
+ * process.on('SIGTERM', () => {
+ *   server.close(() => {
+ *     console.log('Server closed');
+ *   });
+ * });
+ * 
+ * @since 1.0.0
+ * @see {@link createServer} for server configuration without starting
+ */
 export function startServer(options?: ServerOptions) {
   // Check if we should run in silent mode
   const enableSilentMode = options?.enableSilentMode || process.env.MCP_JSON_RPC_MODE === 'true';
@@ -1113,9 +1257,24 @@ export function startServer(options?: ServerOptions) {
 export { runStdioServer, validateStdioConfig } from './transports/stdio-transport.js';
 export { runHttpServer, createHttpServerConfig, validateHttpConfig } from './transports/http-transport.js';
 
-// If this file is executed directly or via npm run dev, start the server
-// Only start if the file is executed directly, not when imported
-// The module initialization check had to be rewritten to work with tsx
+/**
+ * Determine if this module is being executed directly
+ * 
+ * This helper function checks if the current module is the main entry point
+ * or if it's being imported by another module. It handles various execution
+ * environments including tsx, Node.js, and test runners.
+ * 
+ * @returns {boolean} True if module is main, false if imported
+ * 
+ * @example
+ * // Environment variable control
+ * process.env.MCP_DISABLE_AUTO_START = 'true'; // Prevents auto-start
+ * process.env.MCP_FORCE_START = 'true'; // Forces auto-start
+ * process.env.NODE_ENV = 'test'; // Prevents auto-start in tests
+ * 
+ * @since 1.0.0
+ * @private
+ */
 const isMainModule = () => {
   // In a more straightforward environment, we would check:
   // import.meta.url === `file://${process.argv[1]}`
