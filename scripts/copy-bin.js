@@ -11,21 +11,33 @@ async function copyBinFiles() {
     const distBinDir = join(projectRoot, 'dist', 'bin');
     await fs.mkdir(distBinDir, { recursive: true });
     
-    // Copy cli.js to the dist/bin directory
-    const sourceFile = join(projectRoot, 'bin', 'cli.js');
-    const destFile = join(distBinDir, 'cli.js');
+    // List of bin files to copy
+    const binFiles = ['cli.js', 'stdio-direct.js', 'stdio-server.js'];
     
-    await fs.copyFile(sourceFile, destFile);
-    
-    // Set executable permission on Unix systems
-    try {
-      const stat = await fs.stat(destFile);
-      // Add executable permission (stat.mode | 0o111)
-      await fs.chmod(destFile, stat.mode | 0o111);
-      console.log('Successfully set executable permissions on cli.js');
-    } catch (permError) {
-      // On Windows this might fail, which is OK
-      console.log('Note: Could not set executable permissions (likely on Windows)');
+    for (const file of binFiles) {
+      const sourceFile = join(projectRoot, 'bin', file);
+      const destFile = join(distBinDir, file);
+      
+      // Check if source file exists
+      try {
+        await fs.access(sourceFile);
+      } catch {
+        console.log(`Skipping ${file} - file does not exist`);
+        continue;
+      }
+      
+      await fs.copyFile(sourceFile, destFile);
+      
+      // Set executable permission on Unix systems
+      try {
+        const stat = await fs.stat(destFile);
+        // Add executable permission (stat.mode | 0o111)
+        await fs.chmod(destFile, stat.mode | 0o111);
+        console.log(`Successfully set executable permissions on ${file}`);
+      } catch (permError) {
+        // On Windows this might fail, which is OK
+        console.log(`Note: Could not set executable permissions on ${file} (likely on Windows)`);
+      }
     }
     
     console.log('Successfully copied bin files to dist/bin');
