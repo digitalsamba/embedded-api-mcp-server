@@ -1,64 +1,36 @@
 /**
- * Analytics Resources Module
- * 
- * This module provides read-only analytics resources for the Digital Samba MCP Server.
- * It implements comprehensive analytics resources for collecting participant, room, 
- * session, and team statistics.
- * 
- * @module resources/analytics
+ * Analytics Resources Handler
+ * Simple handler for analytics resources
  */
 
 import { Resource } from '@modelcontextprotocol/sdk/types.js';
-import { DigitalSambaApiClient } from '../../digital-samba-api.js';
-import { AnalyticsResource } from '../../types/analytics-resource.js';
-import logger from '../../logger.js';
+import { DigitalSambaApiClient } from '../digital-samba-api.js';
+import { AnalyticsResource } from '../types/analytics-resource.js';
+import logger from '../logger.js';
 
-/**
- * Register all analytics resources
- * 
- * @param apiClient - The Digital Samba API client instance
- * @returns Array of MCP Resource definitions
- */
-export function registerAnalyticsResources(apiClient: DigitalSambaApiClient): Resource[] {
-  // Analytics resource instance - currently not used directly but needed for future expansion
-  const _analytics = new AnalyticsResource(apiClient);
-  void _analytics;
-  
+export function registerAnalyticsResources(): Resource[] {
   return [
     {
-      uri: 'digitalsamba://analytics/participants',
-      name: 'analytics-participants',
-      description: 'Get participant analytics and statistics',
-      mimeType: 'application/json'
-    },
-    {
-      uri: 'digitalsamba://analytics/usage',
-      name: 'analytics-usage',
-      description: 'Get usage statistics and growth metrics',
-      mimeType: 'application/json'
-    },
-    {
-      uri: 'digitalsamba://analytics/rooms',
-      name: 'analytics-rooms',
-      description: 'Get room analytics and statistics',
-      mimeType: 'application/json'
-    },
-    {
       uri: 'digitalsamba://analytics/team',
-      name: 'analytics-team',
-      description: 'Get team-wide statistics and metrics',
+      name: 'Team Analytics',
+      description: 'Get team-wide analytics and statistics',
+      mimeType: 'application/json'
+    },
+    {
+      uri: 'digitalsamba://analytics/rooms/{roomId}',
+      name: 'Room Analytics',
+      description: 'Get analytics for a specific room',
+      mimeType: 'application/json'
+    },
+    {
+      uri: 'digitalsamba://analytics/sessions/{sessionId}',
+      name: 'Session Analytics',
+      description: 'Get analytics for a specific session',
       mimeType: 'application/json'
     }
   ];
 }
 
-/**
- * Handle analytics resource requests
- * 
- * @param uri - The resource URI being requested
- * @param apiClient - The Digital Samba API client instance
- * @returns The resource content
- */
 export async function handleAnalyticsResource(uri: string, apiClient: DigitalSambaApiClient): Promise<any> {
   const _analytics = new AnalyticsResource(apiClient);
   
