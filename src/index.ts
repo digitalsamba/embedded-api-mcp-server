@@ -70,19 +70,22 @@ function getApiClient(apiKey: string): DigitalSambaApiClient {
 
 // Register handlers
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
+  // For listing resources, we don't need an API key - just return the schema
+  // API key will be checked when actually reading resources
   const apiKey = process.env.DIGITAL_SAMBA_API_KEY;
-  if (!apiKey) {
-    throw new McpError(ErrorCode.InvalidRequest, 'DIGITAL_SAMBA_API_KEY not configured');
+  
+  // Create a dummy client if needed for analytics registration
+  let client = null;
+  if (apiKey) {
+    client = getApiClient(apiKey);
   }
-
-  const client = getApiClient(apiKey);
   
   return {
     resources: [
       ...registerRoomResources(),
       ...registerSessionResources(),
       ...registerRecordingResources(),
-      ...registerAnalyticsResources(client),
+      ...(client ? registerAnalyticsResources(client) : []),
       ...registerExportResources(),
       ...registerContentResources()
     ]
@@ -120,11 +123,8 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 });
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  const apiKey = process.env.DIGITAL_SAMBA_API_KEY;
-  if (!apiKey) {
-    throw new McpError(ErrorCode.InvalidRequest, 'DIGITAL_SAMBA_API_KEY not configured');
-  }
-
+  // For listing tools, we don't need an API key - just return the schema
+  // API key will be checked when actually executing tools
   return {
     tools: [
       ...registerRoomTools(),
