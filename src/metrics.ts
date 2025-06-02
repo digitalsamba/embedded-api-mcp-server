@@ -21,7 +21,7 @@
 import os from 'os';
 
 // External dependencies
-import { collectDefaultMetrics, Counter, Gauge, Histogram, register, Registry } from 'prom-client';
+import { collectDefaultMetrics, Counter, Gauge, Histogram, /* register, */ Registry } from 'prom-client'; // register commented out as unused
 import express from 'express';
 
 // Local modules

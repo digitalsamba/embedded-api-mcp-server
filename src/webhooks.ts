@@ -19,20 +19,20 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 // Local modules - modular structure
-import {
-  WebhookEventType,
-  WebhookPayload,
-  WebhookConfig,
-  WebhookEventHandler
-} from './webhooks/webhook-types.js';
+// import {
+//   WebhookEventType, // TODO: Future webhook event handling
+//   WebhookPayload, // TODO: Future webhook payload processing
+//   WebhookConfig, // TODO: Future webhook configuration
+//   WebhookEventHandler // TODO: Future webhook event handlers
+// } from './webhooks/webhook-types.js';
 
 import { WebhookService } from './webhooks/webhook-service.js';
 import { setupWebhookManagementTools } from './tools/webhook-management/index.js';
 import logger from './logger.js';
 
 // Re-export types and service for backward compatibility
-export { WebhookEventType } from './webhooks/webhook-types.js';
-export type { WebhookPayload, WebhookConfig, WebhookEventHandler } from './webhooks/webhook-types.js';
+// export { WebhookEventType } from './webhooks/webhook-types.js'; // TODO: Export when webhook events are implemented
+// export type { WebhookPayload, WebhookConfig, WebhookEventHandler } from './webhooks/webhook-types.js'; // TODO: Export when webhook types are implemented
 export { WebhookService } from './webhooks/webhook-service.js';
 
 /**

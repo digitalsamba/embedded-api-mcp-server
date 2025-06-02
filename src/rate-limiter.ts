@@ -26,7 +26,7 @@ import { Request, Response, NextFunction } from 'express';
 
 // Local modules
 import logger from './logger.js';
-import { ApiRequestError } from './errors.js';
+// import { ApiRequestError } from './errors.js'; // TODO: Add custom rate limit error handling
 
 /**
  * Rate limiter options interface
@@ -196,11 +196,11 @@ export class TokenBucketRateLimiter {
         return next();
       }
       
-      // Trust proxy if enabled
-      let clientIp = req.ip;
-      if (this.options.trustProxy && req.headers['x-forwarded-for']) {
-        clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip;
-      }
+      // Trust proxy if enabled (clientIp kept for future enhanced logging)
+      // let clientIp = req.ip;
+      // if (this.options.trustProxy && req.headers['x-forwarded-for']) {
+      //   clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || req.ip;
+      // }
       
       // Generate client key
       const key = this.options.keyGenerator(req);

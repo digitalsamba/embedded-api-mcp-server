@@ -148,7 +148,7 @@ export class ExportResources {
    */
   private async handleRecordingExport(
     pathParts: string[], 
-    searchParams: URLSearchParams
+    _searchParams: URLSearchParams
   ): Promise<{ contents: Array<{ type: string; text: string }> }> {
     if (pathParts.length < 3) {
       throw new McpError(ErrorCode.InvalidRequest, 'Recording export requires: /recordings/{recordingId}');
@@ -176,7 +176,7 @@ export class ExportResources {
    */
   private async handleSessionExport(
     pathParts: string[], 
-    searchParams: URLSearchParams
+    _searchParams: URLSearchParams
   ): Promise<{ contents: Array<{ type: string; text: string }> }> {
     if (pathParts.length < 4) {
       throw new McpError(ErrorCode.InvalidRequest, 'Session export requires: /sessions/{sessionId}/{type}');

@@ -20,7 +20,9 @@ import logger from '../../logger.js';
  * @returns Array of MCP Resource definitions
  */
 export function registerAnalyticsResources(apiClient: DigitalSambaApiClient): Resource[] {
+  // Analytics resource instance - currently not used directly but needed for future expansion
   const _analytics = new AnalyticsResource(apiClient);
+  void _analytics;
   
   return [
     {
