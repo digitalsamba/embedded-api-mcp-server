@@ -225,6 +225,9 @@ async function main() {
   });
 }
 
+// Export main for programmatic use
+export { main };
+
 // Run the server
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(error => {
