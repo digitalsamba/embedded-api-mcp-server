@@ -202,16 +202,11 @@ async function main() {
     process.env.DIGITAL_SAMBA_API_KEY = args[apiKeyArgIndex + 1];
   }
   
-  // Validate API key
+  // Log API key status (don't exit if not found - it will be checked when needed)
   if (!process.env.DIGITAL_SAMBA_API_KEY) {
-    console.error(`Error: DIGITAL_SAMBA_API_KEY is required
-
-Usage:
-  npx @digitalsamba/mcp-server --api-key YOUR_API_KEY
-  or
-  export DIGITAL_SAMBA_API_KEY=YOUR_API_KEY
-  npx @digitalsamba/mcp-server`);
-    process.exit(1);
+    logger.warn('DIGITAL_SAMBA_API_KEY not set. API key will be required for operations.');
+  } else {
+    logger.info('API key configured');
   }
   
   // Create stdio transport
