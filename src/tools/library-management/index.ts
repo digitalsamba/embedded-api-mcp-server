@@ -57,24 +57,54 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: 'create-library',
       description: 'Create a new content library',
       inputSchema: {
-        name: z.string().optional().describe('Name of the library'),
-        externalId: z.string().describe('External identifier for the library'),
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Name of the library'
+          },
+          externalId: {
+            type: 'string',
+            description: 'External identifier for the library'
+          }
+        },
+        required: ['externalId']
       }
     },
     {
       name: 'update-library',
       description: 'Update library details',
       inputSchema: {
-        libraryId: z.string().describe('The ID of the library to update'),
-        name: z.string().optional().describe('Updated name of the library'),
-        externalId: z.string().optional().describe('Updated external identifier'),
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library to update'
+          },
+          name: {
+            type: 'string',
+            description: 'Updated name of the library'
+          },
+          externalId: {
+            type: 'string',
+            description: 'Updated external identifier'
+          }
+        },
+        required: ['libraryId']
       }
     },
     {
       name: 'delete-library',
       description: 'Delete a content library',
       inputSchema: {
-        libraryId: z.string().describe('The ID of the library to delete'),
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library to delete'
+          }
+        },
+        required: ['libraryId']
       }
     },
     
@@ -83,27 +113,66 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: 'create-library-folder',
       description: 'Create a new folder in a library',
       inputSchema: {
-        libraryId: z.string().describe('The ID of the library'),
-        name: z.string().optional().describe('Name of the folder'),
-        parentId: z.string().optional().describe('Parent folder ID (for nested folders)'),
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          name: {
+            type: 'string',
+            description: 'Name of the folder'
+          },
+          parentId: {
+            type: 'string',
+            description: 'Parent folder ID (for nested folders)'
+          }
+        },
+        required: ['libraryId']
       }
     },
     {
       name: 'update-library-folder',
       description: 'Update folder details',
       inputSchema: {
-        libraryId: z.string().describe('The ID of the library'),
-        folderId: z.string().describe('The ID of the folder to update'),
-        name: z.string().optional().describe('Updated name of the folder'),
-        parentId: z.string().optional().describe('Updated parent folder ID'),
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          folderId: {
+            type: 'string',
+            description: 'The ID of the folder to update'
+          },
+          name: {
+            type: 'string',
+            description: 'Updated name of the folder'
+          },
+          parentId: {
+            type: 'string',
+            description: 'Updated parent folder ID'
+          }
+        },
+        required: ['libraryId', 'folderId']
       }
     },
     {
       name: 'delete-library-folder',
       description: 'Delete a folder from a library',
       inputSchema: {
-        libraryId: z.string().describe('The ID of the library'),
-        folderId: z.string().describe('The ID of the folder to delete'),
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          folderId: {
+            type: 'string',
+            description: 'The ID of the folder to delete'
+          }
+        },
+        required: ['libraryId', 'folderId']
       }
     },
     
@@ -112,35 +181,84 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: 'create-library-file',
       description: 'Create a new file entry and get upload URL',
       inputSchema: {
-        libraryId: z.string().describe('The ID of the library'),
-        name: z.string().describe('Name of the file'),
-        folderId: z.string().optional().describe('Folder ID to place the file in'),
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          name: {
+            type: 'string',
+            description: 'Name of the file'
+          },
+          folderId: {
+            type: 'string',
+            description: 'Folder ID to place the file in'
+          }
+        },
+        required: ['libraryId', 'name']
       }
     },
     {
       name: 'update-library-file',
       description: 'Update file details',
       inputSchema: {
-        libraryId: z.string().describe('The ID of the library'),
-        fileId: z.string().describe('The ID of the file to update'),
-        name: z.string().optional().describe('Updated name of the file'),
-        folderId: z.string().optional().describe('Updated folder ID'),
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          fileId: {
+            type: 'string',
+            description: 'The ID of the file to update'
+          },
+          name: {
+            type: 'string',
+            description: 'Updated name of the file'
+          },
+          folderId: {
+            type: 'string',
+            description: 'Updated folder ID'
+          }
+        },
+        required: ['libraryId', 'fileId']
       }
     },
     {
       name: 'delete-library-file',
       description: 'Delete a file from a library',
       inputSchema: {
-        libraryId: z.string().describe('The ID of the library'),
-        fileId: z.string().describe('The ID of the file to delete'),
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          fileId: {
+            type: 'string',
+            description: 'The ID of the file to delete'
+          }
+        },
+        required: ['libraryId', 'fileId']
       }
     },
     {
       name: 'get-file-links',
       description: 'Get viewing and thumbnail links for a file',
       inputSchema: {
-        libraryId: z.string().describe('The ID of the library'),
-        fileId: z.string().describe('The ID of the file'),
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          fileId: {
+            type: 'string',
+            description: 'The ID of the file'
+          }
+        },
+        required: ['libraryId', 'fileId']
       }
     },
     
@@ -149,18 +267,44 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: 'create-webapp',
       description: 'Create a new webapp in a library',
       inputSchema: {
-        libraryId: z.string().describe('The ID of the library'),
-        name: z.string().describe('Name of the webapp'),
-        folderId: z.string().optional().describe('Folder ID to place the webapp in'),
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          name: {
+            type: 'string',
+            description: 'Name of the webapp'
+          },
+          folderId: {
+            type: 'string',
+            description: 'Folder ID to place the webapp in'
+          }
+        },
+        required: ['libraryId', 'name']
       }
     },
     {
       name: 'create-whiteboard',
       description: 'Create a new whiteboard in a library',
       inputSchema: {
-        libraryId: z.string().describe('The ID of the library'),
-        name: z.string().describe('Name of the whiteboard'),
-        folderId: z.string().optional().describe('Folder ID to place the whiteboard in'),
+        type: 'object',
+        properties: {
+          libraryId: {
+            type: 'string',
+            description: 'The ID of the library'
+          },
+          name: {
+            type: 'string',
+            description: 'Name of the whiteboard'
+          },
+          folderId: {
+            type: 'string',
+            description: 'Folder ID to place the whiteboard in'
+          }
+        },
+        required: ['libraryId', 'name']
       }
     }
   ];

@@ -41,13 +41,7 @@ interface ToolDefinition {
   inputSchema: any;
 }
 
-/**
- * Poll option schema
- */
-const pollOptionSchema = z.object({
-  text: z.string().describe('The text of the poll option'),
-  id: z.string().optional().describe('Optional ID for the option'),
-});
+// Removed Zod schema - using JSON Schema directly in tool definitions
 
 /**
  * Register poll management tools with the MCP SDK
@@ -60,56 +54,171 @@ export function registerPollTools(): ToolDefinition[] {
       name: 'create-poll',
       description: 'Create a new poll in a room',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room to create the poll in'),
-        question: z.string().describe('The poll question'),
-        options: z.array(pollOptionSchema).min(2).describe('Array of poll options (minimum 2)'),
-        type: z.enum(['single', 'multiple']).optional().describe('Poll type: single choice or multiple choice'),
-        anonymous: z.boolean().optional().describe('Whether the poll is anonymous'),
-        showResults: z.boolean().optional().describe('Whether to show results to participants'),
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room to create the poll in'
+          },
+          question: {
+            type: 'string',
+            description: 'The poll question'
+          },
+          options: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                text: {
+                  type: 'string',
+                  description: 'The text of the poll option'
+                },
+                id: {
+                  type: 'string',
+                  description: 'Optional ID for the option'
+                }
+              },
+              required: ['text']
+            },
+            minItems: 2,
+            description: 'Array of poll options (minimum 2)'
+          },
+          type: {
+            type: 'string',
+            enum: ['single', 'multiple'],
+            description: 'Poll type: single choice or multiple choice'
+          },
+          anonymous: {
+            type: 'boolean',
+            description: 'Whether the poll is anonymous'
+          },
+          showResults: {
+            type: 'boolean',
+            description: 'Whether to show results to participants'
+          }
+        },
+        required: ['roomId', 'question', 'options']
       }
     },
     {
       name: 'update-poll',
       description: 'Update an existing poll',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room containing the poll'),
-        pollId: z.string().describe('The ID of the poll to update'),
-        question: z.string().optional().describe('Updated poll question'),
-        options: z.array(pollOptionSchema).optional().describe('Updated poll options'),
-        type: z.enum(['single', 'multiple']).optional().describe('Updated poll type'),
-        anonymous: z.boolean().optional().describe('Updated anonymous setting'),
-        showResults: z.boolean().optional().describe('Updated show results setting'),
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room containing the poll'
+          },
+          pollId: {
+            type: 'string',
+            description: 'The ID of the poll to update'
+          },
+          question: {
+            type: 'string',
+            description: 'Updated poll question'
+          },
+          options: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                text: {
+                  type: 'string',
+                  description: 'The text of the poll option'
+                },
+                id: {
+                  type: 'string',
+                  description: 'Optional ID for the option'
+                }
+              },
+              required: ['text']
+            },
+            description: 'Updated poll options'
+          },
+          type: {
+            type: 'string',
+            enum: ['single', 'multiple'],
+            description: 'Updated poll type'
+          },
+          anonymous: {
+            type: 'boolean',
+            description: 'Updated anonymous setting'
+          },
+          showResults: {
+            type: 'boolean',
+            description: 'Updated show results setting'
+          }
+        },
+        required: ['roomId', 'pollId']
       }
     },
     {
       name: 'delete-poll',
       description: 'Delete a specific poll',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room containing the poll'),
-        pollId: z.string().describe('The ID of the poll to delete'),
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room containing the poll'
+          },
+          pollId: {
+            type: 'string',
+            description: 'The ID of the poll to delete'
+          }
+        },
+        required: ['roomId', 'pollId']
       }
     },
     {
       name: 'delete-session-polls',
       description: 'Delete all polls for a specific session',
       inputSchema: {
-        sessionId: z.string().describe('The ID of the session to delete polls from'),
+        type: 'object',
+        properties: {
+          sessionId: {
+            type: 'string',
+            description: 'The ID of the session to delete polls from'
+          }
+        },
+        required: ['sessionId']
       }
     },
     {
       name: 'delete-room-polls',
       description: 'Delete all polls for all sessions in a room',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room to delete polls from'),
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room to delete polls from'
+          }
+        },
+        required: ['roomId']
       }
     },
     {
       name: 'publish-poll-results',
       description: 'Publish poll results to participants',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room containing the poll'),
-        pollId: z.string().describe('The ID of the poll to publish results for'),
-        sessionId: z.string().optional().describe('The ID of the specific session (optional)'),
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room containing the poll'
+          },
+          pollId: {
+            type: 'string',
+            description: 'The ID of the poll to publish results for'
+          },
+          sessionId: {
+            type: 'string',
+            description: 'The ID of the specific session (optional)'
+          }
+        },
+        required: ['roomId', 'pollId']
       }
     }
   ];
