@@ -55,14 +55,28 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: 'delete-session-chats',
       description: 'Delete all chat messages for a specific session',
       inputSchema: {
-        sessionId: z.string().describe('The ID of the session to delete chats from'),
+        type: 'object',
+        properties: {
+          sessionId: {
+            type: 'string',
+            description: 'The ID of the session to delete chats from'
+          }
+        },
+        required: ['sessionId']
       }
     },
     {
       name: 'delete-room-chats',
       description: 'Delete all chat messages for all sessions in a room',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room to delete chats from'),
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room to delete chats from'
+          }
+        },
+        required: ['roomId']
       }
     },
     
@@ -71,14 +85,28 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: 'delete-session-qa',
       description: 'Delete all questions and answers for a specific session',
       inputSchema: {
-        sessionId: z.string().describe('The ID of the session to delete Q&A from'),
+        type: 'object',
+        properties: {
+          sessionId: {
+            type: 'string',
+            description: 'The ID of the session to delete Q&A from'
+          }
+        },
+        required: ['sessionId']
       }
     },
     {
       name: 'delete-room-qa',
       description: 'Delete all questions and answers for all sessions in a room',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room to delete Q&A from'),
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room to delete Q&A from'
+          }
+        },
+        required: ['roomId']
       }
     },
     
@@ -87,14 +115,28 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: 'delete-session-transcripts',
       description: 'Delete all transcripts for a specific session',
       inputSchema: {
-        sessionId: z.string().describe('The ID of the session to delete transcripts from'),
+        type: 'object',
+        properties: {
+          sessionId: {
+            type: 'string',
+            description: 'The ID of the session to delete transcripts from'
+          }
+        },
+        required: ['sessionId']
       }
     },
     {
       name: 'delete-room-transcripts',
       description: 'Delete all transcripts for all sessions in a room',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room to delete transcripts from'),
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room to delete transcripts from'
+          }
+        },
+        required: ['roomId']
       }
     },
     
@@ -103,14 +145,28 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: 'delete-session-summaries',
       description: 'Delete all AI-generated summaries for a specific session',
       inputSchema: {
-        sessionId: z.string().describe('The ID of the session to delete summaries from'),
+        type: 'object',
+        properties: {
+          sessionId: {
+            type: 'string',
+            description: 'The ID of the session to delete summaries from'
+          }
+        },
+        required: ['sessionId']
       }
     },
     {
       name: 'delete-room-summaries',
       description: 'Delete all AI-generated summaries for all sessions in a room',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room to delete summaries from'),
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room to delete summaries from'
+          }
+        },
+        required: ['roomId']
       }
     }
   ];

@@ -58,35 +58,89 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: 'start-transcription',
       description: 'Start transcription for a live session in a room',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room to start transcription for'),
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room to start transcription for'
+          }
+        },
+        required: ['roomId']
       }
     },
     {
       name: 'stop-transcription',
       description: 'Stop transcription for a live session in a room',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room to stop transcription for'),
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room to stop transcription for'
+          }
+        },
+        required: ['roomId']
       }
     },
     {
       name: 'phone-participants-joined',
       description: 'Register phone participants joining a room',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room'),
-        participants: z.array(z.object({
-          call_id: z.string().describe('Unique identifier for the phone call'),
-          name: z.string().optional().describe('Name of the participant'),
-          caller_number: z.string().optional().describe('Phone number of the participant'),
-          external_id: z.string().optional().describe('External identifier for the participant')
-        })).describe('Array of phone participants joining')
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room'
+          },
+          participants: {
+            type: 'array',
+            description: 'Array of phone participants joining',
+            items: {
+              type: 'object',
+              properties: {
+                call_id: {
+                  type: 'string',
+                  description: 'Unique identifier for the phone call'
+                },
+                name: {
+                  type: 'string',
+                  description: 'Name of the participant'
+                },
+                caller_number: {
+                  type: 'string',
+                  description: 'Phone number of the participant'
+                },
+                external_id: {
+                  type: 'string',
+                  description: 'External identifier for the participant'
+                }
+              },
+              required: ['call_id']
+            }
+          }
+        },
+        required: ['roomId', 'participants']
       }
     },
     {
       name: 'phone-participants-left',
       description: 'Register phone participants leaving a room',
       inputSchema: {
-        roomId: z.string().describe('The ID of the room'),
-        callIds: z.array(z.string()).describe('Array of call IDs for participants leaving')
+        type: 'object',
+        properties: {
+          roomId: {
+            type: 'string',
+            description: 'The ID of the room'
+          },
+          callIds: {
+            type: 'array',
+            description: 'Array of call IDs for participants leaving',
+            items: {
+              type: 'string'
+            }
+          }
+        },
+        required: ['roomId', 'callIds']
       }
     }
   ];
