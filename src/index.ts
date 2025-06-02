@@ -10,11 +10,14 @@ const isMcpJsonRpcMode = process.env.MCP_JSON_RPC_MODE === 'true';
 // as it would interfere with the JSON-RPC protocol
 if (isMcpJsonRpcMode) {
   // In MCP mode, redirect all stdout console outputs to stderr
+  // Store original console methods in case we need to restore them later
   const _originalConsole = {
     log: console.log,
     info: console.info,
     warn: console.warn
   };
+  // Currently unused but kept for potential future restoration functionality
+  void _originalConsole;
   
   // Only output errors and warnings to stderr, suppress other logs
   console.log = () => {};
@@ -44,10 +47,12 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 
 // Local modules
 import apiKeyContext, { extractApiKey, getApiKeyFromRequest } from './auth.js';
-import { createConnectionManager } from './connection-manager.js';
-import { createTokenManager } from './token-manager.js';
-import { createResourceOptimizer } from './resource-optimizer.js';
-import { createEnhancedApiClient, EnhancedDigitalSambaApiClient } from './digital-samba-api-enhanced.js';
+// Commented out unused import - may be needed for future HTTP client pooling
+// import { createConnectionManager } from './connection-manager.js';
+// Commented out unused imports - may be needed for future functionality
+// import { createTokenManager } from './token-manager.js';
+// import { createResourceOptimizer } from './resource-optimizer.js';
+// import { createEnhancedApiClient, EnhancedDigitalSambaApiClient } from './digital-samba-api-enhanced.js';
 // import { CircuitBreakerApiClient } from './digital-samba-api-circuit-breaker.js'; // Removed: unused
 // import ResilientApiClient from './digital-samba-api-resilient.js'; // Removed: unused
 import { MemoryCache } from './cache.js';
@@ -122,8 +127,8 @@ export function createServer(options?: ServerOptions) {
   const WEBHOOK_SECRET = options?.webhookSecret || process.env.WEBHOOK_SECRET;
   const WEBHOOK_ENDPOINT = options?.webhookEndpoint || process.env.WEBHOOK_ENDPOINT || '/webhooks/digitalsamba';
   const PUBLIC_URL = options?.publicUrl || process.env.PUBLIC_URL || `http://localhost:${PORT}`;
-  const ENABLE_RATE_LIMITING = options?.enableRateLimiting !== undefined ? options.enableRateLimiting : process.env.ENABLE_RATE_LIMITING === 'true';
-  const RATE_LIMIT_REQUESTS_PER_MINUTE = options?.rateLimitRequestsPerMinute || (process.env.RATE_LIMIT_REQUESTS_PER_MINUTE ? parseInt(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE) : 60);
+  // const ENABLE_RATE_LIMITING = options?.enableRateLimiting !== undefined ? options.enableRateLimiting : process.env.ENABLE_RATE_LIMITING === 'true'; // TODO: Future rate limiting feature
+  // const RATE_LIMIT_REQUESTS_PER_MINUTE = options?.rateLimitRequestsPerMinute || (process.env.RATE_LIMIT_REQUESTS_PER_MINUTE ? parseInt(process.env.RATE_LIMIT_REQUESTS_PER_MINUTE) : 60); // TODO: Future rate limiting feature
   const ENABLE_CACHE = options?.enableCache !== undefined ? options.enableCache : process.env.ENABLE_CACHE === 'true';
   const CACHE_TTL = options?.cacheTtl || (process.env.CACHE_TTL ? parseInt(process.env.CACHE_TTL) : 5 * 60 * 1000); // 5 minutes default
   const ENABLE_CONNECTION_MANAGEMENT = options?.enableConnectionManagement !== undefined ? options.enableConnectionManagement : process.env.ENABLE_CONNECTION_MANAGEMENT === 'true';
@@ -286,22 +291,20 @@ export function createServer(options?: ServerOptions) {
     server.resource(
       resource.name,
       new ResourceTemplate(resource.uri, { list: undefined }),
-      async (uri, params, request) => {
+      async (uri, _params, _request) => {
         logger.info(`Handling session resource: ${resource.name}`);
         
         try {
           // Use the modular handler
-          const result = await handleSessionResource(
+          return await handleSessionResource(
             uri.href,
-            params,
-            request,
+            _params,
+            _request,
             {
               apiUrl: API_URL,
               apiCache
             }
           );
-          
-          return result;
         } catch (error) {
           logger.error(`Error in session resource ${resource.name}`, { 
             error: error instanceof Error ? error.message : String(error) 
@@ -325,7 +328,7 @@ export function createServer(options?: ServerOptions) {
     server.resource(
       resource.name,
       new ResourceTemplate(resource.uri, { list: undefined }),
-      async (uri, params, request) => {
+      async (uri, _params, _request) => {
         logger.info(`Handling export resource: ${resource.name}`);
         
         try {
@@ -371,22 +374,23 @@ export function createServer(options?: ServerOptions) {
           };
         }
         
-        let apiClient;
-        if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
-          apiClient = new EnhancedDigitalSambaApiClient(
-            apiKey,
-            API_URL,
-            apiCache,
-            {
-              enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
-              enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
-              enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
-              connectionPoolSize: CONNECTION_POOL_SIZE
-            }
-          );
-        } else {
-          apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
-        }
+        // TODO: Enhanced API client usage - currently using direct API calls in executeRoomTool
+        // let apiClient;
+        // if (ENABLE_CONNECTION_MANAGEMENT || ENABLE_TOKEN_MANAGEMENT || ENABLE_RESOURCE_OPTIMIZATION) {
+        //   apiClient = new EnhancedDigitalSambaApiClient(
+        //     apiKey,
+        //     API_URL,
+        //     apiCache,
+        //     {
+        //       enableConnectionManagement: ENABLE_CONNECTION_MANAGEMENT,
+        //       enableTokenManagement: ENABLE_TOKEN_MANAGEMENT,
+        //       enableResourceOptimization: ENABLE_RESOURCE_OPTIMIZATION,
+        //       connectionPoolSize: CONNECTION_POOL_SIZE
+        //     }
+        //   );
+        // } else {
+        //   apiClient = new DigitalSambaApiClient(apiKey, API_URL, apiCache);
+        // }
         
         // Execute the tool using the modular function
         return executeRoomTool(tool.name, params, request, {
@@ -1154,7 +1158,7 @@ if (isMainModule()) {
       cacheEnabled: !!serverConfig.cache
     });
     
-    const server = startServer();
+    // const server = startServer(); // TODO: Server instance usage
     console.log(`Server started successfully`);
   } catch (error) {
     console.error('Failed to start server:', error);

@@ -103,12 +103,12 @@ export async function runStdioServer(options: StdioTransportOptions): Promise<vo
  * console output must be redirected to stderr to avoid protocol conflicts.
  */
 function setupConsoleRedirection(): void {
-  const _originalConsole = {
-    log: console.log,
-    info: console.info,
-    warn: console.warn,
-    debug: console.debug
-  };
+  // const _originalConsole = { // TODO: Console restoration functionality
+  //   log: console.log,
+  //   info: console.info,
+  //   warn: console.warn,
+  //   debug: console.debug
+  // };
 
   // Redirect all console output to stderr with prefixes
   console.log = (...args: any[]) => process.stderr.write(`[LOG] ${args.join(' ')}\n`);
