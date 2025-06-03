@@ -94,6 +94,7 @@ export async function handleRoomResource(
       const content = {
         uri: uri,
         text: JSON.stringify(room, null, 2),
+        mimeType: 'application/json'
       };
       
       return { contents: [content] };
@@ -145,6 +146,7 @@ export async function handleRoomResource(
       const contents = rooms.data.map(room => ({
         uri: `digitalsamba://rooms/${room.id}`,
         text: JSON.stringify(room, null, 2),
+        mimeType: 'application/json'
       }));
       
       return { contents };

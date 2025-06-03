@@ -198,39 +198,30 @@ export const mockRequest = {
 };
 
 /**
- * Mock transport for testing
+ * Mock MCP request for testing
  */
-export const mockTransport = {
-  sessionId: 'test-session-id',
-};
-
-/**
- * Mock MCP request meta for testing
- */
-export const mockRequestMeta = {
-  id: 'test-request-id',
+export const mockMcpRequest = {
   method: 'test-method',
-  transport: mockTransport,
+  params: {},
 };
 
 /**
- * Mock express request
+ * Mock MCP tool request
  */
-export const mockExpressRequest = {
-  headers: {
-    authorization: 'Bearer test-api-key',
-    'mcp-session-id': 'test-session-id',
+export const mockToolRequest = {
+  method: 'tools/call',
+  params: {
+    name: 'test-tool',
+    arguments: {},
   },
-  body: {},
 };
 
 /**
- * Mock express response
+ * Mock MCP resource request
  */
-export const mockExpressResponse = {
-  status: jest.fn().mockReturnThis(),
-  json: jest.fn(),
-  send: jest.fn(),
-  end: jest.fn(),
-  headersSent: false,
+export const mockResourceRequest = {
+  method: 'resources/read',
+  params: {
+    uri: 'digitalsamba://test-resource',
+  },
 };

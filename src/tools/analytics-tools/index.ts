@@ -166,6 +166,28 @@ export async function executeAnalyticsTool(
         }]
       };
       
+    case 'get-participant-statistics':
+      logger.info('Executing participant statistics query', { args });
+      // Use team analytics with participant filter
+      const participantResult = await analytics.getTeamAnalytics(filters);
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(participantResult, null, 2)
+        }]
+      };
+      
+    case 'get-usage-statistics':
+      logger.info('Executing usage statistics query', { args });
+      // Use team analytics for usage statistics
+      const usageResult = await analytics.getTeamAnalytics(filters);
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(usageResult, null, 2)
+        }]
+      };
+      
     default:
       throw new Error(`Unknown analytics tool: ${toolName}`);
   }

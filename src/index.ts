@@ -43,6 +43,7 @@ import { registerCommunicationTools, executeCommunicationTool } from './tools/co
 import { registerPollTools, executePollTool } from './tools/poll-management/index.js';
 import { registerLibraryTools, executeLibraryTool } from './tools/library-management/index.js';
 import { registerRoleTools, executeRoleTool } from './tools/role-management/index.js';
+import { registerWebhookTools, executeWebhookTool } from './tools/webhook-management/index.js';
 
 // Create MCP server
 const server = new Server({
@@ -136,7 +137,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       ...registerCommunicationTools(),
       ...registerPollTools(),
       ...registerLibraryTools(),
-      ...registerRoleTools()
+      ...registerRoleTools(),
+      ...registerWebhookTools()
     ]
   };
 });
@@ -200,6 +202,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     else if (name.includes('role') || name === 'get-permissions') {
       return await executeRoleTool(name, args || {}, client);
     }
+    // Webhook management tools
+    else if (name.includes('webhook') || name === 'list-webhook-events') {
+      return await executeWebhookTool(name, args || {}, client);
+    }
     
     throw new McpError(ErrorCode.InvalidRequest, `Unknown tool: ${name}`);
   } catch (error: any) {
@@ -254,8 +260,9 @@ async function main() {
 // Export main for programmatic use
 export { main };
 
-// Run the server
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Run the server if this is the main module
+// Skip this check during testing
+if (typeof jest === 'undefined' && import.meta.url === `file://${process.argv[1]}`) {
   main().catch(error => {
     console.error('Fatal error:', error);
     process.exit(1);

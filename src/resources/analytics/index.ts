@@ -107,8 +107,9 @@ export async function handleAnalyticsResource(uri: string, apiClient: DigitalSam
       const teamData = await _analytics.getTeamAnalytics(filters);
       return {
         contents: [{
-          type: 'application/json',
-          text: JSON.stringify(teamData, null, 2)
+          uri: uri,
+          text: JSON.stringify(teamData, null, 2),
+          mimeType: 'application/json'
         }]
       };
       
@@ -121,8 +122,9 @@ export async function handleAnalyticsResource(uri: string, apiClient: DigitalSam
       const roomData = await _analytics.getRoomAnalytics(roomId);
       return {
         contents: [{
-          type: 'application/json',
-          text: JSON.stringify(roomData, null, 2)
+          uri: uri,
+          text: JSON.stringify(roomData, null, 2),
+          mimeType: 'application/json'
         }]
       };
       
@@ -135,8 +137,9 @@ export async function handleAnalyticsResource(uri: string, apiClient: DigitalSam
       const sessionData = await _analytics.getSessionAnalytics(sessionId);
       return {
         contents: [{
-          type: 'application/json',
-          text: JSON.stringify(sessionData, null, 2)
+          uri: uri,
+          text: JSON.stringify(sessionData, null, 2),
+          mimeType: 'application/json'
         }]
       };
       
@@ -151,8 +154,9 @@ export async function handleAnalyticsResource(uri: string, apiClient: DigitalSam
       const participantData = await _analytics.getParticipantAnalytics(participantId);
       return {
         contents: [{
-          type: 'application/json',
-          text: JSON.stringify(participantData, null, 2)
+          uri: uri,
+          text: JSON.stringify(participantData, null, 2),
+          mimeType: 'application/json'
         }]
       };
       
@@ -162,8 +166,9 @@ export async function handleAnalyticsResource(uri: string, apiClient: DigitalSam
       const usageData = await _analytics.getUsageAnalytics(usageFilters);
       return {
         contents: [{
-          type: 'application/json',
-          text: JSON.stringify(usageData, null, 2)
+          uri: uri,
+          text: JSON.stringify(usageData, null, 2),
+          mimeType: 'application/json'
         }]
       };
       
@@ -179,8 +184,9 @@ export async function handleAnalyticsResource(uri: string, apiClient: DigitalSam
       const liveData = await _analytics.getLiveAnalytics(liveRoomId, includeParticipants);
       return {
         contents: [{
-          type: 'application/json',
-          text: JSON.stringify(liveData, null, 2)
+          uri: uri,
+          text: JSON.stringify(liveData, null, 2),
+          mimeType: 'application/json'
         }]
       };
       

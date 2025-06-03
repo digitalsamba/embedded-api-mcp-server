@@ -80,7 +80,7 @@ export async function handleSessionResource(
   }
   
   // Create API client
-  const client = new DigitalSambaApiClient(undefined, apiUrl, apiCache);
+  const client = new DigitalSambaApiClient(apiKey, apiUrl, apiCache);
   
   // Parse the URI to determine which resource is being requested
   const uriParts = uri.split('/');
@@ -103,6 +103,7 @@ export async function handleSessionResource(
       const contents = sessions.map(session => ({
         uri: `digitalsamba://sessions/${session.id}`,
         text: JSON.stringify(session, null, 2),
+        mimeType: 'application/json'
       }));
       
       return { contents };
@@ -123,6 +124,7 @@ export async function handleSessionResource(
       const contents = participants.map(participant => ({
         uri: `digitalsamba://participants/${participant.id}`,
         text: JSON.stringify(participant, null, 2),
+        mimeType: 'application/json'
       }));
       
       return { contents };
@@ -142,6 +144,7 @@ export async function handleSessionResource(
         contents: [{
           uri: uri,
           text: JSON.stringify(statistics, null, 2),
+          mimeType: 'application/json'
         }]
       };
       
@@ -160,6 +163,7 @@ export async function handleSessionResource(
         contents: [{
           uri: uri,
           text: JSON.stringify(session, null, 2),
+          mimeType: 'application/json'
         }]
       };
       
@@ -173,6 +177,7 @@ export async function handleSessionResource(
       const contents = sessions.map(session => ({
         uri: `digitalsamba://sessions/${session.id}`,
         text: JSON.stringify(session, null, 2),
+        mimeType: 'application/json'
       }));
       
       return { contents };

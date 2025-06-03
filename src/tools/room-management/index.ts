@@ -421,6 +421,11 @@ export async function executeRoomTool(
     case 'generate-token': {
       const { roomId, userName, role, externalId } = args;
       
+      // Validate required fields
+      if (!roomId) {
+        throw new Error('roomId is required');
+      }
+      
       logger.info('Generating room token', { 
         roomId, 
         userName, 

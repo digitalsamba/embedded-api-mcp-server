@@ -30,6 +30,63 @@ export function registerRecordingTools(): Tool[] {
         },
         required: ['recordingId']
       }
+    },
+    {
+      name: 'get-recordings',
+      description: 'Get a list of recordings',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          room_id: { type: 'string', description: 'Filter by room ID' },
+          limit: { type: 'number', description: 'Maximum number of recordings to return' },
+          offset: { type: 'number', description: 'Offset for pagination' }
+        },
+        required: []
+      }
+    },
+    {
+      name: 'start-recording',
+      description: 'Start recording a room',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          room_id: { type: 'string', description: 'The ID of the room to record' }
+        },
+        required: ['room_id']
+      }
+    },
+    {
+      name: 'stop-recording',
+      description: 'Stop recording a room',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          room_id: { type: 'string', description: 'The ID of the room to stop recording' }
+        },
+        required: ['room_id']
+      }
+    },
+    {
+      name: 'archive-recording',
+      description: 'Archive a recording',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          recordingId: { type: 'string', description: 'The ID of the recording to archive' }
+        },
+        required: ['recordingId']
+      }
+    },
+    {
+      name: 'unarchive-recording',
+      description: 'Unarchive a recording',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          recordingId: { type: 'string', description: 'The ID of the recording to unarchive' }
+        },
+        required: ['recordingId']
+      }
     }
   ];
 }
@@ -51,6 +108,51 @@ export async function executeRecordingTool(name: string, args: any, client: Digi
         content: [{
           type: 'text',
           text: `Recording update not supported`
+        }]
+      };
+      
+    case 'get-recordings':
+      const recordings = await client.listRecordings(args);
+      return {
+        content: [{
+          type: 'text',
+          text: `Found ${recordings.data?.length || 0} recording(s):\n${JSON.stringify(recordings, null, 2)}`
+        }]
+      };
+      
+    case 'start-recording':
+      // Start recording not supported in base API
+      return {
+        content: [{
+          type: 'text',
+          text: `Start recording not supported in current API`
+        }]
+      };
+      
+    case 'stop-recording':
+      // Stop recording not supported in base API
+      return {
+        content: [{
+          type: 'text',
+          text: `Stop recording not supported in current API`
+        }]
+      };
+      
+    case 'archive-recording':
+      // Archive recording not supported in base API
+      return {
+        content: [{
+          type: 'text',
+          text: `Archive recording not supported in current API`
+        }]
+      };
+      
+    case 'unarchive-recording':
+      // Unarchive recording not supported in base API
+      return {
+        content: [{
+          type: 'text',
+          text: `Unarchive recording not supported in current API`
         }]
       };
       

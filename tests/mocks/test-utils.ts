@@ -6,278 +6,234 @@
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { createServer, startServer } from '../../src/index';
-import { DigitalSambaApiClient } from '../../src/digital-samba-api';
-import { createMockApiServer } from './mock-api-server';
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import { Server } from 'http';
-import { AddressInfo } from 'net';
-import logger from '../../src/logger';
+import logger from '../../src/logger.js';
 import path from 'path';
 
+// Note: Jest transpiles to CommonJS, so we can't use import.meta.url
+// We'll use process.cwd() and relative paths instead
+
+
 /**
- * Create a test MCP client for connecting to the server
+ * Start an MCP server process for testing
  * 
- * @param serverUrl - URL of the MCP server
- * @param apiKey - API key to use for authentication
- * @returns MCP client instance
+ * @param options - Server options
+ * @returns Spawned process and client
  */
-export async function createTestClient(serverUrl: string, apiKey: string): Promise<Client> {
-  // Create client and transport
+export async function startServerProcess(options: {
+  apiKey?: string;
+  apiUrl?: string;
+  enableCache?: boolean;
+  debugMode?: boolean;
+}): Promise<{ process: ChildProcess; client: Client }> {
+  const {
+    apiKey = 'test-api-key',
+    apiUrl = 'https://api.digitalsamba.com/api/v1',
+    enableCache = false,
+    debugMode = false,
+  } = options;
+  
+  // Create client
   const client = new Client({
     name: 'test-client',
     version: '1.0.0',
   });
   
-  // Create Streamable HTTP transport
-  const transport = new StreamableHTTPClientTransport(new URL(serverUrl));
-  
-  // Add authentication header
-  transport.extraHeaders = {
-    'Authorization': `Bearer ${apiKey}`,
+  // Set environment variables
+  const env = {
+    ...process.env,
+    DIGITAL_SAMBA_API_KEY: apiKey,
+    DIGITAL_SAMBA_API_URL: apiUrl,
+    NODE_ENV: 'test',
   };
   
-  // Connect client to transport
+  if (debugMode) {
+    env.DEBUG = 'mcp:*';
+  }
+  
+  // Build command-line arguments
+  const args = [path.join(process.cwd(), 'dist/src/index.js'), 'stdio'];
+  
+  if (enableCache) {
+    args.push('--enable-cache');
+  }
+  
+  // Create stdio transport
+  const transport = new StdioClientTransport({
+    command: 'node',
+    args,
+    env,
+  });
+  
+  // Connect client to transport - this will spawn the server process
   await client.connect(transport);
   
-  return client;
-}
-
-/**
- * Create a server with mock API client for testing
- * 
- * @param options - Server options
- * @returns MCP server and HTTP server
- */
-export function createTestServer(options: {
-  port?: number;
-  apiUrl?: string;
-  mockResponses?: any;
-}) {
-  const {
-    port = 3000,
-    apiUrl = 'https://mock-api.example.com/api/v1',
-    mockResponses,
-  } = options;
+  // Get the underlying process from the transport
+  const serverProcess = (transport as any).process;
   
-  // Mock the API client if mockResponses are provided
-  if (mockResponses) {
-    jest.mock('../../src/digital-samba-api', () => {
-      return {
-        DigitalSambaApiClient: jest.fn().mockImplementation(() => mockResponses),
-      };
+  // Log any errors from the server process
+  if (serverProcess) {
+    serverProcess.stderr?.on('data', (data: Buffer) => {
+      console.error('Server stderr:', data.toString());
+    });
+    
+    serverProcess.on('exit', (code: number) => {
+      console.error('Server process exited with code:', code);
     });
   }
   
-  // Create the server
-  const serverConfig = createServer({
-    port,
-    apiUrl,
-  });
-  
-  // Start the server
-  const httpServer = startServer({
-    port,
-    apiUrl,
-  });
-  
-  return { 
-    server: serverConfig.server, 
-    httpServer 
-  };
+  return { process: serverProcess, client };
 }
 
 /**
- * Start a mock API server and real MCP server for integration testing
+ * Start a stdio server process using npx
+ * 
+ * @param options - Server options
+ * @returns Spawned process
+ */
+export function startStdioServerProcess(options: {
+  apiKey?: string;
+  apiUrl?: string;
+}): ChildProcess {
+  const {
+    apiKey = 'test-api-key',
+    apiUrl = 'https://api.digitalsamba.com/api/v1',
+  } = options;
+  
+  // Set environment variables
+  const env = {
+    ...process.env,
+    DIGITAL_SAMBA_API_KEY: apiKey,
+    DIGITAL_SAMBA_API_URL: apiUrl,
+  };
+  
+  // Start server using npx command
+  const serverProcess = spawn('npx', [
+    '@digitalsamba/mcp-server',
+    'stdio',
+  ], {
+    env,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  
+  return serverProcess;
+}
+
+/**
+ * Create a mock API server for integration testing
  * 
  * @param options - Setup options
- * @returns Mock API server, MCP server, and test client
+ * @returns Mock API server
+ */
+export async function setupMockApiServer(options: {
+  port?: number;
+  delayMs?: number;
+  failureRate?: number;
+  notFoundRate?: number;
+}): Promise<Server> {
+  const { createMockApiServer } = await import('./mock-api-server.js');
+  const mockServer = createMockApiServer(options);
+  return mockServer.server;
+}
+
+/**
+ * Setup integration test with mock API server
+ * 
+ * @param options - Setup options
+ * @returns Mock API server, server process, and client
  */
 export async function setupIntegrationTest(options: {
   mockApiPort?: number;
-  mcpServerPort?: number;
   apiKey?: string;
   mockApiOptions?: {
     delayMs?: number;
     failureRate?: number;
     notFoundRate?: number;
   };
-}) {
+}): Promise<{
+  mockApiServer: Server;
+  serverProcess: ChildProcess;
+  client: Client;
+}> {
   const {
     mockApiPort = 8080,
-    mcpServerPort = 3000,
     apiKey = 'test-api-key',
     mockApiOptions = {},
   } = options;
   
   // Start mock API server
-  const mockApiServer = createMockApiServer({
+  const mockApiServer = await setupMockApiServer({
     port: mockApiPort,
     ...mockApiOptions,
   });
   
-  // Create MCP server pointing to mock API
-  const { httpServer: mcpHttpServer } = createTestServer({
-    port: mcpServerPort,
+  // Start MCP server process pointing to mock API
+  const { process: serverProcess, client } = await startServerProcess({
+    apiKey,
     apiUrl: `http://localhost:${mockApiPort}`,
   });
   
-  // Create test client
-  const client = await createTestClient(
-    `http://localhost:${mcpServerPort}/mcp`,
-    apiKey
-  );
-  
   return {
-    mockApiServer: mockApiServer.server,
-    mcpServer: mcpHttpServer,
+    mockApiServer,
+    serverProcess,
     client,
   };
 }
 
 /**
- * Start an MCP server process for end-to-end testing
+ * Wait for a condition to be true
  * 
- * @param options - Server options
- * @returns Spawned process and server port
+ * @param condition - Function that returns true when condition is met
+ * @param timeout - Maximum time to wait in milliseconds
+ * @param interval - Check interval in milliseconds
  */
-export function startServerProcess(options: {
-  port?: number;
-  apiKey?: string;
-  apiUrl?: string;
-  enableCache?: boolean;
-  enableRateLimiting?: boolean;
-}) {
-  const {
-    port = 0, // Use 0 to get a random available port
-    apiKey = 'test-api-key',
-    apiUrl = 'https://api.digitalsamba.com/api/v1',
-    enableCache = false,
-    enableRateLimiting = false,
-  } = options;
+export async function waitFor(
+  condition: () => boolean | Promise<boolean>,
+  timeout = 5000,
+  interval = 100
+): Promise<void> {
+  const start = Date.now();
   
-  // Build command-line arguments
-  const args = [
-    '--port', port.toString(),
-    '--api-key', apiKey,
-    '--api-url', apiUrl,
-    '--log-level', 'info',
-  ];
-  
-  if (enableCache) {
-    args.push('--enable-cache');
+  while (Date.now() - start < timeout) {
+    if (await condition()) {
+      return;
+    }
+    await new Promise(resolve => setTimeout(resolve, interval));
   }
   
-  if (enableRateLimiting) {
-    args.push('--enable-rate-limiting');
-  }
-  
-  // Start the server process
-  const serverProcess = spawn('node', [
-    path.join(__dirname, '../../dist/bin/cli.js'),
-    ...args,
-  ]);
-  
-  // Log output from the server process
-  serverProcess.stdout.on('data', (data) => {
-    logger.debug(`Server process stdout: ${data}`);
-  });
-  
-  serverProcess.stderr.on('data', (data) => {
-    logger.error(`Server process stderr: ${data}`);
-  });
-  
-  // Wait for the server to start
-  return new Promise<{ process: any; port: number }>((resolve, reject) => {
-    let serverPort: number | null = null;
-    let outputBuffer = '';
-    
-    // Parse output to find the port
-    serverProcess.stdout.on('data', (data) => {
-      outputBuffer += data.toString();
-      
-      // Look for the port in the output
-      const match = outputBuffer.match(/running on port (\d+)/);
-      if (match && match[1]) {
-        serverPort = parseInt(match[1], 10);
-        
-        // Wait a bit more to ensure server is fully ready
-        setTimeout(() => {
-          resolve({
-            process: serverProcess,
-            port: serverPort!,
-          });
-        }, 1000);
-      }
-    });
-    
-    // Handle errors
-    serverProcess.on('error', (err) => {
-      reject(err);
-    });
-    
-    // Handle timeout
-    const timeout = setTimeout(() => {
-      reject(new Error('Timeout waiting for server to start'));
-    }, 10000);
-    
-    // Clear timeout when resolved
-    serverProcess.on('close', () => {
-      clearTimeout(timeout);
-    });
-  });
+  throw new Error(`Timeout waiting for condition after ${timeout}ms`);
 }
 
 /**
- * Get a random available port
+ * Clean up servers and resources used in tests
  * 
- * @returns Free port number
+ * @param resources - Resources to clean up
  */
-export function getRandomPort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const server = require('http').createServer();
-    server.listen(0, () => {
-      const { port } = server.address() as AddressInfo;
-      server.close(() => {
-        resolve(port);
-      });
-    });
-    server.on('error', reject);
-  });
-}
-
-/**
- * Close servers and resources used in tests
- * 
- * @param servers - Servers to close
- */
-export async function cleanupServers(servers: {
+export async function cleanupResources(resources: {
   mockApiServer?: Server;
-  mcpServer?: Server;
+  serverProcess?: ChildProcess;
   client?: Client;
-  process?: any;
-}) {
-  const {
-    mockApiServer,
-    mcpServer,
-    client,
-    process,
-  } = servers;
+}): Promise<void> {
+  const { mockApiServer, serverProcess, client } = resources;
   
   // Close client
   if (client) {
     try {
       await (client as any).close();
     } catch (err) {
-      logger.error('Error closing client:', { error: err });
+      logger.debug('Error closing client:', { error: err });
     }
   }
   
-  // Close MCP HTTP server
-  if (mcpServer) {
+  // Kill server process
+  if (serverProcess) {
+    serverProcess.kill('SIGTERM');
+    
+    // Wait for process to exit
     await new Promise<void>((resolve) => {
-      mcpServer.close(() => resolve());
+      serverProcess.on('exit', resolve);
+      setTimeout(resolve, 1000); // Timeout after 1 second
     });
   }
   
@@ -287,9 +243,35 @@ export async function cleanupServers(servers: {
       mockApiServer.close(() => resolve());
     });
   }
+}
+
+/**
+ * Get output from a process
+ * 
+ * @param process - The process to get output from
+ * @param timeout - Maximum time to wait for output
+ * @returns Combined stdout and stderr output
+ */
+export async function getProcessOutput(
+  process: ChildProcess,
+  timeout = 2000
+): Promise<string> {
+  let output = '';
   
-  // Kill server process if it was spawned
-  if (process) {
-    process.kill();
-  }
+  // Collect output from stdout and stderr
+  const collectOutput = (data: Buffer) => {
+    output += data.toString();
+  };
+  
+  process.stdout?.on('data', collectOutput);
+  process.stderr?.on('data', collectOutput);
+  
+  // Wait for timeout
+  await new Promise(resolve => setTimeout(resolve, timeout));
+  
+  // Remove listeners
+  process.stdout?.removeListener('data', collectOutput);
+  process.stderr?.removeListener('data', collectOutput);
+  
+  return output;
 }
