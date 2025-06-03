@@ -24,34 +24,28 @@ The Digital Samba MCP Server is a comprehensive Model Context Protocol server th
 - Create, update, and delete rooms
 - Generate secure access tokens
 - Configure room settings and permissions
-- Manage breakout rooms
 
 ### 📊 **Analytics & Reporting**
 - Team-wide usage statistics
 - Room and session analytics
 - Participant analytics and tracking
-- Live session monitoring
 - Custom period reporting
 
 ### 🎥 **Recording Management**
 - List and manage recordings
-- Start/stop recording sessions
 - Archive and unarchive recordings
 - Download recording links
 - Bulk recording operations
 
-### 👥 **Live Session Controls**
+### 👥 **Live Session Control**
 - End active sessions
-- Manage participants (mute, remove)
+- Start/stop recording sessions
 - Start/stop transcription
 - Phone participant integration
 - Real-time session monitoring
 
 ### 💬 **Communication Tools**
-- Chat message management
-- Q&A session handling
-- Transcript management
-- AI-generated summaries
+- Session data deletion (chat, Q&A, transcripts, summaries)
 - Poll creation and management
 
 ### 📚 **Content Library**
@@ -60,20 +54,19 @@ The Digital Samba MCP Server is a comprehensive Model Context Protocol server th
 - Organize with folders
 - Create webapps and whiteboards
 - Bulk file operations
-- Move and copy content
+- Move and copy operations
 
 ### 🔐 **Role & Permission Management**
 - Create custom roles
-- Manage permissions
-- Assign roles to participants
+- Update role permissions
+- Delete roles
 - List available permissions
 
 ### 📤 **Export Capabilities**
-- Export chat messages
+- Export chat history
 - Export Q&A sessions
 - Export transcripts
 - Export poll results
-- Session summaries and metadata
 
 ## Installation
 
