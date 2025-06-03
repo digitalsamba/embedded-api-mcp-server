@@ -743,14 +743,14 @@ export class DigitalSambaApiClient {
    * Get default room settings
    */
   async getDefaultRoomSettings(): Promise<Record<string, any>> {
-    return this.request<Record<string, any>>('');
+    return this.request<Record<string, any>>('/');
   }
   
   /**
    * Update default room settings
    */
   async updateDefaultRoomSettings(settings: Record<string, any>): Promise<Record<string, any>> {
-    return this.request<Record<string, any>>('', {
+    return this.request<Record<string, any>>('/', {
       method: 'PATCH',
       body: JSON.stringify(settings)
     });
