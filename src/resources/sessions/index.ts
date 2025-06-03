@@ -23,31 +23,31 @@ export function registerSessionResources(): Resource[] {
     {
       uri: 'digitalsamba://sessions',
       name: 'sessions',
-      description: 'List all sessions',
+      description: '[Session Data] List all sessions across all rooms. Use to access: "show all sessions", "list meetings", "session history", "all past meetings", "meeting directory". Returns paginated list of session objects with room info, start/end times, and participant counts.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://sessions/{sessionId}',
       name: 'session',
-      description: 'Get session summary and details',
+      description: '[Session Data] Get comprehensive summary for a specific session. Use to access: "session details", "meeting summary", "what happened in session", "session report", "session overview". Requires sessionId. Returns detailed session data with duration, participants, and activity.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://sessions/{sessionId}/participants',
       name: 'session-participants',
-      description: 'List participants in a session',
+      description: '[Session Data] List all participants in a session. Use to access: "who attended session", "session attendees", "participant list", "meeting participants", "session roster". Requires sessionId. Returns participant details with join/leave times and roles.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://sessions/{sessionId}/statistics',
       name: 'session-statistics',
-      description: 'Get session statistics and metrics',
+      description: '[Session Data] Get detailed usage statistics for a session. Use to access: "session metrics", "session analytics", "participant statistics", "meeting usage data", "session performance". Requires sessionId. Returns participant count, duration, activity metrics.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://rooms/{roomId}/sessions',
       name: 'room-sessions',
-      description: 'List sessions for a specific room',
+      description: '[Session Data] List all sessions for a specific room. Use to access: "room meeting history", "sessions in room", "room session list", "meetings for this room", "room activity history". Requires roomId. Returns chronological list of sessions in that room.',
       mimeType: 'application/json'
     }
   ];

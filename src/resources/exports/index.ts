@@ -220,43 +220,43 @@ export function registerExportResources(): Resource[] {
     {
       uri: 'digitalsamba://exports/communications/{roomId}/chat',
       name: 'Chat Messages Export',
-      description: 'Export chat messages from a room. Supports format (txt/json) and session_id parameters.',
+      description: '[Export Data] Export chat messages from a room in formatted text. Use to access: "chat export", "download chat messages", "export room chat", "chat history export", "save chat messages". Requires roomId. Supports format (txt/json) and session_id parameters for specific sessions.',
       mimeType: 'text/plain'
     },
     {
       uri: 'digitalsamba://exports/communications/{roomId}/qa',
       name: 'Q&A Export', 
-      description: 'Export questions and answers from a room. Supports format (txt/json) and session_id parameters.',
+      description: '[Export Data] Export questions and answers from a room. Use to access: "Q&A export", "download questions", "export Q&A data", "question export", "save Q&A session". Requires roomId. Supports format (txt/json) and session_id parameters for filtering to specific sessions.',
       mimeType: 'text/plain'
     },
     {
       uri: 'digitalsamba://exports/communications/{sessionId}/transcripts',
       name: 'Transcript Export',
-      description: 'Export session transcripts. Requires session_id, supports format (txt/json) parameter.',
+      description: '[Export Data] Export session transcription data in formatted text. Use to access: "transcript export", "download transcripts", "export transcription", "transcript download", "save meeting transcript". Requires sessionId. Supports format (txt/json) parameter for output formatting.',
       mimeType: 'text/plain'
     },
     {
       uri: 'digitalsamba://exports/polls/{roomId}',
       name: 'Polls Export',
-      description: 'Export poll data and results from a room. Supports format (txt/json) and session_id parameters.',
+      description: '[Export Data] Export poll questions, options, and results from a room. Use to access: "poll export", "download poll results", "export poll data", "poll results export", "save poll information". Requires roomId. Supports format (txt/json) and session_id parameters.',
       mimeType: 'text/plain'
     },
     {
       uri: 'digitalsamba://exports/recordings/{recordingId}',
       name: 'Recording Export Info',
-      description: 'Get recording metadata and download information.',
+      description: '[Export Data] Get recording metadata and download information in readable format. Use to access: "recording export info", "recording metadata", "video export details", "recording information", "download recording info". Requires recordingId. Returns formatted recording details and download instructions.',
       mimeType: 'text/plain'
     },
     {
       uri: 'digitalsamba://exports/sessions/{sessionId}/summary',
       name: 'Session Summary Export',
-      description: 'Export a comprehensive session summary with key metrics and data.',
+      description: '[Export Data] Export comprehensive session summary with key metrics. Use to access: "session summary export", "meeting report", "session overview", "meeting summary", "export session data". Requires sessionId. Returns formatted summary with participation, duration, and activity data.',
       mimeType: 'text/plain'
     },
     {
       uri: 'digitalsamba://exports/sessions/{sessionId}/metadata',
       name: 'Session Metadata Export',
-      description: 'Export complete session metadata in JSON format.',
+      description: '[Export Data] Export complete session metadata in JSON format. Use to access: "session metadata export", "full session data", "complete session info", "session raw data", "export session metadata". Requires sessionId. Returns complete technical session data.',
       mimeType: 'text/plain'
     }
   ];

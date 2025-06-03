@@ -348,3 +348,136 @@ To test the enhanced descriptions:
 5. Test similar tools to ensure proper differentiation
 
 This enhancement should significantly improve the user experience when interacting with the Digital Samba MCP Server through Claude Desktop.
+
+## Enhanced Resource Descriptions
+
+Resources provide read-only access to data, while tools perform actions. Each enhanced resource description follows the same pattern as tools but focuses on data access patterns rather than actions.
+
+### Resources by Category
+
+### [Room Data] - 2 resources
+
+1. **rooms** (digitalsamba://rooms)
+   - Enhanced: "[Room Data] List all rooms in your account. Use to access: \"show all rooms\", \"list meeting rooms\", \"get room list\", \"what rooms exist\", \"room directory\". Returns array of room objects with IDs, names, settings, and join URLs. Useful for browsing available meeting spaces or finding specific rooms."
+
+2. **room** (digitalsamba://rooms/{roomId})
+   - Enhanced: "[Room Data] Get complete details for a specific room. Use to access: \"show room details\", \"get room info\", \"room configuration\", \"room settings\", \"what are room parameters\". Requires roomId parameter. Returns full room object with all settings, max participants, features, and URLs."
+
+### [Session Data] - 5 resources
+
+1. **sessions** (digitalsamba://sessions)
+   - Enhanced: "[Session Data] List all sessions across all rooms. Use to access: \"show all sessions\", \"list meetings\", \"session history\", \"all past meetings\", \"meeting directory\". Returns paginated list of session objects with room info, start/end times, and participant counts."
+
+2. **session** (digitalsamba://sessions/{sessionId})
+   - Enhanced: "[Session Data] Get comprehensive summary for a specific session. Use to access: \"session details\", \"meeting summary\", \"what happened in session\", \"session report\", \"session overview\". Requires sessionId. Returns detailed session data with duration, participants, and activity."
+
+3. **session-participants** (digitalsamba://sessions/{sessionId}/participants)
+   - Enhanced: "[Session Data] List all participants in a session. Use to access: \"who attended session\", \"session attendees\", \"participant list\", \"meeting participants\", \"session roster\". Requires sessionId. Returns participant details with join/leave times and roles."
+
+4. **session-statistics** (digitalsamba://sessions/{sessionId}/statistics)
+   - Enhanced: "[Session Data] Get detailed usage statistics for a session. Use to access: \"session metrics\", \"session analytics\", \"participant statistics\", \"meeting usage data\", \"session performance\". Requires sessionId. Returns participant count, duration, activity metrics."
+
+5. **room-sessions** (digitalsamba://rooms/{roomId}/sessions)
+   - Enhanced: "[Session Data] List all sessions for a specific room. Use to access: \"room meeting history\", \"sessions in room\", \"room session list\", \"meetings for this room\", \"room activity history\". Requires roomId. Returns chronological list of sessions in that room."
+
+### [Analytics Data] - 8 resources
+
+1. **analytics-participants** (digitalsamba://analytics/participants)
+   - Enhanced: "[Analytics Data] Get participant behavior and engagement analytics. Use to access: \"participant stats\", \"user analytics\", \"attendee behavior\", \"participant engagement\", \"user activity patterns\". Supports filters for date range and specific participants. Returns attendance, participation time, and activity metrics."
+
+2. **analytics-usage** (digitalsamba://analytics/usage)
+   - Enhanced: "[Analytics Data] Get platform usage statistics and growth trends. Use to access: \"usage trends\", \"platform growth\", \"total meeting minutes\", \"usage statistics\", \"growth metrics\". Supports date filters and period grouping. Returns total sessions, participants, minutes, and growth rates."
+
+3. **analytics-rooms** (digitalsamba://analytics/rooms)
+   - Enhanced: "[Analytics Data] Get room-specific analytics and usage patterns. Use to access: \"room performance\", \"room usage analytics\", \"room activity metrics\", \"meeting room stats\", \"room utilization\". Requires roomId parameter. Returns usage patterns, participant counts, session frequency."
+
+4. **analytics-team** (digitalsamba://analytics/team)
+   - Enhanced: "[Analytics Data] Get team-wide statistics and organizational metrics. Use to access: \"team analytics\", \"organization stats\", \"team performance\", \"overall usage\", \"team metrics\". Supports query filters for date ranges. Returns team-level activity, usage patterns, and performance indicators."
+
+5. **analytics-live** (digitalsamba://analytics/live)
+   - Enhanced: "[Analytics Data] Get real-time analytics for all active sessions. Use to access: \"live session data\", \"current activity\", \"real-time analytics\", \"active sessions\", \"live meeting stats\". Supports includeParticipants parameter. Returns current active sessions and participant counts."
+
+6. **analytics-live-room** (digitalsamba://analytics/live/{roomId})
+   - Enhanced: "[Analytics Data] Get real-time analytics for a specific room. Use to access: \"live room analytics\", \"current room activity\", \"real-time room data\", \"active room session\", \"live room stats\". Requires roomId. Returns current session status and participant activity for that room."
+
+7. **analytics-session** (digitalsamba://analytics/sessions/{sessionId})
+   - Enhanced: "[Analytics Data] Get detailed analytics for a specific session. Use to access: \"session analytics\", \"meeting analytics\", \"session performance data\", \"session metrics\", \"meeting statistics\". Requires sessionId. Returns comprehensive session analytics including participant engagement and activity patterns."
+
+8. **analytics-participant** (digitalsamba://analytics/participants/{participantId})
+   - Enhanced: "[Analytics Data] Get analytics for a specific participant across sessions. Use to access: \"user analytics\", \"participant history\", \"individual user stats\", \"participant metrics\", \"user engagement data\". Requires participantId. Returns participant activity across all sessions they joined."
+
+### [Recording Data] - 4 resources
+
+1. **recordings** (digitalsamba://recordings)
+   - Enhanced: "[Recording Data] List all recordings in your account. Use to access: \"show all recordings\", \"list videos\", \"recording directory\", \"meeting recordings\", \"video library\". Returns array of recording objects with status, duration, room info, and download availability."
+
+2. **recording** (digitalsamba://recordings/{recordingId})
+   - Enhanced: "[Recording Data] Get detailed information about a specific recording. Use to access: \"recording details\", \"video info\", \"recording metadata\", \"recording status\", \"video details\". Requires recordingId. Returns complete recording data including name, duration, status, and download URLs."
+
+3. **room-recordings** (digitalsamba://rooms/{roomId}/recordings)
+   - Enhanced: "[Recording Data] List all recordings for a specific room. Use to access: \"room recordings\", \"recordings for this room\", \"room video history\", \"meeting recordings for room\", \"videos from room\". Requires roomId. Returns recordings filtered to that specific room with session details."
+
+4. **archived-recordings** (digitalsamba://recordings/archived)
+   - Enhanced: "[Recording Data] List all archived recordings. Use to access: \"archived recordings\", \"old recordings\", \"archived videos\", \"stored recordings\", \"recording archive\". Returns recordings in archived status for long-term storage. Archived recordings may need to be unarchived before downloading."
+
+### [Content Data] - 7 resources
+
+1. **libraries** (digitalsamba://libraries)
+   - Enhanced: "[Content Data] List all content libraries in your account. Use to access: \"show libraries\", \"content libraries\", \"file storage\", \"document libraries\", \"content repositories\". Returns array of library objects with names, IDs, and file counts. Browse available content storage spaces."
+
+2. **library** (digitalsamba://libraries/{id})
+   - Enhanced: "[Content Data] Get detailed information about a specific library. Use to access: \"library details\", \"library info\", \"content library settings\", \"library configuration\", \"library metadata\". Requires library ID. Returns complete library information and statistics."
+
+3. **library-hierarchy** (digitalsamba://libraries/{id}/hierarchy)
+   - Enhanced: "[Content Data] Get complete folder and file hierarchy of a library. Use to access: \"library structure\", \"folder tree\", \"content organization\", \"library hierarchy\", \"folder structure\". Requires library ID. Returns nested structure showing all folders and their relationships."
+
+4. **library-folders** (digitalsamba://libraries/{id}/folders)
+   - Enhanced: "[Content Data] List all folders in a library. Use to access: \"library folders\", \"content folders\", \"folder list\", \"library directories\", \"folder directory\". Requires library ID. Returns flat list of all folders with names, IDs, and parent relationships."
+
+5. **library-folder** (digitalsamba://libraries/{id}/folders/{folderId})
+   - Enhanced: "[Content Data] Get details of a specific folder in a library. Use to access: \"folder details\", \"folder info\", \"folder contents\", \"folder metadata\", \"specific folder data\". Requires library ID and folder ID. Returns folder information and contained files."
+
+6. **library-files** (digitalsamba://libraries/{id}/files)
+   - Enhanced: "[Content Data] List all files in a library. Use to access: \"library files\", \"content files\", \"file list\", \"uploaded files\", \"document list\". Requires library ID. Returns array of file objects with names, sizes, types, and folder locations."
+
+7. **library-file** (digitalsamba://libraries/{id}/files/{fileId})
+   - Enhanced: "[Content Data] Get detailed information about a specific file. Use to access: \"file details\", \"file info\", \"file metadata\", \"document info\", \"file properties\". Requires library ID and file ID. Returns complete file information including size, type, upload date, and access URLs."
+
+### [Export Data] - 7 resources
+
+1. **Chat Messages Export** (digitalsamba://exports/communications/{roomId}/chat)
+   - Enhanced: "[Export Data] Export chat messages from a room in formatted text. Use to access: \"chat export\", \"download chat messages\", \"export room chat\", \"chat history export\", \"save chat messages\". Requires roomId. Supports format (txt/json) and session_id parameters for specific sessions."
+
+2. **Q&A Export** (digitalsamba://exports/communications/{roomId}/qa)
+   - Enhanced: "[Export Data] Export questions and answers from a room. Use to access: \"Q&A export\", \"download questions\", \"export Q&A data\", \"question export\", \"save Q&A session\". Requires roomId. Supports format (txt/json) and session_id parameters for filtering to specific sessions."
+
+3. **Transcript Export** (digitalsamba://exports/communications/{sessionId}/transcripts)
+   - Enhanced: "[Export Data] Export session transcription data in formatted text. Use to access: \"transcript export\", \"download transcripts\", \"export transcription\", \"transcript download\", \"save meeting transcript\". Requires sessionId. Supports format (txt/json) parameter for output formatting."
+
+4. **Polls Export** (digitalsamba://exports/polls/{roomId})
+   - Enhanced: "[Export Data] Export poll questions, options, and results from a room. Use to access: \"poll export\", \"download poll results\", \"export poll data\", \"poll results export\", \"save poll information\". Requires roomId. Supports format (txt/json) and session_id parameters."
+
+5. **Recording Export Info** (digitalsamba://exports/recordings/{recordingId})
+   - Enhanced: "[Export Data] Get recording metadata and download information in readable format. Use to access: \"recording export info\", \"recording metadata\", \"video export details\", \"recording information\", \"download recording info\". Requires recordingId. Returns formatted recording details and download instructions."
+
+6. **Session Summary Export** (digitalsamba://exports/sessions/{sessionId}/summary)
+   - Enhanced: "[Export Data] Export comprehensive session summary with key metrics. Use to access: \"session summary export\", \"meeting report\", \"session overview\", \"meeting summary\", \"export session data\". Requires sessionId. Returns formatted summary with participation, duration, and activity data."
+
+7. **Session Metadata Export** (digitalsamba://exports/sessions/{sessionId}/metadata)
+   - Enhanced: "[Export Data] Export complete session metadata in JSON format. Use to access: \"session metadata export\", \"full session data\", \"complete session info\", \"session raw data\", \"export session metadata\". Requires sessionId. Returns complete technical session data."
+
+## Key Differences Between Resources and Tools
+
+**Resources** are for **reading/accessing data**:
+- Use when users want to "see", "list", "show", "get", "view" information
+- Always read-only operations
+- Return data in structured formats (JSON, text)
+- No side effects or changes to the system
+
+**Tools** are for **performing actions**:
+- Use when users want to "create", "update", "delete", "start", "stop", "send"
+- Make changes to the system
+- May have irreversible effects
+- Often require specific permissions
+
+Choose resources when users want to access existing data, choose tools when they want to perform actions or make changes.

@@ -45,43 +45,43 @@ export function registerContentResources(): Resource[] {
     {
       uri: 'digitalsamba://libraries',
       name: 'libraries',
-      description: 'List all content libraries',
+      description: '[Content Data] List all content libraries in your account. Use to access: "show libraries", "content libraries", "file storage", "document libraries", "content repositories". Returns array of library objects with names, IDs, and file counts. Browse available content storage spaces.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://libraries/{id}',
       name: 'library',
-      description: 'Get details of a specific library',
+      description: '[Content Data] Get detailed information about a specific library. Use to access: "library details", "library info", "content library settings", "library configuration", "library metadata". Requires library ID. Returns complete library information and statistics.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://libraries/{id}/hierarchy',
       name: 'library-hierarchy',
-      description: 'Get complete hierarchy of a library',
+      description: '[Content Data] Get complete folder and file hierarchy of a library. Use to access: "library structure", "folder tree", "content organization", "library hierarchy", "folder structure". Requires library ID. Returns nested structure showing all folders and their relationships.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://libraries/{id}/folders',
       name: 'library-folders',
-      description: 'List folders in a library',
+      description: '[Content Data] List all folders in a library. Use to access: "library folders", "content folders", "folder list", "library directories", "folder directory". Requires library ID. Returns flat list of all folders with names, IDs, and parent relationships.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://libraries/{id}/folders/{folderId}',
       name: 'library-folder',
-      description: 'Get details of a specific folder',
+      description: '[Content Data] Get details of a specific folder in a library. Use to access: "folder details", "folder info", "folder contents", "folder metadata", "specific folder data". Requires library ID and folder ID. Returns folder information and contained files.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://libraries/{id}/files',
       name: 'library-files',
-      description: 'List files in a library',
+      description: '[Content Data] List all files in a library. Use to access: "library files", "content files", "file list", "uploaded files", "document list". Requires library ID. Returns array of file objects with names, sizes, types, and folder locations.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://libraries/{id}/files/{fileId}',
       name: 'library-file',
-      description: 'Get details of a specific file',
+      description: '[Content Data] Get detailed information about a specific file. Use to access: "file details", "file info", "file metadata", "document info", "file properties". Requires library ID and file ID. Returns complete file information including size, type, upload date, and access URLs.',
       mimeType: 'application/json'
     }
   ];
