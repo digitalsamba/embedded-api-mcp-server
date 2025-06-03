@@ -143,6 +143,55 @@ export function registerRoomTools(): Tool[] {
         },
         required: ['roomId']
       }
+    },
+    {
+      name: 'get-default-room-settings',
+      description: 'Get the default settings applied to all new rooms',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    {
+      name: 'update-default-room-settings',
+      description: 'Update the default settings for new rooms',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          settings: {
+            type: 'object',
+            description: 'Settings object with configuration options',
+            properties: {
+              language: { type: 'string' },
+              language_selection_enabled: { type: 'boolean' },
+              topbar_enabled: { type: 'boolean' },
+              toolbar_enabled: { type: 'boolean' },
+              toolbar_position: { 
+                type: 'string',
+                enum: ['left', 'right', 'bottom']
+              },
+              toolbar_color: { type: 'string' },
+              primary_color: { type: 'string' },
+              background_color: { type: 'string' },
+              palette_mode: {
+                type: 'string',
+                enum: ['light', 'dark']
+              },
+              audio_on_join_enabled: { type: 'boolean' },
+              video_on_join_enabled: { type: 'boolean' },
+              screenshare_enabled: { type: 'boolean' },
+              participants_list_enabled: { type: 'boolean' },
+              chat_enabled: { type: 'boolean' },
+              private_chat_enabled: { type: 'boolean' },
+              recordings_enabled: { type: 'boolean' },
+              max_participants: { type: 'number' },
+              max_broadcasters: { type: 'number' },
+              default_role: { type: 'string' }
+            }
+          }
+        },
+        required: ['settings']
+      }
     }
   ];
 }
@@ -418,6 +467,72 @@ export async function executeRoomTool(
               type: 'text',
               text: `Error generating token: ${error instanceof Error ? error.message : String(error)}`,
             },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case 'get-default-room-settings': {
+      logger.info('Getting default room settings');
+      
+      try {
+        const settings = await client.getDefaultRoomSettings();
+        
+        return {
+          content: [
+            { 
+              type: 'text', 
+              text: `Default room settings retrieved successfully:\n\n${JSON.stringify(settings, null, 2)}`
+            }
+          ],
+        };
+      } catch (error) {
+        logger.error('Error getting default room settings', { 
+          error: error instanceof Error ? error.message : error 
+        });
+        
+        return {
+          content: [
+            { 
+              type: 'text', 
+              text: `Error getting default room settings: ${error instanceof Error ? error.message : 'Unknown error'}`
+            }
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case 'update-default-room-settings': {
+      const { settings } = args;
+      
+      logger.info('Updating default room settings', { 
+        settingsKeys: Object.keys(settings || {})
+      });
+      
+      try {
+        const updatedSettings = await client.updateDefaultRoomSettings(settings);
+        
+        return {
+          content: [
+            { 
+              type: 'text', 
+              text: `Default room settings updated successfully. Updated settings:\n\n${JSON.stringify(updatedSettings, null, 2)}`
+            }
+          ],
+        };
+      } catch (error) {
+        logger.error('Error updating default room settings', { 
+          error: error instanceof Error ? error.message : error 
+        });
+        
+        return {
+          content: [
+            { 
+              type: 'text', 
+              text: `Error updating default room settings: ${error instanceof Error ? error.message : 'Unknown error'}`
+            }
           ],
           isError: true,
         };

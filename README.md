@@ -1,7 +1,7 @@
 # Digital Samba MCP Server
 
 <div align="center">
-  <img src="https://digitalsamba.com/logo.png" alt="Digital Samba Logo" width="200"/>
+  <img src="https://www.digitalsamba.com/hs-fs/hubfs/Digital%20Samba%20-%20video%20conferencing%20software%2c%20webinar%20software%2c%20virtual%20classroom%2c%20video%20api.png" alt="Digital Samba Logo" width="200"/>
   
   **Connect AI assistants to Digital Samba video conferencing**
 
@@ -23,7 +23,7 @@ The Digital Samba MCP Server is a comprehensive Model Context Protocol server th
 ### 🏠 **Room Management**
 - Create, update, and delete rooms
 - Generate secure access tokens
-- Configure room settings and permissions
+- Manage default room settings
 
 ### 📊 **Analytics & Reporting**
 - Team-wide usage statistics
@@ -38,11 +38,11 @@ The Digital Samba MCP Server is a comprehensive Model Context Protocol server th
 - Bulk recording operations
 
 ### 👥 **Live Session Control**
-- End active sessions
 - Start/stop recording sessions
 - Start/stop transcription
-- Phone participant integration
+- End active sessions
 - Real-time session monitoring
+- Phone participant integration
 
 ### 💬 **Communication Tools**
 - Session data deletion (chat, Q&A, transcripts, summaries)
@@ -169,6 +169,8 @@ Restart Claude Desktop and you can now:
 - `update-room` - Update room settings
 - `delete-room` - Delete a room
 - `generate-token` - Generate access token
+- `get-default-room-settings` - Get default settings for new rooms
+- `update-default-room-settings` - Update default settings for new rooms
 
 #### Session Management  
 - `end-session` - End a live session
