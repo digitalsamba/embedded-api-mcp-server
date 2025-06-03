@@ -10,7 +10,7 @@ export function registerRecordingTools(): Tool[] {
   return [
     {
       name: 'delete-recording',
-      description: 'Delete a recording',
+      description: '[Recording Management] Permanently delete a recording. Use when users say: "delete recording", "remove recording", "delete video", "remove video recording", "delete meeting recording". Requires recordingId. This action cannot be undone.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -21,7 +21,7 @@ export function registerRecordingTools(): Tool[] {
     },
     {
       name: 'update-recording',
-      description: 'Update recording metadata',
+      description: '[Recording Management] Update recording metadata like name or description. Use when users say: "rename recording", "update recording name", "change recording title", "edit recording details". Requires recordingId. Currently limited to name updates.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -33,7 +33,7 @@ export function registerRecordingTools(): Tool[] {
     },
     {
       name: 'get-recordings',
-      description: 'Get a list of recordings',
+      description: '[Recording Management] Get a list of all recordings with optional filters. Use when users say: "list recordings", "show recordings", "get all recordings", "show videos", "list meeting recordings", "recordings for room". Returns paginated list with recording details, status, and duration.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -46,7 +46,7 @@ export function registerRecordingTools(): Tool[] {
     },
     {
       name: 'start-recording',
-      description: 'Start recording a room',
+      description: '[Recording Management] Start recording an active room session. Use when users say: "start recording", "begin recording", "record this meeting", "start recording the room", "record session". Requires room_id. Room must have an active session.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -57,7 +57,7 @@ export function registerRecordingTools(): Tool[] {
     },
     {
       name: 'stop-recording',
-      description: 'Stop recording a room',
+      description: '[Recording Management] Stop an ongoing room recording. Use when users say: "stop recording", "end recording", "finish recording", "stop recording the room", "halt recording". Requires room_id. Only works if recording is currently active.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -68,7 +68,7 @@ export function registerRecordingTools(): Tool[] {
     },
     {
       name: 'archive-recording',
-      description: 'Archive a recording',
+      description: '[Recording Management] Move a recording to archived status for long-term storage. Use when users say: "archive recording", "archive video", "move to archive", "store recording", "archive old recording". Requires recordingId. Archived recordings can be unarchived later.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -78,8 +78,31 @@ export function registerRecordingTools(): Tool[] {
       }
     },
     {
+      name: 'get-recording',
+      description: '[Recording Management] Get detailed information about a specific recording. Use when users say: "show recording details", "get recording info", "recording information", "details about recording", "show video details". Requires recordingId. Returns full recording metadata including status, duration, and URLs.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          recordingId: { type: 'string', description: 'The ID of the recording' }
+        },
+        required: ['recordingId']
+      }
+    },
+    {
+      name: 'get-recording-download-link',
+      description: '[Recording Management] Generate a temporary download link for a recording. Use when users say: "download recording", "get download link", "export recording", "download video", "get recording URL". Requires recordingId. Returns a time-limited download URL. Recording must be in READY status.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          recordingId: { type: 'string', description: 'The ID of the recording' },
+          validForMinutes: { type: 'number', description: 'How long the link should be valid (1-1440 minutes)' }
+        },
+        required: ['recordingId']
+      }
+    },
+    {
       name: 'unarchive-recording',
-      description: 'Unarchive a recording',
+      description: '[Recording Management] Restore an archived recording back to active status. Use when users say: "unarchive recording", "restore recording", "unarchive video", "bring back from archive", "restore archived recording". Requires recordingId. Only works on archived recordings.',
       inputSchema: {
         type: 'object',
         properties: {

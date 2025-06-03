@@ -123,7 +123,7 @@ Restart Claude Desktop and you can now:
 
 ## Available MCP Resources & Tools
 
-The MCP server exposes Digital Samba API functionality through two types of interfaces: Resources provide read-only access to data (like listing rooms or viewing analytics), while Tools enable actions that modify data (like creating rooms or starting recordings). These are accessed via MCP protocol URIs, not direct API endpoints.
+The MCP server exposes Digital Samba API functionality through two types of interfaces: Resources provide read-only access to data (like listing rooms or viewing analytics), while Tools enable actions that modify data (like creating rooms or starting recordings). These are accessed via MCP URIs, not direct API endpoints.
 
 ### Resources (Read-Only) - 28 Available
 

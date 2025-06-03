@@ -53,7 +53,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     // Chat Management
     {
       name: 'delete-session-chats',
-      description: 'Delete all chat messages for a specific session',
+      description: '[Communication Management] Delete all chat messages from a specific session. Use when users say: "delete session chat", "remove chat messages", "clear session chat history", "delete chat from session", "wipe chat messages". Requires sessionId. This permanently removes all chat data.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -67,7 +67,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     },
     {
       name: 'delete-room-chats',
-      description: 'Delete all chat messages for all sessions in a room',
+      description: '[Communication Management] Delete all chat messages from ALL sessions in a room. Use when users say: "delete all room chats", "clear room chat history", "remove all chat messages from room", "wipe room chats". Requires roomId. Affects all past and current sessions.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -83,7 +83,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     // Q&A Management
     {
       name: 'delete-session-qa',
-      description: 'Delete all questions and answers for a specific session',
+      description: '[Communication Management] Delete all Q&A (questions and answers) from a session. Use when users say: "delete session Q&A", "remove questions and answers", "clear Q&A history", "delete session questions", "wipe Q&A data". Requires sessionId. Removes all Q&A interactions.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -97,7 +97,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     },
     {
       name: 'delete-room-qa',
-      description: 'Delete all questions and answers for all sessions in a room',
+      description: '[Communication Management] Delete all Q&A from ALL sessions in a room. Use when users say: "delete all room Q&A", "clear room questions", "remove all Q&A from room", "wipe room Q&A history". Requires roomId. Affects all sessions\' Q&A data.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -113,7 +113,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     // Transcript Management
     {
       name: 'delete-session-transcripts',
-      description: 'Delete all transcripts for a specific session',
+      description: '[Communication Management] Delete all transcription data from a session. Use when users say: "delete session transcript", "remove transcription", "clear transcript", "delete meeting transcript", "wipe transcription data". Requires sessionId. Permanently removes transcript records.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -127,7 +127,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     },
     {
       name: 'delete-room-transcripts',
-      description: 'Delete all transcripts for all sessions in a room',
+      description: '[Communication Management] Delete all transcripts from ALL sessions in a room. Use when users say: "delete all room transcripts", "clear room transcription history", "remove all transcripts from room", "wipe room transcripts". Requires roomId. Affects all sessions\' transcripts.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -143,7 +143,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     // Summary Management
     {
       name: 'delete-session-summaries',
-      description: 'Delete all AI-generated summaries for a specific session',
+      description: '[Communication Management] Delete AI-generated summaries from a session. Use when users say: "delete session summary", "remove AI summary", "clear meeting summary", "delete session notes", "wipe summary data". Requires sessionId. Removes all AI-generated session summaries.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -157,7 +157,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     },
     {
       name: 'delete-room-summaries',
-      description: 'Delete all AI-generated summaries for all sessions in a room',
+      description: '[Communication Management] Delete all AI summaries from ALL sessions in a room. Use when users say: "delete all room summaries", "clear room AI summaries", "remove all summaries from room", "wipe room summary history". Requires roomId. Affects all sessions\' AI summaries.',
       inputSchema: {
         type: 'object',
         properties: {

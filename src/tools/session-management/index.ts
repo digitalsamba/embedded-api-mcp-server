@@ -23,7 +23,7 @@ export function registerSessionTools(): Tool[] {
   return [
     {
       name: 'get-all-room-sessions',
-      description: 'Get all sessions for a specific room with optional filters',
+      description: '[Session Management] Get all sessions (past and live) for a specific room. Use when users say: "list sessions for room", "show room sessions", "get meeting history", "show past meetings", "list all sessions", "show live sessions". Requires roomId. Returns paginated session list with details.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -65,7 +65,7 @@ export function registerSessionTools(): Tool[] {
     },
     {
       name: 'hard-delete-session-resources',
-      description: 'Permanently delete all stored resource data for a session',
+      description: '[Session Management] Permanently delete ALL stored data for a session including recordings, chats, Q&A. Use when users say: "permanently delete session data", "remove all session resources", "hard delete session", "wipe session data", "delete everything from session". Requires sessionId. This action cannot be undone!',
       inputSchema: {
         type: 'object',
         properties: {
@@ -79,7 +79,7 @@ export function registerSessionTools(): Tool[] {
     },
     {
       name: 'bulk-delete-session-data',
-      description: 'Delete multiple types of session data in a single operation',
+      description: '[Session Management] Delete specific types of session data (chat, Q&A, transcripts, etc). Use when users say: "delete session chat and transcripts", "remove multiple session data types", "bulk delete session content", "clean up session data". Requires sessionId and dataTypes array. More selective than hard-delete.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -102,7 +102,7 @@ export function registerSessionTools(): Tool[] {
     },
     {
       name: 'get-session-summary',
-      description: 'Get a comprehensive summary of a session',
+      description: '[Session Management] Get a comprehensive summary of a session including participants, duration, and activities. Use when users say: "show session summary", "get meeting summary", "session details", "what happened in the session", "meeting report". Requires sessionId. Returns detailed session information.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -116,7 +116,7 @@ export function registerSessionTools(): Tool[] {
     },
     {
       name: 'end-session',
-      description: 'End a live session',
+      description: '[Session Management] Force end a currently live/active session. Use when users say: "end the session", "stop the meeting", "close the session", "terminate the call", "end live session now". Requires sessionId. Only works on active sessions. Disconnects all participants.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -130,7 +130,7 @@ export function registerSessionTools(): Tool[] {
     },
     {
       name: 'get-session-statistics',
-      description: 'Get detailed statistics for a session',
+      description: '[Session Management] Get detailed usage statistics and metrics for a session. Use when users say: "show session statistics", "get meeting metrics", "session analytics", "participant statistics", "session usage data". Requires sessionId. Returns participant count, duration, activity metrics.',
       inputSchema: {
         type: 'object',
         properties: {

@@ -23,7 +23,7 @@ export function registerRoomTools(): Tool[] {
   return [
     {
       name: 'create-room',
-      description: 'Create a new room with specified settings',
+      description: '[Room Management] Create a new room with specified settings. Use when users say: "create a room", "set up a meeting space", "make a new video room", "create a conference room", "set up a virtual meeting room". Returns the created room object with ID, join URL, and all settings.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -62,7 +62,7 @@ export function registerRoomTools(): Tool[] {
     },
     {
       name: 'update-room',
-      description: 'Update an existing room',
+      description: '[Room Management] Update an existing room\'s settings. Use when users say: "change room settings", "update the room", "modify room configuration", "edit room details", "change max participants", "rename the room". Requires roomId. Returns the updated room object.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -104,7 +104,7 @@ export function registerRoomTools(): Tool[] {
     },
     {
       name: 'delete-room',
-      description: 'Delete a room',
+      description: '[Room Management] Permanently delete a room. Use when users say: "delete the room", "remove this room", "delete meeting room", "remove conference room", "permanently delete room". Requires roomId. This action cannot be undone.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -118,7 +118,7 @@ export function registerRoomTools(): Tool[] {
     },
     {
       name: 'generate-token',
-      description: 'Generate an access token for a room',
+      description: '[Room Management] Generate an access token for users to join a room. Use when users say: "create a join link", "generate access token", "create invite link", "get room access", "invite someone to room", "create moderator link". Requires roomId. Returns a token with join URL.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -146,7 +146,7 @@ export function registerRoomTools(): Tool[] {
     },
     {
       name: 'get-default-room-settings',
-      description: 'Get the default settings applied to all new rooms',
+      description: '[Room Management] Get the default settings that are automatically applied to all new rooms. Use when users say: "show default room settings", "what are the default settings", "get room defaults", "show room template settings". Returns all default configuration options.',
       inputSchema: {
         type: 'object',
         properties: {}
@@ -154,7 +154,7 @@ export function registerRoomTools(): Tool[] {
     },
     {
       name: 'update-default-room-settings',
-      description: 'Update the default settings for new rooms',
+      description: '[Room Management] Update the default settings template for all future rooms. Use when users say: "change default room settings", "update room defaults", "modify default configuration", "set default language", "change default room template". Requires settings object. Affects only new rooms created after this change.',
       inputSchema: {
         type: 'object',
         properties: {
