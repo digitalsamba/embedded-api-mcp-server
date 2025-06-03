@@ -276,12 +276,14 @@ describe('Room Tools', () => {
     it('should register all room tools', () => {
       const tools = registerRoomTools();
       
-      expect(tools).toHaveLength(4);
+      expect(tools).toHaveLength(6);
       expect(tools.map(t => t.name)).toEqual([
         'create-room',
         'update-room',
         'delete-room',
-        'generate-token'
+        'generate-token',
+        'get-default-room-settings',
+        'update-default-room-settings'
       ]);
       
       tools.forEach(tool => {

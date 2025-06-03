@@ -6,8 +6,8 @@
  */
 
 import express from 'express';
-import { mockApiResponses } from './api-responses';
-import logger from '../../src/logger';
+import { mockApiResponses } from './api-responses.js';
+import logger from '../../src/logger.js';
 
 /**
  * Create a mock Digital Samba API server for testing
@@ -31,6 +31,9 @@ export function createMockApiServer(options: {
   // Create Express app
   const app = express();
   app.use(express.json());
+  
+  // Store created rooms for retrieval
+  const createdRooms = new Map<string, any>();
   
   // Default error helper
   const sendError = (res: express.Response, status: number, message: string) => {
@@ -100,6 +103,13 @@ export function createMockApiServer(options: {
   // Get room by ID
   app.get('/rooms/:roomId', (req, res) => {
     const { roomId } = req.params;
+    
+    // Check if this room was created during testing
+    if (createdRooms.has(roomId)) {
+      res.json(createdRooms.get(roomId));
+      return;
+    }
+    
     // Return mock room data with the requested ID
     const room = { 
       ...mockApiResponses.rooms.single,
@@ -119,6 +129,10 @@ export function createMockApiServer(options: {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+    
+    // Store the created room for later retrieval
+    createdRooms.set(room.id, room);
+    
     res.json(room);
   });
   
@@ -157,9 +171,15 @@ export function createMockApiServer(options: {
   });
   
   // Generate room token
-  app.post('/rooms/:roomId/tokens', (req, res) => {
+  app.post('/rooms/:roomId/token', (req, res) => {
     const { roomId } = req.params;
     const { u: userName, role, ud: userData } = req.body;
+    
+    // Check if room exists (simulate error for non-existent room)
+    if (roomId === 'non-existent-room') {
+      sendError(res, 404, 'Room not found');
+      return;
+    }
     
     // Create a token that expires in 1 hour
     const expiresAt = new Date(Date.now() + 3600000).toISOString();
@@ -213,6 +233,84 @@ export function createMockApiServer(options: {
   app.delete('/recordings/:recordingId', (req, res) => {
     // Return 204 No Content
     res.status(204).end();
+  });
+  
+  // --------------------------
+  // Session endpoints
+  // --------------------------
+  
+  // List all sessions
+  app.get('/sessions', (req, res) => {
+    res.json({
+      data: [
+        {
+          id: 'session-1',
+          room_id: 'room-1',
+          started_at: '2025-01-01T10:00:00Z',
+          ended_at: '2025-01-01T11:00:00Z',
+          participants_count: 5
+        }
+      ],
+      total_count: 1
+    });
+  });
+  
+  // Get session by ID
+  app.get('/sessions/:sessionId', (req, res) => {
+    const { sessionId } = req.params;
+    res.json({
+      id: sessionId,
+      room_id: 'room-1',
+      started_at: '2025-01-01T10:00:00Z',
+      ended_at: '2025-01-01T11:00:00Z',
+      participants_count: 5,
+      recording_available: false
+    });
+  });
+  
+  // Get session summary
+  app.get('/sessions/:sessionId/summary', (req, res) => {
+    const { sessionId } = req.params;
+    res.json({
+      id: sessionId,
+      summary: 'This was a productive meeting with 5 participants.',
+      key_points: ['Discussion of Q1 goals', 'Budget review', 'Team updates'],
+      action_items: ['Follow up with marketing team', 'Prepare Q2 projections']
+    });
+  });
+  
+  // List session participants
+  app.get('/sessions/:sessionId/participants', (req, res) => {
+    const { sessionId } = req.params;
+    res.json({
+      data: [
+        {
+          id: 'participant-1',
+          name: 'John Doe',
+          session_id: sessionId,
+          join_time: '2025-01-01T10:00:00Z',
+          leave_time: '2025-01-01T11:00:00Z'
+        }
+      ],
+      total_count: 1
+    });
+  });
+  
+  // List room sessions
+  app.get('/rooms/:roomId/sessions', (req, res) => {
+    const { roomId } = req.params;
+    res.json({
+      data: [
+        {
+          id: 'session-1',
+          room_id: roomId,
+          started_at: '2025-01-01T10:00:00Z',
+          ended_at: '2025-01-01T11:00:00Z',
+          participants_count: 5
+        }
+      ],
+      total_count: 1
+    });
   });
   
   // --------------------------
@@ -358,6 +456,54 @@ export function createMockApiServer(options: {
   app.post('/meetings/:meetingId/participants', (req, res) => {
     // Return 204 No Content
     res.status(204).end();
+  });
+  
+  // --------------------------
+  // Analytics/Statistics endpoints
+  // --------------------------
+  
+  // Get statistics
+  app.get('/statistics', (req, res) => {
+    // Return mock statistics
+    res.json({
+      data: {
+        total_rooms: 2,
+        total_sessions: 5,
+        total_participants: 10,
+        total_duration_minutes: 120,
+        average_session_duration_minutes: 24,
+        date_start: req.query.date_start || '2025-01-01',
+        date_end: req.query.date_end || '2025-01-31'
+      }
+    });
+  });
+  
+  // Get room statistics
+  app.get('/rooms/:roomId/statistics', (req, res) => {
+    const { roomId } = req.params;
+    res.json({
+      data: {
+        room_id: roomId,
+        total_sessions: 3,
+        total_participants: 6,
+        total_duration_minutes: 75,
+        average_session_duration_minutes: 25
+      }
+    });
+  });
+  
+  // Get session statistics
+  app.get('/sessions/:sessionId/statistics', (req, res) => {
+    const { sessionId } = req.params;
+    res.json({
+      data: {
+        session_id: sessionId,
+        participants: 4,
+        duration_minutes: 30,
+        start_time: '2025-01-01T10:00:00Z',
+        end_time: '2025-01-01T10:30:00Z'
+      }
+    });
   });
   
   // Handle 404s

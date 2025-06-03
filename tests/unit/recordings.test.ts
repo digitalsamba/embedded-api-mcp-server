@@ -82,7 +82,7 @@ describe('Recording Resources', () => {
     it('should register all recording resources', () => {
       const resources = registerRecordingResources();
       
-      expect(resources).toHaveLength(2);
+      expect(resources).toHaveLength(4);
       expect(resources[0]).toEqual({
         uri: 'digitalsamba://recordings',
         name: 'recordings',
@@ -93,6 +93,18 @@ describe('Recording Resources', () => {
         uri: 'digitalsamba://recordings/{recordingId}',
         name: 'recording',
         description: 'Get details for a specific recording',
+        mimeType: 'application/json'
+      });
+      expect(resources[2]).toEqual({
+        uri: 'digitalsamba://recordings/archived',
+        name: 'archived-recordings',
+        description: 'List archived recordings',
+        mimeType: 'application/json'
+      });
+      expect(resources[3]).toEqual({
+        uri: 'digitalsamba://rooms/{roomId}/recordings',
+        name: 'room-recordings',
+        description: 'List recordings for a specific room',
         mimeType: 'application/json'
       });
     });
@@ -180,10 +192,15 @@ describe('Recording Tools', () => {
     it('should register all recording tools', () => {
       const tools = registerRecordingTools();
       
-      expect(tools).toHaveLength(2);
+      expect(tools).toHaveLength(7);
       expect(tools.map(t => t.name)).toEqual([
         'delete-recording',
-        'update-recording'
+        'update-recording',
+        'get-recordings',
+        'start-recording',
+        'stop-recording',
+        'archive-recording',
+        'unarchive-recording'
       ]);
       
       tools.forEach(tool => {

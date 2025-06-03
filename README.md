@@ -3,11 +3,12 @@
 <div align="center">
   <img src="https://www.digitalsamba.com/hs-fs/hubfs/Digital%20Samba%20-%20video%20conferencing%20software%2c%20webinar%20software%2c%20virtual%20classroom%2c%20video%20api.png" alt="Digital Samba Logo" width="200"/>
   
-  **Connect AI assistants to Digital Samba video conferencing**
+  **Use your AI assistant to interact with the Digital Samba video conferencing API**
 
   [![npm version](https://img.shields.io/npm/v/@digitalsamba/mcp-server.svg)](https://www.npmjs.com/package/@digitalsamba/mcp-server)
   [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
   [![Node.js Version](https://img.shields.io/node/v/@digitalsamba/mcp-server.svg)](https://nodejs.org)
+  [![Coverage Status](https://img.shields.io/codecov/c/github/digitalsamba/digital-samba-mcp-server)](https://codecov.io/gh/digitalsamba/digital-samba-mcp-server)
 
   [Installation](#installation) • [Quick Start](#quick-start) • [Features](#features) • [API Reference](#api-reference)
 </div>
@@ -45,8 +46,8 @@ The Digital Samba MCP Server is a comprehensive Model Context Protocol server th
 - Phone participant integration
 
 ### 💬 **Communication Tools**
-- Session data deletion (chat, Q&A, transcripts, summaries)
 - Poll creation and management
+- Session data deletion (chat, Q&A, transcripts, summaries)
 
 ### 📚 **Content Library**
 - Create and manage libraries
@@ -61,6 +62,13 @@ The Digital Samba MCP Server is a comprehensive Model Context Protocol server th
 - Update role permissions
 - Delete roles
 - List available permissions
+
+### 🔔 **Webhook Management**
+- List available webhook events
+- Create and configure webhooks
+- Update webhook settings
+- Delete webhooks
+- View webhook details
 
 ### 📤 **Export Capabilities**
 - Export chat history
@@ -82,7 +90,7 @@ npx @digitalsamba/mcp-server --api-key YOUR_API_KEY
 
 ### 1. Get Your API Key
 
-Sign up at [Digital Samba](https://www.digitalsamba.com) and get your API key from the dashboard.
+Sign up at [Digital Samba](https://dashboard.digitalsamba.com) and get your API key from the dashboard.
 
 ### 2. Configure Claude Desktop
 
@@ -113,9 +121,11 @@ Restart Claude Desktop and you can now:
 "Upload our presentation to the content library"
 ```
 
-## API Reference
+## Available MCP Resources & Tools
 
-### Resources (Read-Only) - 29 Available
+The MCP server exposes Digital Samba API functionality through two types of interfaces: Resources provide read-only access to data (like listing rooms or viewing analytics), while Tools enable actions that modify data (like creating rooms or starting recordings). These are accessed via MCP protocol URIs, not direct API endpoints.
+
+### Resources (Read-Only) - 28 Available
 
 #### Room Resources
 - `digitalsamba://rooms` - List all rooms
@@ -162,7 +172,7 @@ Restart Claude Desktop and you can now:
 - `digitalsamba://exports/sessions/{sessionId}/summary` - Export session summary
 - `digitalsamba://exports/sessions/{sessionId}/metadata` - Export session metadata
 
-### Tools (Actions) - 50+ Available
+### Tools (Actions) - 70 Available
 
 #### Room Management
 - `create-room` - Create a new room
@@ -245,6 +255,14 @@ Restart Claude Desktop and you can now:
 - `get-roles` - List all roles
 - `get-role` - Get role details
 - `get-permissions` - List available permissions
+
+#### Webhook Management
+- `list-webhook-events` - List available events to subscribe to
+- `list-webhooks` - List all configured webhooks
+- `create-webhook` - Create a new webhook
+- `get-webhook` - Get webhook details
+- `update-webhook` - Update webhook configuration
+- `delete-webhook` - Delete a webhook
 
 ## Environment Variables
 
@@ -375,7 +393,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Support
 
 - 📧 Email: support@digitalsamba.com
-- 💬 [Community Forum](https://community.digitalsamba.com)
 - 📚 [API Documentation](https://docs.digitalsamba.com)
 - 🐛 [Issue Tracker](https://github.com/digitalsamba/digital-samba-mcp-server/issues)
 

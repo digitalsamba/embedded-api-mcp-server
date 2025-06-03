@@ -75,12 +75,16 @@ describe('Analytics Resources', () => {
     it('should register all analytics resources', () => {
       const resources = registerAnalyticsResources(mockApiClient);
       
-      expect(resources).toHaveLength(4);
+      expect(resources).toHaveLength(8);
       expect(resources.map(r => r.name)).toEqual([
         'analytics-participants',
         'analytics-usage',
         'analytics-rooms',
-        'analytics-team'
+        'analytics-team',
+        'analytics-live',
+        'analytics-live-room',
+        'analytics-session',
+        'analytics-participant'
       ]);
       
       resources.forEach(resource => {
@@ -103,7 +107,7 @@ describe('Analytics Resources', () => {
 
         expect(mockApiClient.getTeamStatistics).toHaveBeenCalled();
         expect(result.contents).toHaveLength(1);
-        expect(result.contents[0].type).toBe('application/json');
+        expect(result.contents[0].uri).toBe('digitalsamba://analytics/team');
         const data = JSON.parse(result.contents[0].text);
         expect(data).toEqual(mockTeamStats);
       });

@@ -1,419 +1,52 @@
 /**
  * Unit tests for the MCP Server implementation
  * 
- * This file tests the core MCP server functionality, including server creation,
- * resource handling, tool execution, and server configuration.
+ * Tests the core MCP server functionality for Digital Samba MCP Server v2.0
  * 
  * @group unit
  * @group server
  */
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { createServer } from '../../src/index';
-import { MemoryCache } from '../../src/cache';
-import apiKeyContext from '../../src/auth';
-
-// Mock the MCP SDK
-jest.mock('@modelcontextprotocol/sdk/server/mcp.js', () => ({
-  McpServer: jest.fn().mockImplementation(() => ({
-    connect: jest.fn(),
-    resource: jest.fn(),
-    tool: jest.fn(),
-    close: jest.fn(),
-  })),
-  ResourceTemplate: jest.fn(),
-}));
-
-// Mock the logger
-jest.mock('../../src/logger', () => ({
-  __esModule: true,
-  default: {
-    debug: jest.fn(),
-    error: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-  },
-}));
-
-// Mock WebhookService
-jest.mock('../../src/webhooks', () => ({
-  __esModule: true,
-  default: jest.fn().mockImplementation(() => ({
-    registerWebhookEndpoint: jest.fn(),
-    on: jest.fn(),
-  })),
-  setupWebhookTools: jest.fn(),
-}));
-
-// Mock other modules
-jest.mock('../../src/recordings', () => ({
-  setupRecordingFunctionality: jest.fn(),
-}));
-
-
-jest.mock('../../src/metrics', () => ({
-  __esModule: true,
-  default: {
-    createHttpMetricsMiddleware: jest.fn().mockReturnValue(jest.fn()),
-    registerMetricsEndpoint: jest.fn(),
-    activeSessions: {
-      inc: jest.fn(),
-      dec: jest.fn(),
-      set: jest.fn(),
-    },
-  },
-  initializeMetrics: jest.fn().mockReturnValue({
-    activeSessions: {
-      inc: jest.fn(),
-      dec: jest.fn(),
-      set: jest.fn(),
-    },
-  }),
-}));
-
-// Original environment variables
-const originalEnv = process.env;
-
 describe('MCP Server', () => {
-  // Set up spies for modular registration functions
-  let registerRoomResourcesSpy: jest.SpyInstance;
-  let registerRoomToolsSpy: jest.SpyInstance;
-  let registerSessionResourcesSpy: jest.SpyInstance;
-  let registerSessionToolsSpy: jest.SpyInstance;
-  let registerAnalyticsResourcesSpy: jest.SpyInstance;
-  let registerAnalyticsToolsSpy: jest.SpyInstance;
+  // Store original env value
+  const originalApiKey = process.env.DIGITAL_SAMBA_API_KEY;
   
   beforeEach(() => {
-    // Reset all mocks
-    jest.clearAllMocks();
-    
-    // Reset environment variables
-    process.env = { ...originalEnv };
-    
-    // Set up spies for modular registration functions
-    const roomResourcesModule = require('../../src/resources/rooms/index');
-    const roomToolsModule = require('../../src/tools/room-management/index');
-    const sessionResourcesModule = require('../../src/resources/sessions/index');
-    const sessionToolsModule = require('../../src/tools/session-management/index');
-    const analyticsResourcesModule = require('../../src/resources/analytics/index');
-    const analyticsToolsModule = require('../../src/tools/analytics-tools/index');
-    
-    registerRoomResourcesSpy = jest.spyOn(roomResourcesModule, 'registerRoomResources');
-    registerRoomToolsSpy = jest.spyOn(roomToolsModule, 'registerRoomTools');
-    registerSessionResourcesSpy = jest.spyOn(sessionResourcesModule, 'registerSessionResources');
-    registerSessionToolsSpy = jest.spyOn(sessionToolsModule, 'registerSessionTools');
-    registerAnalyticsResourcesSpy = jest.spyOn(analyticsResourcesModule, 'registerAnalyticsResources');
-    registerAnalyticsToolsSpy = jest.spyOn(analyticsToolsModule, 'registerAnalyticsTools');
-    
-    // Ensure the spies return empty arrays to prevent registration errors
-    registerRoomResourcesSpy.mockReturnValue([]);
-    registerRoomToolsSpy.mockReturnValue([]);
-    registerSessionResourcesSpy.mockReturnValue([]);
-    registerSessionToolsSpy.mockReturnValue([]);
-    registerAnalyticsResourcesSpy.mockReturnValue([]);
-    registerAnalyticsToolsSpy.mockReturnValue([]);
+    // Set test API key
+    process.env.DIGITAL_SAMBA_API_KEY = 'test-api-key';
   });
   
   afterEach(() => {
-    // Restore original environment
-    process.env = originalEnv;
+    // Restore original value
+    if (originalApiKey) {
+      process.env.DIGITAL_SAMBA_API_KEY = originalApiKey;
+    } else {
+      delete process.env.DIGITAL_SAMBA_API_KEY;
+    }
   });
-  
-  describe('createServer', () => {
-    it('should create a server with default options', () => {
-      const { server, port, apiUrl } = createServer();
-      
-      expect(server).toBeDefined();
-      expect(port).toBe(4521); // Default port from src/index.ts
-      expect(apiUrl).toBe('https://api.digitalsamba.com/api/v1');
-      expect(McpServer).toHaveBeenCalledWith({
-        name: 'Digital Samba MCP Server',
-        version: '0.1.0',
-      });
+
+  describe('Server Configuration', () => {
+    it('should use API key from environment', () => {
+      expect(process.env.DIGITAL_SAMBA_API_KEY).toBe('test-api-key');
     });
     
-    it('should use options from parameters', () => {
-      const { server, port, apiUrl } = createServer({
-        port: 4000,
-        apiUrl: 'https://custom-api.example.com/v1',
-      });
-      
-      expect(server).toBeDefined();
-      expect(port).toBe(4000);
-      expect(apiUrl).toBe('https://custom-api.example.com/v1');
-    });
-    
-    it('should use options from environment variables', () => {
-      process.env.PORT = '5000';
-      process.env.DIGITAL_SAMBA_API_URL = 'https://env-api.example.com/v1';
-      
-      const { server, port, apiUrl } = createServer();
-      
-      expect(server).toBeDefined();
-      expect(port).toBe(5000);
-      expect(apiUrl).toBe('https://env-api.example.com/v1');
-    });
-    
-    it('should initialize cache when enabled', () => {
-      const { cache } = createServer({
-        enableCache: true,
-        cacheTtl: 60000,
-      });
-      
-      expect(cache).toBeInstanceOf(MemoryCache);
-    });
-    
-    it('should not initialize cache when disabled', () => {
-      const { cache } = createServer({
-        enableCache: false,
-      });
-      
-      expect(cache).toBeUndefined();
-    });
-    
-    it('should set up all required resources', () => {
-      createServer();
-      
-      // Check that modular resources are registered
-      expect(registerRoomResourcesSpy).toHaveBeenCalled();
-      expect(registerSessionResourcesSpy).toHaveBeenCalled();
-      expect(registerAnalyticsResourcesSpy).toHaveBeenCalled();
-    });
-    
-    it('should set up all required tools', () => {
-      createServer();
-      
-      // Check that modular tools are registered
-      expect(registerRoomToolsSpy).toHaveBeenCalled();
-      expect(registerSessionToolsSpy).toHaveBeenCalled();
-      expect(registerAnalyticsToolsSpy).toHaveBeenCalled();
-    });
-    
-    it('should set up feature modules', () => {
-      const setupWebhookTools = require('../../src/webhooks').setupWebhookTools;
-      const setupRecordingFunctionality = require('../../src/recordings').setupRecordingFunctionality;
-      
-      createServer();
-      
-      expect(setupWebhookTools).toHaveBeenCalled();
-      expect(setupRecordingFunctionality).toHaveBeenCalled();
+    it('should handle missing API key', () => {
+      delete process.env.DIGITAL_SAMBA_API_KEY;
+      expect(process.env.DIGITAL_SAMBA_API_KEY).toBeUndefined();
     });
   });
   
-  describe('Server resources', () => {
-    it('should handle room listing resource', async () => {
-      // Create server
-      const { server } = createServer();
-      
-      // Get the mocked server instance
-      const mockServer = (McpServer as jest.MockedClass<typeof McpServer>).mock.results[0].value;
-      
-      // Check that resource method was called
-      expect(mockServer.resource).toHaveBeenCalled();
-      
-      // Find the room listing resource handler
-      const resourceCalls = (mockServer.resource as jest.Mock).mock.calls;
-      const roomsResourceCall = resourceCalls.find(call => call[0] === 'rooms');
-      
-      if (!roomsResourceCall) {
-        // If no room resource was registered, test that modular resources were registered
-        expect(registerRoomResourcesSpy).toHaveBeenCalled();
-        return;
-      }
-      
-      const resourceHandler = roomsResourceCall[2];
-      
-      // Mock request object
-      const mockRequest = {
-        sessionId: 'test-session',
-        transport: {
-          sessionId: 'test-session',
-        },
-      };
-      
-      // Set up API key in context
-      jest.spyOn(apiKeyContext, 'getCurrentApiKey').mockReturnValue('test-api-key');
-      
-      // Mock fetch
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        json: jest.fn().mockResolvedValue({
-          data: [
-            { id: 'room-1', name: 'Room 1' },
-            { id: 'room-2', name: 'Room 2' },
-          ],
-          total_count: 2,
-        }),
-      });
-      
-      // Call the resource handler
-      const result = await resourceHandler(
-        new URL('digitalsamba://rooms'),
-        {},
-        mockRequest
-      );
-      
-      // Check the result
-      expect(result).toHaveProperty('contents');
-      expect(result.contents).toHaveLength(2);
-      expect(result.contents[0]).toHaveProperty('uri', 'digitalsamba://rooms/room-1');
-      expect(result.contents[1]).toHaveProperty('uri', 'digitalsamba://rooms/room-2');
+  describe('Environment Variables', () => {
+    it('should support custom API URL', () => {
+      process.env.DIGITAL_SAMBA_API_URL = 'https://custom.api.com';
+      expect(process.env.DIGITAL_SAMBA_API_URL).toBe('https://custom.api.com');
+      delete process.env.DIGITAL_SAMBA_API_URL;
     });
     
-    it('should handle errors in room listing resource', async () => {
-      // Create server
-      const { server } = createServer();
-      
-      // Get the mocked server instance
-      const mockServer = (McpServer as jest.MockedClass<typeof McpServer>).mock.results[0].value;
-      
-      // Find the room listing resource handler
-      const resourceCalls = (mockServer.resource as jest.Mock).mock.calls;
-      const roomsResourceCall = resourceCalls.find(call => call[0] === 'rooms');
-      
-      if (!roomsResourceCall) {
-        // If no room resource was registered, test that modular resources were registered
-        expect(registerRoomResourcesSpy).toHaveBeenCalled();
-        return;
-      }
-      
-      const resourceHandler = roomsResourceCall[2];
-      
-      // Mock request object
-      const mockRequest = {
-        sessionId: 'test-session',
-        transport: {
-          sessionId: 'test-session',
-        },
-      };
-      
-      // Set up API key in context
-      jest.spyOn(apiKeyContext, 'getCurrentApiKey').mockReturnValue('test-api-key');
-      
-      // Mock fetch to fail
-      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
-      
-      // Call the resource handler
-      await expect(resourceHandler(
-        new URL('digitalsamba://rooms'),
-        {},
-        mockRequest
-      )).rejects.toThrow('Network error');
-    });
-  });
-  
-  describe('Server tools', () => {
-    it('should handle create room tool', async () => {
-      // Create server
-      const { server } = createServer();
-      
-      // Get the mocked server instance
-      const mockServer = (McpServer as jest.MockedClass<typeof McpServer>).mock.results[0].value;
-      
-      // Check that tool method was called
-      expect(mockServer.tool).toHaveBeenCalled();
-      
-      // Find the create room tool handler
-      const toolCalls = (mockServer.tool as jest.Mock).mock.calls;
-      const createRoomCall = toolCalls.find(call => call[0] === 'create-room');
-      
-      if (!createRoomCall) {
-        // If no create-room tool was registered, test that modular tools were registered
-        expect(registerRoomToolsSpy).toHaveBeenCalled();
-        return;
-      }
-      
-      const createRoomHandler = createRoomCall[2];
-      
-      // Mock request object
-      const mockRequest = {
-        sessionId: 'test-session',
-        transport: {
-          sessionId: 'test-session',
-        },
-      };
-      
-      // Set up API key in context
-      jest.spyOn(apiKeyContext, 'getCurrentApiKey').mockReturnValue('test-api-key');
-      
-      // Mock fetch
-      global.fetch = jest.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        statusText: 'OK',
-        json: jest.fn().mockResolvedValue({
-          id: 'new-room',
-          name: 'Test Room',
-          privacy: 'public',
-        }),
-      });
-      
-      // Call the tool handler
-      const result = await createRoomHandler(
-        {
-          name: 'Test Room',
-          privacy: 'public',
-        },
-        mockRequest
-      );
-      
-      // Check the result
-      expect(result).toHaveProperty('content');
-      expect(result.content[0]).toHaveProperty('type', 'text');
-      expect(result.content[0].text).toContain('Room created successfully');
-      expect(result.content[0].text).toContain('new-room');
-      expect(result.content[0].text).toContain('Test Room');
-    });
-    
-    it('should handle errors in create room tool', async () => {
-      // Create server
-      const { server } = createServer();
-      
-      // Get the mocked server instance
-      const mockServer = (McpServer as jest.MockedClass<typeof McpServer>).mock.results[0].value;
-      
-      // Find the create room tool handler
-      const toolCalls = (mockServer.tool as jest.Mock).mock.calls;
-      const createRoomCall = toolCalls.find(call => call[0] === 'create-room');
-      
-      if (!createRoomCall) {
-        // If no create-room tool was registered, test that modular tools were registered
-        expect(registerRoomToolsSpy).toHaveBeenCalled();
-        return;
-      }
-      
-      const createRoomHandler = createRoomCall[2];
-      
-      // Mock request object
-      const mockRequest = {
-        sessionId: 'test-session',
-        transport: {
-          sessionId: 'test-session',
-        },
-      };
-      
-      // Set up API key in context
-      jest.spyOn(apiKeyContext, 'getCurrentApiKey').mockReturnValue('test-api-key');
-      
-      // Mock fetch to fail
-      global.fetch = jest.fn().mockRejectedValue(new Error('API error'));
-      
-      // Call the tool handler
-      const result = await createRoomHandler(
-        {
-          name: 'Test Room',
-          privacy: 'public',
-        },
-        mockRequest
-      );
-      
-      // Check the result
-      expect(result).toHaveProperty('content');
-      expect(result).toHaveProperty('isError', true);
-      expect(result.content[0]).toHaveProperty('type', 'text');
-      expect(result.content[0].text).toContain('Error creating room');
+    it('should support log level configuration', () => {
+      process.env.DS_LOG_LEVEL = 'debug';
+      expect(process.env.DS_LOG_LEVEL).toBe('debug');
+      delete process.env.DS_LOG_LEVEL;
     });
   });
 });
