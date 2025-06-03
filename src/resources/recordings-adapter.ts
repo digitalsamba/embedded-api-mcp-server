@@ -11,25 +11,25 @@ export function registerRecordingResources(): Resource[] {
     {
       uri: 'digitalsamba://recordings',
       name: 'recordings',
-      description: 'List all recordings',
+      description: '[Recording Data] List all recordings in your account. Use to access: "show all recordings", "list videos", "recording directory", "meeting recordings", "video library". Returns array of recording objects with status, duration, room info, and download availability.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://recordings/{recordingId}',
       name: 'recording',
-      description: 'Get details for a specific recording',
+      description: '[Recording Data] Get detailed information about a specific recording. Use to access: "recording details", "video info", "recording metadata", "recording status", "video details". Requires recordingId. Returns complete recording data including name, duration, status, and download URLs.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://recordings/archived',
       name: 'archived-recordings',
-      description: 'List archived recordings',
+      description: '[Recording Data] List all archived recordings. Use to access: "archived recordings", "old recordings", "archived videos", "stored recordings", "recording archive". Returns recordings in archived status for long-term storage. Archived recordings may need to be unarchived before downloading.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://rooms/{roomId}/recordings',
       name: 'room-recordings',
-      description: 'List recordings for a specific room',
+      description: '[Recording Data] List all recordings for a specific room. Use to access: "room recordings", "recordings for this room", "room video history", "meeting recordings for room", "videos from room". Requires roomId. Returns recordings filtered to that specific room with session details.',
       mimeType: 'application/json'
     }
   ];

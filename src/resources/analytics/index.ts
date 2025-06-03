@@ -28,49 +28,49 @@ export function registerAnalyticsResources(apiClient: DigitalSambaApiClient): Re
     {
       uri: 'digitalsamba://analytics/participants',
       name: 'analytics-participants',
-      description: 'Get participant analytics and statistics',
+      description: '[Analytics Data] Get participant behavior and engagement analytics. Use to access: "participant stats", "user analytics", "attendee behavior", "participant engagement", "user activity patterns". Supports filters for date range and specific participants. Returns attendance, participation time, and activity metrics.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://analytics/usage',
       name: 'analytics-usage',
-      description: 'Get usage statistics and growth metrics',
+      description: '[Analytics Data] Get platform usage statistics and growth trends. Use to access: "usage trends", "platform growth", "total meeting minutes", "usage statistics", "growth metrics". Supports date filters and period grouping. Returns total sessions, participants, minutes, and growth rates.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://analytics/rooms',
       name: 'analytics-rooms',
-      description: 'Get room analytics and statistics',
+      description: '[Analytics Data] Get room-specific analytics and usage patterns. Use to access: "room performance", "room usage analytics", "room activity metrics", "meeting room stats", "room utilization". Requires roomId parameter. Returns usage patterns, participant counts, session frequency.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://analytics/team',
       name: 'analytics-team',
-      description: 'Get team-wide statistics and metrics',
+      description: '[Analytics Data] Get team-wide statistics and organizational metrics. Use to access: "team analytics", "organization stats", "team performance", "overall usage", "team metrics". Supports query filters for date ranges. Returns team-level activity, usage patterns, and performance indicators.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://analytics/live',
       name: 'analytics-live',
-      description: 'Get live session analytics for all rooms',
+      description: '[Analytics Data] Get real-time analytics for all active sessions. Use to access: "live session data", "current activity", "real-time analytics", "active sessions", "live meeting stats". Supports includeParticipants parameter. Returns current active sessions and participant counts.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://analytics/live/{roomId}',
       name: 'analytics-live-room',
-      description: 'Get live session analytics for a specific room',
+      description: '[Analytics Data] Get real-time analytics for a specific room. Use to access: "live room analytics", "current room activity", "real-time room data", "active room session", "live room stats". Requires roomId. Returns current session status and participant activity for that room.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://analytics/sessions/{sessionId}',
       name: 'analytics-session',
-      description: 'Get analytics for a specific session',
+      description: '[Analytics Data] Get detailed analytics for a specific session. Use to access: "session analytics", "meeting analytics", "session performance data", "session metrics", "meeting statistics". Requires sessionId. Returns comprehensive session analytics including participant engagement and activity patterns.',
       mimeType: 'application/json'
     },
     {
       uri: 'digitalsamba://analytics/participants/{participantId}',
       name: 'analytics-participant',
-      description: 'Get analytics for a specific participant',
+      description: '[Analytics Data] Get analytics for a specific participant across sessions. Use to access: "user analytics", "participant history", "individual user stats", "participant metrics", "user engagement data". Requires participantId. Returns participant activity across all sessions they joined.',
       mimeType: 'application/json'
     }
   ];
