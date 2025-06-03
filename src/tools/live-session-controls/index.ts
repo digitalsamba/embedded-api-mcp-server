@@ -56,7 +56,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
   return [
     {
       name: 'start-transcription',
-      description: 'Start transcription for a live session in a room',
+      description: '[Live Session Controls] Start real-time transcription for an active room session. Use when users say: "start transcription", "enable transcription", "transcribe the meeting", "turn on transcription", "start live captions". Requires roomId with an active session. Transcripts can be exported later.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -70,7 +70,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
     },
     {
       name: 'stop-transcription',
-      description: 'Stop transcription for a live session in a room',
+      description: '[Live Session Controls] Stop ongoing transcription in a room. Use when users say: "stop transcription", "disable transcription", "turn off transcription", "stop live captions", "end transcription". Requires roomId. Only works if transcription is currently active.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -84,7 +84,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
     },
     {
       name: 'phone-participants-joined',
-      description: 'Register phone participants joining a room',
+      description: '[Live Session Controls] Register phone/dial-in participants joining a room. Use when users say: "add phone participant", "someone dialed in", "phone user joined", "register dial-in participant". Requires roomId and participant details including call_id. Used for tracking phone-based attendees.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -124,7 +124,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
     },
     {
       name: 'phone-participants-left',
-      description: 'Register phone participants leaving a room',
+      description: '[Live Session Controls] Register phone/dial-in participants leaving a room. Use when users say: "phone participant left", "dial-in user disconnected", "remove phone participant", "phone user hung up". Requires roomId and callIds array. Updates participant tracking.',
       inputSchema: {
         type: 'object',
         properties: {

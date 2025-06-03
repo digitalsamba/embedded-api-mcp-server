@@ -22,7 +22,7 @@ export function registerAnalyticsTools(): Tool[] {
   return [
     {
       name: 'get-participant-statistics',
-      description: 'Get detailed participant statistics with optional filters',
+      description: '[Analytics] Get detailed participant statistics and behavior analytics. Use when users say: "show participant stats", "participant analytics", "user activity report", "attendee statistics", "who attended meetings", "participant engagement metrics". Optional filters for date range, room, or specific participant. Returns attendance, duration, and activity data.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -52,7 +52,7 @@ export function registerAnalyticsTools(): Tool[] {
     },
     {
       name: 'get-room-analytics',
-      description: 'Get comprehensive room analytics with optional filters',
+      description: '[Analytics] Get comprehensive room usage analytics and performance metrics. Use when users say: "room analytics", "room usage statistics", "meeting room performance", "room activity report", "how is the room being used", "room metrics". Optional room_id for specific room or all rooms. Returns usage patterns, participant counts, session data.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -79,7 +79,7 @@ export function registerAnalyticsTools(): Tool[] {
     },
     {
       name: 'get-usage-statistics',
-      description: 'Get usage statistics and growth metrics',
+      description: '[Analytics] Get overall platform usage statistics and growth trends. Use when users say: "show usage stats", "platform analytics", "growth metrics", "overall statistics", "usage trends", "total meeting minutes", "platform activity". Optional date filters and period grouping. Returns total sessions, participants, minutes, and growth rates.',
       inputSchema: {
         type: 'object',
         properties: {

@@ -48,7 +48,7 @@ export function registerRoleTools(): ToolDefinition[] {
   return [
     {
       name: 'create-role',
-      description: 'Create a new role with specified permissions',
+      description: '[Role Management] Create a custom role with specific permissions. Use when users say: "create role", "add custom role", "make new role", "define permissions", "create user role". Requires name, display_name, and permissions object. Role names must use letters, numbers, dashes, underscores only.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -77,7 +77,7 @@ export function registerRoleTools(): ToolDefinition[] {
     },
     {
       name: 'update-role',
-      description: 'Update an existing role',
+      description: '[Role Management] Update role settings, name, or permissions. Use when users say: "update role", "change permissions", "modify role", "edit role settings", "update role permissions". Requires roleId. Can update display name, description, or permission settings.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -106,7 +106,7 @@ export function registerRoleTools(): ToolDefinition[] {
     },
     {
       name: 'delete-role',
-      description: 'Delete a role',
+      description: '[Role Management] Permanently delete a custom role. Use when users say: "delete role", "remove role", "delete custom role", "remove permissions role". Requires roleId. Cannot delete system roles. Users with this role will lose it.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -120,7 +120,7 @@ export function registerRoleTools(): ToolDefinition[] {
     },
     {
       name: 'get-roles',
-      description: 'List all available roles',
+      description: '[Role Management] List all available roles in the system. Use when users say: "list roles", "show all roles", "get roles", "what roles exist", "show permissions roles". Returns both system and custom roles with their permissions. Supports pagination.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -137,7 +137,7 @@ export function registerRoleTools(): ToolDefinition[] {
     },
     {
       name: 'get-role',
-      description: 'Get details of a specific role',
+      description: '[Role Management] Get detailed information about a specific role. Use when users say: "show role details", "get role info", "what permissions does role have", "describe role", "role information". Requires roleId. Returns full permission details.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -151,7 +151,7 @@ export function registerRoleTools(): ToolDefinition[] {
     },
     {
       name: 'get-permissions',
-      description: 'List all available permissions that can be assigned to roles',
+      description: '[Role Management] List all available permissions in the system. Use when users say: "list permissions", "show all permissions", "what permissions are available", "get permission list", "available role permissions". Returns complete permission catalog with descriptions.',
       inputSchema: {
         type: 'object',
         properties: {}

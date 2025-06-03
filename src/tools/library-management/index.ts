@@ -55,7 +55,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     // Library CRUD
     {
       name: 'create-library',
-      description: 'Create a new content library',
+      description: '[Content Library] Create a new content library for storing files and documents. Use when users say: "create library", "make content library", "new file storage", "create document library", "set up content repository". Requires externalId. Returns library ID for file uploads.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -73,7 +73,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     },
     {
       name: 'update-library',
-      description: 'Update library details',
+      description: '[Content Library] Update library name or external ID. Use when users say: "rename library", "update library", "change library name", "modify library details", "edit library settings". Requires libraryId. Can update name and external identifier.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -95,7 +95,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     },
     {
       name: 'delete-library',
-      description: 'Delete a content library',
+      description: '[Content Library] Permanently delete a content library and all its contents. Use when users say: "delete library", "remove content library", "delete file storage", "remove library". Requires libraryId. This deletes ALL files and folders within!',
       inputSchema: {
         type: 'object',
         properties: {
@@ -111,7 +111,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     // Folder Management
     {
       name: 'create-library-folder',
-      description: 'Create a new folder in a library',
+      description: '[Content Library] Create a folder for organizing files. Use when users say: "create folder", "make directory", "add folder", "create subfolder", "organize files in folders". Requires libraryId. Optional parentId for nested folders. Returns folder ID.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -133,7 +133,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     },
     {
       name: 'update-library-folder',
-      description: 'Update folder details',
+      description: '[Content Library] Update folder name or move to different parent. Use when users say: "rename folder", "update folder", "change folder name", "move folder", "reorganize folders". Requires libraryId and folderId. Can change name or parent folder.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -159,7 +159,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     },
     {
       name: 'delete-library-folder',
-      description: 'Delete a folder from a library',
+      description: '[Content Library] Delete a folder and optionally its contents. Use when users say: "delete folder", "remove directory", "delete folder and files", "remove subfolder". Requires libraryId and folderId. May delete contained files depending on settings.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -179,7 +179,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     // File Management
     {
       name: 'create-library-file',
-      description: 'Create a new file entry and get upload URL',
+      description: '[Content Library] Create file entry and get upload URL. Use when users say: "upload file", "add document", "upload to library", "add file", "store document". Requires libraryId and name. Returns upload URL for actual file transfer. Optional folderId.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -201,7 +201,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     },
     {
       name: 'update-library-file',
-      description: 'Update file details',
+      description: '[Content Library] Update file name or move to different folder. Use when users say: "rename file", "update file", "change file name", "move file to folder", "reorganize files". Requires libraryId and fileId. Can change name or folder location.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -227,7 +227,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     },
     {
       name: 'delete-library-file',
-      description: 'Delete a file from a library',
+      description: '[Content Library] Permanently delete a file from library. Use when users say: "delete file", "remove document", "delete upload", "remove file from library". Requires libraryId and fileId. This action cannot be undone.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -245,7 +245,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     },
     {
       name: 'get-file-links',
-      description: 'Get viewing and thumbnail links for a file',
+      description: '[Content Library] Get viewing and thumbnail URLs for a file. Use when users say: "get file link", "share file", "view file", "get download link", "access file URL". Requires libraryId and fileId. Returns URLs for viewing and thumbnails.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -265,7 +265,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     // Webapp and Whiteboard Creation
     {
       name: 'create-webapp',
-      description: 'Create a new webapp in a library',
+      description: '[Content Library] Create a webapp/web application entry in library. Use when users say: "create webapp", "add web app", "create web application", "add webapp to library". Requires libraryId and name. Optional folderId. For embedding web content.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -287,7 +287,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     },
     {
       name: 'create-whiteboard',
-      description: 'Create a new whiteboard in a library',
+      description: '[Content Library] Create a collaborative whiteboard in library. Use when users say: "create whiteboard", "add whiteboard", "create drawing board", "make collaborative board". Requires libraryId and name. Optional folderId. For visual collaboration.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -311,7 +311,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     // Bulk and Move Operations
     {
       name: 'move-library-file',
-      description: 'Move a file to a different folder within the same library',
+      description: '[Content Library] Move a file to a different folder. Use when users say: "move file", "relocate file", "move to folder", "reorganize file", "change file location". Requires libraryId and fileId. Moves file within same library only.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -333,7 +333,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     },
     {
       name: 'move-library-folder',
-      description: 'Move a folder to a different parent folder',
+      description: '[Content Library] Move a folder to a different parent location. Use when users say: "move folder", "relocate directory", "reorganize folders", "change folder parent", "nest folder". Requires libraryId and folderId. Moves entire folder tree.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -355,7 +355,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     },
     {
       name: 'bulk-delete-library-files',
-      description: 'Delete multiple files at once',
+      description: '[Content Library] Delete multiple files in one operation. Use when users say: "delete multiple files", "bulk delete", "remove several files", "mass delete files", "delete file batch". Requires libraryId and fileIds array. Efficient for cleanup tasks.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -376,7 +376,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     },
     {
       name: 'bulk-upload-library-files',
-      description: 'Get upload URLs for multiple files at once',
+      description: '[Content Library] Get upload URLs for multiple files in batch. Use when users say: "upload multiple files", "bulk upload", "batch upload", "upload many files", "mass file upload". Requires libraryId and files array with names, sizes, and MIME types.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -416,7 +416,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     },
     {
       name: 'copy-library-content',
-      description: 'Copy files or folders within or between libraries',
+      description: '[Content Library] Copy files or folders within/between libraries. Use when users say: "copy file", "duplicate folder", "copy to another library", "clone content", "duplicate files". Requires source/target library IDs, content type and ID. Can rename during copy.',
       inputSchema: {
         type: 'object',
         properties: {

@@ -52,7 +52,7 @@ export function registerPollTools(): ToolDefinition[] {
   return [
     {
       name: 'create-poll',
-      description: 'Create a new poll in a room',
+      description: '[Poll Management] Create a new poll/survey in a room. Use when users say: "create a poll", "add a survey", "make a poll", "create voting question", "add multiple choice question". Requires roomId, question, and at least 2 options. Returns poll ID for tracking.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -102,7 +102,7 @@ export function registerPollTools(): ToolDefinition[] {
     },
     {
       name: 'update-poll',
-      description: 'Update an existing poll',
+      description: '[Poll Management] Update an existing poll\'s question, options, or settings. Use when users say: "change poll question", "update poll", "edit poll options", "modify survey", "change poll settings". Requires roomId and pollId. Can update question, options, type, or visibility settings.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -155,7 +155,7 @@ export function registerPollTools(): ToolDefinition[] {
     },
     {
       name: 'delete-poll',
-      description: 'Delete a specific poll',
+      description: '[Poll Management] Delete a specific poll from a room. Use when users say: "delete poll", "remove poll", "delete survey", "remove voting question", "cancel poll". Requires roomId and pollId. This action cannot be undone.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -173,7 +173,7 @@ export function registerPollTools(): ToolDefinition[] {
     },
     {
       name: 'delete-session-polls',
-      description: 'Delete all polls for a specific session',
+      description: '[Poll Management] Delete ALL polls from a specific session. Use when users say: "delete all session polls", "remove all polls from session", "clear session polls", "delete all surveys from meeting". Requires sessionId. Removes all poll data from that session.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -187,7 +187,7 @@ export function registerPollTools(): ToolDefinition[] {
     },
     {
       name: 'delete-room-polls',
-      description: 'Delete all polls for all sessions in a room',
+      description: '[Poll Management] Delete ALL polls from ALL sessions in a room. Use when users say: "delete all room polls", "remove all polls from room", "clear room poll history", "wipe all room surveys". Requires roomId. Affects all past and current session polls.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -201,7 +201,7 @@ export function registerPollTools(): ToolDefinition[] {
     },
     {
       name: 'publish-poll-results',
-      description: 'Publish poll results to participants',
+      description: '[Poll Management] Publish/share poll results with participants. Use when users say: "show poll results", "publish poll results", "share voting results", "display poll outcome", "reveal survey results". Requires roomId, pollId, and sessionId. Makes results visible to all participants.',
       inputSchema: {
         type: 'object',
         properties: {
