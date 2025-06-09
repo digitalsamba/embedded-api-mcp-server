@@ -199,5 +199,5 @@ export DIGITAL_SAMBA_API_KEY=your_api_key
 Or pass via command line:
 
 ```bash
-npx @digitalsamba/mcp-server --api-key YOUR_API_KEY
+npx @digitalsamba/embedded-api-mcp-server --api-key YOUR_API_KEY
 ```

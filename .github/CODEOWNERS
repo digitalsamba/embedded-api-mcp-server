@@ -1,16 +1,11 @@
-# These owners will be the default owners for everything in the repo.
-# Unless a later match takes precedence, they will be requested for
-# review when someone opens a pull request.
-* @digital-samba/developers
+# This file defines code ownership for automatic PR review assignments
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
 
-# Order is important; the last matching pattern takes the most precedence.
+# Default owner for everything in the repo
+* @digitalsamba/conalmullan
 
-# Core server files
-/src/ @digital-samba/developers
-/bin/ @digital-samba/developers
-
-# Documentation
-/docs/ @digital-samba/documentation-team @digital-samba/developers
-
-# CI/CD and GitHub workflows
-/.github/ @digital-samba/devops
+# You can also specify owners for specific directories or files if needed in the future
+# Example:
+# /docs/ @digitalsamba/docs-team
+# /src/api/ @digitalsamba/api-team
+# *.yml @digitalsamba/devops

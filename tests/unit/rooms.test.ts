@@ -99,13 +99,13 @@ describe('Room Resources', () => {
       expect(resources[0]).toEqual({
         uri: 'digitalsamba://rooms',
         name: 'rooms',
-        description: 'List all rooms',
+        description: '[Room Data] List all rooms in your account. Use to access: "show all rooms", "list meeting rooms", "get room list", "what rooms exist", "room directory". Returns array of room objects with IDs, names, settings, and join URLs. Useful for browsing available meeting spaces or finding specific rooms.',
         mimeType: 'application/json'
       });
       expect(resources[1]).toEqual({
         uri: 'digitalsamba://rooms/{roomId}',
         name: 'room',
-        description: 'Get details for a specific room',
+        description: '[Room Data] Get complete details for a specific room. Use to access: "show room details", "get room info", "room configuration", "room settings", "what are room parameters". Requires roomId parameter. Returns full room object with all settings, max participants, features, and URLs.',
         mimeType: 'application/json'
       });
     });

@@ -8,13 +8,13 @@ This repository uses automated deployment to NPM via GitHub Actions with separat
 - **Trigger**: Push to `develop` branch
 - **NPM Tag**: `beta`
 - **Version**: Automatically appends `-beta.YYYYMMDDHHMMSS` timestamp
-- **Install**: `npm install digital-samba-mcp-server@beta`
+- **Install**: `npm install @digitalsamba/embedded-api-mcp-server@beta`
 
 ### Production Releases (main branch tags)
 - **Trigger**: Git tags matching `v*.*.*` pattern (e.g., `v1.2.3`)
 - **NPM Tag**: `latest`
 - **Version**: Must match the git tag version
-- **Install**: `npm install digital-samba-mcp-server`
+- **Install**: `npm install @digitalsamba/embedded-api-mcp-server`
 
 ## 🔧 Required GitHub Secrets
 

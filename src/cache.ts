@@ -84,6 +84,7 @@ export const defaultCacheOptions: CacheOptions = {
 export class MemoryCache<T = unknown> {
   private cache: Map<string, CacheEntry<T>>;
   private options: CacheOptions;
+  private cleanupTimer?: NodeJS.Timeout;
 
   /**
    * Creates a new MemoryCache
@@ -127,7 +128,7 @@ export class MemoryCache<T = unknown> {
   private startCleanupInterval(): void {
     const cleanupInterval = Math.min(this.options.ttl / 2, 60 * 1000); // At most once per minute
     
-    setInterval(() => {
+    this.cleanupTimer = setInterval(() => {
       this.cleanup();
     }, cleanupInterval);
   }
@@ -376,6 +377,17 @@ export class MemoryCache<T = unknown> {
       expiredItems,
       maxItems: this.options.maxItems
     };
+  }
+  
+  /**
+   * Destroys the cache and clears cleanup timers
+   */
+  public destroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = undefined;
+    }
+    this.cache.clear();
   }
 }
 

@@ -36,7 +36,7 @@
 Enable debug logging:
 
 ```bash
-DEBUG=digital-samba:* npx digital-samba-mcp-server --api-key YOUR_KEY
+DEBUG=digital-samba:* npx @digitalsamba/embedded-api-mcp-server --api-key YOUR_KEY
 ```
 
 ## Getting Help

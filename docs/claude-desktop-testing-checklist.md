@@ -5,7 +5,7 @@
 ### 1. Install Latest Beta
 Wait for the beta build to complete, then:
 ```bash
-npm install -g @digitalsamba/mcp-server@beta
+npm install -g @digitalsamba/embedded-api-mcp-server@beta
 ```
 
 ### 2. Update Claude Desktop Config

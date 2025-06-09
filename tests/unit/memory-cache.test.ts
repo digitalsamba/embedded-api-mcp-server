@@ -14,6 +14,7 @@ describe('MemoryCache', () => {
   // Mock Date.now for time-based tests
   const originalDateNow = Date.now;
   let currentTime = 1622000000000; // Fixed timestamp for testing
+  const cacheInstances: MemoryCache[] = [];
   
   beforeEach(() => {
     // Mock Date.now to return controlled time
@@ -21,6 +22,10 @@ describe('MemoryCache', () => {
   });
   
   afterEach(() => {
+    // Destroy all cache instances to clean up timers
+    cacheInstances.forEach(cache => cache.destroy());
+    cacheInstances.length = 0;
+    
     // Restore original Date.now
     Date.now = originalDateNow;
   });
