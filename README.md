@@ -1,14 +1,14 @@
-# Digital Samba MCP Server
+# Digital Samba Embedded API MCP Server
 
 <div align="center">
   <img src="https://www.digitalsamba.com/hs-fs/hubfs/Digital%20Samba%20-%20video%20conferencing%20software%2c%20webinar%20software%2c%20virtual%20classroom%2c%20video%20api.png" alt="Digital Samba Logo" width="200"/>
   
-  **Use your AI assistant to interact with the Digital Samba video conferencing API**
+  **Use your AI assistant to interact with the Digital Samba Embedded API**
 
-  [![npm version](https://img.shields.io/npm/v/@digitalsamba/mcp-server.svg)](https://www.npmjs.com/package/@digitalsamba/mcp-server)
+  [![npm version](https://img.shields.io/npm/v/@digitalsamba/embedded-api-mcp-server.svg)](https://www.npmjs.com/package/@digitalsamba/embedded-api-mcp-server)
   [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-  [![Node.js Version](https://img.shields.io/node/v/@digitalsamba/mcp-server.svg)](https://nodejs.org)
-  [![Coverage Status](https://img.shields.io/codecov/c/github/digitalsamba/digital-samba-mcp-server)](https://codecov.io/gh/digitalsamba/digital-samba-mcp-server)
+  [![Node.js Version](https://img.shields.io/node/v/@digitalsamba/embedded-api-mcp-server.svg)](https://nodejs.org)
+  [![Coverage Status](https://img.shields.io/codecov/c/github/digitalsamba/embedded-api-mcp-server)](https://codecov.io/gh/digitalsamba/embedded-api-mcp-server)
 
   [Installation](#installation) • [Quick Start](#quick-start) • [Features](#features) • [API Reference](#api-reference)
 </div>
@@ -17,7 +17,7 @@
 
 ## Overview
 
-The Digital Samba MCP Server is a comprehensive Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's video conferencing API. With support for 95+ endpoints, it provides complete control over rooms, sessions, recordings, analytics, and more.
+The Digital Samba Embedded API MCP Server is a comprehensive Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's Embedded API. With support for 95+ endpoints, it provides complete control over rooms, sessions, recordings, analytics, and more.
 
 ## Features
 
@@ -80,10 +80,10 @@ The Digital Samba MCP Server is a comprehensive Model Context Protocol server th
 
 ```bash
 # Install globally
-npm install -g @digitalsamba/mcp-server
+npm install -g @digitalsamba/embedded-api-mcp-server
 
 # Or use directly with npx
-npx @digitalsamba/mcp-server --api-key YOUR_API_KEY
+npx @digitalsamba/embedded-api-mcp-server --api-key YOUR_API_KEY
 ```
 
 ## Quick Start
@@ -101,7 +101,7 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
   "mcpServers": {
     "digital-samba": {
       "command": "npx",
-      "args": ["@digitalsamba/mcp-server", "--api-key", "YOUR_API_KEY"]
+      "args": ["@digitalsamba/embedded-api-mcp-server", "--api-key", "YOUR_API_KEY"]
     }
   }
 }

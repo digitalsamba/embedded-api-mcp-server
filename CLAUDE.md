@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Overview
 
-Digital Samba MCP Server - A lightweight Model Context Protocol server for Digital Samba's video conferencing API.
+Digital Samba Embedded API MCP Server - A lightweight Model Context Protocol server for Digital Samba's Embedded API.
 
 ## API Reference
 
@@ -24,7 +24,7 @@ Digital Samba MCP Server - A lightweight Model Context Protocol server for Digit
 - `npm run test:coverage` - Tests with coverage report
 
 ### Running the Server
-- `npx @digitalsamba/mcp-server --api-key YOUR_KEY` - Run as MCP server
+- `npx @digitalsamba/embedded-api-mcp-server --api-key YOUR_KEY` - Run as MCP server
 - `npm run dev -- --api-key YOUR_KEY` - Run in development mode
 
 ## Architecture
@@ -112,7 +112,7 @@ src/
 ## Deployment
 - Beta versions deployed automatically from `develop` branch
 - Stable versions deployed from `main` branch
-- Package name: `@digitalsamba/mcp-server`
+- Package name: `@digitalsamba/embedded-api-mcp-server`
 
 ## Critical Constraints
 - Keep package size minimal (under 250KB packed)

@@ -1,8 +1,8 @@
 {
-  "name": "@digitalsamba/mcp-server",
-  "version": "2.0.0-beta.1",
+  "name": "@digitalsamba/embedded-api-mcp-server",
+  "version": "0.1.0-beta.1",
   "packageManager": "npm@10.2.0",
-  "description": "Digital Samba MCP Server - Model Context Protocol server for Digital Samba's video conferencing API",
+  "description": "Digital Samba Embedded API MCP Server - Model Context Protocol server for Digital Samba's Embedded API",
   "type": "module",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -79,6 +79,7 @@
     "mcp",
     "model-context-protocol",
     "digital-samba",
+    "embedded-api",
     "video-conferencing",
     "llm",
     "claude",
@@ -88,12 +89,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/digital-samba/digital-samba-mcp-server.git"
+    "url": "git+https://github.com/digitalsamba/embedded-api-mcp-server.git"
   },
   "bugs": {
-    "url": "https://github.com/digital-samba/digital-samba-mcp-server/issues"
+    "url": "https://github.com/digitalsamba/embedded-api-mcp-server/issues"
   },
-  "homepage": "https://github.com/digital-samba/digital-samba-mcp-server#readme",
+  "homepage": "https://github.com/digitalsamba/embedded-api-mcp-server#readme",
   "sideEffects": false,
   "publishConfig": {
     "access": "public",

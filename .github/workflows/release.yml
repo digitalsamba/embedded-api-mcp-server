@@ -1,6 +1,6 @@
 # Production Release Workflow
 # 
-# This workflow handles production releases for the Digital Samba MCP Server
+# This workflow handles production releases for the Digital Samba Embedded API MCP Server
 # It triggers on version tags (e.g., v0.0.1 or 0.0.1) and performs:
 # - Full test suite across multiple Node versions
 # - Security audit
@@ -12,9 +12,9 @@
 # - NPM_TOKEN: NPM automation token for publishing
 #
 # Status badges:
-# - Release: ![Release](https://github.com/digitalsamba/digital-samba-mcp-server/workflows/Release/badge.svg)
-# - NPM Version: ![npm version](https://img.shields.io/npm/v/@digitalsamba/mcp-server.svg)
-# - NPM Downloads: ![npm downloads](https://img.shields.io/npm/dm/@digitalsamba/mcp-server.svg)
+# - Release: ![Release](https://github.com/digitalsamba/embedded-api-mcp-server/workflows/Release/badge.svg)
+# - NPM Version: ![npm version](https://img.shields.io/npm/v/@digitalsamba/embedded-api-mcp-server.svg)
+# - NPM Downloads: ![npm downloads](https://img.shields.io/npm/dm/@digitalsamba/embedded-api-mcp-server.svg)
 
 name: Release
 
