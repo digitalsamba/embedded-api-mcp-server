@@ -23,7 +23,7 @@ export function registerRoomResources(): Resource[] {
     {
       uri: 'digitalsamba://rooms',
       name: 'rooms',
-      description: '[Room Data] List all rooms in your account. Use to access: "show all rooms", "list meeting rooms", "get room list", "what rooms exist", "room directory". Returns array of room objects with IDs, names, settings, and join URLs. Useful for browsing available meeting spaces or finding specific rooms.',
+      description: '[Room Data - RESOURCE] List all rooms in your account. Use when users say: "show rooms", "list rooms", "show all rooms", "get rooms", "display rooms", "view rooms", "list meeting rooms", "get room list", "what rooms exist", "room directory", "all rooms", "my rooms". This is a READ-ONLY RESOURCE, not a tool. Returns array of room objects with IDs, names, settings, and join URLs. Useful for browsing available meeting spaces or finding specific rooms.',
       mimeType: 'application/json'
     },
     {
