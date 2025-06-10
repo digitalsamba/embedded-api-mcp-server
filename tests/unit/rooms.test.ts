@@ -99,7 +99,7 @@ describe('Room Resources', () => {
       expect(resources[0]).toEqual({
         uri: 'digitalsamba://rooms',
         name: 'rooms',
-        description: '[Room Data] List all rooms in your account. Use to access: "show all rooms", "list meeting rooms", "get room list", "what rooms exist", "room directory". Returns array of room objects with IDs, names, settings, and join URLs. Useful for browsing available meeting spaces or finding specific rooms.',
+        description: '[Room Data - RESOURCE] List all rooms in your account. Use when users say: "show rooms", "list rooms", "show all rooms", "get rooms", "display rooms", "view rooms", "list meeting rooms", "get room list", "what rooms exist", "room directory", "all rooms", "my rooms". This is a READ-ONLY RESOURCE, not a tool. Returns array of room objects with IDs, names, settings, and join URLs. Useful for browsing available meeting spaces or finding specific rooms.',
         mimeType: 'application/json'
       });
       expect(resources[1]).toEqual({
@@ -323,11 +323,7 @@ describe('Room Tools', () => {
         const result = await executeRoomTool('create-room', {}, mockRequest, options);
 
         expect(mockApiClient.createRoom).toHaveBeenCalledWith({
-          name: 'Test Room',
-          description: undefined,
-          friendly_url: undefined,
-          privacy: 'public',
-          max_participants: undefined
+          name: 'Test Room'
         });
         expect(result.content[0].text).toContain('Room created successfully');
       });
@@ -356,10 +352,7 @@ describe('Room Tools', () => {
 
         expect(mockApiClient.updateRoom).toHaveBeenCalledWith('test-room-id', {
           name: 'Updated Room',
-          description: undefined,
-          friendly_url: undefined,
-          privacy: 'private',
-          max_participants: undefined
+          privacy: 'private'
         });
         expect(result.content[0].text).toContain('Room updated successfully');
         expect(result.isError).toBeUndefined();

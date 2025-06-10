@@ -86,7 +86,7 @@ describe('Recording Resources', () => {
       expect(resources[0]).toEqual({
         uri: 'digitalsamba://recordings',
         name: 'recordings',
-        description: '[Recording Data] List all recordings in your account. Use to access: "show all recordings", "list videos", "recording directory", "meeting recordings", "video library". Returns array of recording objects with status, duration, room info, and download availability.',
+        description: '[Recording Data - RESOURCE] List all recordings in your account. Use to access: "show all recordings", "list recordings", "show recordings", "list videos", "recording directory", "meeting recordings", "video library". NOT for listing rooms - use digitalsamba://rooms instead. Returns array of recording objects with status, duration, room info, and download availability.',
         mimeType: 'application/json'
       });
       expect(resources[1]).toEqual({
