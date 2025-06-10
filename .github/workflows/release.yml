@@ -188,7 +188,7 @@ jobs:
           npm install $PACKAGE_PATH
           
           # Verify it's installed
-          npm ls @digitalsamba/mcp-server
+          npm ls @digitalsamba/embedded-api-mcp-server
           
           echo "✅ Package installation test passed"
 
@@ -294,10 +294,10 @@ jobs:
         run: |
           echo "🎉 Release ${{ steps.version.outputs.version }} completed successfully!"
           echo ""
-          echo "📦 NPM: https://www.npmjs.com/package/@digitalsamba/mcp-server/v/${{ steps.version.outputs.version }}"
+          echo "📦 NPM: https://www.npmjs.com/package/@digitalsamba/embedded-api-mcp-server/v/${{ steps.version.outputs.version }}"
           echo "🏷️ GitHub: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
           echo ""
-          echo "To install: npm install @digitalsamba/mcp-server@${{ steps.version.outputs.version }}"
+          echo "To install: npm install @digitalsamba/embedded-api-mcp-server@${{ steps.version.outputs.version }}"
 
   # Cleanup job on failure
   cleanup:

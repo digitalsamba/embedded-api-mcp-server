@@ -46,7 +46,7 @@ export function registerAnalyticsResources(apiClient: DigitalSambaApiClient): Re
     {
       uri: 'digitalsamba://analytics/team',
       name: 'analytics-team',
-      description: '[Analytics Data] Get team-wide statistics and organizational metrics. Use to access: "team analytics", "organization stats", "team performance", "overall usage", "team metrics". Supports query filters for date ranges. Returns team-level activity, usage patterns, and performance indicators.',
+      description: '[Analytics Data - RESOURCE] Get current team-wide statistics and organizational metrics. Use when users say: "show analytics", "show team analytics", "display analytics", "view analytics", "current analytics", "analytics overview". For date-filtered analytics use get-usage-statistics tool. Returns current team activity, usage patterns, and key metrics.',
       mimeType: 'application/json'
     },
     {

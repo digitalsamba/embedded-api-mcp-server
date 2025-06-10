@@ -83,14 +83,14 @@ The Digital Samba Embedded API MCP Server is a comprehensive Model Context Proto
 npm install -g @digitalsamba/embedded-api-mcp-server
 
 # Or use directly with npx
-npx @digitalsamba/embedded-api-mcp-server --api-key YOUR_API_KEY
+npx @digitalsamba/embedded-api-mcp-server --developer-key YOUR_DEVELOPER_KEY
 ```
 
 ## Quick Start
 
-### 1. Get Your API Key
+### 1. Get Your Developer Key
 
-Sign up at [Digital Samba](https://dashboard.digitalsamba.com) and get your API key from the dashboard.
+Sign up at [Digital Samba](https://dashboard.digitalsamba.com) and get your developer key from the dashboard.
 
 ### 2. Configure Claude Desktop
 
@@ -101,7 +101,7 @@ Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/
   "mcpServers": {
     "digital-samba": {
       "command": "npx",
-      "args": ["@digitalsamba/embedded-api-mcp-server", "--api-key", "YOUR_API_KEY"]
+      "args": ["@digitalsamba/embedded-api-mcp-server", "--developer-key", "YOUR_DEVELOPER_KEY"]
     }
   }
 }
@@ -266,7 +266,7 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 
 ## Environment Variables
 
-- `DIGITAL_SAMBA_API_KEY` - Your Digital Samba API key
+- `DIGITAL_SAMBA_API_KEY` - Your Digital Samba developer key
 - `DIGITAL_SAMBA_API_URL` - API base URL (optional, defaults to production)
 - `DS_LOG_LEVEL` - Logging level (error, warn, info, debug)
 

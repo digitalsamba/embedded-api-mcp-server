@@ -80,3 +80,6 @@ out
 
 # personal debug files
 *personal*
+
+# AI development and handover files
+.ai_dev/

@@ -79,7 +79,7 @@ export function registerAnalyticsTools(): Tool[] {
     },
     {
       name: 'get-usage-statistics',
-      description: '[Analytics] Get overall platform usage statistics and growth trends. Use when users say: "show usage stats", "platform analytics", "growth metrics", "overall statistics", "usage trends", "total meeting minutes", "platform activity". Optional date filters and period grouping. Returns total sessions, participants, minutes, and growth rates.',
+      description: '[Analytics - TOOL] Get filtered platform usage statistics with specific date ranges and periods. Use when users need: "analytics for specific dates", "weekly/monthly analytics", "analytics for last week", "analytics between dates". For simple "show analytics" use digitalsamba://analytics/team resource instead. Returns sessions, participants, minutes filtered by your criteria.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -148,6 +148,16 @@ export async function executeAnalyticsTool(
       
     case 'get-room-analytics':
       logger.info('Executing room analytics query', { args });
+      // If no room_id provided, get team-wide analytics instead
+      if (!args.room_id) {
+        const teamResult = await analytics.getTeamAnalytics(filters);
+        return {
+          content: [{
+            type: 'text',
+            text: `Team-wide room analytics (no specific room selected):\n\n${JSON.stringify(teamResult, null, 2)}`
+          }]
+        };
+      }
       const roomResult = await analytics.getRoomAnalytics(args.room_id, filters);
       return {
         content: [{

@@ -45,10 +45,13 @@ import { registerLibraryTools, executeLibraryTool } from './tools/library-manage
 import { registerRoleTools, executeRoleTool } from './tools/role-management/index.js';
 import { registerWebhookTools, executeWebhookTool } from './tools/webhook-management/index.js';
 
-// Create MCP server
+// Import version information
+import { VERSION, PACKAGE_NAME, VERSION_INFO } from './version.js';
+
+// Create MCP server with actual version
 const server = new Server({
   name: 'digital-samba',
-  version: '1.0.0'
+  version: VERSION
 }, {
   capabilities: {
     resources: {},
@@ -70,6 +73,14 @@ function getApiClient(apiKey: string): DigitalSambaApiClient {
   return apiClient;
 }
 
+// Add version resource
+const versionResource = {
+  uri: 'digitalsamba://version',
+  name: 'server-version',
+  description: `[Server Info] Get the current version and build information of ${PACKAGE_NAME}. Use when users ask: "what version is this", "check version", "server version", "mcp version", "build info".`,
+  mimeType: 'application/json'
+};
+
 // Register handlers
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
   // For listing resources, we don't need an API key - just return the schema
@@ -84,6 +95,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
   
   return {
     resources: [
+      versionResource,
       ...registerRoomResources(),
       ...registerSessionResources(),
       ...registerRecordingResources(),
@@ -104,6 +116,17 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const { uri } = request.params;
   
   logger.debug(`Reading resource: ${uri}`);
+  
+  // Handle version resource
+  if (uri === 'digitalsamba://version') {
+    return {
+      contents: [{
+        uri: uri,
+        text: JSON.stringify(VERSION_INFO, null, 2),
+        mimeType: 'application/json'
+      }]
+    };
+  }
   
   // Route to appropriate handler based on URI prefix
   if (uri.startsWith('digitalsamba://rooms')) {
@@ -129,6 +152,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   // API key will be checked when actually executing tools
   return {
     tools: [
+      {
+        name: 'get-server-version',
+        description: `[Server Info] Get the current version and build information of the MCP server. Use to check: "server version", "what version is running", "is this the latest version", "build time". Current version: ${VERSION}`,
+        inputSchema: {
+          type: 'object',
+          properties: {}
+        }
+      },
       ...registerRoomTools(),
       ...registerSessionTools(),
       ...registerRecordingTools(),
@@ -156,9 +187,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   
   try {
     // Route to appropriate tool handler based on name
+    // Version tool
+    if (name === 'get-server-version') {
+      return {
+        content: [{
+          type: 'text',
+          text: JSON.stringify(VERSION_INFO, null, 2)
+        }]
+      };
+    }
     // Room management tools
-    if (name === 'create-room' || name === 'update-room' || 
-        name === 'delete-room' || name === 'generate-token') {
+    else if (name === 'create-room' || name === 'update-room' || 
+        name === 'delete-room' || name === 'generate-token' ||
+        name === 'get-default-room-settings' || name === 'update-default-room-settings') {
       return await executeRoomTool(name, args || {}, request, {
         apiUrl: process.env.DIGITAL_SAMBA_API_URL || 'https://api.digitalsamba.com/api/v1'
       });
@@ -228,17 +269,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const args = process.argv.slice(2);
   
-  // Check for API key in command line args
-  const apiKeyArgIndex = args.findIndex(arg => arg === '--api-key' || arg === '-k');
+  // Check for developer key in command line args
+  const apiKeyArgIndex = args.findIndex(arg => arg === '--developer-key' || arg === '-k');
   if (apiKeyArgIndex !== -1 && args[apiKeyArgIndex + 1]) {
     process.env.DIGITAL_SAMBA_API_KEY = args[apiKeyArgIndex + 1];
   }
   
-  // Log API key status (don't exit if not found - it will be checked when needed)
+  // Log developer key status (don't exit if not found - it will be checked when needed)
   if (!process.env.DIGITAL_SAMBA_API_KEY) {
-    logger.warn('DIGITAL_SAMBA_API_KEY not set. API key will be required for operations.');
+    logger.warn('DIGITAL_SAMBA_API_KEY not set. Developer key will be required for operations.');
   } else {
-    logger.info('API key configured');
+    logger.info('Developer key configured');
   }
   
   // Create stdio transport
@@ -247,7 +288,21 @@ async function main() {
   // Connect server to transport
   await server.connect(transport);
   
-  logger.info('Digital Samba MCP Server started');
+  // Show version on start if enabled (default: true)
+  if (process.env.DS_SHOW_VERSION_ON_START !== 'false') {
+    logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    logger.info(`Digital Samba Embedded API MCP Server`);
+    logger.info(`Package: ${PACKAGE_NAME}`);
+    logger.info(`Version: ${VERSION}`);
+    if (VERSION_INFO.buildTime !== 'development') {
+      logger.info(`Build: ${VERSION_INFO.buildTime}`);
+    }
+    logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    logger.info('Server started and waiting for client connection...');
+  } else {
+    logger.info(`${PACKAGE_NAME}@${VERSION} started`);
+  }
+  logger.debug(`Full build info:`, VERSION_INFO);
   
   // Handle graceful shutdown
   process.on('SIGINT', async () => {

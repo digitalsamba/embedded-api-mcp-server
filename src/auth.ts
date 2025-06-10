@@ -1,17 +1,17 @@
 /**
  * Authentication utilities for Digital Samba MCP Server
  * 
- * In MCP stdio mode, we use environment variables for API key configuration
+ * In MCP stdio mode, we use environment variables for developer key configuration
  * since there's no HTTP request context.
  */
 
 import { AsyncLocalStorage } from 'async_hooks';
 
-// Context storage for API key (mainly for backwards compatibility)
+// Context storage for developer key (mainly for backwards compatibility)
 const apiKeyContext = new AsyncLocalStorage<string>();
 
 /**
- * Get API key from environment or request
+ * Get developer key from environment or request
  * In stdio mode, we use the environment variable
  */
 export function getApiKeyFromRequest(request: any): string | null {
@@ -20,7 +20,7 @@ export function getApiKeyFromRequest(request: any): string | null {
 }
 
 /**
- * Extract API key from various sources
+ * Extract developer key from various sources
  * For MCP stdio mode, this will always use environment variables
  */
 export function extractApiKey(source?: any): string | null {

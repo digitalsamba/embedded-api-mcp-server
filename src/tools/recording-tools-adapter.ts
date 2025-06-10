@@ -33,7 +33,7 @@ export function registerRecordingTools(): Tool[] {
     },
     {
       name: 'get-recordings',
-      description: '[Recording Management] Get a list of all recordings with optional filters. Use when users say: "list recordings", "show recordings", "get all recordings", "show videos", "list meeting recordings", "recordings for room". Returns paginated list with recording details, status, and duration.',
+      description: '[Recording Management - TOOL] Filter and search recordings with specific criteria. Use when users need to: "filter recordings by room", "search recordings", "find recordings from date", "get recordings with limit". NOT for simply listing all recordings - use digitalsamba://recordings resource instead. NOT for listing rooms. Returns filtered recording results.',
       inputSchema: {
         type: 'object',
         properties: {

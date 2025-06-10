@@ -110,8 +110,7 @@ export function startStdioServerProcess(options: {
   
   // Start server using npx command
   const serverProcess = spawn('npx', [
-    '@digitalsamba/mcp-server',
-    'stdio',
+    '@digitalsamba/embedded-api-mcp-server',
   ], {
     env,
     stdio: ['pipe', 'pipe', 'pipe'],

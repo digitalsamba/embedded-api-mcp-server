@@ -23,7 +23,7 @@ export function registerRoomTools(): Tool[] {
   return [
     {
       name: 'create-room',
-      description: '[Room Management] Create a new room with specified settings. Use when users say: "create a room", "set up a meeting space", "make a new video room", "create a conference room", "set up a virtual meeting room". Returns the created room object with ID, join URL, and all settings.',
+      description: '[Room Management] Create a new room with specified settings. Use when users say: "create a room", "set up a meeting space", "make a new video room", "create a conference room", "set up a virtual meeting room", "create room with toolbar on right". Returns the created room object with ID, join URL, and all settings.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -31,7 +31,7 @@ export function registerRoomTools(): Tool[] {
             type: 'string',
             minLength: 3,
             maxLength: 100,
-            description: 'Room name'
+            description: 'Room name (required)'
           },
           description: {
             type: 'string',
@@ -50,19 +50,110 @@ export function registerRoomTools(): Tool[] {
             default: 'public',
             description: 'Room privacy setting'
           },
+          external_id: {
+            type: 'string',
+            description: 'External identifier for the room'
+          },
           max_participants: {
             type: 'number',
             minimum: 2,
             maximum: 2000,
             description: 'Maximum number of participants'
+          },
+          max_broadcasters: {
+            type: 'number',
+            description: 'Maximum number of broadcasters'
+          },
+          is_locked: {
+            type: 'boolean',
+            description: 'Whether the room is locked'
+          },
+          roles: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Available roles in the room'
+          },
+          default_role: {
+            type: 'string',
+            description: 'Default role for participants'
+          },
+          
+          // UI Settings
+          topbar_enabled: {
+            type: 'boolean',
+            description: 'Show/hide the top bar'
+          },
+          toolbar_enabled: {
+            type: 'boolean',
+            description: 'Show/hide the toolbar'
+          },
+          toolbar_position: {
+            type: 'string',
+            enum: ['left', 'right', 'bottom'],
+            description: 'Position of the toolbar'
+          },
+          toolbar_color: {
+            type: 'string',
+            description: 'Toolbar background color (hex)'
+          },
+          primary_color: {
+            type: 'string',
+            description: 'Primary theme color (hex)'
+          },
+          background_color: {
+            type: 'string',
+            description: 'Room background color (hex)'
+          },
+          palette_mode: {
+            type: 'string',
+            enum: ['light', 'dark'],
+            description: 'Color theme mode'
+          },
+          language: {
+            type: 'string',
+            description: 'Default language'
+          },
+          language_selection_enabled: {
+            type: 'boolean',
+            description: 'Allow users to change language'
+          },
+          
+          // Meeting features
+          audio_on_join_enabled: {
+            type: 'boolean',
+            description: 'Auto-enable audio when joining'
+          },
+          video_on_join_enabled: {
+            type: 'boolean',
+            description: 'Auto-enable video when joining'
+          },
+          screenshare_enabled: {
+            type: 'boolean',
+            description: 'Allow screen sharing'
+          },
+          participants_list_enabled: {
+            type: 'boolean',
+            description: 'Show participants list'
+          },
+          chat_enabled: {
+            type: 'boolean',
+            description: 'Enable chat functionality'
+          },
+          private_chat_enabled: {
+            type: 'boolean',
+            description: 'Allow private messages'
+          },
+          recordings_enabled: {
+            type: 'boolean',
+            description: 'Allow recording sessions'
           }
         },
-        required: []
+        required: ['name']
       }
     },
     {
       name: 'update-room',
-      description: '[Room Management] Update an existing room\'s settings. Use when users say: "change room settings", "update the room", "modify room configuration", "edit room details", "change max participants", "rename the room". Requires roomId. Returns the updated room object.',
+      description: '[Room Management] Update an existing room\'s settings. Use when users say: "change room settings", "update the room", "modify room configuration", "edit room details", "change max participants", "rename the room", "change toolbar position", "update room colors", "change room layout". Requires roomId. Returns the updated room object.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -97,6 +188,93 @@ export function registerRoomTools(): Tool[] {
             minimum: 2,
             maximum: 2000,
             description: 'Maximum number of participants'
+          },
+          max_broadcasters: {
+            type: 'number',
+            description: 'Maximum number of broadcasters'
+          },
+          is_locked: {
+            type: 'boolean',
+            description: 'Whether the room is locked'
+          },
+          roles: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Available roles in the room'
+          },
+          default_role: {
+            type: 'string',
+            description: 'Default role for participants'
+          },
+          
+          // UI Settings
+          topbar_enabled: {
+            type: 'boolean',
+            description: 'Show/hide the top bar'
+          },
+          toolbar_enabled: {
+            type: 'boolean',
+            description: 'Show/hide the toolbar'
+          },
+          toolbar_position: {
+            type: 'string',
+            enum: ['left', 'right', 'bottom'],
+            description: 'Position of the toolbar'
+          },
+          toolbar_color: {
+            type: 'string',
+            description: 'Toolbar background color (hex)'
+          },
+          primary_color: {
+            type: 'string',
+            description: 'Primary theme color (hex)'
+          },
+          background_color: {
+            type: 'string',
+            description: 'Room background color (hex)'
+          },
+          palette_mode: {
+            type: 'string',
+            enum: ['light', 'dark'],
+            description: 'Color theme mode'
+          },
+          language: {
+            type: 'string',
+            description: 'Default language'
+          },
+          language_selection_enabled: {
+            type: 'boolean',
+            description: 'Allow users to change language'
+          },
+          
+          // Meeting features
+          audio_on_join_enabled: {
+            type: 'boolean',
+            description: 'Auto-enable audio when joining'
+          },
+          video_on_join_enabled: {
+            type: 'boolean',
+            description: 'Auto-enable video when joining'
+          },
+          screenshare_enabled: {
+            type: 'boolean',
+            description: 'Allow screen sharing'
+          },
+          participants_list_enabled: {
+            type: 'boolean',
+            description: 'Show participants list'
+          },
+          chat_enabled: {
+            type: 'boolean',
+            description: 'Enable chat functionality'
+          },
+          private_chat_enabled: {
+            type: 'boolean',
+            description: 'Allow private messages'
+          },
+          recordings_enabled: {
+            type: 'boolean',
+            description: 'Allow recording sessions'
           }
         },
         required: ['roomId']
@@ -273,25 +451,26 @@ export async function executeRoomTool(
 
   switch (toolName) {
     case 'create-room': {
-      const { name, description, friendly_url, privacy, max_participants } = args;
+      const { roomId, ...settings } = args;  // Extract all settings except roomId
       
       logger.info('Creating room', { 
-        roomName: name, 
-        privacy
+        roomName: settings.name, 
+        privacy: settings.privacy
       });
       
       try {
-        // Create room settings object
-        const roomSettings = {
-          name: name || 'Test Room',  // Ensure we have a name
-          description,
-          friendly_url,
-          privacy: privacy || 'public',
-          max_participants,
-        };
+        // Ensure we have a name
+        if (!settings.name) {
+          settings.name = 'Test Room';
+        }
         
-        // Create room
-        const room = await client.createRoom(roomSettings);
+        // Ensure privacy field has a default value
+        if (!settings.privacy) {
+          settings.privacy = 'public';
+        }
+        
+        // Create room with all provided settings
+        const room = await client.createRoom(settings);
         logger.info('Room created successfully', { roomId: room.id });
         
         return {
@@ -320,7 +499,7 @@ export async function executeRoomTool(
     }
 
     case 'update-room': {
-      const { roomId, name, description, friendly_url, privacy, max_participants } = args;
+      const { roomId, ...settings } = args;  // Extract roomId and all other settings
       
       if (!roomId) {
         return {
@@ -331,22 +510,12 @@ export async function executeRoomTool(
       
       logger.info('Updating room', { 
         roomId, 
-        name, 
-        privacy
+        settings: Object.keys(settings)  // Log which settings are being updated
       });
       
       try {
-        // Create room settings object
-        const roomSettings = {
-          name,
-          description,
-          friendly_url,
-          privacy,
-          max_participants,
-        };
-        
-        // Update room
-        const room = await client.updateRoom(roomId, roomSettings);
+        // Update room with all provided settings
+        const room = await client.updateRoom(roomId, settings);
         logger.info('Room updated successfully', { roomId: room.id });
         
         return {

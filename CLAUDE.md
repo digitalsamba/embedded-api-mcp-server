@@ -24,8 +24,9 @@ Digital Samba Embedded API MCP Server - A lightweight Model Context Protocol ser
 - `npm run test:coverage` - Tests with coverage report
 
 ### Running the Server
-- `npx @digitalsamba/embedded-api-mcp-server --api-key YOUR_KEY` - Run as MCP server
-- `npm run dev -- --api-key YOUR_KEY` - Run in development mode
+- `npx @digitalsamba/embedded-api-mcp-server --developer-key YOUR_KEY` - Run MCP server (stdio mode only)
+- `npm run dev -- --developer-key YOUR_KEY` - Run in development mode
+- Note: Server only supports stdio mode for MCP protocol communication
 
 ## Architecture
 
@@ -60,7 +61,7 @@ src/
 ### Key Design Principles
 1. **Lightweight** - No unnecessary dependencies or complexity
 2. **MCP-focused** - Built specifically for stdio-based MCP protocol
-3. **Simple auth** - Uses environment variables for API keys
+3. **Simple auth** - Uses environment variables for developer keys
 4. **Direct API calls** - No complex abstractions over the API
 5. **Modular structure** - Clear separation of resources and tools
 

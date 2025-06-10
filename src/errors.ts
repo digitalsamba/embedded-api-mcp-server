@@ -38,12 +38,12 @@ export class DigitalSambaError extends Error {
 /**
  * Error thrown when API authentication fails
  * 
- * This error is used when the API key is missing, invalid, or unauthorized.
+ * This error is used when the developer key is missing, invalid, or unauthorized.
  * 
  * @class AuthenticationError
  * @extends DigitalSambaError
  * @example
- * throw new AuthenticationError('API key is missing or invalid');
+ * throw new AuthenticationError('Developer key is missing or invalid');
  */
 export class AuthenticationError extends DigitalSambaError {
   /**

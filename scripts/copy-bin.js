@@ -12,7 +12,7 @@ async function copyBinFiles() {
     await fs.mkdir(distBinDir, { recursive: true });
     
     // List of bin files to copy
-    const binFiles = ['cli.js', 'stdio-direct.js', 'stdio-server.js'];
+    const binFiles = ['cli.js'];
     
     for (const file of binFiles) {
       const sourceFile = join(projectRoot, 'bin', file);
