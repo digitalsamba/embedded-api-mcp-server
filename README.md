@@ -266,7 +266,7 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 
 ## Environment Variables
 
-- `DIGITAL_SAMBA_API_KEY` - Your Digital Samba developer key
+- `DIGITAL_SAMBA_DEVELOPER_KEY` - Your Digital Samba developer key (optional if using -k flag)
 - `DIGITAL_SAMBA_API_URL` - API base URL (optional, defaults to production)
 - `DS_LOG_LEVEL` - Logging level (error, warn, info, debug)
 
@@ -274,76 +274,40 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 
 ### Basic Room Creation
 
-```javascript
-// Via Claude Desktop
+```text
 "Create a private room called 'Executive Meeting' with space for 10 people"
-
-// Direct API usage
-const room = await client.createRoom({
-  friendly_url: 'executive-meeting',
-  description: 'Executive team weekly sync',
-  privacy: 'private',
-  max_participants: 10
-});
 ```
 
 ### Generate Access Token
 
-```javascript
-// Via Claude Desktop  
+```text
 "Generate a moderator token for sarah@company.com to join the executive meeting"
-
-// Direct API usage
-const token = await client.generateRoomToken(roomId, {
-  userName: 'Sarah Johnson',
-  role: 'moderator'
-});
 ```
 
 ### Manage Content Library
 
-```javascript
-// Via Claude Desktop
+```text
 "Create a library for our training materials and upload the onboarding presentation"
-
-// Direct API usage
-const library = await client.createLibrary({
-  name: 'Training Materials',
-  external_id: 'training-2024'
-});
-
-const file = await client.createLibraryFile(library.id, {
-  name: 'onboarding.pdf',
-  size: 1024000,
-  mime_type: 'application/pdf'
-});
 ```
 
 ### Analytics and Reporting
 
-```javascript
-// Via Claude Desktop
+```text
 "Show me participant statistics for last month's sessions"
-
-// Direct API usage
-const stats = await client.getParticipantStatistics({
-  date_start: '2024-01-01',
-  date_end: '2024-01-31'
-});
 ```
 
 ## Development
 
 ```bash
 # Clone the repository
-git clone https://github.com/digitalsamba/digital-samba-mcp-server.git
-cd digital-samba-mcp-server
+git clone https://github.com/digitalsamba/embedded-api-mcp-server.git
+cd embedded-api-mcp-server
 
 # Install dependencies
 npm install
 
 # Run in development mode
-npm run dev -- --api-key YOUR_API_KEY
+npm run dev -- --developer-key YOUR_DEVELOPER_KEY  # or -k YOUR_DEVELOPER_KEY
 
 # Build for production
 npm run build

@@ -55,7 +55,8 @@ src/
     ├── live-session-controls/# Live session controls
     ├── communication-management/# Chat/Q&A/Transcripts
     ├── poll-management/      # Poll tools
-    └── library-management/   # Content library
+    ├── library-management/   # Content library
+    └── webhook-management/   # Webhook tools
 ```
 
 ### Key Design Principles
@@ -72,7 +73,6 @@ src/
 - Winston logging (replaced with simple console logger)
 - Connection management and pooling
 - Token management complexity
-- Webhooks functionality
 - Resource optimization
 - Graceful degradation patterns
 
