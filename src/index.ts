@@ -287,8 +287,21 @@ async function main() {
   // Connect server to transport
   await server.connect(transport);
   
-  logger.info(`Digital Samba MCP Server v${VERSION} started`);
-  logger.info(`Build info:`, VERSION_INFO);
+  // Show version on start if enabled (default: true)
+  if (process.env.DS_SHOW_VERSION_ON_START !== 'false') {
+    logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    logger.info(`Digital Samba Embedded API MCP Server`);
+    logger.info(`Package: ${PACKAGE_NAME}`);
+    logger.info(`Version: ${VERSION}`);
+    if (VERSION_INFO.buildTime !== 'development') {
+      logger.info(`Build: ${VERSION_INFO.buildTime}`);
+    }
+    logger.info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    logger.info('Server started and waiting for client connection...');
+  } else {
+    logger.info(`${PACKAGE_NAME}@${VERSION} started`);
+  }
+  logger.debug(`Full build info:`, VERSION_INFO);
   
   // Handle graceful shutdown
   process.on('SIGINT', async () => {

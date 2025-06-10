@@ -50,6 +50,10 @@ const { values: args, positionals } = parseArgs({
       type: 'string',
       short: 'l',
       default: 'info'
+    },
+    'show-version-on-start': {
+      type: 'boolean',
+      default: true
     }
   },
   allowPositionals: true
@@ -59,7 +63,7 @@ const { values: args, positionals } = parseArgs({
 if (args.version) {
   try {
     // Try to load version info from the built version file
-    const versionModule = await import('../dist/src/version.js').catch(async () => {
+    const versionModule = await import('../src/version.js').catch(async () => {
       // Fallback to reading package.json directly
       const fs = await import('fs');
       const packageJsonPath = resolve(__dirname, '..', 'package.json');
@@ -120,6 +124,7 @@ For use with Claude Desktop, add to your config file:
 // Set environment variables from command-line arguments
 process.env.DS_LOG_LEVEL = args['log-level'];
 process.env.DIGITAL_SAMBA_API_URL = args['api-url'];
+process.env.DS_SHOW_VERSION_ON_START = args['show-version-on-start'] ? 'true' : 'false';
 
 // Set developer key from options or positional arguments or environment variable
 if (args['developer-key']) {
