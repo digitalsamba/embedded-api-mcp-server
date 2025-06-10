@@ -39,6 +39,9 @@ The Digital Samba Embedded API MCP Server is a comprehensive Model Context Proto
 - Bulk recording operations
 
 ### 👥 **Live Session Control**
+- Monitor rooms with active participants
+- View real-time participant lists
+- Check participant counts and session duration
 - Start/stop recording sessions
 - Start/stop transcription
 - End active sessions
@@ -125,11 +128,15 @@ Restart Claude Desktop and you can now:
 
 The MCP server exposes Digital Samba API functionality through two types of interfaces: Resources provide read-only access to data (like listing rooms or viewing analytics), while Tools enable actions that modify data (like creating rooms or starting recordings). These are accessed via MCP URIs, not direct API endpoints.
 
-### Resources (Read-Only) - 28 Available
+### Resources (Read-Only) - 32 Available
 
 #### Room Resources
 - `digitalsamba://rooms` - List all rooms
 - `digitalsamba://rooms/{id}` - Get room details
+- `digitalsamba://rooms/live` - List rooms with active participants
+- `digitalsamba://rooms/live/participants` - List rooms with participant details
+- `digitalsamba://rooms/{id}/live` - Get live session info for a room
+- `digitalsamba://rooms/{id}/live/participants` - Get participant list for a room
 
 #### Session Resources
 - `digitalsamba://sessions` - List all sessions
