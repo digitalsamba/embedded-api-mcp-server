@@ -198,8 +198,6 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `get-session-statistics` - Get detailed session statistics
 
 #### Recording Management
-- `start-recording` - Start recording a session
-- `stop-recording` - Stop recording
 - `get-recordings` - List recordings with filters
 - `delete-recording` - Delete a recording
 - `get-recording` - Get recording details
@@ -208,6 +206,8 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `unarchive-recording` - Unarchive a recording
 
 #### Live Session Controls
+- `start-recording` - Start recording a session
+- `stop-recording` - Stop recording
 - `start-transcription` - Start live transcription
 - `stop-transcription` - Stop transcription
 - `phone-participants-joined` - Register phone participants joining
