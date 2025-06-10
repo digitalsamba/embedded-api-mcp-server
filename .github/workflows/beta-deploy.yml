@@ -30,6 +30,8 @@ jobs:
         
       - name: Run tests
         run: npm test
+        env:
+          DIGITAL_SAMBA_API_KEY: ${{ secrets.DIGITAL_SAMBA_API_KEY || 'mock-key-for-testing' }}
         continue-on-error: true
         
       - name: Update version for beta
