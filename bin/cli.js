@@ -111,6 +111,8 @@ const { values: args, positionals } = parseArgs({
       type: 'string',
       default: ''
     },
+    // stdio flag kept for backward compatibility but has no effect
+    // Server always runs in stdio mode for MCP protocol
     stdio: {
       type: 'boolean',
       default: false
@@ -165,7 +167,7 @@ Options:
   -w, --webhook-secret <secret>     Secret for webhook verification
   -e, --webhook-endpoint <path>     Webhook endpoint path (default: /webhooks/digitalsamba)
   --public-url <url>                Public URL for the server (for webhook callbacks)
-  --stdio                           Run in stdio mode for Claude Desktop (auto-detected)
+  --stdio                           [Deprecated] Server always runs in stdio mode
   -h, --help                        Display this help message
   -v, --version                     Show version information
 
@@ -247,92 +249,21 @@ if (args['api-key']) {
 
 // Start the server
 try {
-  // Determine if we should use stdio mode
-  const useStdioMode = isStdioMode || args.stdio;
+  // The server always runs in stdio mode for MCP protocol
+  // The --stdio flag is kept for backward compatibility but has no effect
   
-  if (useStdioMode) {
-    // Use stdio mode for Claude Desktop
-    console.error('[INFO] Digital Samba Embedded API MCP Server starting in stdio mode for Claude Desktop');
-    
-    // Execute the direct stdio server
-    import('./stdio-direct.js').catch(error => {
-      console.error('Failed to start stdio server:', error);
-      process.exit(1);
-    });
-  } else {
-    // Use HTTP server mode
-    import('../dist/src/index.js').then(module => {
-      // Check if we're in JSON-RPC mode (for MCP communication)
-      const isJsonRpcMode = process.env.MCP_JSON_RPC_MODE === 'true' || !process.stdout.isTTY;
-      
-      if (!isJsonRpcMode) {
-        console.log('Starting Digital Samba Embedded API MCP Server...');
-      }
-      
-      // Check if module has the startServer function
-      if (typeof module.startServer !== 'function') {
-        console.error('ERROR: startServer function not found in module. This may indicate a build issue.');
-        console.error('Module exports:', Object.keys(module));
-        process.exit(1);
-      }
-      
-      // Start the server with enhanced error handling
-      try {
-        // Set a handler for uncaught exceptions to prevent crash
-        process.on('uncaughtException', (err) => {
-          console.error('Uncaught exception:', err.message);
-          console.error(err.stack);
-          // Don't exit process on uncaught exceptions to maintain MCP connection
-        });
-        
-        // Set a handler for unhandled promise rejections
-        process.on('unhandledRejection', (reason, promise) => {
-          console.error('Unhandled promise rejection:', reason);
-          // Don't exit process on unhandled rejections to maintain MCP connection
-        });
-        
-        // Start server with special handling for non-TTY environments
-        const server = module.startServer({
-          enableSilentMode: isJsonRpcMode
-        });
-        
-        // Add error handling for the server
-        if (server && typeof server.on === 'function') {
-          server.on('error', (err) => {
-            console.error('Server error:', err.message);
-            // Don't exit in JSON-RPC mode
-            if (!isJsonRpcMode) {
-              process.exit(1);
-            }
-          });
-        }
-        
-        // Keep the process alive
-        if (isJsonRpcMode) {
-          // Set up interval to keep the process alive in JSON-RPC mode
-          const keepAlive = setInterval(() => {}, 60000);
-          
-          // Clean up on SIGTERM
-          process.on('SIGTERM', () => {
-            clearInterval(keepAlive);
-            process.exit(0);
-          });
-        }
-      } catch (startError) {
-        console.error('Error starting server:', startError.message);
-        console.error(startError.stack);
-        if (!isJsonRpcMode) {
-          process.exit(1);
-        }
-      }
-    }).catch(importError => {
-      console.error('Failed to import server module:', importError.message);
-      console.error('This may indicate a build issue or missing files.');
-      console.error('Try running "npm run build" before starting the server.');
-      console.error(importError.stack);
-      process.exit(1);
-    });
+  if (!process.env.MCP_JSON_RPC_MODE && !isStdioMode) {
+    console.log('Starting Digital Samba Embedded API MCP Server...');
   }
+  
+  // Always use stdio mode - this is the only mode supported
+  console.error('[INFO] Digital Samba Embedded API MCP Server starting (stdio mode)');
+  
+  // Execute the direct stdio server
+  import('./stdio-direct.js').catch(error => {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  });
 } catch (error) {
   console.error('Critical error loading server:', error.message);
   console.error(error.stack);
