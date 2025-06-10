@@ -8,15 +8,21 @@ import { parseArgs } from 'node:util';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Detect if we're running in stdio mode (for Claude Desktop)
-// This happens when:
-// 1. Not a TTY (piped)
-// 2. Has --stdio flag
-// 3. MCP_MODE environment variable is set
-const isStdioMode = !process.stdout.isTTY || process.argv.includes('--stdio') || process.env.MCP_MODE === 'stdio';
+// Check for version flag early before stdio detection
+if (process.argv.includes('--version') || process.argv.includes('-v')) {
+  // Don't enter stdio mode for version check
+  // Continue to parse args below
+} else {
+  // Detect if we're running in stdio mode (for Claude Desktop)
+  // This happens when:
+  // 1. Not a TTY (piped)
+  // 2. Has --stdio flag
+  // 3. MCP_MODE environment variable is set
+  var isStdioMode = !process.stdout.isTTY || process.argv.includes('--stdio') || process.env.MCP_MODE === 'stdio';
+}
 
 // Set environment variable to indicate we're in JSON-RPC mode when running via MCP
-if (isStdioMode) {
+if (typeof isStdioMode !== 'undefined' && isStdioMode) {
   process.env.MCP_JSON_RPC_MODE = 'true';
   process.env.NO_CONSOLE_OUTPUT = 'true'; // Complete silence in JSON-RPC mode
   
@@ -68,6 +74,11 @@ for (let i = 2; i < process.argv.length; i++) {
 }
 const { values: args, positionals } = parseArgs({
   options: {
+    version: {
+      type: 'boolean',
+      short: 'v',
+      default: false
+    },
     port: {
       type: 'string',
       short: 'p',
@@ -113,14 +124,40 @@ const { values: args, positionals } = parseArgs({
   allowPositionals: true
 });
 
+// Check if version flag is set
+if (args.version) {
+  try {
+    // Try to load version info from the built version file
+    const versionModule = await import('../dist/src/version.js').catch(async () => {
+      // Fallback to reading package.json directly
+      const fs = await import('fs');
+      const packageJsonPath = resolve(__dirname, '..', 'package.json');
+      const packageData = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+      return {
+        VERSION: packageData.version,
+        PACKAGE_NAME: packageData.name,
+        BUILD_TIME: 'development'
+      };
+    });
+    console.log(`${versionModule.PACKAGE_NAME} v${versionModule.VERSION}`);
+    if (versionModule.BUILD_TIME !== 'development') {
+      console.log(`Build time: ${versionModule.BUILD_TIME}`);
+    }
+  } catch (error) {
+    console.error('Could not read version information');
+  }
+  process.exit(0);
+}
+
 // Display help information if requested
 if (args.help) {
   console.log(`
-Digital Samba MCP Server
+Digital Samba Embedded API MCP Server
 
-Usage: npx digital-samba-mcp-server [options] [API_KEY]
+Usage: npx @digitalsamba/embedded-api-mcp-server [options] [API_KEY]
 
 Options:
+  -v, --version                     Show version information
   -p, --port <port>                 Port to run the server on (default: 4521)
   -k, --api-key <key>               Digital Samba API key
   -u, --api-url <url>               Digital Samba API URL (default: https://api.digitalsamba.com/api/v1)
@@ -130,6 +167,7 @@ Options:
   --public-url <url>                Public URL for the server (for webhook callbacks)
   --stdio                           Run in stdio mode for Claude Desktop (auto-detected)
   -h, --help                        Display this help message
+  -v, --version                     Show version information
 
 Environment Variables:
   PORT                              Port to run the server on
@@ -214,7 +252,7 @@ try {
   
   if (useStdioMode) {
     // Use stdio mode for Claude Desktop
-    console.error('[INFO] Starting in stdio mode for Claude Desktop');
+    console.error('[INFO] Digital Samba Embedded API MCP Server starting in stdio mode for Claude Desktop');
     
     // Execute the direct stdio server
     import('./stdio-direct.js').catch(error => {
@@ -228,7 +266,7 @@ try {
       const isJsonRpcMode = process.env.MCP_JSON_RPC_MODE === 'true' || !process.stdout.isTTY;
       
       if (!isJsonRpcMode) {
-        console.log('Starting Digital Samba MCP Server...');
+        console.log('Starting Digital Samba Embedded API MCP Server...');
       }
       
       // Check if module has the startServer function

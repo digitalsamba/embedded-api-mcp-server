@@ -38,8 +38,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc --skipLibCheck && node scripts/copy-bin.js",
-    "build:clean": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\" && tsc --skipLibCheck && node scripts/copy-bin.js",
+    "build": "tsc --skipLibCheck && node scripts/inject-version.js && node scripts/copy-bin.js",
+    "build:clean": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\" && tsc --skipLibCheck && node scripts/inject-version.js && node scripts/copy-bin.js",
     "start": "node dist/src/index.js",
     "dev": "tsx src/index.ts",
     "dev:clean": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\" && npm run build && npm run dev",
