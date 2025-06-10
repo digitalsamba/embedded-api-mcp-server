@@ -8,7 +8,7 @@
   [![npm version](https://img.shields.io/npm/v/@digitalsamba/embedded-api-mcp-server.svg)](https://www.npmjs.com/package/@digitalsamba/embedded-api-mcp-server)
   [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
   [![Node.js Version](https://img.shields.io/node/v/@digitalsamba/embedded-api-mcp-server.svg)](https://nodejs.org)
-  [![Coverage Status](https://img.shields.io/codecov/c/github/digitalsamba/embedded-api-mcp-server)](https://codecov.io/gh/digitalsamba/embedded-api-mcp-server)
+  [![Coverage](https://img.shields.io/badge/dynamic/json?color=brightgreen&label=coverage&query=%24.coverage&suffix=%25&url=https%3A%2F%2Fgist.githubusercontent.com%2FConalMullan%2F5a01cdacdacf18806bf019c71896621a%2Fraw%2Fcoverage.json)](https://github.com/digitalsamba/embedded-api-mcp-server/actions)
 
   [Installation](#installation) • [Quick Start](#quick-start) • [Features](#features) • [API Reference](#api-reference)
 </div>

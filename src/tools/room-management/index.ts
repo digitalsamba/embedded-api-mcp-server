@@ -1,386 +1,392 @@
 /**
  * Room Management Tools Module
- * 
+ *
  * This module provides room management tools for the Digital Samba MCP Server.
  * It implements tools for creating, updating, deleting rooms and generating tokens.
- * 
+ *
  * @module tools/room-management
  */
 
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { Tool } from "@modelcontextprotocol/sdk/types.js";
 // import { z } from 'zod'; // Removed: unused
-import { DigitalSambaApiClient } from '../../digital-samba-api.js';
+import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 // Removed enhanced client import - using standard client
-import { getApiKeyFromRequest } from '../../auth.js';
-import logger from '../../logger.js';
+import { getApiKeyFromRequest } from "../../auth.js";
+import logger from "../../logger.js";
 
 /**
  * Register all room management tools
- * 
+ *
  * @returns Array of MCP Tool definitions
  */
 export function registerRoomTools(): Tool[] {
   return [
     {
-      name: 'create-room',
-      description: '[Room Management] Create a new room with specified settings. Use when users say: "create a room", "set up a meeting space", "make a new video room", "create a conference room", "set up a virtual meeting room", "create room with toolbar on right". Returns the created room object with ID, join URL, and all settings.',
+      name: "create-room",
+      description:
+        '[Room Management] Create a new room with specified settings. Use when users say: "create a room", "set up a meeting space", "make a new video room", "create a conference room", "set up a virtual meeting room", "create room with toolbar on right". Returns the created room object with ID, join URL, and all settings.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           name: {
-            type: 'string',
+            type: "string",
             minLength: 3,
             maxLength: 100,
-            description: 'Room name (required)'
+            description: "Room name (required)",
           },
           description: {
-            type: 'string',
+            type: "string",
             maxLength: 500,
-            description: 'Room description'
+            description: "Room description",
           },
           friendly_url: {
-            type: 'string',
+            type: "string",
             minLength: 3,
             maxLength: 32,
-            description: 'Friendly URL for the room'
+            description: "Friendly URL for the room",
           },
           privacy: {
-            type: 'string',
-            enum: ['public', 'private'],
-            default: 'public',
-            description: 'Room privacy setting'
+            type: "string",
+            enum: ["public", "private"],
+            default: "public",
+            description: "Room privacy setting",
           },
           external_id: {
-            type: 'string',
-            description: 'External identifier for the room'
+            type: "string",
+            description: "External identifier for the room",
           },
           max_participants: {
-            type: 'number',
+            type: "number",
             minimum: 2,
             maximum: 2000,
-            description: 'Maximum number of participants'
+            description: "Maximum number of participants",
           },
           max_broadcasters: {
-            type: 'number',
-            description: 'Maximum number of broadcasters'
+            type: "number",
+            description: "Maximum number of broadcasters",
           },
           is_locked: {
-            type: 'boolean',
-            description: 'Whether the room is locked'
+            type: "boolean",
+            description: "Whether the room is locked",
           },
           roles: {
-            type: 'array',
-            items: { type: 'string' },
-            description: 'Available roles in the room'
+            type: "array",
+            items: { type: "string" },
+            description: "Available roles in the room",
           },
           default_role: {
-            type: 'string',
-            description: 'Default role for participants'
+            type: "string",
+            description: "Default role for participants",
           },
-          
+
           // UI Settings
           topbar_enabled: {
-            type: 'boolean',
-            description: 'Show/hide the top bar'
+            type: "boolean",
+            description: "Show/hide the top bar",
           },
           toolbar_enabled: {
-            type: 'boolean',
-            description: 'Show/hide the toolbar'
+            type: "boolean",
+            description: "Show/hide the toolbar",
           },
           toolbar_position: {
-            type: 'string',
-            enum: ['left', 'right', 'bottom'],
-            description: 'Position of the toolbar'
+            type: "string",
+            enum: ["left", "right", "bottom"],
+            description: "Position of the toolbar",
           },
           toolbar_color: {
-            type: 'string',
-            description: 'Toolbar background color (hex)'
+            type: "string",
+            description: "Toolbar background color (hex)",
           },
           primary_color: {
-            type: 'string',
-            description: 'Primary theme color (hex)'
+            type: "string",
+            description: "Primary theme color (hex)",
           },
           background_color: {
-            type: 'string',
-            description: 'Room background color (hex)'
+            type: "string",
+            description: "Room background color (hex)",
           },
           palette_mode: {
-            type: 'string',
-            enum: ['light', 'dark'],
-            description: 'Color theme mode'
+            type: "string",
+            enum: ["light", "dark"],
+            description: "Color theme mode",
           },
           language: {
-            type: 'string',
-            description: 'Default language'
+            type: "string",
+            description: "Default language",
           },
           language_selection_enabled: {
-            type: 'boolean',
-            description: 'Allow users to change language'
+            type: "boolean",
+            description: "Allow users to change language",
           },
-          
+
           // Meeting features
           audio_on_join_enabled: {
-            type: 'boolean',
-            description: 'Auto-enable audio when joining'
+            type: "boolean",
+            description: "Auto-enable audio when joining",
           },
           video_on_join_enabled: {
-            type: 'boolean',
-            description: 'Auto-enable video when joining'
+            type: "boolean",
+            description: "Auto-enable video when joining",
           },
           screenshare_enabled: {
-            type: 'boolean',
-            description: 'Allow screen sharing'
+            type: "boolean",
+            description: "Allow screen sharing",
           },
           participants_list_enabled: {
-            type: 'boolean',
-            description: 'Show participants list'
+            type: "boolean",
+            description: "Show participants list",
           },
           chat_enabled: {
-            type: 'boolean',
-            description: 'Enable chat functionality'
+            type: "boolean",
+            description: "Enable chat functionality",
           },
           private_chat_enabled: {
-            type: 'boolean',
-            description: 'Allow private messages'
+            type: "boolean",
+            description: "Allow private messages",
           },
           recordings_enabled: {
-            type: 'boolean',
-            description: 'Allow recording sessions'
-          }
+            type: "boolean",
+            description: "Allow recording sessions",
+          },
         },
-        required: ['name']
-      }
+        required: ["name"],
+      },
     },
     {
-      name: 'update-room',
-      description: '[Room Management] Update an existing room\'s settings. Use when users say: "change room settings", "update the room", "modify room configuration", "edit room details", "change max participants", "rename the room", "change toolbar position", "update room colors", "change room layout". Requires roomId. Returns the updated room object.',
+      name: "update-room",
+      description:
+        '[Room Management] Update an existing room\'s settings. Use when users say: "change room settings", "update the room", "modify room configuration", "edit room details", "change max participants", "rename the room", "change toolbar position", "update room colors", "change room layout". Requires roomId. Returns the updated room object.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           roomId: {
-            type: 'string',
-            description: 'Room ID (required)'
+            type: "string",
+            description: "Room ID (required)",
           },
           name: {
-            type: 'string',
+            type: "string",
             minLength: 3,
             maxLength: 100,
-            description: 'Room name'
+            description: "Room name",
           },
           description: {
-            type: 'string',
+            type: "string",
             maxLength: 500,
-            description: 'Room description'
+            description: "Room description",
           },
           friendly_url: {
-            type: 'string',
+            type: "string",
             minLength: 3,
             maxLength: 32,
-            description: 'Friendly URL for the room'
+            description: "Friendly URL for the room",
           },
           privacy: {
-            type: 'string',
-            enum: ['public', 'private'],
-            description: 'Room privacy setting'
+            type: "string",
+            enum: ["public", "private"],
+            description: "Room privacy setting",
           },
           max_participants: {
-            type: 'number',
+            type: "number",
             minimum: 2,
             maximum: 2000,
-            description: 'Maximum number of participants'
+            description: "Maximum number of participants",
           },
           max_broadcasters: {
-            type: 'number',
-            description: 'Maximum number of broadcasters'
+            type: "number",
+            description: "Maximum number of broadcasters",
           },
           is_locked: {
-            type: 'boolean',
-            description: 'Whether the room is locked'
+            type: "boolean",
+            description: "Whether the room is locked",
           },
           roles: {
-            type: 'array',
-            items: { type: 'string' },
-            description: 'Available roles in the room'
+            type: "array",
+            items: { type: "string" },
+            description: "Available roles in the room",
           },
           default_role: {
-            type: 'string',
-            description: 'Default role for participants'
+            type: "string",
+            description: "Default role for participants",
           },
-          
+
           // UI Settings
           topbar_enabled: {
-            type: 'boolean',
-            description: 'Show/hide the top bar'
+            type: "boolean",
+            description: "Show/hide the top bar",
           },
           toolbar_enabled: {
-            type: 'boolean',
-            description: 'Show/hide the toolbar'
+            type: "boolean",
+            description: "Show/hide the toolbar",
           },
           toolbar_position: {
-            type: 'string',
-            enum: ['left', 'right', 'bottom'],
-            description: 'Position of the toolbar'
+            type: "string",
+            enum: ["left", "right", "bottom"],
+            description: "Position of the toolbar",
           },
           toolbar_color: {
-            type: 'string',
-            description: 'Toolbar background color (hex)'
+            type: "string",
+            description: "Toolbar background color (hex)",
           },
           primary_color: {
-            type: 'string',
-            description: 'Primary theme color (hex)'
+            type: "string",
+            description: "Primary theme color (hex)",
           },
           background_color: {
-            type: 'string',
-            description: 'Room background color (hex)'
+            type: "string",
+            description: "Room background color (hex)",
           },
           palette_mode: {
-            type: 'string',
-            enum: ['light', 'dark'],
-            description: 'Color theme mode'
+            type: "string",
+            enum: ["light", "dark"],
+            description: "Color theme mode",
           },
           language: {
-            type: 'string',
-            description: 'Default language'
+            type: "string",
+            description: "Default language",
           },
           language_selection_enabled: {
-            type: 'boolean',
-            description: 'Allow users to change language'
+            type: "boolean",
+            description: "Allow users to change language",
           },
-          
+
           // Meeting features
           audio_on_join_enabled: {
-            type: 'boolean',
-            description: 'Auto-enable audio when joining'
+            type: "boolean",
+            description: "Auto-enable audio when joining",
           },
           video_on_join_enabled: {
-            type: 'boolean',
-            description: 'Auto-enable video when joining'
+            type: "boolean",
+            description: "Auto-enable video when joining",
           },
           screenshare_enabled: {
-            type: 'boolean',
-            description: 'Allow screen sharing'
+            type: "boolean",
+            description: "Allow screen sharing",
           },
           participants_list_enabled: {
-            type: 'boolean',
-            description: 'Show participants list'
+            type: "boolean",
+            description: "Show participants list",
           },
           chat_enabled: {
-            type: 'boolean',
-            description: 'Enable chat functionality'
+            type: "boolean",
+            description: "Enable chat functionality",
           },
           private_chat_enabled: {
-            type: 'boolean',
-            description: 'Allow private messages'
+            type: "boolean",
+            description: "Allow private messages",
           },
           recordings_enabled: {
-            type: 'boolean',
-            description: 'Allow recording sessions'
-          }
+            type: "boolean",
+            description: "Allow recording sessions",
+          },
         },
-        required: ['roomId']
-      }
+        required: ["roomId"],
+      },
     },
     {
-      name: 'delete-room',
-      description: '[Room Management] Permanently delete a room. Use when users say: "delete the room", "remove this room", "delete meeting room", "remove conference room", "permanently delete room". Requires roomId. This action cannot be undone.',
+      name: "delete-room",
+      description:
+        '[Room Management] Permanently delete a room. Use when users say: "delete the room", "remove this room", "delete meeting room", "remove conference room", "permanently delete room". Requires roomId. This action cannot be undone.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           roomId: {
-            type: 'string',
-            description: 'Room ID (required)'
-          }
+            type: "string",
+            description: "Room ID (required)",
+          },
         },
-        required: ['roomId']
-      }
+        required: ["roomId"],
+      },
     },
     {
-      name: 'generate-token',
-      description: '[Room Management] Generate an access token for users to join a room. Use when users say: "create a join link", "generate access token", "create invite link", "get room access", "invite someone to room", "create moderator link". Requires roomId. Returns a token with join URL.',
+      name: "generate-token",
+      description:
+        '[Room Management] Generate an access token for users to join a room. Use when users say: "create a join link", "generate access token", "create invite link", "get room access", "invite someone to room", "create moderator link". Requires roomId. Returns a token with join URL.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           roomId: {
-            type: 'string',
-            description: 'Room ID (required)'
+            type: "string",
+            description: "Room ID (required)",
           },
           userName: {
-            type: 'string',
+            type: "string",
             minLength: 1,
             maxLength: 100,
-            description: 'User name for the token'
+            description: "User name for the token",
           },
           role: {
-            type: 'string',
-            description: 'User role (e.g., moderator, participant)'
+            type: "string",
+            description: "User role (e.g., moderator, participant)",
           },
           externalId: {
-            type: 'string',
-            description: 'External user ID'
-          }
+            type: "string",
+            description: "External user ID",
+          },
         },
-        required: ['roomId']
-      }
+        required: ["roomId"],
+      },
     },
     {
-      name: 'get-default-room-settings',
-      description: '[Room Management] Get the default settings that are automatically applied to all new rooms. Use when users say: "show default room settings", "what are the default settings", "get room defaults", "show room template settings". Returns all default configuration options.',
+      name: "get-default-room-settings",
+      description:
+        '[Room Management] Get the default settings that are automatically applied to all new rooms. Use when users say: "show default room settings", "what are the default settings", "get room defaults", "show room template settings". Returns all default configuration options.',
       inputSchema: {
-        type: 'object',
-        properties: {}
-      }
+        type: "object",
+        properties: {},
+      },
     },
     {
-      name: 'update-default-room-settings',
-      description: '[Room Management] Update the default settings template for all future rooms. Use when users say: "change default room settings", "update room defaults", "modify default configuration", "set default language", "change default room template". Requires settings object. Affects only new rooms created after this change.',
+      name: "update-default-room-settings",
+      description:
+        '[Room Management] Update the default settings template for all future rooms. Use when users say: "change default room settings", "update room defaults", "modify default configuration", "set default language", "change default room template". Requires settings object. Affects only new rooms created after this change.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           settings: {
-            type: 'object',
-            description: 'Settings object with configuration options',
+            type: "object",
+            description: "Settings object with configuration options",
             properties: {
-              language: { type: 'string' },
-              language_selection_enabled: { type: 'boolean' },
-              topbar_enabled: { type: 'boolean' },
-              toolbar_enabled: { type: 'boolean' },
-              toolbar_position: { 
-                type: 'string',
-                enum: ['left', 'right', 'bottom']
+              language: { type: "string" },
+              language_selection_enabled: { type: "boolean" },
+              topbar_enabled: { type: "boolean" },
+              toolbar_enabled: { type: "boolean" },
+              toolbar_position: {
+                type: "string",
+                enum: ["left", "right", "bottom"],
               },
-              toolbar_color: { type: 'string' },
-              primary_color: { type: 'string' },
-              background_color: { type: 'string' },
+              toolbar_color: { type: "string" },
+              primary_color: { type: "string" },
+              background_color: { type: "string" },
               palette_mode: {
-                type: 'string',
-                enum: ['light', 'dark']
+                type: "string",
+                enum: ["light", "dark"],
               },
-              audio_on_join_enabled: { type: 'boolean' },
-              video_on_join_enabled: { type: 'boolean' },
-              screenshare_enabled: { type: 'boolean' },
-              participants_list_enabled: { type: 'boolean' },
-              chat_enabled: { type: 'boolean' },
-              private_chat_enabled: { type: 'boolean' },
-              recordings_enabled: { type: 'boolean' },
-              max_participants: { type: 'number' },
-              max_broadcasters: { type: 'number' },
-              default_role: { type: 'string' }
-            }
-          }
+              audio_on_join_enabled: { type: "boolean" },
+              video_on_join_enabled: { type: "boolean" },
+              screenshare_enabled: { type: "boolean" },
+              participants_list_enabled: { type: "boolean" },
+              chat_enabled: { type: "boolean" },
+              private_chat_enabled: { type: "boolean" },
+              recordings_enabled: { type: "boolean" },
+              max_participants: { type: "number" },
+              max_broadcasters: { type: "number" },
+              default_role: { type: "string" },
+            },
+          },
         },
-        required: ['settings']
-      }
-    }
+        required: ["settings"],
+      },
+    },
   ];
 }
 
 /**
  * Execute a room management tool
- * 
+ *
  * This function handles the execution of room-related tools such as creating,
  * updating, deleting rooms, and generating access tokens. It manages API client
  * creation and error handling for all room operations.
- * 
+ *
  * @param {string} toolName - Name of the tool to execute
  * @param {any} args - Tool arguments specific to each tool
  * @param {any} request - MCP request object containing session context
@@ -392,7 +398,7 @@ export function registerRoomTools(): Tool[] {
  * @param {boolean} [options.enableResourceOptimization] - Enable resource optimization
  * @param {number} [options.connectionPoolSize] - Size of connection pool
  * @returns {Promise<Object>} Tool execution result with content array
- * 
+ *
  * @example
  * // Create a room
  * const result = await executeRoomTool('create-room', {
@@ -400,7 +406,7 @@ export function registerRoomTools(): Tool[] {
  *   privacy: 'private',
  *   max_participants: 50
  * }, request, { apiUrl: 'https://api.digitalsamba.com/api/v1' });
- * 
+ *
  * @example
  * // Generate access token
  * const result = await executeRoomTool('generate-token', {
@@ -410,7 +416,7 @@ export function registerRoomTools(): Tool[] {
  *     role: 'moderator'
  *   }
  * }, request, { apiUrl: 'https://api.digitalsamba.com/api/v1' });
- * 
+ *
  * @since 1.0.0
  */
 export async function executeRoomTool(
@@ -424,72 +430,75 @@ export async function executeRoomTool(
     enableTokenManagement?: boolean;
     enableResourceOptimization?: boolean;
     connectionPoolSize?: number;
-  }
+  },
 ): Promise<any> {
-  const { apiUrl, apiCache, enableConnectionManagement, enableTokenManagement, enableResourceOptimization, connectionPoolSize } = options;
-  
+  const { apiUrl, apiCache } = options;
+
   // Get API key from session context
   const apiKey = getApiKeyFromRequest(request);
   if (!apiKey) {
     return {
-      content: [{ 
-        type: 'text', 
-        text: 'No API key found. Please include an Authorization header with a Bearer token.'
-      }],
+      content: [
+        {
+          type: "text",
+          text: "No API key found. Please include an Authorization header with a Bearer token.",
+        },
+      ],
       isError: true,
     };
   }
 
   // Create API client with the provided key
-  logger.debug('Creating API client with key', { 
+  logger.debug("Creating API client with key", {
     apiKeyLength: apiKey ? apiKey.length : 0,
-    apiUrl
+    apiUrl,
   });
-  
+
   // Use standard API client
   const client = new DigitalSambaApiClient(apiKey, apiUrl, apiCache);
 
   switch (toolName) {
-    case 'create-room': {
-      const { roomId, ...settings } = args;  // Extract all settings except roomId
-      
-      logger.info('Creating room', { 
-        roomName: settings.name, 
-        privacy: settings.privacy
+    case "create-room": {
+      const { roomId, ...settings } = args; // Extract all settings except roomId
+      void roomId; // roomId is ignored in room creation since it's generated by the API
+
+      logger.info("Creating room", {
+        roomName: settings.name,
+        privacy: settings.privacy,
       });
-      
+
       try {
         // Ensure we have a name
         if (!settings.name) {
-          settings.name = 'Test Room';
+          settings.name = "Test Room";
         }
-        
+
         // Ensure privacy field has a default value
         if (!settings.privacy) {
-          settings.privacy = 'public';
+          settings.privacy = "public";
         }
-        
+
         // Create room with all provided settings
         const room = await client.createRoom(settings);
-        logger.info('Room created successfully', { roomId: room.id });
-        
+        logger.info("Room created successfully", { roomId: room.id });
+
         return {
           content: [
             {
-              type: 'text',
+              type: "text",
               text: `Room created successfully!\n\n${JSON.stringify(room, null, 2)}`,
             },
           ],
         };
       } catch (error) {
-        logger.error('Error creating room', { 
-          error: error instanceof Error ? error.message : String(error) 
+        logger.error("Error creating room", {
+          error: error instanceof Error ? error.message : String(error),
         });
-        
+
         return {
           content: [
             {
-              type: 'text',
+              type: "text",
               text: `Error creating room: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
@@ -498,44 +507,44 @@ export async function executeRoomTool(
       }
     }
 
-    case 'update-room': {
-      const { roomId, ...settings } = args;  // Extract roomId and all other settings
-      
+    case "update-room": {
+      const { roomId, ...settings } = args; // Extract roomId and all other settings
+
       if (!roomId) {
         return {
-          content: [{ type: 'text', text: 'Room ID is required.' }],
+          content: [{ type: "text", text: "Room ID is required." }],
           isError: true,
         };
       }
-      
-      logger.info('Updating room', { 
-        roomId, 
-        settings: Object.keys(settings)  // Log which settings are being updated
+
+      logger.info("Updating room", {
+        roomId,
+        settings: Object.keys(settings), // Log which settings are being updated
       });
-      
+
       try {
         // Update room with all provided settings
         const room = await client.updateRoom(roomId, settings);
-        logger.info('Room updated successfully', { roomId: room.id });
-        
+        logger.info("Room updated successfully", { roomId: room.id });
+
         return {
           content: [
             {
-              type: 'text',
+              type: "text",
               text: `Room updated successfully!\n\n${JSON.stringify(room, null, 2)}`,
             },
           ],
         };
       } catch (error) {
-        logger.error('Error updating room', { 
+        logger.error("Error updating room", {
           roomId,
-          error: error instanceof Error ? error.message : String(error) 
+          error: error instanceof Error ? error.message : String(error),
         });
-        
+
         return {
           content: [
             {
-              type: 'text',
+              type: "text",
               text: `Error updating room: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
@@ -544,41 +553,41 @@ export async function executeRoomTool(
       }
     }
 
-    case 'delete-room': {
+    case "delete-room": {
       const { roomId } = args;
-      
+
       if (!roomId) {
         return {
-          content: [{ type: 'text', text: 'Room ID is required.' }],
+          content: [{ type: "text", text: "Room ID is required." }],
           isError: true,
         };
       }
-      
-      logger.info('Deleting room', { roomId });
-      
+
+      logger.info("Deleting room", { roomId });
+
       try {
         // Delete room
         await client.deleteRoom(roomId);
-        logger.info('Room deleted successfully', { roomId });
-        
+        logger.info("Room deleted successfully", { roomId });
+
         return {
           content: [
             {
-              type: 'text',
+              type: "text",
               text: `Room ${roomId} deleted successfully!`,
             },
           ],
         };
       } catch (error) {
-        logger.error('Error deleting room', { 
+        logger.error("Error deleting room", {
           roomId,
-          error: error instanceof Error ? error.message : String(error) 
+          error: error instanceof Error ? error.message : String(error),
         });
-        
+
         return {
           content: [
             {
-              type: 'text',
+              type: "text",
               text: `Error deleting room: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
@@ -587,20 +596,20 @@ export async function executeRoomTool(
       }
     }
 
-    case 'generate-token': {
+    case "generate-token": {
       const { roomId, userName, role, externalId } = args;
-      
+
       // Validate required fields
       if (!roomId) {
-        throw new Error('roomId is required');
+        throw new Error("roomId is required");
       }
-      
-      logger.info('Generating room token', { 
-        roomId, 
-        userName, 
-        role
+
+      logger.info("Generating room token", {
+        roomId,
+        userName,
+        role,
       });
-      
+
       try {
         // Generate token options
         const tokenOptions = {
@@ -608,37 +617,40 @@ export async function executeRoomTool(
           role: role || undefined,
           ud: externalId || undefined,
         };
-        
-        // Generate token - use token refresh if enabled
+
+        // Generate token - simplified version for MCP
         let token;
-        if (enableTokenManagement && request.sessionId) {
-          // Use token refresh
+        if (request.sessionId) {
+          // Use standard token generation
           token = await client.generateRoomToken(roomId, tokenOptions);
-          logger.info('Generated token with auto-refresh', { roomId, expiresAt: token.expiresAt });
+          logger.info("Generated token", {
+            roomId,
+            expiresAt: token.expiresAt,
+          });
         } else {
           // Standard token generation
-          token = await client.generateRoomToken(roomId, tokenOptions);  
+          token = await client.generateRoomToken(roomId, tokenOptions);
         }
-        logger.info('Token generated successfully', { roomId });
-        
+        logger.info("Token generated successfully", { roomId });
+
         return {
           content: [
             {
-              type: 'text',
+              type: "text",
               text: `Token generated successfully!\n\n${JSON.stringify(token, null, 2)}`,
             },
           ],
         };
       } catch (error) {
-        logger.error('Error generating token', { 
-          roomId, 
-          error: error instanceof Error ? error.message : String(error) 
+        logger.error("Error generating token", {
+          roomId,
+          error: error instanceof Error ? error.message : String(error),
         });
-        
+
         return {
           content: [
             {
-              type: 'text',
+              type: "text",
               text: `Error generating token: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
@@ -647,66 +659,67 @@ export async function executeRoomTool(
       }
     }
 
-    case 'get-default-room-settings': {
-      logger.info('Getting default room settings');
-      
+    case "get-default-room-settings": {
+      logger.info("Getting default room settings");
+
       try {
         const settings = await client.getDefaultRoomSettings();
-        
+
         return {
           content: [
-            { 
-              type: 'text', 
-              text: `Default room settings retrieved successfully:\n\n${JSON.stringify(settings, null, 2)}`
-            }
+            {
+              type: "text",
+              text: `Default room settings retrieved successfully:\n\n${JSON.stringify(settings, null, 2)}`,
+            },
           ],
         };
       } catch (error) {
-        logger.error('Error getting default room settings', { 
-          error: error instanceof Error ? error.message : error 
+        logger.error("Error getting default room settings", {
+          error: error instanceof Error ? error.message : error,
         });
-        
+
         return {
           content: [
-            { 
-              type: 'text', 
-              text: `Error getting default room settings: ${error instanceof Error ? error.message : 'Unknown error'}`
-            }
+            {
+              type: "text",
+              text: `Error getting default room settings: ${error instanceof Error ? error.message : "Unknown error"}`,
+            },
           ],
           isError: true,
         };
       }
     }
 
-    case 'update-default-room-settings': {
+    case "update-default-room-settings": {
       const { settings } = args;
-      
-      logger.info('Updating default room settings', { 
-        settingsKeys: Object.keys(settings || {})
+
+      logger.info("Updating default room settings", {
+        settingsKeys: Object.keys(settings || {}),
       });
-      
+
       try {
-        const updatedSettings = await client.updateDefaultRoomSettings(settings);
-        
+        const updatedSettings =
+          await client.updateDefaultRoomSettings(settings);
+
         return {
           content: [
-            { 
-              type: 'text', 
-              text: `Default room settings updated successfully. Updated settings:\n\n${JSON.stringify(updatedSettings, null, 2)}`
-            }
+            {
+              type: "text",
+              text: `Default room settings updated successfully. Updated settings:\n\n${JSON.stringify(updatedSettings, null, 2)}`,
+            },
           ],
         };
       } catch (error) {
-        logger.error('Error updating default room settings', { 
-          error: error instanceof Error ? error.message : error 
+        logger.error("Error updating default room settings", {
+          error: error instanceof Error ? error.message : error,
         });
-        
+
         return {
           content: [
-            { 
-              type: 'text', 
-              text: `Error updating default room settings: ${error instanceof Error ? error.message : 'Unknown error'}`
-            }
+            {
+              type: "text",
+              text: `Error updating default room settings: ${error instanceof Error ? error.message : "Unknown error"}`,
+            },
           ],
           isError: true,
         };

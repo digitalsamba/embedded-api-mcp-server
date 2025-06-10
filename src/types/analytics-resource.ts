@@ -49,7 +49,10 @@ export class AnalyticsResource {
     }
   }
 
-  async getLiveAnalytics(roomId?: string, includeParticipants?: boolean): Promise<any> {
+  async getLiveAnalytics(
+    roomId?: string,
+    includeParticipants?: boolean,
+  ): Promise<any> {
     if (roomId) {
       if (includeParticipants) {
         return this.apiClient.getRoomLiveParticipantsData(roomId);

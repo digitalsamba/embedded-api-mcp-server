@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build
+      run: npm run build
+
+    - name: Run tests with coverage
+      run: npm run test:ci
+      env:
+        DIGITAL_SAMBA_API_KEY: ${{ secrets.DIGITAL_SAMBA_API_KEY || 'mock-key-for-testing' }}
+        CI: true
+
+    - name: Update coverage gist
+      if: matrix.node-version == '20.x' && github.ref == 'refs/heads/main'
+      run: |
+        COVERAGE=$(node -p "Math.round(require('./coverage/coverage-summary.json').total.lines.pct)")
+        
+        # Update gist with coverage percentage
+        curl -X PATCH \
+          -H "Authorization: token ${{ secrets.GIST_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/gists/${{ secrets.GIST_ID }} \
+          -d '{
+            "files": {
+              "coverage.json": {
+                "content": "{\"coverage\": '$COVERAGE'}"
+              }
+            }
+          }'
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run ESLint
+      run: npm run lint
+      continue-on-error: true
+
+    - name: Check formatting
+      run: npm run format -- --check
+      continue-on-error: true
