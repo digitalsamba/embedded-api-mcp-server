@@ -13,7 +13,7 @@ module.exports = {
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coveragePathIgnorePatterns: ['/node_modules/', '/tests/'],
-  coverageReporters: ['text', 'lcov'],
+  coverageReporters: ['text', 'lcov', 'json-summary'],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       useESM: true,

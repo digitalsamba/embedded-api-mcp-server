@@ -1,157 +1,171 @@
 /**
  * Session Management Tools Module
- * 
+ *
  * This module provides comprehensive session management tools for the Digital Samba MCP Server.
  * It implements session-related tools for managing room sessions, deleting session data,
  * and performing session operations.
- * 
+ *
  * @module tools/session-management
  */
 
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
+import { Tool } from "@modelcontextprotocol/sdk/types.js";
 // import { z } from 'zod'; // Removed: unused
-import { DigitalSambaApiClient } from '../../digital-samba-api.js';
-import { getApiKeyFromRequest } from '../../auth.js';
-import logger from '../../logger.js';
+import { DigitalSambaApiClient } from "../../digital-samba-api.js";
+import { getApiKeyFromRequest } from "../../auth.js";
+import logger from "../../logger.js";
 
 /**
  * Register all session management tools
- * 
+ *
  * @returns Array of MCP Tool definitions
  */
 export function registerSessionTools(): Tool[] {
   return [
     {
-      name: 'get-all-room-sessions',
-      description: '[Session Management] Get all sessions (past and live) for a specific room. Use when users say: "list sessions for room", "show room sessions", "get meeting history", "show past meetings", "list all sessions", "show live sessions". Requires roomId. Returns paginated session list with details.',
+      name: "get-all-room-sessions",
+      description:
+        '[Session Management] Get all sessions (past and live) for a specific room. Use when users say: "list sessions for room", "show room sessions", "get meeting history", "show past meetings", "list all sessions", "show live sessions". Requires roomId. Returns paginated session list with details.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           roomId: {
-            type: 'string',
-            description: 'Room ID (required)'
+            type: "string",
+            description: "Room ID (required)",
           },
           limit: {
-            type: 'number',
+            type: "number",
             minimum: 1,
             maximum: 1000,
-            description: 'Number of results to return'
+            description: "Number of results to return",
           },
           offset: {
-            type: 'number',
+            type: "number",
             minimum: 0,
-            description: 'Number of results to skip'
+            description: "Number of results to skip",
           },
           order: {
-            type: 'string',
-            enum: ['asc', 'desc'],
-            description: 'Sort order'
+            type: "string",
+            enum: ["asc", "desc"],
+            description: "Sort order",
           },
           dateStart: {
-            type: 'string',
-            description: 'Start date in YYYY-MM-DD format'
+            type: "string",
+            description: "Start date in YYYY-MM-DD format",
           },
           dateEnd: {
-            type: 'string',
-            description: 'End date in YYYY-MM-DD format'
+            type: "string",
+            description: "End date in YYYY-MM-DD format",
           },
           live: {
-            type: 'boolean',
-            description: 'Filter for live sessions only'
-          }
+            type: "boolean",
+            description: "Filter for live sessions only",
+          },
         },
-        required: ['roomId']
-      }
+        required: ["roomId"],
+      },
     },
     {
-      name: 'hard-delete-session-resources',
-      description: '[Session Management] Permanently delete ALL stored data for a session including recordings, chats, Q&A. Use when users say: "permanently delete session data", "remove all session resources", "hard delete session", "wipe session data", "delete everything from session". Requires sessionId. This action cannot be undone!',
+      name: "hard-delete-session-resources",
+      description:
+        '[Session Management] Permanently delete ALL stored data for a session including recordings, chats, Q&A. Use when users say: "permanently delete session data", "remove all session resources", "hard delete session", "wipe session data", "delete everything from session". Requires sessionId. This action cannot be undone!',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           sessionId: {
-            type: 'string',
-            description: 'Session ID (required)'
-          }
+            type: "string",
+            description: "Session ID (required)",
+          },
         },
-        required: ['sessionId']
-      }
+        required: ["sessionId"],
+      },
     },
     {
-      name: 'bulk-delete-session-data',
-      description: '[Session Management] Delete specific types of session data (chat, Q&A, transcripts, etc). Use when users say: "delete session chat and transcripts", "remove multiple session data types", "bulk delete session content", "clean up session data". Requires sessionId and dataTypes array. More selective than hard-delete.',
+      name: "bulk-delete-session-data",
+      description:
+        '[Session Management] Delete specific types of session data (chat, Q&A, transcripts, etc). Use when users say: "delete session chat and transcripts", "remove multiple session data types", "bulk delete session content", "clean up session data". Requires sessionId and dataTypes array. More selective than hard-delete.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           sessionId: {
-            type: 'string',
-            description: 'Session ID (required)'
+            type: "string",
+            description: "Session ID (required)",
           },
           dataTypes: {
-            type: 'array',
+            type: "array",
             items: {
-              type: 'string',
-              enum: ['chat', 'questions', 'summaries', 'transcripts', 'polls', 'recordings', 'resources']
+              type: "string",
+              enum: [
+                "chat",
+                "questions",
+                "summaries",
+                "transcripts",
+                "polls",
+                "recordings",
+                "resources",
+              ],
             },
             minItems: 1,
-            description: 'Types of data to delete'
-          }
+            description: "Types of data to delete",
+          },
         },
-        required: ['sessionId', 'dataTypes']
-      }
+        required: ["sessionId", "dataTypes"],
+      },
     },
     {
-      name: 'get-session-summary',
-      description: '[Session Management] Get a comprehensive summary of a session including participants, duration, and activities. Use when users say: "show session summary", "get meeting summary", "session details", "what happened in the session", "meeting report". Requires sessionId. Returns detailed session information.',
+      name: "get-session-summary",
+      description:
+        '[Session Management] Get a comprehensive summary of a session including participants, duration, and activities. Use when users say: "show session summary", "get meeting summary", "session details", "what happened in the session", "meeting report". Requires sessionId. Returns detailed session information.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           sessionId: {
-            type: 'string',
-            description: 'Session ID (required)'
-          }
+            type: "string",
+            description: "Session ID (required)",
+          },
         },
-        required: ['sessionId']
-      }
+        required: ["sessionId"],
+      },
     },
     {
-      name: 'end-session',
-      description: '[Session Management] Force end a currently live/active session. Use when users say: "end the session", "stop the meeting", "close the session", "terminate the call", "end live session now". Requires sessionId. Only works on active sessions. Disconnects all participants.',
+      name: "end-session",
+      description:
+        '[Session Management] Force end a currently live/active session. Use when users say: "end the session", "stop the meeting", "close the session", "terminate the call", "end live session now". Requires sessionId. Only works on active sessions. Disconnects all participants.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           sessionId: {
-            type: 'string',
-            description: 'Session ID (required)'
-          }
+            type: "string",
+            description: "Session ID (required)",
+          },
         },
-        required: ['sessionId']
-      }
+        required: ["sessionId"],
+      },
     },
     {
-      name: 'get-session-statistics',
-      description: '[Session Management] Get detailed usage statistics and metrics for a session. Use when users say: "show session statistics", "get meeting metrics", "session analytics", "participant statistics", "session usage data". Requires sessionId. Returns participant count, duration, activity metrics.',
+      name: "get-session-statistics",
+      description:
+        '[Session Management] Get detailed usage statistics and metrics for a session. Use when users say: "show session statistics", "get meeting metrics", "session analytics", "participant statistics", "session usage data". Requires sessionId. Returns participant count, duration, activity metrics.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           sessionId: {
-            type: 'string',
-            description: 'Session ID (required)'
+            type: "string",
+            description: "Session ID (required)",
           },
           metrics: {
-            type: 'string',
-            description: 'Specific metrics to retrieve (optional)'
-          }
+            type: "string",
+            description: "Specific metrics to retrieve (optional)",
+          },
         },
-        required: ['sessionId']
-      }
-    }
+        required: ["sessionId"],
+      },
+    },
   ];
 }
 
 /**
  * Execute a session management tool
- * 
+ *
  * @param toolName - The name of the tool to execute
  * @param args - The tool arguments
  * @param apiClient - The Digital Samba API client instance
@@ -162,23 +176,29 @@ export async function executeSessionTool(
   toolName: string,
   args: any,
   apiClient: DigitalSambaApiClient,
-  request: any
+  request: any,
 ): Promise<any> {
   const apiKey = getApiKeyFromRequest(request);
   if (!apiKey) {
     return {
-      content: [{ 
-        type: 'text', 
-        text: 'No API key found. Please include an Authorization header with a Bearer token.'
-      }],
+      content: [
+        {
+          type: "text",
+          text: "No API key found. Please include an Authorization header with a Bearer token.",
+        },
+      ],
       isError: true,
     };
   }
 
   switch (toolName) {
-    case 'get-all-room-sessions': {
-      logger.info('Getting all room sessions', { roomId: args.roomId, limit: args.limit, offset: args.offset });
-      
+    case "get-all-room-sessions": {
+      logger.info("Getting all room sessions", {
+        roomId: args.roomId,
+        limit: args.limit,
+        offset: args.offset,
+      });
+
       try {
         const sessionParams = {
           limit: args.limit,
@@ -186,204 +206,249 @@ export async function executeSessionTool(
           order: args.order,
           date_start: args.dateStart,
           date_end: args.dateEnd,
-          live: args.live
+          live: args.live,
         };
-        
-        const sessions = await apiClient.listRoomSessions(args.roomId, sessionParams);
-        
+
+        const sessions = await apiClient.listRoomSessions(
+          args.roomId,
+          sessionParams,
+        );
+
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify({
-              sessions: sessions.data,
-              total_count: sessions.total_count,
-              pagination: {
-                limit: args.limit || 50,
-                offset: args.offset || 0,
-                total: sessions.total_count
-              }
-            }, null, 2),
-          }],
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(
+                {
+                  sessions: sessions.data,
+                  total_count: sessions.total_count,
+                  pagination: {
+                    limit: args.limit || 50,
+                    offset: args.offset || 0,
+                    total: sessions.total_count,
+                  },
+                },
+                null,
+                2,
+              ),
+            },
+          ],
         };
       } catch (error) {
-        logger.error('Error getting room sessions', { 
+        logger.error("Error getting room sessions", {
           roomId: args.roomId,
-          error: error instanceof Error ? error.message : String(error) 
+          error: error instanceof Error ? error.message : String(error),
         });
-        
+
         return {
-          content: [{
-            type: 'text',
-            text: `Error getting room sessions: ${error instanceof Error ? error.message : String(error)}`,
-          }],
+          content: [
+            {
+              type: "text",
+              text: `Error getting room sessions: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
           isError: true,
         };
       }
     }
 
-    case 'hard-delete-session-resources': {
-      logger.info('Hard deleting all session resources', { sessionId: args.sessionId });
-      
+    case "hard-delete-session-resources": {
+      logger.info("Hard deleting all session resources", {
+        sessionId: args.sessionId,
+      });
+
       try {
-        await apiClient.deleteSessionData(args.sessionId, 'resources');
-        
+        await apiClient.deleteSessionData(args.sessionId, "resources");
+
         return {
-          content: [{
-            type: 'text',
-            text: `Successfully hard deleted all stored resource data for session ${args.sessionId}`,
-          }],
+          content: [
+            {
+              type: "text",
+              text: `Successfully hard deleted all stored resource data for session ${args.sessionId}`,
+            },
+          ],
         };
       } catch (error) {
-        logger.error('Error hard deleting session resources', { 
+        logger.error("Error hard deleting session resources", {
           sessionId: args.sessionId,
-          error: error instanceof Error ? error.message : String(error) 
+          error: error instanceof Error ? error.message : String(error),
         });
-        
+
         return {
-          content: [{
-            type: 'text',
-            text: `Error hard deleting session resources: ${error instanceof Error ? error.message : String(error)}`,
-          }],
+          content: [
+            {
+              type: "text",
+              text: `Error hard deleting session resources: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
           isError: true,
         };
       }
     }
 
-    case 'bulk-delete-session-data': {
-      logger.info('Bulk deleting session data', { sessionId: args.sessionId, dataTypes: args.dataTypes });
-      
+    case "bulk-delete-session-data": {
+      logger.info("Bulk deleting session data", {
+        sessionId: args.sessionId,
+        dataTypes: args.dataTypes,
+      });
+
       try {
         const results = [];
         const errors = [];
-        
+
         // Delete each data type
         for (const dataType of args.dataTypes) {
           try {
             await apiClient.deleteSessionData(args.sessionId, dataType);
             results.push(`✅ Successfully deleted ${dataType}`);
-            logger.info(`Deleted session ${dataType}`, { sessionId: args.sessionId, dataType });
+            logger.info(`Deleted session ${dataType}`, {
+              sessionId: args.sessionId,
+              dataType,
+            });
           } catch (error) {
             const errorMsg = `❌ Failed to delete ${dataType}: ${error instanceof Error ? error.message : String(error)}`;
             errors.push(errorMsg);
-            logger.error(`Failed to delete session ${dataType}`, { 
-              sessionId: args.sessionId, 
-              dataType, 
-              error: error instanceof Error ? error.message : String(error) 
+            logger.error(`Failed to delete session ${dataType}`, {
+              sessionId: args.sessionId,
+              dataType,
+              error: error instanceof Error ? error.message : String(error),
             });
           }
         }
-        
+
         const summary = {
           sessionId: args.sessionId,
           requested: args.dataTypes,
           results: results,
           errors: errors,
-          success: errors.length === 0
+          success: errors.length === 0,
         };
-        
+
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(summary, null, 2),
-          }],
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(summary, null, 2),
+            },
+          ],
           isError: errors.length > 0,
         };
       } catch (error) {
-        logger.error('Error in bulk delete session data', { 
+        logger.error("Error in bulk delete session data", {
           sessionId: args.sessionId,
           dataTypes: args.dataTypes,
-          error: error instanceof Error ? error.message : String(error) 
+          error: error instanceof Error ? error.message : String(error),
         });
-        
+
         return {
-          content: [{
-            type: 'text',
-            text: `Error in bulk delete operation: ${error instanceof Error ? error.message : String(error)}`,
-          }],
+          content: [
+            {
+              type: "text",
+              text: `Error in bulk delete operation: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
           isError: true,
         };
       }
     }
 
-    case 'get-session-summary': {
-      logger.info('Getting session summary', { sessionId: args.sessionId });
-      
+    case "get-session-summary": {
+      logger.info("Getting session summary", { sessionId: args.sessionId });
+
       try {
         const summary = await apiClient.getSessionSummary(args.sessionId);
-        
+
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(summary, null, 2),
-          }],
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(summary, null, 2),
+            },
+          ],
         };
       } catch (error) {
-        logger.error('Error getting session summary', { 
+        logger.error("Error getting session summary", {
           sessionId: args.sessionId,
-          error: error instanceof Error ? error.message : String(error) 
+          error: error instanceof Error ? error.message : String(error),
         });
-        
+
         return {
-          content: [{
-            type: 'text',
-            text: `Error getting session summary: ${error instanceof Error ? error.message : String(error)}`,
-          }],
+          content: [
+            {
+              type: "text",
+              text: `Error getting session summary: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
           isError: true,
         };
       }
     }
 
-    case 'end-session': {
-      logger.info('Ending session', { sessionId: args.sessionId });
-      
+    case "end-session": {
+      logger.info("Ending session", { sessionId: args.sessionId });
+
       try {
         await apiClient.endSession(args.sessionId);
-        
+
         return {
-          content: [{
-            type: 'text',
-            text: `Successfully ended session ${args.sessionId}`,
-          }],
+          content: [
+            {
+              type: "text",
+              text: `Successfully ended session ${args.sessionId}`,
+            },
+          ],
         };
       } catch (error) {
-        logger.error('Error ending session', { 
+        logger.error("Error ending session", {
           sessionId: args.sessionId,
-          error: error instanceof Error ? error.message : String(error) 
+          error: error instanceof Error ? error.message : String(error),
         });
-        
+
         return {
-          content: [{
-            type: 'text',
-            text: `Error ending session: ${error instanceof Error ? error.message : String(error)}`,
-          }],
+          content: [
+            {
+              type: "text",
+              text: `Error ending session: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
           isError: true,
         };
       }
     }
 
-    case 'get-session-statistics': {
-      logger.info('Getting session statistics', { sessionId: args.sessionId, metrics: args.metrics });
-      
+    case "get-session-statistics": {
+      logger.info("Getting session statistics", {
+        sessionId: args.sessionId,
+        metrics: args.metrics,
+      });
+
       try {
-        const statistics = await apiClient.getSessionStatistics(args.sessionId, args.metrics);
-        
+        const statistics = await apiClient.getSessionStatistics(
+          args.sessionId,
+          args.metrics,
+        );
+
         return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(statistics, null, 2),
-          }],
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(statistics, null, 2),
+            },
+          ],
         };
       } catch (error) {
-        logger.error('Error getting session statistics', { 
+        logger.error("Error getting session statistics", {
           sessionId: args.sessionId,
-          error: error instanceof Error ? error.message : String(error) 
+          error: error instanceof Error ? error.message : String(error),
         });
-        
+
         return {
-          content: [{
-            type: 'text',
-            text: `Error getting session statistics: ${error instanceof Error ? error.message : String(error)}`,
-          }],
+          content: [
+            {
+              type: "text",
+              text: `Error getting session statistics: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
           isError: true,
         };
       }

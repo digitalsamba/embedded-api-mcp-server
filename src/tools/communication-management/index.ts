@@ -1,9 +1,9 @@
 /**
  * Digital Samba MCP Server - Communication Management Tools
- * 
+ *
  * This module implements tools for managing communications within Digital Samba sessions.
  * It provides MCP tools for managing chat messages, Q&A, transcripts, and summaries.
- * 
+ *
  * Tools provided:
  * - delete-session-chats: Delete all chat messages for a session
  * - delete-room-chats: Delete all chat messages for a room
@@ -13,26 +13,23 @@
  * - delete-room-transcripts: Delete all transcripts for a room
  * - delete-session-summaries: Delete all summaries for a session
  * - delete-room-summaries: Delete all summaries for a room
- * 
+ *
  * @module tools/communication-management
  * @author Digital Samba Team
  * @version 1.0.0
  */
 
 // External dependencies
-import { z } from 'zod';
+import { z } from "zod";
 
 // MCP SDK imports
 // import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'; // TODO: Direct MCP server integration
-import { 
-  ErrorCode, 
-  McpError
-} from '@modelcontextprotocol/sdk/types.js';
+import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 
 // Local modules
 // import { getApiKeyFromRequest } from '../../auth.js'; // Removed: unused
-import { DigitalSambaApiClient } from '../../digital-samba-api.js';
-import logger from '../../logger.js';
+import { DigitalSambaApiClient } from "../../digital-samba-api.js";
+import logger from "../../logger.js";
 
 /**
  * Tool definition interface
@@ -45,136 +42,144 @@ interface ToolDefinition {
 
 /**
  * Register communication management tools with the MCP SDK
- * 
+ *
  * @returns {ToolDefinition[]} Array of tool definitions
  */
 export function registerCommunicationTools(): ToolDefinition[] {
   return [
     // Chat Management
     {
-      name: 'delete-session-chats',
-      description: '[Communication Management] Delete all chat messages from a specific session. Use when users say: "delete session chat", "remove chat messages", "clear session chat history", "delete chat from session", "wipe chat messages". Requires sessionId. This permanently removes all chat data.',
+      name: "delete-session-chats",
+      description:
+        '[Communication Management] Delete all chat messages from a specific session. Use when users say: "delete session chat", "remove chat messages", "clear session chat history", "delete chat from session", "wipe chat messages". Requires sessionId. This permanently removes all chat data.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           sessionId: {
-            type: 'string',
-            description: 'The ID of the session to delete chats from'
-          }
+            type: "string",
+            description: "The ID of the session to delete chats from",
+          },
         },
-        required: ['sessionId']
-      }
+        required: ["sessionId"],
+      },
     },
     {
-      name: 'delete-room-chats',
-      description: '[Communication Management] Delete all chat messages from ALL sessions in a room. Use when users say: "delete all room chats", "clear room chat history", "remove all chat messages from room", "wipe room chats". Requires roomId. Affects all past and current sessions.',
+      name: "delete-room-chats",
+      description:
+        '[Communication Management] Delete all chat messages from ALL sessions in a room. Use when users say: "delete all room chats", "clear room chat history", "remove all chat messages from room", "wipe room chats". Requires roomId. Affects all past and current sessions.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           roomId: {
-            type: 'string',
-            description: 'The ID of the room to delete chats from'
-          }
+            type: "string",
+            description: "The ID of the room to delete chats from",
+          },
         },
-        required: ['roomId']
-      }
+        required: ["roomId"],
+      },
     },
-    
+
     // Q&A Management
     {
-      name: 'delete-session-qa',
-      description: '[Communication Management] Delete all Q&A (questions and answers) from a session. Use when users say: "delete session Q&A", "remove questions and answers", "clear Q&A history", "delete session questions", "wipe Q&A data". Requires sessionId. Removes all Q&A interactions.',
+      name: "delete-session-qa",
+      description:
+        '[Communication Management] Delete all Q&A (questions and answers) from a session. Use when users say: "delete session Q&A", "remove questions and answers", "clear Q&A history", "delete session questions", "wipe Q&A data". Requires sessionId. Removes all Q&A interactions.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           sessionId: {
-            type: 'string',
-            description: 'The ID of the session to delete Q&A from'
-          }
+            type: "string",
+            description: "The ID of the session to delete Q&A from",
+          },
         },
-        required: ['sessionId']
-      }
+        required: ["sessionId"],
+      },
     },
     {
-      name: 'delete-room-qa',
-      description: '[Communication Management] Delete all Q&A from ALL sessions in a room. Use when users say: "delete all room Q&A", "clear room questions", "remove all Q&A from room", "wipe room Q&A history". Requires roomId. Affects all sessions\' Q&A data.',
+      name: "delete-room-qa",
+      description:
+        '[Communication Management] Delete all Q&A from ALL sessions in a room. Use when users say: "delete all room Q&A", "clear room questions", "remove all Q&A from room", "wipe room Q&A history". Requires roomId. Affects all sessions\' Q&A data.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           roomId: {
-            type: 'string',
-            description: 'The ID of the room to delete Q&A from'
-          }
+            type: "string",
+            description: "The ID of the room to delete Q&A from",
+          },
         },
-        required: ['roomId']
-      }
+        required: ["roomId"],
+      },
     },
-    
+
     // Transcript Management
     {
-      name: 'delete-session-transcripts',
-      description: '[Communication Management] Delete all transcription data from a session. Use when users say: "delete session transcript", "remove transcription", "clear transcript", "delete meeting transcript", "wipe transcription data". Requires sessionId. Permanently removes transcript records.',
+      name: "delete-session-transcripts",
+      description:
+        '[Communication Management] Delete all transcription data from a session. Use when users say: "delete session transcript", "remove transcription", "clear transcript", "delete meeting transcript", "wipe transcription data". Requires sessionId. Permanently removes transcript records.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           sessionId: {
-            type: 'string',
-            description: 'The ID of the session to delete transcripts from'
-          }
+            type: "string",
+            description: "The ID of the session to delete transcripts from",
+          },
         },
-        required: ['sessionId']
-      }
+        required: ["sessionId"],
+      },
     },
     {
-      name: 'delete-room-transcripts',
-      description: '[Communication Management] Delete all transcripts from ALL sessions in a room. Use when users say: "delete all room transcripts", "clear room transcription history", "remove all transcripts from room", "wipe room transcripts". Requires roomId. Affects all sessions\' transcripts.',
+      name: "delete-room-transcripts",
+      description:
+        '[Communication Management] Delete all transcripts from ALL sessions in a room. Use when users say: "delete all room transcripts", "clear room transcription history", "remove all transcripts from room", "wipe room transcripts". Requires roomId. Affects all sessions\' transcripts.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           roomId: {
-            type: 'string',
-            description: 'The ID of the room to delete transcripts from'
-          }
+            type: "string",
+            description: "The ID of the room to delete transcripts from",
+          },
         },
-        required: ['roomId']
-      }
+        required: ["roomId"],
+      },
     },
-    
+
     // Summary Management
     {
-      name: 'delete-session-summaries',
-      description: '[Communication Management] Delete AI-generated summaries from a session. Use when users say: "delete session summary", "remove AI summary", "clear meeting summary", "delete session notes", "wipe summary data". Requires sessionId. Removes all AI-generated session summaries.',
+      name: "delete-session-summaries",
+      description:
+        '[Communication Management] Delete AI-generated summaries from a session. Use when users say: "delete session summary", "remove AI summary", "clear meeting summary", "delete session notes", "wipe summary data". Requires sessionId. Removes all AI-generated session summaries.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           sessionId: {
-            type: 'string',
-            description: 'The ID of the session to delete summaries from'
-          }
+            type: "string",
+            description: "The ID of the session to delete summaries from",
+          },
         },
-        required: ['sessionId']
-      }
+        required: ["sessionId"],
+      },
     },
     {
-      name: 'delete-room-summaries',
-      description: '[Communication Management] Delete all AI summaries from ALL sessions in a room. Use when users say: "delete all room summaries", "clear room AI summaries", "remove all summaries from room", "wipe room summary history". Requires roomId. Affects all sessions\' AI summaries.',
+      name: "delete-room-summaries",
+      description:
+        '[Communication Management] Delete all AI summaries from ALL sessions in a room. Use when users say: "delete all room summaries", "clear room AI summaries", "remove all summaries from room", "wipe room summary history". Requires roomId. Affects all sessions\' AI summaries.',
       inputSchema: {
-        type: 'object',
+        type: "object",
         properties: {
           roomId: {
-            type: 'string',
-            description: 'The ID of the room to delete summaries from'
-          }
+            type: "string",
+            description: "The ID of the room to delete summaries from",
+          },
         },
-        required: ['roomId']
-      }
-    }
+        required: ["roomId"],
+      },
+    },
   ];
 }
 
 /**
  * Execute a communication management tool
- * 
+ *
  * @param {string} toolName - Name of the tool to execute
  * @param {any} params - Tool parameters
  * @param {DigitalSambaApiClient} apiClient - API client instance
@@ -183,33 +188,33 @@ export function registerCommunicationTools(): ToolDefinition[] {
 export async function executeCommunicationTool(
   toolName: string,
   params: any,
-  apiClient: DigitalSambaApiClient
+  apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   switch (toolName) {
     // Chat Management
-    case 'delete-session-chats':
+    case "delete-session-chats":
       return handleDeleteSessionChats(params, apiClient);
-    case 'delete-room-chats':
+    case "delete-room-chats":
       return handleDeleteRoomChats(params, apiClient);
-    
+
     // Q&A Management
-    case 'delete-session-qa':
+    case "delete-session-qa":
       return handleDeleteSessionQA(params, apiClient);
-    case 'delete-room-qa':
+    case "delete-room-qa":
       return handleDeleteRoomQA(params, apiClient);
-    
+
     // Transcript Management
-    case 'delete-session-transcripts':
+    case "delete-session-transcripts":
       return handleDeleteSessionTranscripts(params, apiClient);
-    case 'delete-room-transcripts':
+    case "delete-room-transcripts":
       return handleDeleteRoomTranscripts(params, apiClient);
-    
+
     // Summary Management
-    case 'delete-session-summaries':
+    case "delete-session-summaries":
       return handleDeleteSessionSummaries(params, apiClient);
-    case 'delete-room-summaries':
+    case "delete-room-summaries":
       return handleDeleteRoomSummaries(params, apiClient);
-    
+
     default:
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
   }
@@ -220,49 +225,58 @@ export async function executeCommunicationTool(
  */
 async function handleDeleteSessionChats(
   params: { sessionId: string },
-  apiClient: DigitalSambaApiClient
+  apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { sessionId } = params;
-  
-  if (!sessionId || sessionId.trim() === '') {
+
+  if (!sessionId || sessionId.trim() === "") {
     return {
-      content: [{ 
-        type: 'text', 
-        text: 'Session ID is required to delete chats.'
-      }],
+      content: [
+        {
+          type: "text",
+          text: "Session ID is required to delete chats.",
+        },
+      ],
       isError: true,
     };
   }
-  
-  logger.info('Deleting session chats', { sessionId });
-  
+
+  logger.info("Deleting session chats", { sessionId });
+
   try {
     await apiClient.deleteSessionChats(sessionId);
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Successfully deleted all chat messages for session ${sessionId}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Successfully deleted all chat messages for session ${sessionId}`,
+        },
+      ],
     };
   } catch (error) {
-    logger.error('Error deleting session chats', { 
-      sessionId, 
-      error: error instanceof Error ? error.message : String(error) 
+    logger.error("Error deleting session chats", {
+      sessionId,
+      error: error instanceof Error ? error.message : String(error),
     });
-    
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     let displayMessage = `Error deleting session chats: ${errorMessage}`;
-    
-    if (errorMessage.includes('Session not found') || errorMessage.includes('404')) {
+
+    if (
+      errorMessage.includes("Session not found") ||
+      errorMessage.includes("404")
+    ) {
       displayMessage = `Session with ID ${sessionId} not found`;
     }
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: displayMessage
-      }],
+      content: [
+        {
+          type: "text",
+          text: displayMessage,
+        },
+      ],
       isError: true,
     };
   }
@@ -273,36 +287,40 @@ async function handleDeleteSessionChats(
  */
 async function handleDeleteRoomChats(
   params: { roomId: string },
-  apiClient: DigitalSambaApiClient
+  apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { roomId } = params;
-  
-  if (!roomId || roomId.trim() === '') {
+
+  if (!roomId || roomId.trim() === "") {
     return {
-      content: [{ 
-        type: 'text', 
-        text: 'Room ID is required to delete chats.'
-      }],
+      content: [
+        {
+          type: "text",
+          text: "Room ID is required to delete chats.",
+        },
+      ],
       isError: true,
     };
   }
-  
-  logger.info('Deleting room chats', { roomId });
-  
+
+  logger.info("Deleting room chats", { roomId });
+
   try {
     // Get all sessions for the room
     const sessionsResponse = await apiClient.listSessions({ room_id: roomId });
     const sessions = sessionsResponse.data;
-    
+
     if (!sessions || sessions.length === 0) {
       return {
-        content: [{ 
-          type: 'text', 
-          text: `No sessions found for room ${roomId}`
-        }],
+        content: [
+          {
+            type: "text",
+            text: `No sessions found for room ${roomId}`,
+          },
+        ],
       };
     }
-    
+
     // Delete chats for each session
     let deletedCount = 0;
     for (const session of sessions) {
@@ -310,30 +328,34 @@ async function handleDeleteRoomChats(
         await apiClient.deleteSessionChats(session.id);
         deletedCount++;
       } catch (error) {
-        logger.warn('Failed to delete chats for session', { 
-          sessionId: session.id, 
-          error: error instanceof Error ? error.message : String(error) 
+        logger.warn("Failed to delete chats for session", {
+          sessionId: session.id,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Successfully deleted chat messages from ${deletedCount} sessions in room ${roomId}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Successfully deleted chat messages from ${deletedCount} sessions in room ${roomId}`,
+        },
+      ],
     };
   } catch (error) {
-    logger.error('Error deleting room chats', { 
-      roomId, 
-      error: error instanceof Error ? error.message : String(error) 
+    logger.error("Error deleting room chats", {
+      roomId,
+      error: error instanceof Error ? error.message : String(error),
     });
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Error deleting room chats: ${error instanceof Error ? error.message : String(error)}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Error deleting room chats: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
       isError: true,
     };
   }
@@ -344,49 +366,58 @@ async function handleDeleteRoomChats(
  */
 async function handleDeleteSessionQA(
   params: { sessionId: string },
-  apiClient: DigitalSambaApiClient
+  apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { sessionId } = params;
-  
-  if (!sessionId || sessionId.trim() === '') {
+
+  if (!sessionId || sessionId.trim() === "") {
     return {
-      content: [{ 
-        type: 'text', 
-        text: 'Session ID is required to delete Q&A.'
-      }],
+      content: [
+        {
+          type: "text",
+          text: "Session ID is required to delete Q&A.",
+        },
+      ],
       isError: true,
     };
   }
-  
-  logger.info('Deleting session Q&A', { sessionId });
-  
+
+  logger.info("Deleting session Q&A", { sessionId });
+
   try {
     await apiClient.deleteSessionQA(sessionId);
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Successfully deleted all questions and answers for session ${sessionId}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Successfully deleted all questions and answers for session ${sessionId}`,
+        },
+      ],
     };
   } catch (error) {
-    logger.error('Error deleting session Q&A', { 
-      sessionId, 
-      error: error instanceof Error ? error.message : String(error) 
+    logger.error("Error deleting session Q&A", {
+      sessionId,
+      error: error instanceof Error ? error.message : String(error),
     });
-    
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     let displayMessage = `Error deleting session Q&A: ${errorMessage}`;
-    
-    if (errorMessage.includes('Session not found') || errorMessage.includes('404')) {
+
+    if (
+      errorMessage.includes("Session not found") ||
+      errorMessage.includes("404")
+    ) {
       displayMessage = `Session with ID ${sessionId} not found`;
     }
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: displayMessage
-      }],
+      content: [
+        {
+          type: "text",
+          text: displayMessage,
+        },
+      ],
       isError: true,
     };
   }
@@ -397,36 +428,40 @@ async function handleDeleteSessionQA(
  */
 async function handleDeleteRoomQA(
   params: { roomId: string },
-  apiClient: DigitalSambaApiClient
+  apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { roomId } = params;
-  
-  if (!roomId || roomId.trim() === '') {
+
+  if (!roomId || roomId.trim() === "") {
     return {
-      content: [{ 
-        type: 'text', 
-        text: 'Room ID is required to delete Q&A.'
-      }],
+      content: [
+        {
+          type: "text",
+          text: "Room ID is required to delete Q&A.",
+        },
+      ],
       isError: true,
     };
   }
-  
-  logger.info('Deleting room Q&A', { roomId });
-  
+
+  logger.info("Deleting room Q&A", { roomId });
+
   try {
     // Get all sessions for the room
     const sessionsResponse = await apiClient.listSessions({ room_id: roomId });
     const sessions = sessionsResponse.data;
-    
+
     if (!sessions || sessions.length === 0) {
       return {
-        content: [{ 
-          type: 'text', 
-          text: `No sessions found for room ${roomId}`
-        }],
+        content: [
+          {
+            type: "text",
+            text: `No sessions found for room ${roomId}`,
+          },
+        ],
       };
     }
-    
+
     // Delete Q&A for each session
     let deletedCount = 0;
     for (const session of sessions) {
@@ -434,30 +469,34 @@ async function handleDeleteRoomQA(
         await apiClient.deleteSessionQA(session.id);
         deletedCount++;
       } catch (error) {
-        logger.warn('Failed to delete Q&A for session', { 
-          sessionId: session.id, 
-          error: error instanceof Error ? error.message : String(error) 
+        logger.warn("Failed to delete Q&A for session", {
+          sessionId: session.id,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Successfully deleted Q&A from ${deletedCount} sessions in room ${roomId}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Successfully deleted Q&A from ${deletedCount} sessions in room ${roomId}`,
+        },
+      ],
     };
   } catch (error) {
-    logger.error('Error deleting room Q&A', { 
-      roomId, 
-      error: error instanceof Error ? error.message : String(error) 
+    logger.error("Error deleting room Q&A", {
+      roomId,
+      error: error instanceof Error ? error.message : String(error),
     });
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Error deleting room Q&A: ${error instanceof Error ? error.message : String(error)}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Error deleting room Q&A: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
       isError: true,
     };
   }
@@ -468,51 +507,60 @@ async function handleDeleteRoomQA(
  */
 async function handleDeleteSessionTranscripts(
   params: { sessionId: string },
-  apiClient: DigitalSambaApiClient
+  apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { sessionId } = params;
-  
-  if (!sessionId || sessionId.trim() === '') {
+
+  if (!sessionId || sessionId.trim() === "") {
     return {
-      content: [{ 
-        type: 'text', 
-        text: 'Session ID is required to delete transcripts.'
-      }],
+      content: [
+        {
+          type: "text",
+          text: "Session ID is required to delete transcripts.",
+        },
+      ],
       isError: true,
     };
   }
-  
-  logger.info('Deleting session transcripts', { sessionId });
-  
+
+  logger.info("Deleting session transcripts", { sessionId });
+
   try {
     // Note: The Digital Samba API might use different endpoints for transcripts
     // This is a placeholder implementation
-    await apiClient.deleteSessionData(sessionId, 'transcripts');
-    
+    await apiClient.deleteSessionData(sessionId, "transcripts");
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Successfully deleted all transcripts for session ${sessionId}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Successfully deleted all transcripts for session ${sessionId}`,
+        },
+      ],
     };
   } catch (error) {
-    logger.error('Error deleting session transcripts', { 
-      sessionId, 
-      error: error instanceof Error ? error.message : String(error) 
+    logger.error("Error deleting session transcripts", {
+      sessionId,
+      error: error instanceof Error ? error.message : String(error),
     });
-    
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     let displayMessage = `Error deleting session transcripts: ${errorMessage}`;
-    
-    if (errorMessage.includes('Session not found') || errorMessage.includes('404')) {
+
+    if (
+      errorMessage.includes("Session not found") ||
+      errorMessage.includes("404")
+    ) {
       displayMessage = `Session with ID ${sessionId} not found`;
     }
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: displayMessage
-      }],
+      content: [
+        {
+          type: "text",
+          text: displayMessage,
+        },
+      ],
       isError: true,
     };
   }
@@ -523,67 +571,75 @@ async function handleDeleteSessionTranscripts(
  */
 async function handleDeleteRoomTranscripts(
   params: { roomId: string },
-  apiClient: DigitalSambaApiClient
+  apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { roomId } = params;
-  
-  if (!roomId || roomId.trim() === '') {
+
+  if (!roomId || roomId.trim() === "") {
     return {
-      content: [{ 
-        type: 'text', 
-        text: 'Room ID is required to delete transcripts.'
-      }],
+      content: [
+        {
+          type: "text",
+          text: "Room ID is required to delete transcripts.",
+        },
+      ],
       isError: true,
     };
   }
-  
-  logger.info('Deleting room transcripts', { roomId });
-  
+
+  logger.info("Deleting room transcripts", { roomId });
+
   try {
     // Get all sessions for the room
     const sessionsResponse = await apiClient.listSessions({ room_id: roomId });
     const sessions = sessionsResponse.data;
-    
+
     if (!sessions || sessions.length === 0) {
       return {
-        content: [{ 
-          type: 'text', 
-          text: `No sessions found for room ${roomId}`
-        }],
+        content: [
+          {
+            type: "text",
+            text: `No sessions found for room ${roomId}`,
+          },
+        ],
       };
     }
-    
+
     // Delete transcripts for each session
     let deletedCount = 0;
     for (const session of sessions) {
       try {
-        await apiClient.deleteSessionData(session.id, 'transcripts');
+        await apiClient.deleteSessionData(session.id, "transcripts");
         deletedCount++;
       } catch (error) {
-        logger.warn('Failed to delete transcripts for session', { 
-          sessionId: session.id, 
-          error: error instanceof Error ? error.message : String(error) 
+        logger.warn("Failed to delete transcripts for session", {
+          sessionId: session.id,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Successfully deleted transcripts from ${deletedCount} sessions in room ${roomId}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Successfully deleted transcripts from ${deletedCount} sessions in room ${roomId}`,
+        },
+      ],
     };
   } catch (error) {
-    logger.error('Error deleting room transcripts', { 
-      roomId, 
-      error: error instanceof Error ? error.message : String(error) 
+    logger.error("Error deleting room transcripts", {
+      roomId,
+      error: error instanceof Error ? error.message : String(error),
     });
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Error deleting room transcripts: ${error instanceof Error ? error.message : String(error)}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Error deleting room transcripts: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
       isError: true,
     };
   }
@@ -594,49 +650,58 @@ async function handleDeleteRoomTranscripts(
  */
 async function handleDeleteSessionSummaries(
   params: { sessionId: string },
-  apiClient: DigitalSambaApiClient
+  apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { sessionId } = params;
-  
-  if (!sessionId || sessionId.trim() === '') {
+
+  if (!sessionId || sessionId.trim() === "") {
     return {
-      content: [{ 
-        type: 'text', 
-        text: 'Session ID is required to delete summaries.'
-      }],
+      content: [
+        {
+          type: "text",
+          text: "Session ID is required to delete summaries.",
+        },
+      ],
       isError: true,
     };
   }
-  
-  logger.info('Deleting session summaries', { sessionId });
-  
+
+  logger.info("Deleting session summaries", { sessionId });
+
   try {
     await apiClient.deleteSessionSummaries(sessionId);
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Successfully deleted all AI-generated summaries for session ${sessionId}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Successfully deleted all AI-generated summaries for session ${sessionId}`,
+        },
+      ],
     };
   } catch (error) {
-    logger.error('Error deleting session summaries', { 
-      sessionId, 
-      error: error instanceof Error ? error.message : String(error) 
+    logger.error("Error deleting session summaries", {
+      sessionId,
+      error: error instanceof Error ? error.message : String(error),
     });
-    
+
     const errorMessage = error instanceof Error ? error.message : String(error);
     let displayMessage = `Error deleting session summaries: ${errorMessage}`;
-    
-    if (errorMessage.includes('Session not found') || errorMessage.includes('404')) {
+
+    if (
+      errorMessage.includes("Session not found") ||
+      errorMessage.includes("404")
+    ) {
       displayMessage = `Session with ID ${sessionId} not found`;
     }
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: displayMessage
-      }],
+      content: [
+        {
+          type: "text",
+          text: displayMessage,
+        },
+      ],
       isError: true,
     };
   }
@@ -647,36 +712,40 @@ async function handleDeleteSessionSummaries(
  */
 async function handleDeleteRoomSummaries(
   params: { roomId: string },
-  apiClient: DigitalSambaApiClient
+  apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { roomId } = params;
-  
-  if (!roomId || roomId.trim() === '') {
+
+  if (!roomId || roomId.trim() === "") {
     return {
-      content: [{ 
-        type: 'text', 
-        text: 'Room ID is required to delete summaries.'
-      }],
+      content: [
+        {
+          type: "text",
+          text: "Room ID is required to delete summaries.",
+        },
+      ],
       isError: true,
     };
   }
-  
-  logger.info('Deleting room summaries', { roomId });
-  
+
+  logger.info("Deleting room summaries", { roomId });
+
   try {
     // Get all sessions for the room
     const sessionsResponse = await apiClient.listSessions({ room_id: roomId });
     const sessions = sessionsResponse.data;
-    
+
     if (!sessions || sessions.length === 0) {
       return {
-        content: [{ 
-          type: 'text', 
-          text: `No sessions found for room ${roomId}`
-        }],
+        content: [
+          {
+            type: "text",
+            text: `No sessions found for room ${roomId}`,
+          },
+        ],
       };
     }
-    
+
     // Delete summaries for each session
     let deletedCount = 0;
     for (const session of sessions) {
@@ -684,30 +753,34 @@ async function handleDeleteRoomSummaries(
         await apiClient.deleteSessionSummaries(session.id);
         deletedCount++;
       } catch (error) {
-        logger.warn('Failed to delete summaries for session', { 
-          sessionId: session.id, 
-          error: error instanceof Error ? error.message : String(error) 
+        logger.warn("Failed to delete summaries for session", {
+          sessionId: session.id,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     }
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Successfully deleted summaries from ${deletedCount} sessions in room ${roomId}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Successfully deleted summaries from ${deletedCount} sessions in room ${roomId}`,
+        },
+      ],
     };
   } catch (error) {
-    logger.error('Error deleting room summaries', { 
-      roomId, 
-      error: error instanceof Error ? error.message : String(error) 
+    logger.error("Error deleting room summaries", {
+      roomId,
+      error: error instanceof Error ? error.message : String(error),
     });
-    
+
     return {
-      content: [{ 
-        type: 'text', 
-        text: `Error deleting room summaries: ${error instanceof Error ? error.message : String(error)}`
-      }],
+      content: [
+        {
+          type: "text",
+          text: `Error deleting room summaries: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
       isError: true,
     };
   }

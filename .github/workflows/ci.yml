@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build
+      run: npm run build
+
+    - name: Run tests with coverage
+      run: npm run test:coverage
+
+    - name: Upload coverage reports to Codecov
+      if: matrix.node-version == '20.x'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+    - name: Create coverage badge
+      if: matrix.node-version == '20.x' && github.ref == 'refs/heads/main'
+      run: |
+        COVERAGE=$(node -p "Math.round(require('./coverage/coverage-summary.json').total.lines.pct)")
+        echo "COVERAGE=$COVERAGE" >> $GITHUB_ENV
+        
+        # Determine color based on coverage
+        if [ $COVERAGE -ge 80 ]; then
+          COLOR="brightgreen"
+        elif [ $COVERAGE -ge 60 ]; then
+          COLOR="yellow"
+        else
+          COLOR="red"
+        fi
+        
+        # Create badge JSON for shields.io endpoint
+        mkdir -p .github/badges
+        echo "{\"schemaVersion\": 1, \"label\": \"coverage\", \"message\": \"$COVERAGE%\", \"color\": \"$COLOR\"}" > .github/badges/coverage.json
+
+    - name: Commit coverage badge
+      if: matrix.node-version == '20.x' && github.ref == 'refs/heads/main'
+      uses: EndBug/add-and-commit@v9
+      with:
+        add: '.github/badges/coverage.json'
+        message: 'chore: update coverage badge'
+        default_author: github_actions
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run ESLint
+      run: npm run lint
+      continue-on-error: true
+
+    - name: Check formatting
+      run: npm run format -- --check
+      continue-on-error: true
