@@ -95,7 +95,7 @@ describe('Room Resources', () => {
     it('should register all room resources', () => {
       const resources = registerRoomResources();
       
-      expect(resources).toHaveLength(2);
+      expect(resources).toHaveLength(6); // Updated to include live resources
       expect(resources[0]).toEqual({
         uri: 'digitalsamba://rooms',
         name: 'rooms',
@@ -108,6 +108,11 @@ describe('Room Resources', () => {
         description: '[Room Data] Get complete details for a specific room. Use to access: "show room details", "get room info", "room configuration", "room settings", "what are room parameters". Requires roomId parameter. Returns full room object with all settings, max participants, features, and URLs.',
         mimeType: 'application/json'
       });
+      // Verify live resources exist
+      expect(resources[2].uri).toBe('digitalsamba://rooms/live');
+      expect(resources[3].uri).toBe('digitalsamba://rooms/live/participants');
+      expect(resources[4].uri).toBe('digitalsamba://rooms/{roomId}/live');
+      expect(resources[5].uri).toBe('digitalsamba://rooms/{roomId}/live/participants');
     });
   });
 
