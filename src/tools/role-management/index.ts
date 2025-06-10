@@ -18,7 +18,7 @@
  */
 
 // External dependencies
-import { z } from "zod";
+// import { z } from "zod"; // Removed: unused
 
 // MCP SDK imports
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
@@ -525,7 +525,7 @@ ${permissionsList || "  No permissions enabled"}`,
  * Handle get permissions tool
  */
 async function handleGetPermissions(
-  _params: {},
+  _params: Record<string, never>,
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   logger.info("Fetching available permissions");

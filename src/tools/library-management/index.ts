@@ -22,7 +22,7 @@
  */
 
 // External dependencies
-import { z } from "zod";
+// import { z } from "zod"; // Removed: unused
 
 // MCP SDK imports
 // import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'; // TODO: Direct MCP server integration
@@ -631,6 +631,7 @@ async function handleUpdateLibrary(
 
   try {
     const result = await apiClient.updateLibrary(libraryId, updates);
+    void result; // Result is used for side effects, response details not needed
 
     return {
       content: [
@@ -1542,6 +1543,7 @@ async function handleMoveLibraryFolder(
     const result = await apiClient.updateLibraryFolder(libraryId, folderId, {
       parent_id: targetParentId || null,
     });
+    void result; // Result is used for side effects, response details not needed
 
     const destination = targetParentId
       ? `folder ${targetParentId}`
@@ -1819,6 +1821,7 @@ async function handleCopyLibraryContent(
         sourceLibraryId,
         contentId,
       );
+      void sourceFolder; // TODO: Use sourceFolder data for complete folder copying
 
       // Create new folder in target library
       const folderData: any = {

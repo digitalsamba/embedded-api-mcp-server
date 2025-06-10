@@ -119,7 +119,8 @@ export async function executeAnalyticsTool(
   args: any,
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const analytics = new AnalyticsResource(apiClient);
+  try {
+    const analytics = new AnalyticsResource(apiClient);
 
   // Build filters from arguments
   const filters: AnalyticsFilters = {
@@ -131,9 +132,9 @@ export async function executeAnalyticsTool(
     period: args.period,
   };
 
-  // Remove undefined values
+  // Remove undefined and null values
   Object.keys(filters).forEach((key) => {
-    if (filters[key as keyof AnalyticsFilters] === undefined) {
+    if (filters[key as keyof AnalyticsFilters] === undefined || filters[key as keyof AnalyticsFilters] === null) {
       delete filters[key as keyof AnalyticsFilters];
     }
   });
@@ -225,6 +226,26 @@ export async function executeAnalyticsTool(
     }
 
     default:
-      throw new Error(`Unknown analytics tool: ${toolName}`);
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Unknown analytics tool: ${toolName}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  } catch (error) {
+    logger.error("Error executing analytics tool", { toolName, args, error });
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error executing analytics query: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      isError: true,
+    };
   }
 }

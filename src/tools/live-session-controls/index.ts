@@ -20,7 +20,7 @@
  */
 
 // External dependencies
-import { z } from "zod";
+// import { z } from "zod"; // Removed: unused
 
 // MCP SDK imports
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
