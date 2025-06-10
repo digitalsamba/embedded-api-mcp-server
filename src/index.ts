@@ -268,17 +268,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const args = process.argv.slice(2);
   
-  // Check for API key in command line args
-  const apiKeyArgIndex = args.findIndex(arg => arg === '--api-key' || arg === '-k');
+  // Check for developer key in command line args
+  const apiKeyArgIndex = args.findIndex(arg => arg === '--developer-key' || arg === '-k');
   if (apiKeyArgIndex !== -1 && args[apiKeyArgIndex + 1]) {
     process.env.DIGITAL_SAMBA_API_KEY = args[apiKeyArgIndex + 1];
   }
   
-  // Log API key status (don't exit if not found - it will be checked when needed)
+  // Log developer key status (don't exit if not found - it will be checked when needed)
   if (!process.env.DIGITAL_SAMBA_API_KEY) {
-    logger.warn('DIGITAL_SAMBA_API_KEY not set. API key will be required for operations.');
+    logger.warn('DIGITAL_SAMBA_API_KEY not set. Developer key will be required for operations.');
   } else {
-    logger.info('API key configured');
+    logger.info('Developer key configured');
   }
   
   // Create stdio transport

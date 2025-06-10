@@ -37,7 +37,7 @@ const { values: args, positionals } = parseArgs({
       short: 'h',
       default: false
     },
-    'api-key': {
+    'developer-key': {
       type: 'string',
       short: 'k'
     },
@@ -90,26 +90,26 @@ Usage: npx @digitalsamba/embedded-api-mcp-server [options] [API_KEY]
 Options:
   -v, --version                     Show version information
   -h, --help                        Display this help message
-  -k, --api-key <key>               Digital Samba API key
+  -k, --developer-key <key>         Digital Samba developer key
   -u, --api-url <url>               Digital Samba API URL (default: https://api.digitalsamba.com/api/v1)
   -l, --log-level <level>           Log level (default: info)
 
 Environment Variables:
-  DIGITAL_SAMBA_API_KEY             Digital Samba API key
+  DIGITAL_SAMBA_API_KEY             Digital Samba developer key
   DIGITAL_SAMBA_API_URL             Digital Samba API URL
-  LOG_LEVEL                         Log level
+  DS_LOG_LEVEL                      Log level
 
 Examples:
-  npx @digitalsamba/embedded-api-mcp-server YOUR_API_KEY
-  npx @digitalsamba/embedded-api-mcp-server --api-key YOUR_API_KEY
-  npx @digitalsamba/embedded-api-mcp-server --api-key YOUR_API_KEY --log-level debug
+  npx @digitalsamba/embedded-api-mcp-server YOUR_DEVELOPER_KEY
+  npx @digitalsamba/embedded-api-mcp-server --developer-key YOUR_DEVELOPER_KEY
+  npx @digitalsamba/embedded-api-mcp-server --developer-key YOUR_DEVELOPER_KEY --log-level debug
 
 For use with Claude Desktop, add to your config file:
   {
     "mcpServers": {
       "digitalsamba": {
         "command": "npx",
-        "args": ["@digitalsamba/embedded-api-mcp-server", "--api-key", "YOUR_API_KEY"]
+        "args": ["@digitalsamba/embedded-api-mcp-server", "--developer-key", "YOUR_DEVELOPER_KEY"]
       }
     }
   }
@@ -118,20 +118,20 @@ For use with Claude Desktop, add to your config file:
 }
 
 // Set environment variables from command-line arguments
-process.env.LOG_LEVEL = args['log-level'];
+process.env.DS_LOG_LEVEL = args['log-level'];
 process.env.DIGITAL_SAMBA_API_URL = args['api-url'];
 
-// Set API key from options or positional arguments or environment variable
-if (args['api-key']) {
-  process.env.DIGITAL_SAMBA_API_KEY = args['api-key'];
+// Set developer key from options or positional arguments or environment variable
+if (args['developer-key']) {
+  process.env.DIGITAL_SAMBA_API_KEY = args['developer-key'];
 } else if (positionals && positionals.length > 0) {
   // Use the first positional argument as the API key
   process.env.DIGITAL_SAMBA_API_KEY = positionals[0];
 } else if (!process.env.DIGITAL_SAMBA_API_KEY) {
-  // API key not provided - will be checked when needed
+  // Developer key not provided - will be checked when needed
   if (!isPipedMode) {
-    console.warn('No API key provided. Server will start but API operations will fail.');
-    console.warn('Provide an API key using --api-key, as a positional argument, or via DIGITAL_SAMBA_API_KEY environment variable.');
+    console.warn('No developer key provided. Server will start but API operations will fail.');
+    console.warn('Provide a developer key using --developer-key, as a positional argument, or via DIGITAL_SAMBA_API_KEY environment variable.');
   }
 }
 

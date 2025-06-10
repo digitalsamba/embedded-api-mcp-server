@@ -6,7 +6,7 @@
  * request processing, and provides methods for all available API endpoints.
  * 
  * Key features include:
- * - Authentication using either direct API key or the ApiKeyContext for session-based auth
+ * - Authentication using either direct developer key or the ApiKeyContext for session-based auth
  * - Comprehensive coverage of all Digital Samba API endpoints
  * - Type-safe interfaces for request and response data
  * - Error handling and logging
@@ -442,13 +442,13 @@ export interface LibraryFile {
  * 
  * This class provides a comprehensive interface to the Digital Samba API. It handles
  * authentication, request formation, response parsing, and error handling for all
- * available API endpoints. The client supports both direct API key authentication
+ * available API endpoints. The client supports both direct developer key authentication
  * and session-based authentication through the ApiKeyContext.
  * 
  * @class DigitalSambaApiClient
  * @example
- * // Create a client with direct API key
- * const client = new DigitalSambaApiClient('your-api-key');
+ * // Create a client with direct developer key
+ * const client = new DigitalSambaApiClient('your-developer-key');
  * 
  * // Create a client that uses the ApiKeyContext
  * const sessionClient = new DigitalSambaApiClient();
@@ -470,18 +470,18 @@ export class DigitalSambaApiClient {
    * Creates an instance of the Digital Samba API Client
    * 
    * @constructor
-   * @param {string} [apiKey] - Optional API key for direct authentication. If not provided,
+   * @param {string} [apiKey] - Optional developer key for direct authentication. If not provided,
    *                          the client will use the ApiKeyContext for session-based authentication
    * @param {string} [apiBaseUrl='https://api.digitalsamba.com/api/v1'] - Base URL for the Digital Samba API
    * @example
    * // Create a client with the default API URL
-   * const client = new DigitalSambaApiClient('your-api-key');
+   * const client = new DigitalSambaApiClient('your-developer-key');
    * 
    * // Create a client with a custom API URL
-   * const customClient = new DigitalSambaApiClient('your-api-key', 'https://custom-api.example.com/v1');
+   * const customClient = new DigitalSambaApiClient('your-developer-key', 'https://custom-api.example.com/v1');
    */
   constructor(apiKey?: string, apiBaseUrl: string = 'https://api.digitalsamba.com/api/v1', cache?: MemoryCache) {
-    // Store the API key in ApiKeyContext if provided
+    // Store the developer key in ApiKeyContext if provided
     if (apiKey) {
       // For direct usage outside of MCP context
       this._apiKey = apiKey;
@@ -490,35 +490,35 @@ export class DigitalSambaApiClient {
     this.cache = cache;
   }
   
-  // Private field for storing API key when used outside MCP context
+  // Private field for storing developer key when used outside MCP context
   private _apiKey?: string;
   
   /**
-   * Get the API key from context or direct value
+   * Get the developer key from context or direct value
    * 
-   * This method retrieves the API key using a prioritized approach:
-   * 1. First tries to get the API key from the ApiKeyContext (for session-based auth)
-   * 2. If not found, falls back to using the direct API key if provided during construction
-   * 3. If neither source provides an API key, throws an AuthenticationError
+   * This method retrieves the developer key using a prioritized approach:
+   * 1. First tries to get the developer key from the ApiKeyContext (for session-based auth)
+   * 2. If not found, falls back to using the direct developer key if provided during construction
+   * 3. If neither source provides a developer key, throws an AuthenticationError
    *
    * @protected
-   * @returns {string} The API key to use for authentication
-   * @throws {AuthenticationError} If no API key is available from any source
+   * @returns {string} The developer key to use for authentication
+   * @throws {AuthenticationError} If no developer key is available from any source
    */
   protected getApiKey(): string {
-    // Try to get API key from context first
+    // Try to get developer key from context first
     const contextApiKey = apiKeyContext.getStore();
     if (contextApiKey) {
       return contextApiKey;
     }
     
-    // Fall back to direct API key if set
+    // Fall back to direct developer key if set
     if (this._apiKey) {
       return this._apiKey;
     }
     
-    // No API key available
-    throw new AuthenticationError('No API key found in context or provided directly. Please include an Authorization header with a Bearer token.');
+    // No developer key available
+    throw new AuthenticationError('No developer key found in context or provided directly. Please include an Authorization header with a Bearer token.');
   }
   
   /**
