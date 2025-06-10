@@ -4,6 +4,7 @@ import { AnalyticsResource } from '../../src/types/analytics-resource.js';
 
 // Mock dependencies
 jest.mock('../../src/logger.js', () => ({
+  __esModule: true,
   default: {
     debug: jest.fn(),
     error: jest.fn(),
