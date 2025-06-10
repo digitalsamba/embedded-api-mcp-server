@@ -2495,4 +2495,23 @@ export class DigitalSambaApiClient {
       method: 'POST'
     });
   }
+
+  /**
+   * Get default room settings
+   */
+  async getDefaultRoomSettings(): Promise<any> {
+    return this.request<any>('/', {
+      method: 'GET'
+    });
+  }
+
+  /**
+   * Update default room settings
+   */
+  async updateDefaultRoomSettings(settings: Partial<RoomCreateSettings>): Promise<any> {
+    return this.request<any>('/', {
+      method: 'PATCH',
+      body: JSON.stringify(settings)
+    });
+  }
 }

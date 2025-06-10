@@ -323,7 +323,8 @@ describe('Room Tools', () => {
         const result = await executeRoomTool('create-room', {}, mockRequest, options);
 
         expect(mockApiClient.createRoom).toHaveBeenCalledWith({
-          name: 'Test Room'
+          name: 'Test Room',
+          privacy: 'public'
         });
         expect(result.content[0].text).toContain('Room created successfully');
       });

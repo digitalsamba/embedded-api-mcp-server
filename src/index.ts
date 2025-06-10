@@ -198,7 +198,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     // Room management tools
     else if (name === 'create-room' || name === 'update-room' || 
-        name === 'delete-room' || name === 'generate-token') {
+        name === 'delete-room' || name === 'generate-token' ||
+        name === 'get-default-room-settings' || name === 'update-default-room-settings') {
       return await executeRoomTool(name, args || {}, request, {
         apiUrl: process.env.DIGITAL_SAMBA_API_URL || 'https://api.digitalsamba.com/api/v1'
       });

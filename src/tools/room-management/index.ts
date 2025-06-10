@@ -464,6 +464,11 @@ export async function executeRoomTool(
           settings.name = 'Test Room';
         }
         
+        // Ensure privacy field has a default value
+        if (!settings.privacy) {
+          settings.privacy = 'public';
+        }
+        
         // Create room with all provided settings
         const room = await client.createRoom(settings);
         logger.info('Room created successfully', { roomId: room.id });
