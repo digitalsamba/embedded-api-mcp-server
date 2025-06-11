@@ -120,3 +120,27 @@ src/
 - Maintain backward compatibility
 - No breaking changes to existing functionality
 - Simple, maintainable code over complex patterns
+
+## Known Issues & Design Considerations
+
+### MCP Resources vs Tools in AI Assistants
+**Issue**: AI assistants (like Claude) can only access MCP tools, not resources, even though the MCP protocol supports both.
+
+**Context**: This MCP server correctly implements:
+- 32 Resources (read-only operations like listing rooms, viewing analytics)
+- 70+ Tools (actions that modify data like creating rooms, starting recordings)
+
+**The Problem**: 
+- The MCP protocol correctly separates read operations (resources) from write operations (tools)
+- Our server implementation follows this pattern correctly
+- However, AI assistants integrated with MCP (like Claude Desktop) only expose tools, not resources
+- This means half of the server's functionality (all read-only resources) is inaccessible to AI assistants
+
+**Current Workarounds**:
+1. Use tools that provide similar functionality (e.g., `get-recordings` tool instead of `digitalsamba://recordings` resource)
+2. Consider adding "reader tools" for commonly needed resources (though this creates redundancy)
+3. Wait for AI assistant MCP integrations to support resource reading
+
+**Ideal Solution**: The fix should be in AI assistant MCP client implementations (e.g., Claude Desktop) to expose a way to read resources, perhaps through a special tool or direct resource access.
+
+**Note**: This is not a bug in our MCP server - it's a limitation in how current AI assistants consume MCP servers.
