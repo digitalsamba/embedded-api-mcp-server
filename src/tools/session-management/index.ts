@@ -160,6 +160,101 @@ export function registerSessionTools(): Tool[] {
         required: ["sessionId"],
       },
     },
+    // Reader tools for session resources (hybrid approach for Claude Desktop compatibility)
+    {
+      name: "list-sessions",
+      description:
+        '[Session Management - TOOL] List all sessions across all rooms. Use when users say: "show all sessions", "list meetings", "session history", "all past meetings", "meeting directory". This TOOL provides the same data as the digitalsamba://sessions resource. Returns paginated list of session objects with room info, start/end times, and participant counts.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          limit: {
+            type: "number",
+            description: "Maximum number of sessions to return",
+          },
+          offset: {
+            type: "number",
+            description: "Number of sessions to skip for pagination",
+          },
+          dateStart: {
+            type: "string",
+            description: "Start date in YYYY-MM-DD format",
+          },
+          dateEnd: {
+            type: "string",
+            description: "End date in YYYY-MM-DD format",
+          },
+        },
+      },
+    },
+    {
+      name: "get-session-details",
+      description:
+        '[Session Management - TOOL] Get comprehensive details for a specific session. Use when users say: "session details", "meeting summary", "what happened in session", "session report", "session overview". Requires sessionId. This TOOL provides the same data as digitalsamba://sessions/{sessionId} resource. Returns detailed session data with duration, participants, and activity.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          sessionId: {
+            type: "string",
+            description: "Session ID (required)",
+          },
+        },
+        required: ["sessionId"],
+      },
+    },
+    {
+      name: "list-session-participants",
+      description:
+        '[Session Management - TOOL] List all participants in a session. Use when users say: "who attended session", "session attendees", "participant list", "meeting participants", "session roster". Requires sessionId. This TOOL provides the same data as digitalsamba://sessions/{sessionId}/participants resource. Returns participant details with join/leave times and roles.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          sessionId: {
+            type: "string",
+            description: "Session ID (required)",
+          },
+        },
+        required: ["sessionId"],
+      },
+    },
+    {
+      name: "get-session-statistics-details",
+      description:
+        '[Session Management - TOOL] Get detailed usage statistics for a session. Use when users say: "session metrics details", "detailed session analytics", "comprehensive participant statistics", "full meeting usage data", "complete session performance". Requires sessionId. This TOOL provides the same data as digitalsamba://sessions/{sessionId}/statistics resource. Returns participant count, duration, activity metrics.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          sessionId: {
+            type: "string",
+            description: "Session ID (required)",
+          },
+        },
+        required: ["sessionId"],
+      },
+    },
+    {
+      name: "list-room-sessions",
+      description:
+        '[Session Management - TOOL] List all sessions for a specific room. Use when users say: "room meeting history", "sessions in room", "room session list", "meetings for this room", "room activity history". Requires roomId. This TOOL provides the same data as digitalsamba://rooms/{roomId}/sessions resource. Returns chronological list of sessions in that room.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: {
+            type: "string",
+            description: "Room ID (required)",
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number of sessions to return",
+          },
+          offset: {
+            type: "number",
+            description: "Number of sessions to skip for pagination",
+          },
+        },
+        required: ["roomId"],
+      },
+    },
   ];
 }
 
@@ -447,6 +542,178 @@ export async function executeSessionTool(
             {
               type: "text",
               text: `Error getting session statistics: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    // Reader tools for resources (hybrid approach)
+    case "list-sessions": {
+      logger.info("Listing all sessions");
+
+      try {
+        const params = {
+          limit: args.limit,
+          offset: args.offset,
+          date_start: args.dateStart,
+          date_end: args.dateEnd,
+        };
+
+        const sessions = await apiClient.listSessions(params);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(sessions, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error listing sessions", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error listing sessions: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case "get-session-details": {
+      logger.info("Getting session details", { sessionId: args.sessionId });
+
+      try {
+        const session = await apiClient.getSessionSummary(args.sessionId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(session, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error getting session details", {
+          sessionId: args.sessionId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error getting session details: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case "list-session-participants": {
+      logger.info("Listing session participants", { sessionId: args.sessionId });
+
+      try {
+        const participants = await apiClient.listSessionParticipants(args.sessionId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(participants, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error listing session participants", {
+          sessionId: args.sessionId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error listing session participants: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case "get-session-statistics-details": {
+      logger.info("Getting session statistics details", { sessionId: args.sessionId });
+
+      try {
+        const statistics = await apiClient.getSessionStatistics(args.sessionId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(statistics, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error getting session statistics", {
+          sessionId: args.sessionId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error getting session statistics: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case "list-room-sessions": {
+      logger.info("Listing room sessions", { roomId: args.roomId });
+
+      try {
+        const params = {
+          limit: args.limit,
+          offset: args.offset,
+        };
+
+        const sessions = await apiClient.listRoomSessions(args.roomId, params);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(sessions, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error listing room sessions", {
+          roomId: args.roomId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error listing room sessions: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
           isError: true,

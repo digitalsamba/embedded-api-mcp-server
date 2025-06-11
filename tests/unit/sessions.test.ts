@@ -342,14 +342,19 @@ describe('Session Tools', () => {
     it('should register all session tools', () => {
       const tools = registerSessionTools();
       
-      expect(tools).toHaveLength(6);
+      expect(tools).toHaveLength(11);
       expect(tools.map(t => t.name)).toEqual([
         'get-all-room-sessions',
         'hard-delete-session-resources',
         'bulk-delete-session-data',
         'get-session-summary',
         'end-session',
-        'get-session-statistics'
+        'get-session-statistics',
+        'list-sessions',
+        'get-session-details',
+        'list-session-participants',
+        'get-session-statistics-details',
+        'list-room-sessions'
       ]);
       
       tools.forEach(tool => {
