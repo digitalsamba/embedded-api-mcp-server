@@ -89,7 +89,7 @@ export function registerWebhookTools(): ToolDefinition[] {
               type: "string",
             },
           },
-          authorization_header: {
+          authorizationHeader: {
             type: "string",
             description:
               "Optional authorization header value for webhook requests",
@@ -139,7 +139,7 @@ export function registerWebhookTools(): ToolDefinition[] {
               type: "string",
             },
           },
-          authorization_header: {
+          authorizationHeader: {
             type: "string",
             description: "New authorization header value",
           },
@@ -295,11 +295,11 @@ async function handleCreateWebhook(
     endpoint: string;
     name?: string;
     events: string[];
-    authorization_header?: string;
+    authorizationHeader?: string;
   },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { endpoint, name, events, authorization_header } = params;
+  const { endpoint, name, events, authorizationHeader } = params;
 
   if (!endpoint || !events || events.length === 0) {
     return {
@@ -320,7 +320,7 @@ async function handleCreateWebhook(
       endpoint,
       name,
       events,
-      authorization_header,
+      authorization_header: authorizationHeader,
     });
 
     return {
@@ -431,7 +431,7 @@ async function handleUpdateWebhook(
     endpoint?: string;
     name?: string;
     events?: string[];
-    authorization_header?: string;
+    authorizationHeader?: string;
   },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
@@ -454,7 +454,7 @@ async function handleUpdateWebhook(
       content: [
         {
           type: "text",
-          text: "No updates provided. Specify endpoint, name, events, or authorization_header to update.",
+          text: "No updates provided. Specify endpoint, name, events, or authorizationHeader to update.",
         },
       ],
       isError: true,

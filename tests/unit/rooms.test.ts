@@ -151,7 +151,7 @@ describe('Room Resources', () => {
 
       it('should handle missing API key', async () => {
         (getApiKeyFromRequest as jest.Mock).mockReturnValue(null);
-        process.env.DIGITAL_SAMBA_API_KEY = '';
+        process.env.DIGITAL_SAMBA_DEVELOPER_KEY = '';
 
         await expect(handleRoomResource(
           'digitalsamba://rooms',
@@ -163,7 +163,7 @@ describe('Room Resources', () => {
 
       it('should use API key from environment variable as fallback', async () => {
         (getApiKeyFromRequest as jest.Mock).mockReturnValue(null);
-        process.env.DIGITAL_SAMBA_API_KEY = 'env-api-key';
+        process.env.DIGITAL_SAMBA_DEVELOPER_KEY = 'env-api-key';
         mockApiClient.listRooms.mockResolvedValue(mockRoomsList);
 
         const result = await handleRoomResource(

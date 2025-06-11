@@ -26,7 +26,7 @@ export async function executeExportTool(
   try {
     logger.info(`Executing export tool: ${toolName}`, { params });
 
-    const apiKey = getApiKeyFromRequest(request) || process.env.DIGITAL_SAMBA_API_KEY;
+    const apiKey = getApiKeyFromRequest(request) || process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
     if (!apiKey) {
       return {
         content: [

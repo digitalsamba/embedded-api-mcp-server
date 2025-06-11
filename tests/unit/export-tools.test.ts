@@ -223,7 +223,7 @@ describe('Export Tools', () => {
     describe('Error Handling', () => {
       it('should handle missing API key', async () => {
         (getApiKeyFromRequest as jest.Mock).mockReturnValue(null);
-        process.env.DIGITAL_SAMBA_API_KEY = '';
+        process.env.DIGITAL_SAMBA_DEVELOPER_KEY = '';
 
         const result = await executeExportTool('export-chat-messages', {
           roomId: 'test-room-id'

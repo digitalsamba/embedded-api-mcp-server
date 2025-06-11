@@ -84,7 +84,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
     {
       name: "phone-participants-joined",
       description:
-        '[Live Session Controls] Register phone/dial-in participants joining a room. Use when users say: "add phone participant", "someone dialed in", "phone user joined", "register dial-in participant". Requires roomId and participant details including call_id. Used for tracking phone-based attendees.',
+        '[Live Session Controls] Register phone/dial-in participants joining a room. Use when users say: "add phone participant", "someone dialed in", "phone user joined", "register dial-in participant". Requires roomId and participant details including callId. Used for tracking phone-based attendees.',
       inputSchema: {
         type: "object",
         properties: {
@@ -98,7 +98,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
             items: {
               type: "object",
               properties: {
-                call_id: {
+                callId: {
                   type: "string",
                   description: "Unique identifier for the phone call",
                 },
@@ -106,16 +106,16 @@ export function registerLiveSessionTools(): ToolDefinition[] {
                   type: "string",
                   description: "Name of the participant",
                 },
-                caller_number: {
+                callerNumber: {
                   type: "string",
                   description: "Phone number of the participant",
                 },
-                external_id: {
+                externalId: {
                   type: "string",
                   description: "External identifier for the participant",
                 },
               },
-              required: ["call_id"],
+              required: ["callId"],
             },
           },
         },
@@ -304,10 +304,10 @@ async function handlePhoneParticipantsJoined(
   params: {
     roomId: string;
     participants: Array<{
-      call_id: string;
+      callId: string;
       name?: string;
-      caller_number?: string;
-      external_id?: string;
+      callerNumber?: string;
+      externalId?: string;
     }>;
   },
   _apiClient: DigitalSambaApiClient,
@@ -344,10 +344,17 @@ async function handlePhoneParticipantsJoined(
   });
 
   try {
-    await _apiClient.phoneParticipantsJoined(roomId, participants);
+    // Convert camelCase to snake_case for API
+    const apiParticipants = participants.map(p => ({
+      call_id: p.callId,
+      name: p.name,
+      caller_number: p.callerNumber,
+      external_id: p.externalId
+    }));
+    await _apiClient.phoneParticipantsJoined(roomId, apiParticipants);
 
     const participantNames = participants
-      .map((p) => p.name || p.caller_number || p.call_id)
+      .map((p) => p.name || p.callerNumber || p.callId)
       .join(", ");
 
     return {

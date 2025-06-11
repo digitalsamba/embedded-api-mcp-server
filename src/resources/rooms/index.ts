@@ -105,8 +105,8 @@ export async function handleRoomResource(
     if (!apiKey) {
       apiKey = getApiKeyFromRequest(request);
     }
-    if (!apiKey && process.env.DIGITAL_SAMBA_API_KEY) {
-      apiKey = process.env.DIGITAL_SAMBA_API_KEY;
+    if (!apiKey && process.env.DIGITAL_SAMBA_DEVELOPER_KEY) {
+      apiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
     }
     if (!apiKey) {
       throw new Error("No API key found. Please include an Authorization header with a Bearer token.");

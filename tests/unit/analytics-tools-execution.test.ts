@@ -74,13 +74,13 @@ describe('Analytics Tools Execution', () => {
         
         const result = await executeAnalyticsTool(
           'get-team-analytics',
-          { date_start: '2025-01-01', date_end: '2025-01-31' },
+          { dateStart: '2025-01-01', dateEnd: '2025-01-31' },
           mockApiClient
         );
         
         expect(mockAnalyticsResource.getTeamAnalytics).toHaveBeenCalledWith({
-          date_start: '2025-01-01',
-          date_end: '2025-01-31'
+          dateStart: '2025-01-01',
+          dateEnd: '2025-01-31'
         });
         
         expect(result).toEqual({
@@ -95,7 +95,7 @@ describe('Analytics Tools Execution', () => {
     describe('get-room-analytics', () => {
       it('should execute room analytics query with room ID', async () => {
         const mockData = {
-          room_id: 'room-123',
+          roomId: 'room-123',
           total_sessions: 20,
           total_participants: 100
         };
@@ -104,13 +104,13 @@ describe('Analytics Tools Execution', () => {
         
         const result = await executeAnalyticsTool(
           'get-room-analytics',
-          { room_id: 'room-123', period: 'month' },
+          { roomId: 'room-123', period: 'month' },
           mockApiClient
         );
         
         expect(mockAnalyticsResource.getRoomAnalytics).toHaveBeenCalledWith(
           'room-123',
-          { room_id: 'room-123', period: 'month' }
+          { roomId: 'room-123', period: 'month' }
         );
         
         expect(result.content[0].text).toContain('room-123');
@@ -126,7 +126,7 @@ describe('Analytics Tools Execution', () => {
         
         const result = await executeAnalyticsTool(
           'get-room-analytics',
-          { date_start: '2025-01-01' },
+          { dateStart: '2025-01-01' },
           mockApiClient
         );
         
@@ -138,7 +138,7 @@ describe('Analytics Tools Execution', () => {
     describe('get-session-analytics', () => {
       it('should execute session analytics query', async () => {
         const mockData = {
-          session_id: 'session-123',
+          sessionId: 'session-123',
           duration: 3600,
           participant_count: 25
         };
@@ -147,13 +147,13 @@ describe('Analytics Tools Execution', () => {
         
         const result = await executeAnalyticsTool(
           'get-session-analytics',
-          { session_id: 'session-123' },
+          { sessionId: 'session-123' },
           mockApiClient
         );
         
         expect(mockAnalyticsResource.getSessionAnalytics).toHaveBeenCalledWith(
           'session-123',
-          { session_id: 'session-123' }
+          { sessionId: 'session-123' }
         );
         
         expect(result.content[0].text).toContain('session-123');
@@ -173,12 +173,12 @@ describe('Analytics Tools Execution', () => {
         
         const result = await executeAnalyticsTool(
           'get-participant-statistics',
-          { participant_id: 'user-1' },
+          { participantId: 'user-1' },
           mockApiClient
         );
         
         expect(mockAnalyticsResource.getTeamAnalytics).toHaveBeenCalledWith({
-          participant_id: 'user-1'
+          participantId: 'user-1'
         });
         
         expect(result.content[0].text).toBeDefined();
@@ -217,16 +217,16 @@ describe('Analytics Tools Execution', () => {
         await executeAnalyticsTool(
           'get-team-analytics',
           { 
-            date_start: '2025-01-01',
-            date_end: undefined,
-            room_id: null,
+            dateStart: '2025-01-01',
+            dateEnd: undefined,
+            roomId: null,
             period: 'month'
           },
           mockApiClient
         );
         
         expect(mockAnalyticsResource.getTeamAnalytics).toHaveBeenCalledWith({
-          date_start: '2025-01-01',
+          dateStart: '2025-01-01',
           period: 'month'
         });
       });

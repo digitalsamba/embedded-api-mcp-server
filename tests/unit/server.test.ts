@@ -9,30 +9,30 @@
 
 describe('MCP Server', () => {
   // Store original env value
-  const originalApiKey = process.env.DIGITAL_SAMBA_API_KEY;
+  const originalApiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
   
   beforeEach(() => {
     // Set test API key
-    process.env.DIGITAL_SAMBA_API_KEY = 'test-api-key';
+    process.env.DIGITAL_SAMBA_DEVELOPER_KEY = 'test-api-key';
   });
   
   afterEach(() => {
     // Restore original value
     if (originalApiKey) {
-      process.env.DIGITAL_SAMBA_API_KEY = originalApiKey;
+      process.env.DIGITAL_SAMBA_DEVELOPER_KEY = originalApiKey;
     } else {
-      delete process.env.DIGITAL_SAMBA_API_KEY;
+      delete process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
     }
   });
 
   describe('Server Configuration', () => {
     it('should use API key from environment', () => {
-      expect(process.env.DIGITAL_SAMBA_API_KEY).toBe('test-api-key');
+      expect(process.env.DIGITAL_SAMBA_DEVELOPER_KEY).toBe('test-api-key');
     });
     
     it('should handle missing API key', () => {
-      delete process.env.DIGITAL_SAMBA_API_KEY;
-      expect(process.env.DIGITAL_SAMBA_API_KEY).toBeUndefined();
+      delete process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
+      expect(process.env.DIGITAL_SAMBA_DEVELOPER_KEY).toBeUndefined();
     });
   });
   

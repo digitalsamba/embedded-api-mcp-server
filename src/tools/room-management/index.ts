@@ -39,7 +39,7 @@ export function registerRoomTools(): Tool[] {
             maxLength: 500,
             description: "Room description",
           },
-          friendly_url: {
+          friendlyUrl: {
             type: "string",
             minLength: 3,
             maxLength: 32,
@@ -51,21 +51,21 @@ export function registerRoomTools(): Tool[] {
             default: "public",
             description: "Room privacy setting",
           },
-          external_id: {
+          externalId: {
             type: "string",
             description: "External identifier for the room",
           },
-          max_participants: {
+          maxParticipants: {
             type: "number",
             minimum: 2,
             maximum: 2000,
             description: "Maximum number of participants",
           },
-          max_broadcasters: {
+          maxBroadcasters: {
             type: "number",
             description: "Maximum number of broadcasters",
           },
-          is_locked: {
+          isLocked: {
             type: "boolean",
             description: "Whether the room is locked",
           },
@@ -74,38 +74,38 @@ export function registerRoomTools(): Tool[] {
             items: { type: "string" },
             description: "Available roles in the room",
           },
-          default_role: {
+          defaultRole: {
             type: "string",
             description: "Default role for participants",
           },
 
           // UI Settings
-          topbar_enabled: {
+          topbarEnabled: {
             type: "boolean",
             description: "Show/hide the top bar",
           },
-          toolbar_enabled: {
+          toolbarEnabled: {
             type: "boolean",
             description: "Show/hide the toolbar",
           },
-          toolbar_position: {
+          toolbarPosition: {
             type: "string",
             enum: ["left", "right", "bottom"],
             description: "Position of the toolbar",
           },
-          toolbar_color: {
+          toolbarColor: {
             type: "string",
             description: "Toolbar background color (hex)",
           },
-          primary_color: {
+          primaryColor: {
             type: "string",
             description: "Primary theme color (hex)",
           },
-          background_color: {
+          backgroundColor: {
             type: "string",
             description: "Room background color (hex)",
           },
-          palette_mode: {
+          paletteMode: {
             type: "string",
             enum: ["light", "dark"],
             description: "Color theme mode",
@@ -114,37 +114,37 @@ export function registerRoomTools(): Tool[] {
             type: "string",
             description: "Default language",
           },
-          language_selection_enabled: {
+          languageSelectionEnabled: {
             type: "boolean",
             description: "Allow users to change language",
           },
 
           // Meeting features
-          audio_on_join_enabled: {
+          audioOnJoinEnabled: {
             type: "boolean",
             description: "Auto-enable audio when joining",
           },
-          video_on_join_enabled: {
+          videoOnJoinEnabled: {
             type: "boolean",
             description: "Auto-enable video when joining",
           },
-          screenshare_enabled: {
+          screenshareEnabled: {
             type: "boolean",
             description: "Allow screen sharing",
           },
-          participants_list_enabled: {
+          participantsListEnabled: {
             type: "boolean",
             description: "Show participants list",
           },
-          chat_enabled: {
+          chatEnabled: {
             type: "boolean",
             description: "Enable chat functionality",
           },
-          private_chat_enabled: {
+          privateChatEnabled: {
             type: "boolean",
             description: "Allow private messages",
           },
-          recordings_enabled: {
+          recordingsEnabled: {
             type: "boolean",
             description: "Allow recording sessions",
           },
@@ -174,7 +174,7 @@ export function registerRoomTools(): Tool[] {
             maxLength: 500,
             description: "Room description",
           },
-          friendly_url: {
+          friendlyUrl: {
             type: "string",
             minLength: 3,
             maxLength: 32,
@@ -185,17 +185,17 @@ export function registerRoomTools(): Tool[] {
             enum: ["public", "private"],
             description: "Room privacy setting",
           },
-          max_participants: {
+          maxParticipants: {
             type: "number",
             minimum: 2,
             maximum: 2000,
             description: "Maximum number of participants",
           },
-          max_broadcasters: {
+          maxBroadcasters: {
             type: "number",
             description: "Maximum number of broadcasters",
           },
-          is_locked: {
+          isLocked: {
             type: "boolean",
             description: "Whether the room is locked",
           },
@@ -204,38 +204,38 @@ export function registerRoomTools(): Tool[] {
             items: { type: "string" },
             description: "Available roles in the room",
           },
-          default_role: {
+          defaultRole: {
             type: "string",
             description: "Default role for participants",
           },
 
           // UI Settings
-          topbar_enabled: {
+          topbarEnabled: {
             type: "boolean",
             description: "Show/hide the top bar",
           },
-          toolbar_enabled: {
+          toolbarEnabled: {
             type: "boolean",
             description: "Show/hide the toolbar",
           },
-          toolbar_position: {
+          toolbarPosition: {
             type: "string",
             enum: ["left", "right", "bottom"],
             description: "Position of the toolbar",
           },
-          toolbar_color: {
+          toolbarColor: {
             type: "string",
             description: "Toolbar background color (hex)",
           },
-          primary_color: {
+          primaryColor: {
             type: "string",
             description: "Primary theme color (hex)",
           },
-          background_color: {
+          backgroundColor: {
             type: "string",
             description: "Room background color (hex)",
           },
-          palette_mode: {
+          paletteMode: {
             type: "string",
             enum: ["light", "dark"],
             description: "Color theme mode",
@@ -244,37 +244,37 @@ export function registerRoomTools(): Tool[] {
             type: "string",
             description: "Default language",
           },
-          language_selection_enabled: {
+          languageSelectionEnabled: {
             type: "boolean",
             description: "Allow users to change language",
           },
 
           // Meeting features
-          audio_on_join_enabled: {
+          audioOnJoinEnabled: {
             type: "boolean",
             description: "Auto-enable audio when joining",
           },
-          video_on_join_enabled: {
+          videoOnJoinEnabled: {
             type: "boolean",
             description: "Auto-enable video when joining",
           },
-          screenshare_enabled: {
+          screenshareEnabled: {
             type: "boolean",
             description: "Allow screen sharing",
           },
-          participants_list_enabled: {
+          participantsListEnabled: {
             type: "boolean",
             description: "Show participants list",
           },
-          chat_enabled: {
+          chatEnabled: {
             type: "boolean",
             description: "Enable chat functionality",
           },
-          private_chat_enabled: {
+          privateChatEnabled: {
             type: "boolean",
             description: "Allow private messages",
           },
-          recordings_enabled: {
+          recordingsEnabled: {
             type: "boolean",
             description: "Allow recording sessions",
           },
@@ -347,30 +347,30 @@ export function registerRoomTools(): Tool[] {
             description: "Settings object with configuration options",
             properties: {
               language: { type: "string" },
-              language_selection_enabled: { type: "boolean" },
-              topbar_enabled: { type: "boolean" },
-              toolbar_enabled: { type: "boolean" },
-              toolbar_position: {
+              languageSelectionEnabled: { type: "boolean" },
+              topbarEnabled: { type: "boolean" },
+              toolbarEnabled: { type: "boolean" },
+              toolbarPosition: {
                 type: "string",
                 enum: ["left", "right", "bottom"],
               },
-              toolbar_color: { type: "string" },
-              primary_color: { type: "string" },
-              background_color: { type: "string" },
-              palette_mode: {
+              toolbarColor: { type: "string" },
+              primaryColor: { type: "string" },
+              backgroundColor: { type: "string" },
+              paletteMode: {
                 type: "string",
                 enum: ["light", "dark"],
               },
-              audio_on_join_enabled: { type: "boolean" },
-              video_on_join_enabled: { type: "boolean" },
-              screenshare_enabled: { type: "boolean" },
-              participants_list_enabled: { type: "boolean" },
-              chat_enabled: { type: "boolean" },
-              private_chat_enabled: { type: "boolean" },
-              recordings_enabled: { type: "boolean" },
-              max_participants: { type: "number" },
-              max_broadcasters: { type: "number" },
-              default_role: { type: "string" },
+              audioOnJoinEnabled: { type: "boolean" },
+              videoOnJoinEnabled: { type: "boolean" },
+              screenshareEnabled: { type: "boolean" },
+              participantsListEnabled: { type: "boolean" },
+              chatEnabled: { type: "boolean" },
+              privateChatEnabled: { type: "boolean" },
+              recordingsEnabled: { type: "boolean" },
+              maxParticipants: { type: "number" },
+              maxBroadcasters: { type: "number" },
+              defaultRole: { type: "string" },
             },
           },
         },
@@ -456,7 +456,7 @@ export function registerRoomTools(): Tool[] {
  * const result = await executeRoomTool('create-room', {
  *   name: 'Team Meeting',
  *   privacy: 'private',
- *   max_participants: 50
+ *   maxParticipants: 50
  * }, request, { apiUrl: 'https://api.digitalsamba.com/api/v1' });
  *
  * @example

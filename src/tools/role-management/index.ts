@@ -46,7 +46,7 @@ export function registerRoleTools(): ToolDefinition[] {
     {
       name: "create-role",
       description:
-        '[Role Management] Create a custom role with specific permissions. Use when users say: "create role", "add custom role", "make new role", "define permissions", "create user role". Requires name, display_name, and permissions object. Role names must use letters, numbers, dashes, underscores only.',
+        '[Role Management] Create a custom role with specific permissions. Use when users say: "create role", "add custom role", "make new role", "define permissions", "create user role". Requires name, displayName, and permissions object. Role names must use letters, numbers, dashes, underscores only.',
       inputSchema: {
         type: "object",
         properties: {
@@ -55,7 +55,7 @@ export function registerRoleTools(): ToolDefinition[] {
             description:
               "Role name (must contain only letters, numbers, dashes and underscores)",
           },
-          display_name: {
+          displayName: {
             type: "string",
             description: "Display name for the role",
           },
@@ -71,7 +71,7 @@ export function registerRoleTools(): ToolDefinition[] {
             },
           },
         },
-        required: ["name", "display_name", "permissions"],
+        required: ["name", "displayName", "permissions"],
       },
     },
     {
@@ -85,7 +85,7 @@ export function registerRoleTools(): ToolDefinition[] {
             type: "string",
             description: "The ID or name of the role to update",
           },
-          display_name: {
+          displayName: {
             type: "string",
             description: "New display name for the role",
           },
@@ -201,15 +201,15 @@ export async function executeRoleTool(
 async function handleCreateRole(
   params: {
     name: string;
-    display_name: string;
+    displayName: string;
     description?: string;
     permissions: Record<string, boolean>;
   },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { name, display_name, description, permissions } = params;
+  const { name, displayName, description, permissions } = params;
 
-  if (!name || !display_name || !permissions) {
+  if (!name || !displayName || !permissions) {
     return {
       content: [
         {
@@ -226,7 +226,7 @@ async function handleCreateRole(
   try {
     const role = await apiClient.createRole({
       name,
-      display_name,
+      display_name: displayName,
       description,
       permissions,
     });
@@ -235,7 +235,7 @@ async function handleCreateRole(
       content: [
         {
           type: "text",
-          text: `Successfully created role "${display_name}" with ID: ${role.id}`,
+          text: `Successfully created role "${displayName}" with ID: ${role.id}`,
         },
       ],
     };
@@ -273,7 +273,7 @@ async function handleCreateRole(
 async function handleUpdateRole(
   params: {
     roleId: string;
-    display_name?: string;
+    displayName?: string;
     description?: string;
     permissions?: Record<string, boolean>;
   },
@@ -298,7 +298,7 @@ async function handleUpdateRole(
       content: [
         {
           type: "text",
-          text: "No updates provided. Specify display_name, description, or permissions to update.",
+          text: "No updates provided. Specify displayName, description, or permissions to update.",
         },
       ],
       isError: true,

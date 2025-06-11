@@ -16,7 +16,7 @@ const apiKeyContext = new AsyncLocalStorage<string>();
  */
 export function getApiKeyFromRequest(_request: any): string | null {
   // In stdio mode, we use the environment variable
-  return process.env.DIGITAL_SAMBA_API_KEY || null;
+  return process.env.DIGITAL_SAMBA_DEVELOPER_KEY || null;
 }
 
 /**
@@ -25,7 +25,7 @@ export function getApiKeyFromRequest(_request: any): string | null {
  */
 export function extractApiKey(_source?: any): string | null {
   // Check environment variable first (primary method for MCP)
-  const envKey = process.env.DIGITAL_SAMBA_API_KEY;
+  const envKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
   if (envKey) {
     return envKey;
   }

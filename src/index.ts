@@ -142,7 +142,7 @@ const versionResource = {
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
   // For listing resources, we don't need an API key - just return the schema
   // API key will be checked when actually reading resources
-  const apiKey = process.env.DIGITAL_SAMBA_API_KEY;
+  const apiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
 
   // Create a dummy client if needed for analytics registration
   let client = null;
@@ -164,11 +164,11 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 });
 
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-  const apiKey = process.env.DIGITAL_SAMBA_API_KEY;
+  const apiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
   if (!apiKey) {
     throw new McpError(
       ErrorCode.InvalidRequest,
-      "DIGITAL_SAMBA_API_KEY not configured",
+      "DIGITAL_SAMBA_DEVELOPER_KEY not configured",
     );
   }
 
@@ -246,11 +246,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const apiKey = process.env.DIGITAL_SAMBA_API_KEY;
+  const apiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
   if (!apiKey) {
     throw new McpError(
       ErrorCode.InvalidRequest,
-      "DIGITAL_SAMBA_API_KEY not configured",
+      "DIGITAL_SAMBA_DEVELOPER_KEY not configured",
     );
   }
 
@@ -402,13 +402,13 @@ async function main() {
     (arg) => arg === "--developer-key" || arg === "-k",
   );
   if (apiKeyArgIndex !== -1 && args[apiKeyArgIndex + 1]) {
-    process.env.DIGITAL_SAMBA_API_KEY = args[apiKeyArgIndex + 1];
+    process.env.DIGITAL_SAMBA_DEVELOPER_KEY = args[apiKeyArgIndex + 1];
   }
 
   // Log developer key status (don't exit if not found - it will be checked when needed)
-  if (!process.env.DIGITAL_SAMBA_API_KEY) {
+  if (!process.env.DIGITAL_SAMBA_DEVELOPER_KEY) {
     logger.warn(
-      "DIGITAL_SAMBA_API_KEY not set. Developer key will be required for operations.",
+      "DIGITAL_SAMBA_DEVELOPER_KEY not set. Developer key will be required for operations.",
     );
   } else {
     logger.info("Developer key configured");

@@ -43,7 +43,7 @@ export async function startServerProcess(options: {
   // Set environment variables
   const env = {
     ...process.env,
-    DIGITAL_SAMBA_API_KEY: apiKey,
+    DIGITAL_SAMBA_DEVELOPER_KEY: apiKey,
     DIGITAL_SAMBA_API_URL: apiUrl,
     NODE_ENV: 'test',
   };
@@ -104,7 +104,7 @@ export function startStdioServerProcess(options: {
   // Set environment variables
   const env = {
     ...process.env,
-    DIGITAL_SAMBA_API_KEY: apiKey,
+    DIGITAL_SAMBA_DEVELOPER_KEY: apiKey,
     DIGITAL_SAMBA_API_URL: apiUrl,
   };
   

@@ -17,7 +17,7 @@
 
 ## Overview
 
-The Digital Samba Embedded API MCP Server is a comprehensive Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's Embedded API. With support for 100+ endpoints, it provides complete control over rooms, sessions, recordings, analytics, and more.
+The Digital Samba Embedded API MCP Server is a comprehensive Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's Embedded API. With support for 99+ tools and 32 resources covering 100+ API endpoints, it provides complete control over rooms, sessions, recordings, analytics, and more.
 
 ## Features
 
@@ -126,9 +126,9 @@ Restart Claude Desktop and you can now:
 
 ## Available MCP Resources & Tools
 
-The MCP server exposes Digital Samba API functionality through two types of interfaces: Resources provide read-only access to data (like listing rooms or viewing analytics), while Tools enable actions that modify data (like creating rooms or starting recordings). These are accessed via MCP URIs, not direct API endpoints.
+The MCP server exposes Digital Samba API functionality through two types of interfaces: Resources provide read-only access to data (like listing rooms or viewing analytics), while Tools enable actions that modify data (like creating rooms or starting recordings). These are accessed via MCP URIs, not direct API endpoints. For more details on MCP resources and tools, see the [official MCP documentation](https://modelcontextprotocol.io/docs/concepts/resources).
 
-> **Note on AI Assistant Compatibility**: While the MCP protocol supports both resources and tools, current AI assistants (like Claude Desktop) can only access tools, not resources. To work around this limitation, we've implemented a hybrid approach: all read-only resources also have equivalent tool versions. For example, the `digitalsamba://rooms` resource can also be accessed via the `list-rooms` tool. This ensures full functionality while maintaining compatibility with future MCP client improvements.
+> **Note on AI Assistant Compatibility**: While the MCP protocol supports both resources and tools, current AI assistants (like Claude Desktop) can only access tools, not resources. To work around this limitation, we've implemented a hybrid approach with reader tools: all read-only resources also have equivalent tool versions that provide the same data. For example, the `digitalsamba://rooms` resource can also be accessed via the `list-rooms` tool. Reader tools are clearly marked with "mirrors digitalsamba://..." in their descriptions. This ensures full functionality in AI assistants while maintaining compatibility with future MCP client improvements.
 
 ### Resources (Read-Only) - 32 Available
 
@@ -181,7 +181,7 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `digitalsamba://exports/sessions/{sessionId}/summary` - Export session summary
 - `digitalsamba://exports/sessions/{sessionId}/metadata` - Export session metadata
 
-### Tools (Actions) - 90 Available
+### Tools (Actions) - 99 Available
 
 #### Room Management
 - `create-room` - Create a new room
@@ -304,7 +304,7 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 
 ## Environment Variables
 
-- `DIGITAL_SAMBA_DEVELOPER_KEY` - Your Digital Samba developer key (optional if using -k flag)
+- `DIGITAL_SAMBA_DEVELOPER_KEY` - Your Digital Samba developer key (optional if using --developer-key or -k flag)
 - `DIGITAL_SAMBA_API_URL` - API base URL (optional, defaults to production)
 - `DS_LOG_LEVEL` - Logging level (error, warn, info, debug)
 

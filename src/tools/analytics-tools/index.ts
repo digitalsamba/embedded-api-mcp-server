@@ -27,23 +27,23 @@ export function registerAnalyticsTools(): Tool[] {
       inputSchema: {
         type: "object",
         properties: {
-          participant_id: {
+          participantId: {
             type: "string",
             description: "Specific participant ID (optional)",
           },
-          date_start: {
+          dateStart: {
             type: "string",
             description: "Start date in YYYY-MM-DD format",
           },
-          date_end: {
+          dateEnd: {
             type: "string",
             description: "End date in YYYY-MM-DD format",
           },
-          room_id: {
+          roomId: {
             type: "string",
             description: "Filter by room ID",
           },
-          session_id: {
+          sessionId: {
             type: "string",
             description: "Filter by session ID",
           },
@@ -54,19 +54,19 @@ export function registerAnalyticsTools(): Tool[] {
     {
       name: "get-room-analytics",
       description:
-        '[Analytics] Get comprehensive room usage analytics and performance metrics. Use when users say: "room analytics", "room usage statistics", "meeting room performance", "room activity report", "how is the room being used", "room metrics". Optional room_id for specific room or all rooms. Returns usage patterns, participant counts, session data.',
+        '[Analytics] Get comprehensive room usage analytics and performance metrics. Use when users say: "room analytics", "room usage statistics", "meeting room performance", "room activity report", "how is the room being used", "room metrics". Optional roomId for specific room or all rooms. Returns usage patterns, participant counts, session data.',
       inputSchema: {
         type: "object",
         properties: {
-          room_id: {
+          roomId: {
             type: "string",
             description: "Specific room ID (optional)",
           },
-          date_start: {
+          dateStart: {
             type: "string",
             description: "Start date in YYYY-MM-DD format",
           },
-          date_end: {
+          dateEnd: {
             type: "string",
             description: "End date in YYYY-MM-DD format",
           },
@@ -86,11 +86,11 @@ export function registerAnalyticsTools(): Tool[] {
       inputSchema: {
         type: "object",
         properties: {
-          date_start: {
+          dateStart: {
             type: "string",
             description: "Start date in YYYY-MM-DD format",
           },
-          date_end: {
+          dateEnd: {
             type: "string",
             description: "End date in YYYY-MM-DD format",
           },
@@ -111,11 +111,11 @@ export function registerAnalyticsTools(): Tool[] {
       inputSchema: {
         type: "object",
         properties: {
-          date_start: {
+          dateStart: {
             type: "string",
             description: "Start date in YYYY-MM-DD format",
           },
-          date_end: {
+          dateEnd: {
             type: "string",
             description: "End date in YYYY-MM-DD format",
           },
@@ -207,11 +207,11 @@ export async function executeAnalyticsTool(
 
   // Build filters from arguments
   const filters: AnalyticsFilters = {
-    date_start: args.date_start,
-    date_end: args.date_end,
-    room_id: args.room_id,
-    session_id: args.session_id,
-    participant_id: args.participant_id,
+    dateStart: args.dateStart,
+    dateEnd: args.dateEnd,
+    roomId: args.roomId,
+    sessionId: args.sessionId,
+    participantId: args.participantId,
     period: args.period,
   };
 
@@ -238,8 +238,8 @@ export async function executeAnalyticsTool(
 
     case "get-room-analytics": {
       logger.info("Executing room analytics query", { args });
-      // If no room_id provided, get team-wide analytics instead
-      if (!args.room_id) {
+      // If no roomId provided, get team-wide analytics instead
+      if (!args.roomId) {
         const teamResult = await analytics.getTeamAnalytics(filters);
         return {
           content: [
@@ -251,7 +251,7 @@ export async function executeAnalyticsTool(
         };
       }
       const roomResult = await analytics.getRoomAnalytics(
-        args.room_id,
+        args.roomId,
         filters,
       );
       return {
@@ -267,7 +267,7 @@ export async function executeAnalyticsTool(
     case "get-session-analytics": {
       logger.info("Executing session analytics query", { args });
       const sessionResult = await analytics.getSessionAnalytics(
-        args.session_id,
+        args.sessionId,
         filters,
       );
       return {
@@ -354,7 +354,7 @@ export async function executeAnalyticsTool(
       // This case already exists - keeping the existing implementation
       logger.info("Executing session analytics query", { args });
       const sessionResult = await analytics.getSessionAnalytics(
-        args.session_id || args.sessionId,
+        args.sessionId || args.sessionId,
         filters,
       );
       return {
@@ -372,7 +372,7 @@ export async function executeAnalyticsTool(
       // Get analytics for specific participant
       const participantAnalytics = await analytics.getTeamAnalytics({
         ...filters,
-        participant_id: args.participantId,
+        participantId: args.participantId,
       });
       return {
         content: [
