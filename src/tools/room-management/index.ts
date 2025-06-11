@@ -377,6 +377,58 @@ export function registerRoomTools(): Tool[] {
         required: ["settings"],
       },
     },
+    // Reader tools for room resources (hybrid approach for Claude Desktop compatibility)
+    {
+      name: "list-rooms",
+      description:
+        '[Room Management - TOOL] List all rooms in your account. Use when users say: "show rooms", "list rooms", "show all rooms", "get rooms", "display rooms", "view rooms", "list meeting rooms", "get room list", "what rooms exist", "room directory", "all rooms", "my rooms". This TOOL provides the same data as the digitalsamba://rooms resource but is accessible to AI assistants. Returns array of room objects with IDs, names, settings, and join URLs.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          limit: {
+            type: "number",
+            description: "Maximum number of rooms to return",
+          },
+          offset: {
+            type: "number",
+            description: "Number of rooms to skip for pagination",
+          },
+        },
+      },
+    },
+    {
+      name: "get-room-details",
+      description:
+        '[Room Management - TOOL] Get complete details for a specific room. Use when users say: "show room details", "get room info", "room configuration", "room settings", "what are room parameters", "describe room". Requires roomId. This TOOL provides the same data as the digitalsamba://rooms/{roomId} resource. Returns full room object with all settings, max participants, features, and URLs.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: {
+            type: "string",
+            description: "Room ID (required)",
+          },
+        },
+        required: ["roomId"],
+      },
+    },
+    {
+      name: "list-live-rooms",
+      description:
+        '[Room Management - TOOL] List all rooms currently with active participants. Use when users say: "show live rooms", "active meetings", "rooms with participants", "current sessions", "who is online", "active rooms", "ongoing meetings". This TOOL provides the same data as the digitalsamba://rooms/live resource. Returns rooms with participant counts and session duration.',
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "list-live-participants",
+      description:
+        '[Room Management - TOOL] List all rooms with detailed participant information. Use when users say: "show who is in meetings", "list participants in all rooms", "active participants", "who is in which room", "all attendees". This TOOL provides the same data as the digitalsamba://rooms/live/participants resource. Returns rooms with full participant details including names and join times.',
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
   ];
 }
 
@@ -719,6 +771,146 @@ export async function executeRoomTool(
             {
               type: "text",
               text: `Error updating default room settings: ${error instanceof Error ? error.message : "Unknown error"}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    // Reader tools for resources (hybrid approach)
+    case "list-rooms": {
+      logger.info("Listing rooms");
+
+      try {
+        const { limit, offset } = args;
+        const rooms = await client.listRooms({ limit, offset });
+        logger.info("Fetched rooms successfully", { count: rooms.data.length });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(rooms, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error listing rooms", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error listing rooms: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case "get-room-details": {
+      const { roomId } = args;
+
+      if (!roomId) {
+        return {
+          content: [{ type: "text", text: "Room ID is required." }],
+          isError: true,
+        };
+      }
+
+      logger.info("Getting room details", { roomId });
+
+      try {
+        const room = await client.getRoom(roomId);
+        logger.info("Fetched room details successfully", { roomId });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(room, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error getting room details", {
+          roomId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error getting room details: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case "list-live-rooms": {
+      logger.info("Listing live rooms");
+
+      try {
+        const liveRooms = await client.getLiveRooms();
+        logger.info("Fetched live rooms successfully", { count: liveRooms.data.length });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(liveRooms, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error listing live rooms", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error listing live rooms: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case "list-live-participants": {
+      logger.info("Listing live participants across all rooms");
+
+      try {
+        const liveRooms = await client.getLiveRoomsWithParticipants();
+        logger.info("Fetched live participants successfully", { count: liveRooms.data.length });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(liveRooms, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error listing live participants", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error listing live participants: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
           isError: true,

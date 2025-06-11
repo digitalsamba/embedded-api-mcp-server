@@ -144,3 +144,15 @@ src/
 **Ideal Solution**: The fix should be in AI assistant MCP client implementations (e.g., Claude Desktop) to expose a way to read resources, perhaps through a special tool or direct resource access.
 
 **Note**: This is not a bug in our MCP server - it's a limitation in how current AI assistants consume MCP servers.
+
+### Hybrid Approach Implementation
+
+To work around this limitation, we're implementing a **hybrid approach**:
+
+1. **Keep all existing resources** - For future compatibility when Claude Desktop adds resource selection
+2. **Create tool equivalents for all resources** - For immediate functionality in AI assistants
+3. **Clear naming convention** - Tools use verbs like `list-rooms`, `get-room-details` to distinguish from resources
+
+This ensures the MCP server works with current AI assistants while remaining compatible with future MCP client improvements.
+
+See `.ai_dev/mcp-resources-vs-tools-issue.md` for detailed analysis and `.ai_dev/resources-to-tools-conversion-plan.md` for implementation progress.
