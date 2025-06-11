@@ -17,7 +17,7 @@
 
 ## Overview
 
-The Digital Samba Embedded API MCP Server is a comprehensive Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's Embedded API. With support for 95+ endpoints, it provides complete control over rooms, sessions, recordings, analytics, and more.
+The Digital Samba Embedded API MCP Server is a comprehensive Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's Embedded API. With support for 100+ endpoints, it provides complete control over rooms, sessions, recordings, analytics, and more.
 
 ## Features
 
@@ -128,6 +128,8 @@ Restart Claude Desktop and you can now:
 
 The MCP server exposes Digital Samba API functionality through two types of interfaces: Resources provide read-only access to data (like listing rooms or viewing analytics), while Tools enable actions that modify data (like creating rooms or starting recordings). These are accessed via MCP URIs, not direct API endpoints.
 
+> **Note on AI Assistant Compatibility**: While the MCP protocol supports both resources and tools, current AI assistants (like Claude Desktop) can only access tools, not resources. To work around this limitation, we've implemented a hybrid approach: all read-only resources also have equivalent tool versions. For example, the `digitalsamba://rooms` resource can also be accessed via the `list-rooms` tool. This ensures full functionality while maintaining compatibility with future MCP client improvements.
+
 ### Resources (Read-Only) - 32 Available
 
 #### Room Resources
@@ -179,7 +181,7 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `digitalsamba://exports/sessions/{sessionId}/summary` - Export session summary
 - `digitalsamba://exports/sessions/{sessionId}/metadata` - Export session metadata
 
-### Tools (Actions) - 70 Available
+### Tools (Actions) - 83 Available
 
 #### Room Management
 - `create-room` - Create a new room
@@ -188,6 +190,10 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `generate-token` - Generate access token
 - `get-default-room-settings` - Get default settings for new rooms
 - `update-default-room-settings` - Update default settings for new rooms
+- `list-rooms` - List all rooms (mirrors digitalsamba://rooms)
+- `get-room-details` - Get specific room details (mirrors digitalsamba://rooms/{id})
+- `list-live-rooms` - List rooms with active participants
+- `list-live-participants` - List all live participants across rooms
 
 #### Session Management  
 - `end-session` - End a live session
@@ -196,6 +202,10 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `hard-delete-session-resources` - Permanently delete session data
 - `bulk-delete-session-data` - Delete multiple session data types
 - `get-session-statistics` - Get detailed session statistics
+- `list-sessions` - List all sessions (mirrors digitalsamba://sessions)
+- `get-session-details` - Get specific session details (mirrors digitalsamba://sessions/{id})
+- `list-session-participants` - List participants for a session
+- `list-room-sessions` - List sessions for a specific room
 
 #### Recording Management
 - `get-recordings` - List recordings with filters
@@ -217,6 +227,11 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `get-participant-statistics` - Participant analytics
 - `get-room-analytics` - Room usage analytics
 - `get-usage-statistics` - Overall usage metrics
+- `get-usage-analytics` - Usage analytics (mirrors digitalsamba://analytics/usage)
+- `get-live-analytics` - Live session analytics (mirrors digitalsamba://analytics/live)
+- `get-live-room-analytics` - Live analytics for specific room
+- `get-session-analytics` - Session analytics (mirrors digitalsamba://analytics/sessions/{id})
+- `get-participant-analytics` - Specific participant analytics
 
 #### Communication Management
 - `delete-session-chats` - Delete chat messages for a session
@@ -254,6 +269,13 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `bulk-delete-library-files` - Delete multiple files
 - `bulk-upload-library-files` - Upload multiple files
 - `copy-library-content` - Copy files/folders
+- `list-libraries` - List all libraries (mirrors digitalsamba://libraries)
+- `get-library-details` - Get library details (mirrors digitalsamba://libraries/{id})
+- `get-library-hierarchy` - Get folder structure (mirrors digitalsamba://libraries/{id}/hierarchy)
+- `list-library-folders` - List all folders (mirrors digitalsamba://libraries/{id}/folders)
+- `get-library-folder-details` - Get folder details
+- `list-library-files` - List all files (mirrors digitalsamba://libraries/{id}/files)
+- `get-library-file-details` - Get file details
 
 #### Role & Permission Management
 - `create-role` - Create custom role

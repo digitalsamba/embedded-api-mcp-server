@@ -370,8 +370,8 @@ export async function handleListLibraryFiles(
             {
               library_id: libraryId,
               files: files,
-              total_count: files.length,
-              summary: `Found ${files.length} files in library`,
+              total_count: files.total_count,
+              summary: `Found ${files.data.length} files in library`,
             },
             null,
             2,
