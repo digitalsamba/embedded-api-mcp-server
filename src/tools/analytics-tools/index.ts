@@ -217,13 +217,13 @@ export async function executeAnalyticsTool(
   try {
     const analytics = new AnalyticsResource(apiClient);
 
-  // Build filters from arguments
+  // Build filters from arguments and convert to snake_case
   const filters: AnalyticsFilters = {
-    dateStart: args.dateStart,
-    dateEnd: args.dateEnd,
-    roomId: args.roomId,
-    sessionId: args.sessionId,
-    participantId: args.participantId,
+    date_start: args.dateStart,
+    date_end: args.dateEnd,
+    room_id: args.roomId,
+    session_id: args.sessionId,
+    participant_id: args.participantId,
     period: args.period,
   };
 

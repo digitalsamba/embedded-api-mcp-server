@@ -79,8 +79,8 @@ describe('Analytics Tools Execution', () => {
         );
         
         expect(mockAnalyticsResource.getTeamAnalytics).toHaveBeenCalledWith({
-          dateStart: '2025-01-01',
-          dateEnd: '2025-01-31'
+          date_start: '2025-01-01',
+          date_end: '2025-01-31'
         });
         
         expect(result).toEqual({
@@ -110,7 +110,7 @@ describe('Analytics Tools Execution', () => {
         
         expect(mockAnalyticsResource.getRoomAnalytics).toHaveBeenCalledWith(
           'room-123',
-          { roomId: 'room-123', period: 'month' }
+          { room_id: 'room-123', period: 'month' }
         );
         
         expect(result.content[0].text).toContain('room-123');
@@ -153,7 +153,7 @@ describe('Analytics Tools Execution', () => {
         
         expect(mockAnalyticsResource.getSessionAnalytics).toHaveBeenCalledWith(
           'session-123',
-          { sessionId: 'session-123' }
+          { session_id: 'session-123' }
         );
         
         expect(result.content[0].text).toContain('session-123');
@@ -178,7 +178,7 @@ describe('Analytics Tools Execution', () => {
         );
         
         expect(mockAnalyticsResource.getTeamAnalytics).toHaveBeenCalledWith({
-          participantId: 'user-1'
+          participant_id: 'user-1'
         });
         
         expect(result.content[0].text).toBeDefined();
@@ -226,7 +226,7 @@ describe('Analytics Tools Execution', () => {
         );
         
         expect(mockAnalyticsResource.getTeamAnalytics).toHaveBeenCalledWith({
-          dateStart: '2025-01-01',
+          date_start: '2025-01-01',
           period: 'month'
         });
       });
