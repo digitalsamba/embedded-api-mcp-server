@@ -190,6 +190,18 @@ export function registerAnalyticsTools(): Tool[] {
 }
 
 /**
+ * Convert camelCase parameters to snake_case for API
+ */
+function convertCamelToSnake(params: Record<string, any>): Record<string, any> {
+  const converted: Record<string, any> = {};
+  for (const [key, value] of Object.entries(params)) {
+    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    converted[snakeKey] = value;
+  }
+  return converted;
+}
+
+/**
  * Handle analytics tool execution
  *
  * @param toolName - The name of the tool being executed

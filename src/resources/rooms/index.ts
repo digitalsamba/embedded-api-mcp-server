@@ -206,8 +206,8 @@ export async function handleRoomResource(
       apiKey = getApiKeyFromRequest(request);
     }
 
-    if (!apiKey && process.env.DIGITAL_SAMBA_API_KEY) {
-      apiKey = process.env.DIGITAL_SAMBA_API_KEY;
+    if (!apiKey && process.env.DIGITAL_SAMBA_DEVELOPER_KEY) {
+      apiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
       logger.debug("Using API key from environment variable");
     }
 

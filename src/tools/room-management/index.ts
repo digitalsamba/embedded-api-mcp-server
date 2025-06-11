@@ -9,7 +9,7 @@
 
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 // import { z } from 'zod'; // Removed: unused
-import { DigitalSambaApiClient } from "../../digital-samba-api.js";
+import { DigitalSambaApiClient, RoomCreateSettings } from "../../digital-samba-api.js";
 // Removed enhanced client import - using standard client
 import { getApiKeyFromRequest } from "../../auth.js";
 import logger from "../../logger.js";
@@ -433,6 +433,18 @@ export function registerRoomTools(): Tool[] {
 }
 
 /**
+ * Convert camelCase parameters to snake_case for API
+ */
+function convertCamelToSnake(params: Record<string, any>): Record<string, any> {
+  const converted: Record<string, any> = {};
+  for (const [key, value] of Object.entries(params)) {
+    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    converted[snakeKey] = value;
+  }
+  return converted;
+}
+
+/**
  * Execute a room management tool
  *
  * This function handles the execution of room-related tools such as creating,
@@ -530,8 +542,11 @@ export async function executeRoomTool(
           settings.privacy = "public";
         }
 
+        // Convert camelCase to snake_case for API
+        const apiSettings = convertCamelToSnake(settings) as RoomCreateSettings;
+        
         // Create room with all provided settings
-        const room = await client.createRoom(settings);
+        const room = await client.createRoom(apiSettings);
         logger.info("Room created successfully", { roomId: room.id });
 
         return {
@@ -575,8 +590,11 @@ export async function executeRoomTool(
       });
 
       try {
+        // Convert camelCase to snake_case for API
+        const apiSettings = convertCamelToSnake(settings) as Partial<RoomCreateSettings>;
+        
         // Update room with all provided settings
-        const room = await client.updateRoom(roomId, settings);
+        const room = await client.updateRoom(roomId, apiSettings);
         logger.info("Room updated successfully", { roomId: room.id });
 
         return {
@@ -751,7 +769,7 @@ export async function executeRoomTool(
 
       try {
         const updatedSettings =
-          await client.updateDefaultRoomSettings(settings);
+          await client.updateDefaultRoomSettings(convertCamelToSnake(settings));
 
         return {
           content: [
