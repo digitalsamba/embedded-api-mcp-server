@@ -92,6 +92,10 @@ import {
   registerWebhookTools,
   executeWebhookTool,
 } from "./tools/webhook-management/index.js";
+import {
+  registerExportTools,
+  executeExportTool,
+} from "./tools/export-tools/index.js";
 
 // Import version information
 import { VERSION, PACKAGE_NAME, VERSION_INFO } from "./version.js";
@@ -236,6 +240,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       ...registerLibraryTools(),
       ...registerRoleTools(),
       ...registerWebhookTools(),
+      ...registerExportTools(),
     ],
   };
 });
@@ -274,7 +279,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       name === "delete-room" ||
       name === "generate-token" ||
       name === "get-default-room-settings" ||
-      name === "update-default-room-settings"
+      name === "update-default-room-settings" ||
+      name === "list-rooms" ||
+      name === "get-room-details" ||
+      name === "list-live-rooms" ||
+      name === "list-live-participants"
     ) {
       return await executeRoomTool(name, args || {}, request, {
         apiUrl:
@@ -286,7 +295,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     else if (
       name === "get-participant-statistics" ||
       name === "get-room-analytics" ||
-      name === "get-usage-statistics"
+      name === "get-usage-statistics" ||
+      name === "get-usage-analytics" ||
+      name === "get-live-analytics" ||
+      name === "get-live-room-analytics" ||
+      name === "get-session-analytics" ||
+      name === "get-participant-analytics"
     ) {
       return await executeAnalyticsTool(name, args || {}, client);
     }
@@ -297,7 +311,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       name === "get-all-room-sessions" ||
       name === "hard-delete-session-resources" ||
       name === "bulk-delete-session-data" ||
-      name === "get-session-statistics"
+      name === "get-session-statistics" ||
+      name === "list-sessions" ||
+      name === "get-session-details" ||
+      name === "list-session-participants" ||
+      name === "list-room-sessions"
     ) {
       return await executeSessionTool(name, args || {}, client, request);
     }
@@ -348,6 +366,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Webhook management tools
     else if (name.includes("webhook") || name === "list-webhook-events") {
       return await executeWebhookTool(name, args || {}, client);
+    }
+    // Export tools
+    else if (name.includes("export-")) {
+      return await executeExportTool(name, args || {}, request, {
+        apiUrl:
+          process.env.DIGITAL_SAMBA_API_URL ||
+          "https://api.digitalsamba.com/api/v1",
+      });
     }
 
     throw new McpError(ErrorCode.InvalidRequest, `Unknown tool: ${name}`);

@@ -181,7 +181,7 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `digitalsamba://exports/sessions/{sessionId}/summary` - Export session summary
 - `digitalsamba://exports/sessions/{sessionId}/metadata` - Export session metadata
 
-### Tools (Actions) - 83 Available
+### Tools (Actions) - 90 Available
 
 #### Room Management
 - `create-room` - Create a new room
@@ -292,6 +292,15 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `get-webhook` - Get webhook details
 - `update-webhook` - Update webhook configuration
 - `delete-webhook` - Delete a webhook
+
+#### Export Tools
+- `export-chat-messages` - Export chat messages from a room (mirrors digitalsamba://exports/communications/{roomId}/chat)
+- `export-qa-data` - Export Q&A data from a room (mirrors digitalsamba://exports/communications/{roomId}/qa)
+- `export-session-transcripts` - Export transcripts from a session (mirrors digitalsamba://exports/communications/{sessionId}/transcripts)
+- `export-poll-results` - Export poll results from a room (mirrors digitalsamba://exports/polls/{roomId})
+- `export-recording-metadata` - Export recording metadata (mirrors digitalsamba://exports/recordings/{recordingId})
+- `export-session-summary` - Export session summary (mirrors digitalsamba://exports/sessions/{sessionId}/summary)
+- `export-session-metadata` - Export session metadata (mirrors digitalsamba://exports/sessions/{sessionId}/metadata)
 
 ## Environment Variables
 
