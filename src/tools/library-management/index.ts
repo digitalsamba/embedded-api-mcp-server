@@ -483,19 +483,53 @@ export function registerLibraryTools(): ToolDefinition[] {
     {
       name: "list-libraries",
       description:
-        '[Content Library - TOOL] List all content libraries in your account. Use when users say: "show libraries", "list libraries", "get all libraries", "view content libraries", "show file storage". This TOOL provides the same data as digitalsamba://libraries resource. Returns array of library objects with names, IDs, and file counts.',
+        '[Content Library - TOOL] List all content libraries in your account. Use when users say: "show libraries", "list libraries", "get all libraries", "view content libraries", "show file storage", "find library", "search for library". This TOOL provides the same data as digitalsamba://libraries resource. Returns array of library objects with names, IDs, and file counts. Can search by name.',
       inputSchema: {
         type: "object",
         properties: {
           limit: {
             type: "number",
-            description: "Maximum number of libraries to return",
+            description: "Maximum number of libraries to return (default: 100)",
           },
           offset: {
             type: "number",
             description: "Number of libraries to skip for pagination",
           },
+          searchName: {
+            type: "string",
+            description: "Search for libraries by name or external ID (searches all libraries)",
+          },
         },
+      },
+    },
+    {
+      name: "search-libraries",
+      description:
+        '[Content Library - TOOL] Search for libraries by name. Use when users say: "find library named", "search for library", "locate library", "where is library", "find Conal\'s library". Searches through ALL libraries in the account to find matches by name or external ID.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          searchTerm: {
+            type: "string",
+            description: "Name or external ID to search for (required)",
+          },
+        },
+        required: ["searchTerm"],
+      },
+    },
+    {
+      name: "verify-library-id",
+      description:
+        '[Content Library - TOOL] Verify if a library ID exists by attempting to retrieve it. Use when users say: "check if library ID exists", "verify library ID", "test library ID", "validate library ID". Useful for checking if a specific library ID is valid.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          libraryId: {
+            type: "string",
+            description: "Library ID to verify (required)",
+          },
+        },
+        required: ["libraryId"],
       },
     },
     {
@@ -676,6 +710,10 @@ export async function executeLibraryTool(
     // Reader tools for content resources (hybrid approach)
     case "list-libraries":
       return handleListLibraries(params, apiClient);
+    case "search-libraries":
+      return handleListLibraries({ searchName: params.searchTerm }, apiClient);
+    case "verify-library-id":
+      return handleGetLibraryDetails(params, apiClient);
     case "get-library-details":
       return handleGetLibraryDetails(params, apiClient);
     case "get-library-hierarchy":

@@ -9,15 +9,66 @@ import logger from "../../logger.js";
  * Handle list libraries
  */
 export async function handleListLibraries(
-  params: { limit?: number; offset?: number },
+  params: { limit?: number; offset?: number; searchName?: string },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { limit = 100, offset = 0 } = params;
+  const { limit = 100, offset = 0, searchName } = params;
 
-  logger.info("Listing libraries", { limit, offset });
+  logger.info("Listing libraries", { limit, offset, searchName });
 
   try {
+    // If searching for a specific name, we need to fetch all libraries
+    if (searchName) {
+      let allLibraries: any[] = [];
+      let currentOffset = 0;
+      const pageSize = 100;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const response = await apiClient.listLibraries({ 
+          limit: pageSize, 
+          offset: currentOffset 
+        });
+        
+        allLibraries = allLibraries.concat(response.data);
+        currentOffset += pageSize;
+        const totalCount = typeof response.total_count === 'string' 
+          ? parseInt(response.total_count, 10) 
+          : (response.total_count || 0);
+        hasMore = response.data.length === pageSize && currentOffset < totalCount;
+      }
+      
+      // Filter by name (case insensitive)
+      const filtered = allLibraries.filter(lib => 
+        lib.name?.toLowerCase().includes(searchName.toLowerCase()) ||
+        lib.external_id?.toLowerCase().includes(searchName.toLowerCase())
+      );
+      
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                libraries: filtered,
+                total_count: filtered.length,
+                total_libraries: allLibraries.length,
+                search_term: searchName,
+                summary: `Found ${filtered.length} libraries matching "${searchName}" out of ${allLibraries.length} total libraries`,
+              },
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    }
+    
+    // Normal pagination
     const response = await apiClient.listLibraries({ limit, offset });
+    const totalCount = typeof response.total_count === 'string' 
+      ? parseInt(response.total_count, 10) 
+      : (response.total_count || 0);
 
     return {
       content: [
@@ -26,8 +77,10 @@ export async function handleListLibraries(
           text: JSON.stringify(
             {
               libraries: response.data,
-              total_count: response.total_count,
-              summary: `Found ${response.data.length} libraries`,
+              total_count: totalCount,
+              current_page: Math.floor(offset / limit) + 1,
+              total_pages: Math.ceil(totalCount / limit),
+              summary: `Found ${response.data.length} libraries (showing ${offset + 1}-${offset + response.data.length} of ${totalCount})`,
             },
             null,
             2,
