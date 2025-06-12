@@ -80,7 +80,7 @@ export function setupRecordingTools(server: McpServer, apiUrl: string): void {
 
       // Create API client
       logger.debug("Creating API client using context API key");
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
+      const client = new DigitalSambaApiClient(apiKey, apiUrl);
 
       try {
         await client.startRecording(roomId);
@@ -153,7 +153,7 @@ export function setupRecordingTools(server: McpServer, apiUrl: string): void {
 
       // Create API client
       logger.debug("Creating API client using context API key");
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
+      const client = new DigitalSambaApiClient(apiKey, apiUrl);
 
       try {
         await client.stopRecording(roomId);
@@ -220,7 +220,7 @@ export function setupRecordingTools(server: McpServer, apiUrl: string): void {
 
       // Create API client
       logger.debug("Creating API client using context API key");
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
+      const client = new DigitalSambaApiClient(apiKey, apiUrl);
 
       try {
         let recordings;
@@ -375,7 +375,7 @@ export function setupRecordingTools(server: McpServer, apiUrl: string): void {
 
       // Create API client
       logger.debug("Creating API client using context API key");
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
+      const client = new DigitalSambaApiClient(apiKey, apiUrl);
 
       try {
         // Delete recording
@@ -478,7 +478,7 @@ export function setupRecordingTools(server: McpServer, apiUrl: string): void {
 
       // Create API client
       logger.debug("Creating API client using context API key");
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
+      const client = new DigitalSambaApiClient(apiKey, apiUrl);
 
       try {
         // Get recording
@@ -619,7 +619,7 @@ export function setupRecordingTools(server: McpServer, apiUrl: string): void {
 
       // Create API client
       logger.debug("Creating API client using context API key");
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
+      const client = new DigitalSambaApiClient(apiKey, apiUrl);
 
       try {
         // Get download link
@@ -734,7 +734,7 @@ export function setupRecordingTools(server: McpServer, apiUrl: string): void {
 
       // Create API client
       logger.debug("Creating API client using context API key");
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
+      const client = new DigitalSambaApiClient(apiKey, apiUrl);
 
       try {
         // Archive recording
@@ -842,7 +842,7 @@ export function setupRecordingTools(server: McpServer, apiUrl: string): void {
 
       // Create API client
       logger.debug("Creating API client using context API key");
-      const client = new DigitalSambaApiClient(undefined, apiUrl);
+      const client = new DigitalSambaApiClient(apiKey, apiUrl);
 
       try {
         // Unarchive recording
