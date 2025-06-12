@@ -718,7 +718,8 @@ export class DigitalSambaApiClient {
           `Invalid JSON response from Digital Samba API: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
           {
             statusCode: response.status,
-            responseText,
+            apiErrorMessage: `Failed to parse JSON: ${responseText}`,
+            apiErrorData: { responseText },
           },
         );
       }
