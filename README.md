@@ -17,7 +17,7 @@
 
 ## Overview
 
-The Digital Samba Embedded API MCP Server is a comprehensive Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's Embedded API. With support for 99+ tools and 32 resources covering 100+ API endpoints, it provides complete control over rooms, sessions, recordings, analytics, and more.
+The Digital Samba Embedded API MCP Server is a comprehensive Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's Embedded API. With support for 102 tools and 38 resources covering 100+ API endpoints, it provides complete control over rooms, sessions, recordings, analytics, and more.
 
 ## Features
 

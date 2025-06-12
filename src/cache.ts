@@ -408,47 +408,8 @@ export class MemoryCache<T = unknown> {
 }
 
 /**
- * Redis-backed cache implementation
- * This implementation uses Redis for storage, making it suitable for distributed deployments.
- * Note: This is a placeholder for the Redis implementation.
- * The actual implementation would use a Redis client library.
- */
-export class RedisCache {
-  constructor(_options: Partial<CacheOptions> = {}) {
-    // Initialize with Redis client
-    logger.info("Redis cache initialized");
-
-    throw new Error("Redis cache not yet implemented");
-  }
-}
-
-/**
- * Create a caching middleware for Express
- * This is a placeholder function for a potential Express middleware
- */
-export function createCacheMiddleware(options: Partial<CacheOptions> = {}) {
-  const cache = new MemoryCache(options);
-
-  // Middleware implementation would go here
-
-  logger.info("Cache middleware created");
-
-  return {
-    cache,
-    middleware: (_namespace: string) => {
-      return (_req: unknown, _res: unknown, next: () => void) => {
-        // Middleware implementation
-        next();
-      };
-    },
-  };
-}
-
-/**
  * Exports the default cache
  */
 export default {
   MemoryCache,
-  RedisCache,
-  createCacheMiddleware,
 };

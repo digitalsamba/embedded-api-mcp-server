@@ -30,7 +30,7 @@ describe('Library Management Tools', () => {
       
       expect(tools).toBeDefined();
       expect(Array.isArray(tools)).toBe(true);
-      expect(tools.length).toBe(24); // 17 CRUD tools + 7 reader tools
+      expect(tools.length).toBe(26); // 19 CRUD tools + 7 reader tools
       
       // Check for some key tools
       const toolNames = tools.map(t => t.name);
@@ -225,13 +225,10 @@ describe('Library Management Tools', () => {
 
     describe('list-library-files', () => {
       it('should list library files', async () => {
-        const mockResponse = {
-          data: [
-            { id: 'file-1', name: 'Document.pdf', size: 1024 },
-            { id: 'file-2', name: 'Image.png', size: 2048 }
-          ],
-          total_count: 2
-        };
+        const mockResponse = [
+          { id: 'file-1', name: 'Document.pdf', size: 1024 },
+          { id: 'file-2', name: 'Image.png', size: 2048 }
+        ];
         mockApiClient.listLibraryFiles.mockResolvedValue(mockResponse);
 
         const result = await executeLibraryTool(
@@ -241,7 +238,7 @@ describe('Library Management Tools', () => {
         );
 
         expect(mockApiClient.listLibraryFiles).toHaveBeenCalledWith('lib-123', { limit: 50, offset: 0 });
-        expect(result.content[0].text).toContain('Found 2 files');
+        expect(result.content[0].text).toContain('Found 2 files in library');
         expect(result.content[0].text).toContain('Document.pdf');
         expect(result.content[0].text).toContain('Image.png');
       });

@@ -103,7 +103,7 @@ Options:
   -l, --log-level <level>           Log level (default: info)
 
 Environment Variables:
-  DIGITAL_SAMBA_API_KEY             Digital Samba developer key
+  DIGITAL_SAMBA_DEVELOPER_KEY       Digital Samba developer key
   DIGITAL_SAMBA_API_URL             Digital Samba API URL
   DS_LOG_LEVEL                      Log level
 
@@ -134,18 +134,18 @@ process.env.DS_SHOW_VERSION_ON_START = args["show-version-on-start"]
 
 // Set developer key from options or positional arguments or environment variable
 if (args["developer-key"]) {
-  process.env.DIGITAL_SAMBA_API_KEY = args["developer-key"];
+  process.env.DIGITAL_SAMBA_DEVELOPER_KEY = args["developer-key"];
 } else if (positionals && positionals.length > 0) {
   // Use the first positional argument as the API key
-  process.env.DIGITAL_SAMBA_API_KEY = positionals[0];
-} else if (!process.env.DIGITAL_SAMBA_API_KEY) {
+  process.env.DIGITAL_SAMBA_DEVELOPER_KEY = positionals[0];
+} else if (!process.env.DIGITAL_SAMBA_DEVELOPER_KEY) {
   // Developer key not provided - will be checked when needed
   if (!isPipedMode) {
     console.warn(
       "No developer key provided. Server will start but API operations will fail.",
     );
     console.warn(
-      "Provide a developer key using --developer-key, as a positional argument, or via DIGITAL_SAMBA_API_KEY environment variable.",
+      "Provide a developer key using --developer-key, as a positional argument, or via DIGITAL_SAMBA_DEVELOPER_KEY environment variable.",
     );
   }
 }
