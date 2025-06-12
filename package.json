@@ -48,6 +48,7 @@
     "test:coverage": "jest --coverage --forceExit",
     "test:unit": "jest --testPathPattern=tests/unit --forceExit",
     "test:integration": "jest --testPathPattern=tests/integration --forceExit",
+    "test:ci": "jest --testPathPattern=tests/unit --coverage --forceExit",
     "size-check": "node scripts/build-size-check.js",
     "coverage:analyze": "node scripts/analyze-coverage.js",
     "release:check": "node scripts/pre-release-checklist.js"

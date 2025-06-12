@@ -32,7 +32,7 @@ jobs:
     - name: Run tests with coverage
       run: npm run test:ci
       env:
-        DIGITAL_SAMBA_API_KEY: ${{ secrets.DIGITAL_SAMBA_DEVELOPER_KEY || 'mock-key-for-testing' }}
+        DIGITAL_SAMBA_DEVELOPER_KEY: ${{ secrets.DIGITAL_SAMBA_DEVELOPER_KEY || 'mock-key-for-testing' }}
         CI: true
 
     - name: Update coverage gist
