@@ -264,7 +264,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const client = getApiClient(apiKey);
   const { name, arguments: args } = request.params;
 
-  logger.info(`Executing tool: ${name}`, { args });
+  logger.info(`Executing tool: ${name}`, { 
+    args,
+    nameType: typeof name,
+    nameLength: name?.length,
+    nameIncludes: {
+      export: name?.includes("export-"),
+      library: name?.includes("library"),
+      libraries: name?.includes("libraries")
+    }
+  });
 
   try {
     // Route to appropriate tool handler based on name
@@ -377,6 +386,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     // Export tools
     else if (name.includes("export-")) {
+      logger.info(`Routing export tool: ${name} to executeExportTool`);
       return await executeExportTool(name, args || {}, request, {
         apiUrl:
           process.env.DIGITAL_SAMBA_API_URL ||

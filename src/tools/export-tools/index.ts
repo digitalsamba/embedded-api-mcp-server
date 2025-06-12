@@ -59,6 +59,18 @@ export async function executeExportTool(
       case "export-session-metadata":
         return await handleExportSessionMetadata(params, exportResources);
       default:
+        logger.error(`Unknown export tool in switch statement`, {
+          toolName,
+          validTools: [
+            "export-chat-messages",
+            "export-qa-data", 
+            "export-session-transcripts",
+            "export-poll-results",
+            "export-recording-metadata",
+            "export-session-summary",
+            "export-session-metadata"
+          ]
+        });
         throw new Error(`Unknown export tool: ${toolName}`);
     }
   } catch (error) {
