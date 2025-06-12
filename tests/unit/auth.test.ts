@@ -6,7 +6,7 @@
  * 
  * @module tests/unit/auth
  */
-import { extractApiKey, getApiKeyFromRequest } from '../../src/auth';
+import apiKeyContext, { extractApiKey, getApiKeyFromRequest } from '../../src/auth';
 
 describe('Authentication Module Tests', () => {
   // Store original env value
@@ -74,6 +74,20 @@ describe('Authentication Module Tests', () => {
       expect(extractApiKey('some-string')).toBe('test-key');
       expect(extractApiKey(null)).toBe('test-key');
       expect(extractApiKey(undefined)).toBe('test-key');
+    });
+
+    it('should check async local storage context when env var is not set', async () => {
+      delete process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
+      
+      // Test with context
+      await apiKeyContext.run('context-api-key', () => {
+        const apiKey = extractApiKey();
+        expect(apiKey).toBe('context-api-key');
+      });
+      
+      // Test without context
+      const apiKey = extractApiKey();
+      expect(apiKey).toBeNull();
     });
   });
   

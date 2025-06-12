@@ -7,24 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2025-01-07
+
 ### Added
-- GitHub Actions CI/CD pipeline with automated testing
+- GitHub Actions CI/CD pipeline with automated testing and production release workflow
 - Coverage badge integration with multiple options (static, Codecov, dynamic)
 - CHANGELOG.md for version tracking
-- Hybrid approach implementation: Added 31 reader tools that mirror resources for AI assistant compatibility
+- Hybrid approach implementation: Added 32+ reader tools that mirror resources for AI assistant compatibility
   - Room reader tools: list-rooms, get-room-details, list-live-rooms, list-live-participants
   - Session reader tools: list-sessions, get-session-details, list-session-participants, list-room-sessions
   - Analytics reader tools: get-usage-analytics, get-live-analytics, get-live-room-analytics, get-session-analytics, get-participant-analytics
-  - Content library reader tools: list-libraries, get-library-details, get-library-hierarchy, list-library-folders, get-library-folder-details, list-library-files, get-library-file-details
+  - Content library reader tools: list-libraries, search-libraries, verify-library-id, get-library-details, get-library-hierarchy, list-library-folders, get-library-folder-details, list-library-files, get-library-file-details
   - Export reader tools: export-chat-messages, export-qa-data, export-session-transcripts, export-poll-results, export-recording-metadata, export-session-summary, export-session-metadata
 - Unit tests for library management and export tools
 - Documentation explaining the resources vs tools limitation in AI assistants
+- Enhanced library search capabilities with dedicated search-libraries and verify-library-id tools
 
 ### Changed
+- **BREAKING**: Environment variable renamed from DIGITAL_SAMBA_API_KEY to DIGITAL_SAMBA_DEVELOPER_KEY
 - Updated Jest configuration to include json-summary coverage reporter
 - Improved documentation structure - moved internal docs to .ai_dev directory
-- Updated README to reflect 90 total tools (was 70)
+- Updated tool count to 102 tools and 38 resources (from 70 tools and 28 resources)
 - Added note about hybrid approach for AI assistant compatibility
+- Default log level changed from 'info' to 'warn' for cleaner operation
+- Reorganized TypeScript types into domain-specific files for better maintainability
+- Reduced package size through dependency cleanup and dead code removal
 
 ### Fixed
 - Privacy field now correctly defaults to 'public' when creating rooms
@@ -32,6 +39,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Room name and topic parameters fixed - 'name' is now correctly used throughout
 - Get all room sessions tool now properly filters by room ID
 - Generate token tool uses correct roomId parameter
+- Export tool routing conflicts resolved for export-qa-data and export-session-transcripts
+- Critical bug fixed where recording tools were not passing API key to client
+- Fixed camelCase to snake_case parameter conversion for API compatibility
+- Session-specific chat and Q&A deletion endpoints now use correct API routes
+- CI workflow now uses correct test:ci script and environment variable
+
+### Removed
+- Non-existent API features (meeting scheduling) that were documented but not in official API
+- Unused dependencies: @types/express, express, esbuild
+- Dead code: RedisCache, createCacheMiddleware, unused npm scripts
+- Co-author attribution from future commits
 
 ## [0.1.0-beta.1] - 2025-01-06
 
@@ -71,6 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-[Unreleased]: https://github.com/digitalsamba/embedded-api-mcp-server/compare/v0.1.0-beta.1...HEAD
+[Unreleased]: https://github.com/digitalsamba/embedded-api-mcp-server/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/digitalsamba/embedded-api-mcp-server/compare/v0.1.0-beta.1...v0.1.0
 [0.1.0-beta.1]: https://github.com/digitalsamba/embedded-api-mcp-server/compare/v0.0.1-alpha...v0.1.0-beta.1
 [0.0.1-alpha]: https://github.com/digitalsamba/embedded-api-mcp-server/releases/tag/v0.0.1-alpha

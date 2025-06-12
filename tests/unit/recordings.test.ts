@@ -72,7 +72,8 @@ describe('Recording Resources', () => {
     mockApiClient = {
       listRecordings: jest.fn(),
       getRecording: jest.fn(),
-      deleteRecording: jest.fn()
+      deleteRecording: jest.fn(),
+      listArchivedRecordings: jest.fn()
     } as any;
 
     (DigitalSambaApiClient as jest.MockedClass<typeof DigitalSambaApiClient>).mockImplementation(() => mockApiClient);
@@ -169,6 +170,50 @@ describe('Recording Resources', () => {
           'digitalsamba://recordings/test-recording-id',
           mockApiClient
         )).rejects.toThrow('Recording not found');
+      });
+    });
+
+    describe('List Archived Recordings', () => {
+      it('should list archived recordings', async () => {
+        const archivedRecordings = {
+          data: [
+            { ...mockRecording, id: 'archived-1', status: 'ARCHIVED' },
+            { ...mockRecording, id: 'archived-2', status: 'ARCHIVED' }
+          ]
+        };
+        mockApiClient.listArchivedRecordings.mockResolvedValue(archivedRecordings);
+
+        const result = await handleRecordingResource(
+          'digitalsamba://recordings/archived',
+          mockApiClient
+        );
+
+        expect(mockApiClient.listArchivedRecordings).toHaveBeenCalled();
+        expect(result.contents).toHaveLength(2);
+        expect(result.contents[0].uri).toBe('digitalsamba://recordings/archived-1');
+        expect(result.contents[1].uri).toBe('digitalsamba://recordings/archived-2');
+      });
+    });
+
+    describe('List Room Recordings', () => {
+      it('should list recordings for a specific room', async () => {
+        const roomRecordings = {
+          data: [
+            { ...mockRecording, room_id: 'test-room-123' },
+            { ...mockRecording, id: 'rec-2', room_id: 'test-room-123' }
+          ]
+        };
+        mockApiClient.listRecordings.mockResolvedValue(roomRecordings);
+
+        const result = await handleRecordingResource(
+          'digitalsamba://rooms/test-room-123/recordings',
+          mockApiClient
+        );
+
+        expect(mockApiClient.listRecordings).toHaveBeenCalledWith({ room_id: 'test-room-123' });
+        expect(result.contents).toHaveLength(2);
+        expect(result.contents[0].uri).toBe('digitalsamba://recordings/test-recording-id');
+        expect(result.contents[1].uri).toBe('digitalsamba://recordings/rec-2');
       });
     });
   });
