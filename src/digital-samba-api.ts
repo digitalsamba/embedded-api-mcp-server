@@ -696,7 +696,32 @@ export class DigitalSambaApiClient {
         return {} as T;
       }
 
-      const responseData = await response.json();
+      // Get response text first to check if it's empty
+      const responseText = await response.text();
+      
+      // Handle empty response bodies (some endpoints return 200 with empty body or {})
+      if (!responseText || responseText.trim() === '') {
+        logger.debug(`Empty response body for ${endpoint}`);
+        return {} as T;
+      }
+
+      // Parse the JSON response
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (parseError) {
+        logger.error(`Failed to parse JSON response for ${endpoint}`, {
+          responseText,
+          error: parseError instanceof Error ? parseError.message : String(parseError),
+        });
+        throw new ApiResponseError(
+          `Invalid JSON response from Digital Samba API: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+          {
+            statusCode: response.status,
+            responseText,
+          },
+        );
+      }
 
       // Add array-like properties to ApiResponse objects
       if (
