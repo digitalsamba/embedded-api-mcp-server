@@ -297,6 +297,33 @@ describe('Session Resources', () => {
         )).rejects.toThrow('No API key found');
       });
 
+      it('should throw error when room ID is missing for room sessions', async () => {
+        await expect(handleSessionResource(
+          'digitalsamba://rooms//sessions',
+          {},
+          mockRequest,
+          options
+        )).rejects.toThrow('Room ID is required.');
+      });
+
+      it('should throw error when session ID is missing for participants', async () => {
+        await expect(handleSessionResource(
+          'digitalsamba://sessions//participants',
+          {},
+          mockRequest,
+          options
+        )).rejects.toThrow('Session ID is required.');
+      });
+
+      it('should throw error when session ID is missing for statistics', async () => {
+        await expect(handleSessionResource(
+          'digitalsamba://sessions//statistics',
+          {},
+          mockRequest,
+          options
+        )).rejects.toThrow('Session ID is required.');
+      });
+
       it('should handle API errors', async () => {
         mockApiClient.listSessions.mockRejectedValue(new Error('API Error'));
 
