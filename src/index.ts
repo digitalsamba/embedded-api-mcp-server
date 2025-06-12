@@ -244,8 +244,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   
   // Log export tools for debugging
   const exportTools = allTools.filter(t => t.name.includes('export'));
-  logger.info(`ListToolsRequest: Registered ${allTools.length} total tools`);
-  logger.info(`Export tools (${exportTools.length}): ${exportTools.map(t => t.name).join(', ')}`);
+  logger.debug(`ListToolsRequest: Registered ${allTools.length} total tools`);
+  logger.debug(`Export tools (${exportTools.length}): ${exportTools.map(t => t.name).join(', ')}`);
   
   return {
     tools: allTools,
@@ -264,16 +264,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const client = getApiClient(apiKey);
   const { name, arguments: args } = request.params;
 
-  logger.info(`Executing tool: ${name}`, { 
-    args,
-    nameType: typeof name,
-    nameLength: name?.length,
-    nameIncludes: {
-      export: name?.includes("export-"),
-      library: name?.includes("library"),
-      libraries: name?.includes("libraries")
-    }
-  });
+  logger.debug(`Executing tool: ${name}`);
 
   try {
     // Route to appropriate tool handler based on name
@@ -355,7 +346,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     // Export tools (moved before communication tools to avoid conflicts)
     else if (name.includes("export-")) {
-      logger.info(`Routing export tool: ${name} to executeExportTool`);
+      logger.debug(`Routing export tool: ${name} to executeExportTool`);
       return await executeExportTool(name, args || {}, request, {
         apiUrl:
           process.env.DIGITAL_SAMBA_API_URL ||

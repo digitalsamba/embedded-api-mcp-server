@@ -13,7 +13,7 @@ const LOG_LEVELS = {
 type LogLevel = keyof typeof LOG_LEVELS;
 
 const currentLogLevel =
-  LOG_LEVELS[process.env.DS_LOG_LEVEL as LogLevel] ?? LOG_LEVELS.info;
+  LOG_LEVELS[process.env.DS_LOG_LEVEL as LogLevel] ?? LOG_LEVELS.warn;
 
 const logger = {
   error: (message: string, ...args: unknown[]) => {

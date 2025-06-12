@@ -94,7 +94,7 @@ export class MemoryCache<T = unknown> {
     this.options = { ...defaultCacheOptions, ...options };
     this.cache = new Map<string, CacheEntry<T>>();
 
-    logger.info("Cache initialized", {
+    logger.debug("Cache initialized", {
       ttl: this.options.ttl,
       maxItems: this.options.maxItems,
     });
