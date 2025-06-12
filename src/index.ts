@@ -353,6 +353,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Library management tools
     else if (
       name.includes("library") ||
+      name.includes("libraries") ||
       name.includes("webapp") ||
       name.includes("whiteboard") ||
       name === "get-file-links"
