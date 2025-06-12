@@ -353,6 +353,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     ) {
       return await executeLiveSessionTool(name, args || {}, client);
     }
+    // Export tools (moved before communication tools to avoid conflicts)
+    else if (name.includes("export-")) {
+      logger.info(`Routing export tool: ${name} to executeExportTool`);
+      return await executeExportTool(name, args || {}, request, {
+        apiUrl:
+          process.env.DIGITAL_SAMBA_API_URL ||
+          "https://api.digitalsamba.com/api/v1",
+      });
+    }
     // Communication management tools
     else if (
       name.includes("-chats") ||
@@ -383,15 +392,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Webhook management tools
     else if (name.includes("webhook") || name === "list-webhook-events") {
       return await executeWebhookTool(name, args || {}, client);
-    }
-    // Export tools
-    else if (name.includes("export-")) {
-      logger.info(`Routing export tool: ${name} to executeExportTool`);
-      return await executeExportTool(name, args || {}, request, {
-        apiUrl:
-          process.env.DIGITAL_SAMBA_API_URL ||
-          "https://api.digitalsamba.com/api/v1",
-      });
     }
 
     logger.error(`Unknown tool requested: ${name}`, { 
