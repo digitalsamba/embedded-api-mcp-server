@@ -257,7 +257,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const client = getApiClient(apiKey);
   const { name, arguments: args } = request.params;
 
-  logger.debug(`Executing tool: ${name}`);
+  logger.info(`Executing tool: ${name}`, { args });
 
   try {
     // Route to appropriate tool handler based on name
@@ -377,6 +377,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       });
     }
 
+    logger.error(`Unknown tool requested: ${name}`, { 
+      availablePatterns: [
+        'get-server-version',
+        'create-room, update-room, delete-room, etc.',
+        'get-participant-statistics, get-room-analytics, etc.',
+        'end-session, get-session-summary, etc.',
+        'delete-recording, update-recording, etc.',
+        'start-transcription, stop-transcription, etc.',
+        'delete-session-chats, delete-room-chats, etc.',
+        'create-poll, update-poll, etc.',
+        'includes("library") or includes("libraries")',
+        'includes("role") or get-permissions',
+        'includes("webhook") or list-webhook-events',
+        'includes("export-")'
+      ]
+    });
     throw new McpError(ErrorCode.InvalidRequest, `Unknown tool: ${name}`);
   } catch (error: any) {
     logger.error(`Tool execution error: ${error.message}`, error);
