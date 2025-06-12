@@ -2759,7 +2759,7 @@ export class DigitalSambaApiClient {
       this.cache.invalidateNamespace("api");
     }
 
-    await this.request<void>(`/sessions/${sessionId}/chats`, {
+    await this.request<void>(`/sessions/${sessionId}/chat`, {
       method: "DELETE",
     });
   }
@@ -2773,7 +2773,7 @@ export class DigitalSambaApiClient {
       this.cache.invalidateNamespace("api");
     }
 
-    await this.request<void>(`/sessions/${sessionId}/qa`, {
+    await this.request<void>(`/sessions/${sessionId}/questions`, {
       method: "DELETE",
     });
   }

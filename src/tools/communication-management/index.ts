@@ -51,7 +51,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     {
       name: "delete-session-chats",
       description:
-        '[Communication Management] NOT SUPPORTED - The Digital Samba API does not support session-specific chat deletion. Use delete-room-chats instead to delete all chats from a room.',
+        '[Communication Management] Delete all chat messages for a session. Use when users say: "delete session chat", "remove chat messages", "clear session chat history", "delete chat from session", "wipe chat messages". Requires sessionId. This permanently removes all chat data.',
       inputSchema: {
         type: "object",
         properties: {
@@ -83,7 +83,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     {
       name: "delete-session-qa",
       description:
-        '[Communication Management] NOT SUPPORTED - The Digital Samba API does not support session-specific Q&A deletion. Use delete-room-qa instead to delete all Q&A from a room.',
+        '[Communication Management] Delete all Q&A (questions and answers) from a session. Use when users say: "delete session Q&A", "remove questions and answers", "clear Q&A history", "delete session questions", "wipe Q&A data". Requires sessionId. Removes all Q&A interactions.',
       inputSchema: {
         type: "object",
         properties: {
@@ -229,22 +229,57 @@ async function handleDeleteSessionChats(
 ): Promise<any> {
   const { sessionId } = params;
 
-  logger.info("Attempted to delete session-specific chats", { sessionId });
+  if (!sessionId || sessionId.trim() === "") {
+    return {
+      content: [
+        {
+          type: "text",
+          text: "Session ID is required to delete chats.",
+        },
+      ],
+      isError: true,
+    };
+  }
 
-  // The Digital Samba API doesn't support session-specific chat deletion
-  // Only room-wide chat deletion is available
-  return {
-    content: [
-      {
-        type: "text",
-        text: `Session-specific chat deletion is not supported by the Digital Samba API. 
-You can only delete all chat messages from an entire room using the delete-room-chats tool.
+  logger.info("Deleting session chats", { sessionId });
 
-To delete chats, you'll need the room ID, not the session ID.`,
-      },
-    ],
-    isError: true,
-  };
+  try {
+    await apiClient.deleteSessionChats(sessionId);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully deleted all chat messages for session ${sessionId}`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error("Error deleting session chats", {
+      sessionId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    let displayMessage = `Error deleting session chats: ${errorMessage}`;
+
+    if (
+      errorMessage.includes("Session not found") ||
+      errorMessage.includes("404")
+    ) {
+      displayMessage = `Session with ID ${sessionId} not found`;
+    }
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: displayMessage,
+        },
+      ],
+      isError: true,
+    };
+  }
 }
 
 /**
@@ -363,33 +398,6 @@ async function handleDeleteSessionQA(
 }
 
 /**
- * Handle delete session Q&A
- */
-async function handleDeleteSessionQA(
-  params: { sessionId: string },
-  apiClient: DigitalSambaApiClient,
-): Promise<any> {
-  const { sessionId } = params;
-
-  logger.info("Attempted to delete session-specific Q&A", { sessionId });
-
-  // The Digital Samba API doesn't support session-specific Q&A deletion
-  // Only room-wide Q&A deletion is available
-  return {
-    content: [
-      {
-        type: "text",
-        text: `Session-specific Q&A deletion is not supported by the Digital Samba API. 
-You can only delete all Q&A from an entire room using the delete-room-qa tool.
-
-To delete Q&A, you'll need the room ID, not the session ID.`,
-      },
-    ],
-    isError: true,
-  };
-}
-
-/**
  * Handle delete room Q&A
  */
 async function handleDeleteRoomQA(
@@ -466,8 +474,6 @@ async function handleDeleteSessionTranscripts(
   logger.info("Deleting session transcripts", { sessionId });
 
   try {
-    // Note: The Digital Samba API might use different endpoints for transcripts
-    // This is a placeholder implementation
     await apiClient.deleteSessionData(sessionId, "transcripts");
 
     return {
@@ -547,11 +553,13 @@ async function handleDeleteRoomTranscripts(
 
     // Delete transcripts for each session
     let deletedCount = 0;
+    let failedCount = 0;
     for (const session of sessions) {
       try {
         await apiClient.deleteSessionData(session.id, "transcripts");
         deletedCount++;
       } catch (error) {
+        failedCount++;
         logger.warn("Failed to delete transcripts for session", {
           sessionId: session.id,
           error: error instanceof Error ? error.message : String(error),
@@ -688,11 +696,13 @@ async function handleDeleteRoomSummaries(
 
     // Delete summaries for each session
     let deletedCount = 0;
+    let failedCount = 0;
     for (const session of sessions) {
       try {
         await apiClient.deleteSessionSummaries(session.id);
         deletedCount++;
       } catch (error) {
+        failedCount++;
         logger.warn("Failed to delete summaries for session", {
           sessionId: session.id,
           error: error instanceof Error ? error.message : String(error),
