@@ -37,16 +37,18 @@ export class ExportResources {
       logger.info(`Handling export resource request: ${uri}`);
 
       const url = new URL(uri);
+      // For digitalsamba:// protocol, the host is "exports" and the path starts with the export type
       const pathParts = url.pathname.split("/").filter(Boolean);
+      logger.debug(`Parsed path parts: ${JSON.stringify(pathParts)}`);
 
-      if (pathParts.length < 2) {
+      if (pathParts.length < 1) {
         throw new McpError(
           ErrorCode.InvalidRequest,
           "Invalid export resource URI format",
         );
       }
 
-      const exportType = pathParts[1]; // exports/{exportType}/...
+      const exportType = pathParts[0]; // {exportType}/...
 
       switch (exportType) {
         case "communications":
@@ -82,15 +84,15 @@ export class ExportResources {
     pathParts: string[],
     searchParams: URLSearchParams,
   ): Promise<{ contents: Array<{ type: string; text: string }> }> {
-    if (pathParts.length < 4) {
+    if (pathParts.length < 3) {
       throw new McpError(
         ErrorCode.InvalidRequest,
         "Communication export requires: /communications/{roomId}/{type}",
       );
     }
 
-    const roomId = pathParts[2];
-    const commType = pathParts[3]; // chat, qa, transcripts
+    const roomId = pathParts[1];
+    const commType = pathParts[2]; // chat, qa, transcripts
 
     const format = searchParams.get("format") || "json";
     const sessionId = searchParams.get("session_id") || undefined;
@@ -114,16 +116,12 @@ export class ExportResources {
         description = `Q&A export for room ${roomId}`;
         break;
       case "transcripts":
-        if (!sessionId) {
-          throw new McpError(
-            ErrorCode.InvalidRequest,
-            "Transcript export requires session_id parameter",
-          );
-        }
-        exportData = await this.api.exportTranscripts(sessionId, {
+        // For transcripts, the session ID is in the path position where room ID would be
+        const transcriptSessionId = roomId; // Actually the session ID for transcripts
+        exportData = await this.api.exportTranscripts(transcriptSessionId, {
           format: format as "txt" | "json",
         });
-        description = `Transcript export for session ${sessionId}`;
+        description = `Transcript export for session ${transcriptSessionId}`;
         break;
       default:
         throw new McpError(
@@ -149,14 +147,14 @@ export class ExportResources {
     pathParts: string[],
     searchParams: URLSearchParams,
   ): Promise<{ contents: Array<{ type: string; text: string }> }> {
-    if (pathParts.length < 3) {
+    if (pathParts.length < 2) {
       throw new McpError(
         ErrorCode.InvalidRequest,
         "Polls export requires: /polls/{roomId}",
       );
     }
 
-    const roomId = pathParts[2];
+    const roomId = pathParts[1];
     const format = searchParams.get("format") || "json";
     const sessionId = searchParams.get("session_id") || undefined;
 
@@ -182,14 +180,14 @@ export class ExportResources {
     pathParts: string[],
     _searchParams: URLSearchParams,
   ): Promise<{ contents: Array<{ type: string; text: string }> }> {
-    if (pathParts.length < 3) {
+    if (pathParts.length < 2) {
       throw new McpError(
         ErrorCode.InvalidRequest,
         "Recording export requires: /recordings/{recordingId}",
       );
     }
 
-    const recordingId = pathParts[2];
+    const recordingId = pathParts[1];
 
     try {
       // Get recording metadata first
@@ -218,15 +216,15 @@ export class ExportResources {
     pathParts: string[],
     _searchParams: URLSearchParams,
   ): Promise<{ contents: Array<{ type: string; text: string }> }> {
-    if (pathParts.length < 4) {
+    if (pathParts.length < 3) {
       throw new McpError(
         ErrorCode.InvalidRequest,
         "Session export requires: /sessions/{sessionId}/{type}",
       );
     }
 
-    const sessionId = pathParts[2];
-    const exportType = pathParts[3]; // summary, metadata
+    const sessionId = pathParts[1];
+    const exportType = pathParts[2]; // summary, metadata
 
     try {
       const session = await this.api.getSessionStatistics(sessionId);

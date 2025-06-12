@@ -39,10 +39,15 @@ describe('Analytics Tools Execution', () => {
     it('should register analytics tools', () => {
       const tools = registerAnalyticsTools();
       
-      expect(tools).toHaveLength(3);
+      expect(tools).toHaveLength(8);
       expect(tools[0].name).toBe('get-participant-statistics');
       expect(tools[1].name).toBe('get-room-analytics');
       expect(tools[2].name).toBe('get-usage-statistics');
+      expect(tools[3].name).toBe('get-usage-analytics');
+      expect(tools[4].name).toBe('get-live-analytics');
+      expect(tools[5].name).toBe('get-live-room-analytics');
+      expect(tools[6].name).toBe('get-session-analytics');
+      expect(tools[7].name).toBe('get-participant-analytics');
     });
 
     it('should have proper input schemas', () => {
@@ -69,7 +74,7 @@ describe('Analytics Tools Execution', () => {
         
         const result = await executeAnalyticsTool(
           'get-team-analytics',
-          { date_start: '2025-01-01', date_end: '2025-01-31' },
+          { dateStart: '2025-01-01', dateEnd: '2025-01-31' },
           mockApiClient
         );
         
@@ -90,7 +95,7 @@ describe('Analytics Tools Execution', () => {
     describe('get-room-analytics', () => {
       it('should execute room analytics query with room ID', async () => {
         const mockData = {
-          room_id: 'room-123',
+          roomId: 'room-123',
           total_sessions: 20,
           total_participants: 100
         };
@@ -99,7 +104,7 @@ describe('Analytics Tools Execution', () => {
         
         const result = await executeAnalyticsTool(
           'get-room-analytics',
-          { room_id: 'room-123', period: 'month' },
+          { roomId: 'room-123', period: 'month' },
           mockApiClient
         );
         
@@ -121,7 +126,7 @@ describe('Analytics Tools Execution', () => {
         
         const result = await executeAnalyticsTool(
           'get-room-analytics',
-          { date_start: '2025-01-01' },
+          { dateStart: '2025-01-01' },
           mockApiClient
         );
         
@@ -133,7 +138,7 @@ describe('Analytics Tools Execution', () => {
     describe('get-session-analytics', () => {
       it('should execute session analytics query', async () => {
         const mockData = {
-          session_id: 'session-123',
+          sessionId: 'session-123',
           duration: 3600,
           participant_count: 25
         };
@@ -142,7 +147,7 @@ describe('Analytics Tools Execution', () => {
         
         const result = await executeAnalyticsTool(
           'get-session-analytics',
-          { session_id: 'session-123' },
+          { sessionId: 'session-123' },
           mockApiClient
         );
         
@@ -168,7 +173,7 @@ describe('Analytics Tools Execution', () => {
         
         const result = await executeAnalyticsTool(
           'get-participant-statistics',
-          { participant_id: 'user-1' },
+          { participantId: 'user-1' },
           mockApiClient
         );
         
@@ -212,9 +217,9 @@ describe('Analytics Tools Execution', () => {
         await executeAnalyticsTool(
           'get-team-analytics',
           { 
-            date_start: '2025-01-01',
-            date_end: undefined,
-            room_id: null,
+            dateStart: '2025-01-01',
+            dateEnd: undefined,
+            roomId: null,
             period: 'month'
           },
           mockApiClient

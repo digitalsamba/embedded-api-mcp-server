@@ -212,12 +212,17 @@ describe('Analytics Tools', () => {
     it('should register all analytics tools', () => {
       const tools = registerAnalyticsTools();
       
-      expect(tools).toHaveLength(3);
-      expect(tools.map(t => t.name)).toEqual([
-        'get-participant-statistics',
-        'get-room-analytics',
-        'get-usage-statistics'
-      ]);
+      expect(tools).toHaveLength(8); // 3 original + 5 reader tools
+      
+      const toolNames = tools.map(t => t.name);
+      expect(toolNames).toContain('get-participant-statistics');
+      expect(toolNames).toContain('get-room-analytics');
+      expect(toolNames).toContain('get-usage-statistics');
+      expect(toolNames).toContain('get-usage-analytics');
+      expect(toolNames).toContain('get-live-analytics');
+      expect(toolNames).toContain('get-live-room-analytics');
+      expect(toolNames).toContain('get-session-analytics');
+      expect(toolNames).toContain('get-participant-analytics');
       
       tools.forEach(tool => {
         expect(tool).toHaveProperty('description');

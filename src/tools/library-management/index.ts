@@ -32,6 +32,15 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 // import { getApiKeyFromRequest } from '../../auth.js'; // Removed: unused
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
+import {
+  handleListLibraries,
+  handleGetLibraryDetails,
+  handleGetLibraryHierarchy,
+  handleListLibraryFolders,
+  handleGetLibraryFolderDetails,
+  handleListLibraryFiles,
+  handleGetLibraryFileDetails,
+} from "./reader-handlers.js";
 
 /**
  * Tool definition interface
@@ -470,6 +479,173 @@ export function registerLibraryTools(): ToolDefinition[] {
         ],
       },
     },
+    // Reader tools for content resources (hybrid approach for Claude Desktop compatibility)
+    {
+      name: "list-libraries",
+      description:
+        '[Content Library - TOOL] List all content libraries in your account. Use when users say: "show libraries", "list libraries", "get all libraries", "view content libraries", "show file storage", "find library", "search for library". This TOOL provides the same data as digitalsamba://libraries resource. Returns array of library objects with names, IDs, and file counts. Can search by name.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          limit: {
+            type: "number",
+            description: "Maximum number of libraries to return (default: 100)",
+          },
+          offset: {
+            type: "number",
+            description: "Number of libraries to skip for pagination",
+          },
+          searchName: {
+            type: "string",
+            description: "Search for libraries by name or external ID (searches all libraries)",
+          },
+        },
+      },
+    },
+    {
+      name: "search-libraries",
+      description:
+        '[Content Library - TOOL] Search for libraries by name. Use when users say: "find library named", "search for library", "locate library", "where is library", "find Conal\'s library". Searches through ALL libraries in the account to find matches by name or external ID.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          searchTerm: {
+            type: "string",
+            description: "Name or external ID to search for (required)",
+          },
+        },
+        required: ["searchTerm"],
+      },
+    },
+    {
+      name: "verify-library-id",
+      description:
+        '[Content Library - TOOL] Verify if a library ID exists by attempting to retrieve it. Use when users say: "check if library ID exists", "verify library ID", "test library ID", "validate library ID". Useful for checking if a specific library ID is valid.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          libraryId: {
+            type: "string",
+            description: "Library ID to verify (required)",
+          },
+        },
+        required: ["libraryId"],
+      },
+    },
+    {
+      name: "get-library-details",
+      description:
+        '[Content Library - TOOL] Get detailed information about a specific library. Use when users say: "show library details", "get library info", "library information", "describe library", "library metadata". Requires libraryId. This TOOL provides the same data as digitalsamba://libraries/{id} resource. Returns complete library information and statistics.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          libraryId: {
+            type: "string",
+            description: "Library ID (required)",
+          },
+        },
+        required: ["libraryId"],
+      },
+    },
+    {
+      name: "get-library-hierarchy",
+      description:
+        '[Content Library - TOOL] Get complete folder and file hierarchy of a library. Use when users say: "show library structure", "get folder tree", "library hierarchy", "folder organization", "library tree view". Requires libraryId. This TOOL provides the same data as digitalsamba://libraries/{id}/hierarchy resource. Returns nested structure showing all folders and their relationships.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          libraryId: {
+            type: "string",
+            description: "Library ID (required)",
+          },
+        },
+        required: ["libraryId"],
+      },
+    },
+    {
+      name: "list-library-folders",
+      description:
+        '[Content Library - TOOL] List all folders in a library. Use when users say: "list folders", "show library folders", "get folders", "view directories", "folder list". Requires libraryId. This TOOL provides the same data as digitalsamba://libraries/{id}/folders resource. Returns flat list of all folders with names, IDs, and parent relationships.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          libraryId: {
+            type: "string",
+            description: "Library ID (required)",
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number of folders to return",
+          },
+          offset: {
+            type: "number",
+            description: "Number of folders to skip for pagination",
+          },
+        },
+        required: ["libraryId"],
+      },
+    },
+    {
+      name: "get-library-folder-details",
+      description:
+        '[Content Library - TOOL] Get details of a specific folder in a library. Use when users say: "show folder details", "get folder info", "folder contents", "folder information", "describe folder". Requires libraryId and folderId. This TOOL provides the same data as digitalsamba://libraries/{id}/folders/{folderId} resource. Returns folder information and contained files.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          libraryId: {
+            type: "string",
+            description: "Library ID (required)",
+          },
+          folderId: {
+            type: "string",
+            description: "Folder ID (required)",
+          },
+        },
+        required: ["libraryId", "folderId"],
+      },
+    },
+    {
+      name: "list-library-files",
+      description:
+        '[Content Library - TOOL] List all files in a library. Use when users say: "list files", "show library files", "get files", "view documents", "file list". Requires libraryId. This TOOL provides the same data as digitalsamba://libraries/{id}/files resource. Returns array of file objects with names, sizes, types, and folder locations.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          libraryId: {
+            type: "string",
+            description: "Library ID (required)",
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number of files to return",
+          },
+          offset: {
+            type: "number",
+            description: "Number of files to skip for pagination",
+          },
+        },
+        required: ["libraryId"],
+      },
+    },
+    {
+      name: "get-library-file-details",
+      description:
+        '[Content Library - TOOL] Get detailed information about a specific file. Use when users say: "show file details", "get file info", "file information", "describe file", "file metadata". Requires libraryId and fileId. This TOOL provides the same data as digitalsamba://libraries/{id}/files/{fileId} resource. Returns complete file information including size, type, upload date, and access URLs.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          libraryId: {
+            type: "string",
+            description: "Library ID (required)",
+          },
+          fileId: {
+            type: "string",
+            description: "File ID (required)",
+          },
+        },
+        required: ["libraryId", "fileId"],
+      },
+    },
   ];
 }
 
@@ -530,6 +706,26 @@ export async function executeLibraryTool(
       return handleBulkUploadLibraryFiles(params, apiClient);
     case "copy-library-content":
       return handleCopyLibraryContent(params, apiClient);
+
+    // Reader tools for content resources (hybrid approach)
+    case "list-libraries":
+      return handleListLibraries(params, apiClient);
+    case "search-libraries":
+      return handleListLibraries({ searchName: params.searchTerm }, apiClient);
+    case "verify-library-id":
+      return handleGetLibraryDetails(params, apiClient);
+    case "get-library-details":
+      return handleGetLibraryDetails(params, apiClient);
+    case "get-library-hierarchy":
+      return handleGetLibraryHierarchy(params, apiClient);
+    case "list-library-folders":
+      return handleListLibraryFolders(params, apiClient);
+    case "get-library-folder-details":
+      return handleGetLibraryFolderDetails(params, apiClient);
+    case "list-library-files":
+      return handleListLibraryFiles(params, apiClient);
+    case "get-library-file-details":
+      return handleGetLibraryFileDetails(params, apiClient);
 
     default:
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);

@@ -17,7 +17,7 @@
 
 ## Overview
 
-The Digital Samba Embedded API MCP Server is a comprehensive Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's Embedded API. With support for 95+ endpoints, it provides complete control over rooms, sessions, recordings, analytics, and more.
+The Digital Samba Embedded API MCP Server is a comprehensive Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's Embedded API. With support for 102 tools and 38 resources covering 100+ API endpoints, it provides complete control over rooms, sessions, recordings, analytics, and more.
 
 ## Features
 
@@ -39,6 +39,9 @@ The Digital Samba Embedded API MCP Server is a comprehensive Model Context Proto
 - Bulk recording operations
 
 ### 👥 **Live Session Control**
+- Monitor rooms with active participants
+- View real-time participant lists
+- Check participant counts and session duration
 - Start/stop recording sessions
 - Start/stop transcription
 - End active sessions
@@ -123,13 +126,19 @@ Restart Claude Desktop and you can now:
 
 ## Available MCP Resources & Tools
 
-The MCP server exposes Digital Samba API functionality through two types of interfaces: Resources provide read-only access to data (like listing rooms or viewing analytics), while Tools enable actions that modify data (like creating rooms or starting recordings). These are accessed via MCP URIs, not direct API endpoints.
+The MCP server exposes Digital Samba API functionality through two types of interfaces: Resources provide read-only access to data (like listing rooms or viewing analytics), while Tools enable actions that modify data (like creating rooms or starting recordings). These are accessed via MCP URIs, not direct API endpoints. For more details on MCP resources and tools, see the [official MCP documentation](https://modelcontextprotocol.io/docs/concepts/resources).
 
-### Resources (Read-Only) - 28 Available
+> **Note on AI Assistant Compatibility**: While the MCP protocol supports both resources and tools, current AI assistants (like Claude Desktop) can only access tools, not resources. To work around this limitation, we've implemented a hybrid approach with reader tools: all read-only resources also have equivalent tool versions that provide the same data. For example, the `digitalsamba://rooms` resource can also be accessed via the `list-rooms` tool. Reader tools are clearly marked with "mirrors digitalsamba://..." in their descriptions. This ensures full functionality in AI assistants while maintaining compatibility with future MCP client improvements.
+
+### Resources (Read-Only) - 32 Available
 
 #### Room Resources
 - `digitalsamba://rooms` - List all rooms
 - `digitalsamba://rooms/{id}` - Get room details
+- `digitalsamba://rooms/live` - List rooms with active participants
+- `digitalsamba://rooms/live/participants` - List rooms with participant details
+- `digitalsamba://rooms/{id}/live` - Get live session info for a room
+- `digitalsamba://rooms/{id}/live/participants` - Get participant list for a room
 
 #### Session Resources
 - `digitalsamba://sessions` - List all sessions
@@ -172,7 +181,7 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `digitalsamba://exports/sessions/{sessionId}/summary` - Export session summary
 - `digitalsamba://exports/sessions/{sessionId}/metadata` - Export session metadata
 
-### Tools (Actions) - 70 Available
+### Tools (Actions) - 99 Available
 
 #### Room Management
 - `create-room` - Create a new room
@@ -181,6 +190,10 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `generate-token` - Generate access token
 - `get-default-room-settings` - Get default settings for new rooms
 - `update-default-room-settings` - Update default settings for new rooms
+- `list-rooms` - List all rooms (mirrors digitalsamba://rooms)
+- `get-room-details` - Get specific room details (mirrors digitalsamba://rooms/{id})
+- `list-live-rooms` - List rooms with active participants
+- `list-live-participants` - List all live participants across rooms
 
 #### Session Management  
 - `end-session` - End a live session
@@ -189,10 +202,12 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `hard-delete-session-resources` - Permanently delete session data
 - `bulk-delete-session-data` - Delete multiple session data types
 - `get-session-statistics` - Get detailed session statistics
+- `list-sessions` - List all sessions (mirrors digitalsamba://sessions)
+- `get-session-details` - Get specific session details (mirrors digitalsamba://sessions/{id})
+- `list-session-participants` - List participants for a session
+- `list-room-sessions` - List sessions for a specific room
 
 #### Recording Management
-- `start-recording` - Start recording a session
-- `stop-recording` - Stop recording
 - `get-recordings` - List recordings with filters
 - `delete-recording` - Delete a recording
 - `get-recording` - Get recording details
@@ -201,6 +216,8 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `unarchive-recording` - Unarchive a recording
 
 #### Live Session Controls
+- `start-recording` - Start recording a session
+- `stop-recording` - Stop recording
 - `start-transcription` - Start live transcription
 - `stop-transcription` - Stop transcription
 - `phone-participants-joined` - Register phone participants joining
@@ -210,6 +227,11 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `get-participant-statistics` - Participant analytics
 - `get-room-analytics` - Room usage analytics
 - `get-usage-statistics` - Overall usage metrics
+- `get-usage-analytics` - Usage analytics (mirrors digitalsamba://analytics/usage)
+- `get-live-analytics` - Live session analytics (mirrors digitalsamba://analytics/live)
+- `get-live-room-analytics` - Live analytics for specific room
+- `get-session-analytics` - Session analytics (mirrors digitalsamba://analytics/sessions/{id})
+- `get-participant-analytics` - Specific participant analytics
 
 #### Communication Management
 - `delete-session-chats` - Delete chat messages for a session
@@ -247,6 +269,13 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `bulk-delete-library-files` - Delete multiple files
 - `bulk-upload-library-files` - Upload multiple files
 - `copy-library-content` - Copy files/folders
+- `list-libraries` - List all libraries (mirrors digitalsamba://libraries)
+- `get-library-details` - Get library details (mirrors digitalsamba://libraries/{id})
+- `get-library-hierarchy` - Get folder structure (mirrors digitalsamba://libraries/{id}/hierarchy)
+- `list-library-folders` - List all folders (mirrors digitalsamba://libraries/{id}/folders)
+- `get-library-folder-details` - Get folder details
+- `list-library-files` - List all files (mirrors digitalsamba://libraries/{id}/files)
+- `get-library-file-details` - Get file details
 
 #### Role & Permission Management
 - `create-role` - Create custom role
@@ -264,9 +293,18 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 - `update-webhook` - Update webhook configuration
 - `delete-webhook` - Delete a webhook
 
+#### Export Tools
+- `export-chat-messages` - Export chat messages from a room (mirrors digitalsamba://exports/communications/{roomId}/chat)
+- `export-qa-data` - Export Q&A data from a room (mirrors digitalsamba://exports/communications/{roomId}/qa)
+- `export-session-transcripts` - Export transcripts from a session (mirrors digitalsamba://exports/communications/{sessionId}/transcripts)
+- `export-poll-results` - Export poll results from a room (mirrors digitalsamba://exports/polls/{roomId})
+- `export-recording-metadata` - Export recording metadata (mirrors digitalsamba://exports/recordings/{recordingId})
+- `export-session-summary` - Export session summary (mirrors digitalsamba://exports/sessions/{sessionId}/summary)
+- `export-session-metadata` - Export session metadata (mirrors digitalsamba://exports/sessions/{sessionId}/metadata)
+
 ## Environment Variables
 
-- `DIGITAL_SAMBA_API_KEY` - Your Digital Samba developer key
+- `DIGITAL_SAMBA_DEVELOPER_KEY` - Your Digital Samba developer key (optional if using --developer-key or -k flag)
 - `DIGITAL_SAMBA_API_URL` - API base URL (optional, defaults to production)
 - `DS_LOG_LEVEL` - Logging level (error, warn, info, debug)
 
@@ -274,76 +312,40 @@ The MCP server exposes Digital Samba API functionality through two types of inte
 
 ### Basic Room Creation
 
-```javascript
-// Via Claude Desktop
+```text
 "Create a private room called 'Executive Meeting' with space for 10 people"
-
-// Direct API usage
-const room = await client.createRoom({
-  friendly_url: 'executive-meeting',
-  description: 'Executive team weekly sync',
-  privacy: 'private',
-  max_participants: 10
-});
 ```
 
 ### Generate Access Token
 
-```javascript
-// Via Claude Desktop  
+```text
 "Generate a moderator token for sarah@company.com to join the executive meeting"
-
-// Direct API usage
-const token = await client.generateRoomToken(roomId, {
-  userName: 'Sarah Johnson',
-  role: 'moderator'
-});
 ```
 
 ### Manage Content Library
 
-```javascript
-// Via Claude Desktop
+```text
 "Create a library for our training materials and upload the onboarding presentation"
-
-// Direct API usage
-const library = await client.createLibrary({
-  name: 'Training Materials',
-  external_id: 'training-2024'
-});
-
-const file = await client.createLibraryFile(library.id, {
-  name: 'onboarding.pdf',
-  size: 1024000,
-  mime_type: 'application/pdf'
-});
 ```
 
 ### Analytics and Reporting
 
-```javascript
-// Via Claude Desktop
+```text
 "Show me participant statistics for last month's sessions"
-
-// Direct API usage
-const stats = await client.getParticipantStatistics({
-  date_start: '2024-01-01',
-  date_end: '2024-01-31'
-});
 ```
 
 ## Development
 
 ```bash
 # Clone the repository
-git clone https://github.com/digitalsamba/digital-samba-mcp-server.git
-cd digital-samba-mcp-server
+git clone https://github.com/digitalsamba/embedded-api-mcp-server.git
+cd embedded-api-mcp-server
 
 # Install dependencies
 npm install
 
 # Run in development mode
-npm run dev -- --api-key YOUR_API_KEY
+npm run dev -- --developer-key YOUR_DEVELOPER_KEY  # or -k YOUR_DEVELOPER_KEY
 
 # Build for production
 npm run build

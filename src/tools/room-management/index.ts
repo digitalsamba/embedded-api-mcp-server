@@ -9,7 +9,7 @@
 
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 // import { z } from 'zod'; // Removed: unused
-import { DigitalSambaApiClient } from "../../digital-samba-api.js";
+import { DigitalSambaApiClient, RoomCreateSettings } from "../../digital-samba-api.js";
 // Removed enhanced client import - using standard client
 import { getApiKeyFromRequest } from "../../auth.js";
 import logger from "../../logger.js";
@@ -39,7 +39,7 @@ export function registerRoomTools(): Tool[] {
             maxLength: 500,
             description: "Room description",
           },
-          friendly_url: {
+          friendlyUrl: {
             type: "string",
             minLength: 3,
             maxLength: 32,
@@ -51,21 +51,21 @@ export function registerRoomTools(): Tool[] {
             default: "public",
             description: "Room privacy setting",
           },
-          external_id: {
+          externalId: {
             type: "string",
             description: "External identifier for the room",
           },
-          max_participants: {
+          maxParticipants: {
             type: "number",
             minimum: 2,
             maximum: 2000,
             description: "Maximum number of participants",
           },
-          max_broadcasters: {
+          maxBroadcasters: {
             type: "number",
             description: "Maximum number of broadcasters",
           },
-          is_locked: {
+          isLocked: {
             type: "boolean",
             description: "Whether the room is locked",
           },
@@ -74,38 +74,38 @@ export function registerRoomTools(): Tool[] {
             items: { type: "string" },
             description: "Available roles in the room",
           },
-          default_role: {
+          defaultRole: {
             type: "string",
             description: "Default role for participants",
           },
 
           // UI Settings
-          topbar_enabled: {
+          topbarEnabled: {
             type: "boolean",
             description: "Show/hide the top bar",
           },
-          toolbar_enabled: {
+          toolbarEnabled: {
             type: "boolean",
             description: "Show/hide the toolbar",
           },
-          toolbar_position: {
+          toolbarPosition: {
             type: "string",
             enum: ["left", "right", "bottom"],
             description: "Position of the toolbar",
           },
-          toolbar_color: {
+          toolbarColor: {
             type: "string",
             description: "Toolbar background color (hex)",
           },
-          primary_color: {
+          primaryColor: {
             type: "string",
             description: "Primary theme color (hex)",
           },
-          background_color: {
+          backgroundColor: {
             type: "string",
             description: "Room background color (hex)",
           },
-          palette_mode: {
+          paletteMode: {
             type: "string",
             enum: ["light", "dark"],
             description: "Color theme mode",
@@ -114,37 +114,37 @@ export function registerRoomTools(): Tool[] {
             type: "string",
             description: "Default language",
           },
-          language_selection_enabled: {
+          languageSelectionEnabled: {
             type: "boolean",
             description: "Allow users to change language",
           },
 
           // Meeting features
-          audio_on_join_enabled: {
+          audioOnJoinEnabled: {
             type: "boolean",
             description: "Auto-enable audio when joining",
           },
-          video_on_join_enabled: {
+          videoOnJoinEnabled: {
             type: "boolean",
             description: "Auto-enable video when joining",
           },
-          screenshare_enabled: {
+          screenshareEnabled: {
             type: "boolean",
             description: "Allow screen sharing",
           },
-          participants_list_enabled: {
+          participantsListEnabled: {
             type: "boolean",
             description: "Show participants list",
           },
-          chat_enabled: {
+          chatEnabled: {
             type: "boolean",
             description: "Enable chat functionality",
           },
-          private_chat_enabled: {
+          privateChatEnabled: {
             type: "boolean",
             description: "Allow private messages",
           },
-          recordings_enabled: {
+          recordingsEnabled: {
             type: "boolean",
             description: "Allow recording sessions",
           },
@@ -174,7 +174,7 @@ export function registerRoomTools(): Tool[] {
             maxLength: 500,
             description: "Room description",
           },
-          friendly_url: {
+          friendlyUrl: {
             type: "string",
             minLength: 3,
             maxLength: 32,
@@ -185,17 +185,17 @@ export function registerRoomTools(): Tool[] {
             enum: ["public", "private"],
             description: "Room privacy setting",
           },
-          max_participants: {
+          maxParticipants: {
             type: "number",
             minimum: 2,
             maximum: 2000,
             description: "Maximum number of participants",
           },
-          max_broadcasters: {
+          maxBroadcasters: {
             type: "number",
             description: "Maximum number of broadcasters",
           },
-          is_locked: {
+          isLocked: {
             type: "boolean",
             description: "Whether the room is locked",
           },
@@ -204,38 +204,38 @@ export function registerRoomTools(): Tool[] {
             items: { type: "string" },
             description: "Available roles in the room",
           },
-          default_role: {
+          defaultRole: {
             type: "string",
             description: "Default role for participants",
           },
 
           // UI Settings
-          topbar_enabled: {
+          topbarEnabled: {
             type: "boolean",
             description: "Show/hide the top bar",
           },
-          toolbar_enabled: {
+          toolbarEnabled: {
             type: "boolean",
             description: "Show/hide the toolbar",
           },
-          toolbar_position: {
+          toolbarPosition: {
             type: "string",
             enum: ["left", "right", "bottom"],
             description: "Position of the toolbar",
           },
-          toolbar_color: {
+          toolbarColor: {
             type: "string",
             description: "Toolbar background color (hex)",
           },
-          primary_color: {
+          primaryColor: {
             type: "string",
             description: "Primary theme color (hex)",
           },
-          background_color: {
+          backgroundColor: {
             type: "string",
             description: "Room background color (hex)",
           },
-          palette_mode: {
+          paletteMode: {
             type: "string",
             enum: ["light", "dark"],
             description: "Color theme mode",
@@ -244,37 +244,37 @@ export function registerRoomTools(): Tool[] {
             type: "string",
             description: "Default language",
           },
-          language_selection_enabled: {
+          languageSelectionEnabled: {
             type: "boolean",
             description: "Allow users to change language",
           },
 
           // Meeting features
-          audio_on_join_enabled: {
+          audioOnJoinEnabled: {
             type: "boolean",
             description: "Auto-enable audio when joining",
           },
-          video_on_join_enabled: {
+          videoOnJoinEnabled: {
             type: "boolean",
             description: "Auto-enable video when joining",
           },
-          screenshare_enabled: {
+          screenshareEnabled: {
             type: "boolean",
             description: "Allow screen sharing",
           },
-          participants_list_enabled: {
+          participantsListEnabled: {
             type: "boolean",
             description: "Show participants list",
           },
-          chat_enabled: {
+          chatEnabled: {
             type: "boolean",
             description: "Enable chat functionality",
           },
-          private_chat_enabled: {
+          privateChatEnabled: {
             type: "boolean",
             description: "Allow private messages",
           },
-          recordings_enabled: {
+          recordingsEnabled: {
             type: "boolean",
             description: "Allow recording sessions",
           },
@@ -347,37 +347,101 @@ export function registerRoomTools(): Tool[] {
             description: "Settings object with configuration options",
             properties: {
               language: { type: "string" },
-              language_selection_enabled: { type: "boolean" },
-              topbar_enabled: { type: "boolean" },
-              toolbar_enabled: { type: "boolean" },
-              toolbar_position: {
+              languageSelectionEnabled: { type: "boolean" },
+              topbarEnabled: { type: "boolean" },
+              toolbarEnabled: { type: "boolean" },
+              toolbarPosition: {
                 type: "string",
                 enum: ["left", "right", "bottom"],
               },
-              toolbar_color: { type: "string" },
-              primary_color: { type: "string" },
-              background_color: { type: "string" },
-              palette_mode: {
+              toolbarColor: { type: "string" },
+              primaryColor: { type: "string" },
+              backgroundColor: { type: "string" },
+              paletteMode: {
                 type: "string",
                 enum: ["light", "dark"],
               },
-              audio_on_join_enabled: { type: "boolean" },
-              video_on_join_enabled: { type: "boolean" },
-              screenshare_enabled: { type: "boolean" },
-              participants_list_enabled: { type: "boolean" },
-              chat_enabled: { type: "boolean" },
-              private_chat_enabled: { type: "boolean" },
-              recordings_enabled: { type: "boolean" },
-              max_participants: { type: "number" },
-              max_broadcasters: { type: "number" },
-              default_role: { type: "string" },
+              audioOnJoinEnabled: { type: "boolean" },
+              videoOnJoinEnabled: { type: "boolean" },
+              screenshareEnabled: { type: "boolean" },
+              participantsListEnabled: { type: "boolean" },
+              chatEnabled: { type: "boolean" },
+              privateChatEnabled: { type: "boolean" },
+              recordingsEnabled: { type: "boolean" },
+              maxParticipants: { type: "number" },
+              maxBroadcasters: { type: "number" },
+              defaultRole: { type: "string" },
             },
           },
         },
         required: ["settings"],
       },
     },
+    // Reader tools for room resources (hybrid approach for Claude Desktop compatibility)
+    {
+      name: "list-rooms",
+      description:
+        '[Room Management - TOOL] List all rooms in your account. Use when users say: "show rooms", "list rooms", "show all rooms", "get rooms", "display rooms", "view rooms", "list meeting rooms", "get room list", "what rooms exist", "room directory", "all rooms", "my rooms". This TOOL provides the same data as the digitalsamba://rooms resource but is accessible to AI assistants. Returns array of room objects with IDs, names, settings, and join URLs.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          limit: {
+            type: "number",
+            description: "Maximum number of rooms to return",
+          },
+          offset: {
+            type: "number",
+            description: "Number of rooms to skip for pagination",
+          },
+        },
+      },
+    },
+    {
+      name: "get-room-details",
+      description:
+        '[Room Management - TOOL] Get complete details for a specific room. Use when users say: "show room details", "get room info", "room configuration", "room settings", "what are room parameters", "describe room". Requires roomId. This TOOL provides the same data as the digitalsamba://rooms/{roomId} resource. Returns full room object with all settings, max participants, features, and URLs.',
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: {
+            type: "string",
+            description: "Room ID (required)",
+          },
+        },
+        required: ["roomId"],
+      },
+    },
+    {
+      name: "list-live-rooms",
+      description:
+        '[Room Management - TOOL] List all rooms currently with active participants. Use when users say: "show live rooms", "active meetings", "rooms with participants", "current sessions", "who is online", "active rooms", "ongoing meetings". This TOOL provides the same data as the digitalsamba://rooms/live resource. Returns rooms with participant counts and session duration.',
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "list-live-participants",
+      description:
+        '[Room Management - TOOL] List all rooms with detailed participant information. Use when users say: "show who is in meetings", "list participants in all rooms", "active participants", "who is in which room", "all attendees". This TOOL provides the same data as the digitalsamba://rooms/live/participants resource. Returns rooms with full participant details including names and join times.',
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
   ];
+}
+
+/**
+ * Convert camelCase parameters to snake_case for API
+ */
+function convertCamelToSnake(params: Record<string, any>): Record<string, any> {
+  const converted: Record<string, any> = {};
+  for (const [key, value] of Object.entries(params)) {
+    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    converted[snakeKey] = value;
+  }
+  return converted;
 }
 
 /**
@@ -404,7 +468,7 @@ export function registerRoomTools(): Tool[] {
  * const result = await executeRoomTool('create-room', {
  *   name: 'Team Meeting',
  *   privacy: 'private',
- *   max_participants: 50
+ *   maxParticipants: 50
  * }, request, { apiUrl: 'https://api.digitalsamba.com/api/v1' });
  *
  * @example
@@ -478,8 +542,11 @@ export async function executeRoomTool(
           settings.privacy = "public";
         }
 
+        // Convert camelCase to snake_case for API
+        const apiSettings = convertCamelToSnake(settings) as RoomCreateSettings;
+        
         // Create room with all provided settings
-        const room = await client.createRoom(settings);
+        const room = await client.createRoom(apiSettings);
         logger.info("Room created successfully", { roomId: room.id });
 
         return {
@@ -523,8 +590,11 @@ export async function executeRoomTool(
       });
 
       try {
+        // Convert camelCase to snake_case for API
+        const apiSettings = convertCamelToSnake(settings) as Partial<RoomCreateSettings>;
+        
         // Update room with all provided settings
-        const room = await client.updateRoom(roomId, settings);
+        const room = await client.updateRoom(roomId, apiSettings);
         logger.info("Room updated successfully", { roomId: room.id });
 
         return {
@@ -699,7 +769,7 @@ export async function executeRoomTool(
 
       try {
         const updatedSettings =
-          await client.updateDefaultRoomSettings(settings);
+          await client.updateDefaultRoomSettings(convertCamelToSnake(settings));
 
         return {
           content: [
@@ -719,6 +789,146 @@ export async function executeRoomTool(
             {
               type: "text",
               text: `Error updating default room settings: ${error instanceof Error ? error.message : "Unknown error"}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    // Reader tools for resources (hybrid approach)
+    case "list-rooms": {
+      logger.info("Listing rooms");
+
+      try {
+        const { limit, offset } = args;
+        const rooms = await client.listRooms({ limit, offset });
+        logger.info("Fetched rooms successfully", { count: rooms.data.length });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(rooms, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error listing rooms", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error listing rooms: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case "get-room-details": {
+      const { roomId } = args;
+
+      if (!roomId) {
+        return {
+          content: [{ type: "text", text: "Room ID is required." }],
+          isError: true,
+        };
+      }
+
+      logger.info("Getting room details", { roomId });
+
+      try {
+        const room = await client.getRoom(roomId);
+        logger.info("Fetched room details successfully", { roomId });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(room, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error getting room details", {
+          roomId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error getting room details: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case "list-live-rooms": {
+      logger.info("Listing live rooms");
+
+      try {
+        const liveRooms = await client.getLiveRooms();
+        logger.info("Fetched live rooms successfully", { count: liveRooms.data.length });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(liveRooms, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error listing live rooms", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error listing live rooms: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case "list-live-participants": {
+      logger.info("Listing live participants across all rooms");
+
+      try {
+        const liveRooms = await client.getLiveRoomsWithParticipants();
+        logger.info("Fetched live participants successfully", { count: liveRooms.data.length });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(liveRooms, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error listing live participants", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error listing live participants: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
           isError: true,

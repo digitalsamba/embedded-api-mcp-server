@@ -28,440 +28,100 @@ import {
 } from "./errors.js";
 import logger from "./logger.js";
 
-// Base interfaces
-export interface PaginationParams {
-  limit?: number;
-  offset?: number;
-  order?: "asc" | "desc";
-  after?: string;
-}
+// Import all types from organized type definitions
+import type {
+  // Common types
+  PaginationParams,
+  DateRangeParams,
+  ApiResponse,
+  
+  // Room types
+  Room,
+  RoomCreateSettings,
+  BreakoutRoom,
+  BreakoutRoomCreateSettings,
+  BreakoutRoomParticipantAssignment,
+  
+  // Session types
+  Session,
+  SessionStatistics,
+  
+  // Participant types
+  Participant,
+  ParticipantDetail,
+  TokenOptions,
+  TokenResponse,
+  
+  // Recording types
+  Recording,
+  RecordingDownloadLink,
+  
+  // Communication types
+  Poll,
+  PollOption,
+  PollCreateSettings,
+  
+  // Content types
+  Library,
+  LibraryFolder,
+  LibraryFile,
+  
+  // Webhook types
+  Webhook,
+  WebhookCreateSettings,
+  
+  // Role types
+  Role,
+  RoleCreateSettings
+} from "./types/index.js";
 
-export interface DateRangeParams {
-  date_start?: string; // Format: 'YYYY-MM-DD'
-  date_end?: string; // Format: 'YYYY-MM-DD'
-}
+// Re-export all types for backward compatibility
+export type {
+  // Common types
+  PaginationParams,
+  DateRangeParams,
+  ApiResponse,
+  
+  // Room types
+  Room,
+  RoomCreateSettings,
+  BreakoutRoom,
+  BreakoutRoomCreateSettings,
+  BreakoutRoomParticipantAssignment,
+  
+  // Session types
+  Session,
+  SessionStatistics,
+  
+  // Participant types
+  Participant,
+  ParticipantDetail,
+  TokenOptions,
+  TokenResponse,
+  
+  // Recording types
+  Recording,
+  RecordingDownloadLink,
+  
+  // Communication types
+  Poll,
+  PollOption,
+  PollCreateSettings,
+  
+  // Content types
+  Library,
+  LibraryFolder,
+  LibraryFile,
+  
+  // Webhook types
+  Webhook,
+  WebhookCreateSettings,
+  
+  // Role types
+  Role,
+  RoleCreateSettings
+};
 
-export interface ApiResponse<T> {
-  data: T[];
-  total_count: string | number;
-  // Add these properties for compatibility
-  length: number;
-  map: <U>(callback: (value: T, index: number, array: T[]) => U) => U[];
-}
-
-// Room related interfaces
-export interface Room {
-  id: string;
-  description?: string;
-  topic?: string;
-  friendly_url?: string;
-  privacy: "public" | "private";
-  max_participants?: number;
-  max_broadcasters?: number;
-  is_locked?: boolean;
-  external_id?: string;
-  room_url?: string;
-  created_at: string;
-  updated_at: string;
-
-  // Settings
-  topbar_enabled?: boolean;
-  toolbar_enabled?: boolean;
-  toolbar_position?: "left" | "right" | "bottom";
-  toolbar_color?: string;
-  primary_color?: string;
-  background_color?: string;
-  palette_mode?: "light" | "dark";
-  language?: string;
-  language_selection_enabled?: boolean;
-
-  // Meeting features
-  audio_on_join_enabled?: boolean;
-  video_on_join_enabled?: boolean;
-  screenshare_enabled?: boolean;
-  participants_list_enabled?: boolean;
-  chat_enabled?: boolean;
-  private_chat_enabled?: boolean;
-  recordings_enabled?: boolean;
-
-  // Breakout room fields
-  is_breakout?: boolean;
-  parent_id?: string;
-
-  [key: string]: any; // For additional properties
-}
-
-export interface RoomCreateSettings {
-  name: string; // Required field
-  description?: string;
-  friendly_url?: string;
-  privacy?: "public" | "private";
-  external_id?: string;
-  max_participants?: number;
-  max_broadcasters?: number;
-  is_locked?: boolean;
-  roles?: string[];
-  default_role?: string;
-
-  // Settings
-  topbar_enabled?: boolean;
-  toolbar_enabled?: boolean;
-  toolbar_position?: "left" | "right" | "bottom";
-  toolbar_color?: string;
-  primary_color?: string;
-  background_color?: string;
-  palette_mode?: "light" | "dark";
-  language?: string;
-  language_selection_enabled?: boolean;
-
-  // Meeting features
-  audio_on_join_enabled?: boolean;
-  video_on_join_enabled?: boolean;
-  screenshare_enabled?: boolean;
-  participants_list_enabled?: boolean;
-  chat_enabled?: boolean;
-  private_chat_enabled?: boolean;
-  recordings_enabled?: boolean;
-
-  [key: string]: any; // For additional parameters
-}
-
-// Participant related interfaces
-export interface Participant {
-  id: string;
-  external_id?: string;
-  session_id: string;
-  room_id: string;
-  room_external_id?: string;
-  room_is_deleted: boolean;
-  name: string;
-  role?: string;
-  friendly_url?: string;
-  join_time: string;
-  leave_time?: string;
-  live: boolean;
-}
-
-export interface ParticipantDetail extends Participant {
-  device?: string;
-  system?: string;
-  browser?: string;
-  e2ee?: boolean;
-  participation_minutes?: number;
-  public_chat_posts?: number;
-  questions?: number;
-  answers?: number;
-}
-
-export interface TokenOptions {
-  ud?: string; // External user identifier
-  u?: string; // User name
-  role?: string; // User role
-  initials?: string; // User initials
-  avatar?: string; // Avatar URL
-  breakoutId?: string; // Breakout room ID
-  nbf?: string; // Not before date time
-  exp?: string; // Token expiration in minutes
-}
-
-export interface TokenResponse {
-  token: string;
-  link: string;
-}
-
-// Recording related interfaces
-export interface Recording {
-  id: string;
-  name?: string;
-  status: "AWAITING_START" | "IN_PROGRESS" | "PENDING_CONVERSION" | "READY";
-  room_id: string;
-  external_room_id?: string;
-  friendly_url?: string;
-  privacy?: "public" | "private";
-  session_id?: string;
-  participant_id?: string;
-  participant_name?: string;
-  participant_external_id?: string;
-  duration?: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface RecordingDownloadLink {
-  link: string;
-  valid_until: string;
-}
-
-// Session related interfaces
-export interface Session {
-  id: string;
-  start_time: string;
-  end_time?: string;
-  room_id: string;
-  room_external_id?: string;
-  description?: string;
-  friendly_url?: string;
-  room_is_deleted: boolean;
-  participants_live?: number;
-  participants_total: number;
-  participants_max: number;
-  live: boolean;
-}
-
-export interface SessionStatistics {
-  room_id: string;
-  room_external_id?: string;
-  room_description?: string;
-  room_friendly_url?: string;
-  room_privacy?: string;
-  room_source?: string;
-  room_max_participants?: number;
-  room_is_deleted: boolean;
-  session_id: string;
-  session_duration: number;
-  session_live: boolean;
-  session_start_time: string;
-  session_end_time?: string;
-  participation_minutes: number;
-  desktop_participation_minutes?: number;
-  mobile_participation_minutes?: number;
-  tablet_participation_minutes?: number;
-  smarttv_participation_minutes?: number;
-  broadcasted_minutes?: number;
-  subscribed_minutes?: number;
-  live_participants: number;
-  active_participants: number;
-  max_concurrent_participants?: number;
-  [key: string]: any; // For additional statistics
-}
-
-// Webhook related interfaces
-export interface Webhook {
-  id: string;
-  endpoint: string;
-  authorization_header?: string;
-  name?: string;
-  events?: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface WebhookCreateSettings {
-  endpoint: string;
-  name?: string;
-  authorization_header?: string;
-  events: string[];
-}
-
-// Breakout room related interfaces
-export interface BreakoutRoom extends Room {
-  is_breakout: true;
-  parent_id: string;
-}
-
-export interface BreakoutRoomCreateSettings {
-  count: number;
-  name_prefix?: string;
-  auto_assign?: boolean;
-  distribution_method?: "random" | "manual";
-}
-
-export interface BreakoutRoomParticipantAssignment {
-  participant_id: string;
-  breakout_id: string | null;
-}
-
-// Meeting scheduling related interfaces
-export interface ScheduledMeeting {
-  id: string;
-  title: string;
-  description?: string;
-  room_id: string;
-  start_time: string;
-  end_time: string;
-  timezone: string;
-  host_name: string;
-  host_email?: string;
-  participants: {
-    name: string;
-    email: string;
-    role?: string;
-  }[];
-  recurring?: boolean;
-  recurrence_pattern?: string;
-  status: "scheduled" | "started" | "ended" | "cancelled";
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MeetingCreateSettings {
-  title: string;
-  description?: string;
-  room_id?: string;
-  room_settings?: {
-    name?: string;
-    privacy?: "public" | "private";
-    max_participants?: number;
-  };
-  start_time: string;
-  end_time: string;
-  timezone: string;
-  host_name: string;
-  host_email?: string;
-  participants?: {
-    name: string;
-    email: string;
-    role?: string;
-  }[];
-  recurring?: boolean;
-  recurrence_pattern?: string;
-  send_invitations?: boolean;
-}
-
-export interface MeetingUpdateSettings {
-  title?: string;
-  description?: string;
-  start_time?: string;
-  end_time?: string;
-  timezone?: string;
-  host_name?: string;
-  host_email?: string;
-  participants?: {
-    name: string;
-    email: string;
-    role?: string;
-  }[];
-  recurring?: boolean;
-  recurrence_pattern?: string;
-  status?: "scheduled" | "cancelled";
-  send_updates?: boolean;
-}
-
-export interface MeetingParticipantAddOptions {
-  participants: {
-    name: string;
-    email: string;
-    role?: string;
-  }[];
-  send_invitations?: boolean;
-}
-
-export interface MeetingParticipantRemoveOptions {
-  participant_emails: string[];
-  notify_participants?: boolean;
-}
-
-export interface MeetingReminderOptions {
-  message?: string;
-}
-
-export interface MeetingAvailabilityOptions {
-  participants: string[];
-  duration_minutes: number;
-  start_date: string;
-  end_date: string;
-  timezone: string;
-  working_hours_start?: number;
-  working_hours_end?: number;
-  min_options?: number;
-}
-
-export interface AvailableTimeSlot {
-  start_time: string;
-  end_time: string;
-}
-
-// Poll related interfaces
-export interface Poll {
-  id: string;
-  question: string;
-  status: string;
-  multiple: boolean;
-  anonymous: boolean;
-  options: PollOption[];
-  created_at: string;
-}
-
-export interface PollOption {
-  id: string;
-  text: string;
-}
-
-export interface PollCreateSettings {
-  question: string;
-  multiple?: boolean;
-  anonymous?: boolean;
-  options: { text: string }[];
-}
-
-// Role and permission interfaces
-export interface Role {
-  id: string;
-  name: string;
-  display_name: string;
-  description?: string;
-  default: boolean;
-  created_at: string;
-  updated_at: string;
-  permissions?: Record<string, any>;
-}
-
-export interface RoleCreateSettings {
-  name: string;
-  display_name: string;
-  description?: string;
-  permissions: Record<string, any>;
-}
-
-// Library related interfaces
-export interface Library {
-  id: string;
-  external_id?: string;
-  name: string;
-  created_at: string;
-}
-
-export interface LibraryFolder {
-  id: string;
-  external_id?: string;
-  description?: string;
-  created_at: string;
-}
-
-export interface LibraryFile {
-  id: string;
-  folder_id?: string;
-  name: string;
-  type: string;
-  size: number;
-  created_at: string;
-}
-
-/**
- * Digital Samba API Client
- *
- * This class provides a comprehensive interface to the Digital Samba API. It handles
- * authentication, request formation, response parsing, and error handling for all
- * available API endpoints. The client supports both direct developer key authentication
- * and session-based authentication through the ApiKeyContext.
- *
- * @class DigitalSambaApiClient
- * @example
- * // Create a client with direct developer key
- * const client = new DigitalSambaApiClient('your-developer-key');
- *
- * // Create a client that uses the ApiKeyContext
- * const sessionClient = new DigitalSambaApiClient();
- *
- * // List all rooms
- * const rooms = await client.listRooms();
- *
- * // Create a room
- * const room = await client.createRoom({
- *   name: 'New Meeting Room',
- *   privacy: 'public'
- * });
- */
 export class DigitalSambaApiClient {
   protected apiBaseUrl: string;
   protected cache?: MemoryCache;
@@ -696,7 +356,33 @@ export class DigitalSambaApiClient {
         return {} as T;
       }
 
-      const responseData = await response.json();
+      // Get response text first to check if it's empty
+      const responseText = await response.text();
+      
+      // Handle empty response bodies (some endpoints return 200 with empty body or {})
+      if (!responseText || responseText.trim() === '') {
+        logger.debug(`Empty response body for ${endpoint}`);
+        return {} as T;
+      }
+
+      // Parse the JSON response
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (parseError) {
+        logger.error(`Failed to parse JSON response for ${endpoint}`, {
+          responseText,
+          error: parseError instanceof Error ? parseError.message : String(parseError),
+        });
+        throw new ApiResponseError(
+          `Invalid JSON response from Digital Samba API: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+          {
+            statusCode: response.status,
+            apiErrorMessage: `Failed to parse JSON: ${responseText}`,
+            apiErrorData: { responseText },
+          },
+        );
+      }
 
       // Add array-like properties to ApiResponse objects
       if (
@@ -2553,174 +2239,6 @@ export class DigitalSambaApiClient {
     });
   }
 
-  // Meeting Scheduling
-
-  /**
-   * List all scheduled meetings
-   */
-  async listScheduledMeetings(
-    params?: PaginationParams & DateRangeParams,
-  ): Promise<ApiResponse<ScheduledMeeting>> {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, String(value));
-        }
-      });
-    }
-
-    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
-    return this.request<ApiResponse<ScheduledMeeting>>(`/meetings${query}`);
-  }
-
-  /**
-   * Get a specific scheduled meeting
-   */
-  async getScheduledMeeting(meetingId: string): Promise<ScheduledMeeting> {
-    return this.request<ScheduledMeeting>(`/meetings/${meetingId}`);
-  }
-
-  /**
-   * Create a new scheduled meeting
-   */
-  async createScheduledMeeting(
-    settings: MeetingCreateSettings,
-  ): Promise<ScheduledMeeting> {
-    return this.request<ScheduledMeeting>("/meetings", {
-      method: "POST",
-      body: JSON.stringify(settings),
-    });
-  }
-
-  /**
-   * Update a scheduled meeting
-   */
-  async updateScheduledMeeting(
-    meetingId: string,
-    settings: MeetingUpdateSettings,
-  ): Promise<ScheduledMeeting> {
-    return this.request<ScheduledMeeting>(`/meetings/${meetingId}`, {
-      method: "PATCH",
-      body: JSON.stringify(settings),
-    });
-  }
-
-  /**
-   * Cancel a scheduled meeting
-   */
-  async cancelScheduledMeeting(
-    meetingId: string,
-    options?: { notify_participants?: boolean },
-  ): Promise<void> {
-    await this.request<void>(`/meetings/${meetingId}/cancel`, {
-      method: "POST",
-      body: options ? JSON.stringify(options) : undefined,
-    });
-  }
-
-  /**
-   * Delete a scheduled meeting
-   */
-  async deleteScheduledMeeting(meetingId: string): Promise<void> {
-    await this.request<void>(`/meetings/${meetingId}`, {
-      method: "DELETE",
-    });
-  }
-
-  /**
-   * List upcoming meetings
-   */
-  async listUpcomingMeetings(
-    params?: PaginationParams,
-  ): Promise<ApiResponse<ScheduledMeeting>> {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, String(value));
-        }
-      });
-    }
-
-    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
-    return this.request<ApiResponse<ScheduledMeeting>>(
-      `/meetings/upcoming${query}`,
-    );
-  }
-
-  /**
-   * List meetings for a specific room
-   */
-  async listRoomMeetings(
-    roomId: string,
-    params?: PaginationParams & DateRangeParams,
-  ): Promise<ApiResponse<ScheduledMeeting>> {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, String(value));
-        }
-      });
-    }
-
-    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
-    return this.request<ApiResponse<ScheduledMeeting>>(
-      `/rooms/${roomId}/meetings${query}`,
-    );
-  }
-
-  /**
-   * Add participants to a meeting
-   */
-  async addMeetingParticipants(
-    meetingId: string,
-    options: MeetingParticipantAddOptions,
-  ): Promise<void> {
-    await this.request<void>(`/meetings/${meetingId}/participants`, {
-      method: "POST",
-      body: JSON.stringify(options),
-    });
-  }
-
-  /**
-   * Remove participants from a meeting
-   */
-  async removeMeetingParticipants(
-    meetingId: string,
-    options: MeetingParticipantRemoveOptions,
-  ): Promise<void> {
-    await this.request<void>(`/meetings/${meetingId}/participants/remove`, {
-      method: "POST",
-      body: JSON.stringify(options),
-    });
-  }
-
-  /**
-   * Send meeting reminders
-   */
-  async sendMeetingReminders(
-    meetingId: string,
-    options?: MeetingReminderOptions,
-  ): Promise<void> {
-    await this.request<void>(`/meetings/${meetingId}/reminders`, {
-      method: "POST",
-      body: options ? JSON.stringify(options) : undefined,
-    });
-  }
-
-  /**
-   * Find available meeting times
-   */
-  async findAvailableMeetingTimes(
-    options: MeetingAvailabilityOptions,
-  ): Promise<AvailableTimeSlot[]> {
-    return this.request<AvailableTimeSlot[]>("/meetings/available-times", {
-      method: "POST",
-      body: JSON.stringify(options),
-    });
-  }
 
   // Communication Management Methods
 
@@ -2733,7 +2251,7 @@ export class DigitalSambaApiClient {
       this.cache.invalidateNamespace("api");
     }
 
-    await this.request<void>(`/sessions/${sessionId}/chats`, {
+    await this.request<void>(`/sessions/${sessionId}/chat`, {
       method: "DELETE",
     });
   }
@@ -2747,7 +2265,7 @@ export class DigitalSambaApiClient {
       this.cache.invalidateNamespace("api");
     }
 
-    await this.request<void>(`/sessions/${sessionId}/qa`, {
+    await this.request<void>(`/sessions/${sessionId}/questions`, {
       method: "DELETE",
     });
   }

@@ -51,13 +51,13 @@ export function registerCommunicationTools(): ToolDefinition[] {
     {
       name: "delete-session-chats",
       description:
-        '[Communication Management] Delete all chat messages from a specific session. Use when users say: "delete session chat", "remove chat messages", "clear session chat history", "delete chat from session", "wipe chat messages". Requires sessionId. This permanently removes all chat data.',
+        '[Communication Management] Delete all chat messages for a session. Use when users say: "delete session chat", "remove chat messages", "clear session chat history", "delete chat from session", "wipe chat messages". Requires sessionId. This permanently removes all chat data.',
       inputSchema: {
         type: "object",
         properties: {
           sessionId: {
             type: "string",
-            description: "The ID of the session to delete chats from",
+            description: "The ID of the session (not supported)",
           },
         },
         required: ["sessionId"],
@@ -89,7 +89,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
         properties: {
           sessionId: {
             type: "string",
-            description: "The ID of the session to delete Q&A from",
+            description: "The ID of the session (not supported)",
           },
         },
         required: ["sessionId"],
@@ -306,40 +306,14 @@ async function handleDeleteRoomChats(
   logger.info("Deleting room chats", { roomId });
 
   try {
-    // Get all sessions for the room
-    const sessionsResponse = await apiClient.listSessions({ room_id: roomId });
-    const sessions = sessionsResponse.data;
-
-    if (!sessions || sessions.length === 0) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `No sessions found for room ${roomId}`,
-          },
-        ],
-      };
-    }
-
-    // Delete chats for each session
-    let deletedCount = 0;
-    for (const session of sessions) {
-      try {
-        await apiClient.deleteSessionChats(session.id);
-        deletedCount++;
-      } catch (error) {
-        logger.warn("Failed to delete chats for session", {
-          sessionId: session.id,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
+    // Use the correct API endpoint for room chat deletion
+    await apiClient.deleteChatMessages(roomId);
 
     return {
       content: [
         {
           type: "text",
-          text: `Successfully deleted chat messages from ${deletedCount} sessions in room ${roomId}`,
+          text: `Successfully deleted all chat messages from room ${roomId}`,
         },
       ],
     };
@@ -447,40 +421,14 @@ async function handleDeleteRoomQA(
   logger.info("Deleting room Q&A", { roomId });
 
   try {
-    // Get all sessions for the room
-    const sessionsResponse = await apiClient.listSessions({ room_id: roomId });
-    const sessions = sessionsResponse.data;
-
-    if (!sessions || sessions.length === 0) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `No sessions found for room ${roomId}`,
-          },
-        ],
-      };
-    }
-
-    // Delete Q&A for each session
-    let deletedCount = 0;
-    for (const session of sessions) {
-      try {
-        await apiClient.deleteSessionQA(session.id);
-        deletedCount++;
-      } catch (error) {
-        logger.warn("Failed to delete Q&A for session", {
-          sessionId: session.id,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
+    // Use the correct API endpoint for room Q&A deletion
+    await apiClient.deleteQA(roomId);
 
     return {
       content: [
         {
           type: "text",
-          text: `Successfully deleted Q&A from ${deletedCount} sessions in room ${roomId}`,
+          text: `Successfully deleted all Q&A from room ${roomId}`,
         },
       ],
     };
@@ -526,8 +474,6 @@ async function handleDeleteSessionTranscripts(
   logger.info("Deleting session transcripts", { sessionId });
 
   try {
-    // Note: The Digital Samba API might use different endpoints for transcripts
-    // This is a placeholder implementation
     await apiClient.deleteSessionData(sessionId, "transcripts");
 
     return {
@@ -607,11 +553,13 @@ async function handleDeleteRoomTranscripts(
 
     // Delete transcripts for each session
     let deletedCount = 0;
+    let failedCount = 0;
     for (const session of sessions) {
       try {
         await apiClient.deleteSessionData(session.id, "transcripts");
         deletedCount++;
       } catch (error) {
+        failedCount++;
         logger.warn("Failed to delete transcripts for session", {
           sessionId: session.id,
           error: error instanceof Error ? error.message : String(error),
@@ -748,11 +696,13 @@ async function handleDeleteRoomSummaries(
 
     // Delete summaries for each session
     let deletedCount = 0;
+    let failedCount = 0;
     for (const session of sessions) {
       try {
         await apiClient.deleteSessionSummaries(session.id);
         deletedCount++;
       } catch (error) {
+        failedCount++;
         logger.warn("Failed to delete summaries for session", {
           sessionId: session.id,
           error: error instanceof Error ? error.message : String(error),

@@ -194,48 +194,75 @@ export async function executeRecordingTool(
     }
 
     case "start-recording":
-      // Start recording not supported in base API
+      await client.startRecording(args.room_id);
       return {
         content: [
           {
             type: "text",
-            text: `Start recording not supported in current API`,
+            text: `Recording started successfully in room ${args.room_id}`,
           },
         ],
       };
 
     case "stop-recording":
-      // Stop recording not supported in base API
+      await client.stopRecording(args.room_id);
       return {
         content: [
           {
             type: "text",
-            text: `Stop recording not supported in current API`,
+            text: `Recording stopped successfully in room ${args.room_id}`,
           },
         ],
       };
 
     case "archive-recording":
-      // Archive recording not supported in base API
+      await client.archiveRecording(args.recordingId);
       return {
         content: [
           {
             type: "text",
-            text: `Archive recording not supported in current API`,
+            text: `Recording ${args.recordingId} archived successfully`,
           },
         ],
       };
 
     case "unarchive-recording":
-      // Unarchive recording not supported in base API
+      await client.unarchiveRecording(args.recordingId);
       return {
         content: [
           {
             type: "text",
-            text: `Unarchive recording not supported in current API`,
+            text: `Recording ${args.recordingId} unarchived successfully`,
           },
         ],
       };
+
+    case "get-recording": {
+      const recording = await client.getRecording(args.recordingId);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(recording, null, 2),
+          },
+        ],
+      };
+    }
+
+    case "get-recording-download-link": {
+      const downloadLink = await client.getRecordingDownloadLink(
+        args.recordingId,
+        args.validForMinutes
+      );
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(downloadLink, null, 2),
+          },
+        ],
+      };
+    }
 
     default:
       throw new Error(`Unknown recording tool: ${name}`);

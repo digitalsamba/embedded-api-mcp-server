@@ -95,7 +95,7 @@ describe('Room Resources', () => {
     it('should register all room resources', () => {
       const resources = registerRoomResources();
       
-      expect(resources).toHaveLength(2);
+      expect(resources).toHaveLength(6); // Updated to include live resources
       expect(resources[0]).toEqual({
         uri: 'digitalsamba://rooms',
         name: 'rooms',
@@ -108,6 +108,11 @@ describe('Room Resources', () => {
         description: '[Room Data] Get complete details for a specific room. Use to access: "show room details", "get room info", "room configuration", "room settings", "what are room parameters". Requires roomId parameter. Returns full room object with all settings, max participants, features, and URLs.',
         mimeType: 'application/json'
       });
+      // Verify live resources exist
+      expect(resources[2].uri).toBe('digitalsamba://rooms/live');
+      expect(resources[3].uri).toBe('digitalsamba://rooms/live/participants');
+      expect(resources[4].uri).toBe('digitalsamba://rooms/{roomId}/live');
+      expect(resources[5].uri).toBe('digitalsamba://rooms/{roomId}/live/participants');
     });
   });
 
@@ -146,7 +151,7 @@ describe('Room Resources', () => {
 
       it('should handle missing API key', async () => {
         (getApiKeyFromRequest as jest.Mock).mockReturnValue(null);
-        process.env.DIGITAL_SAMBA_API_KEY = '';
+        process.env.DIGITAL_SAMBA_DEVELOPER_KEY = '';
 
         await expect(handleRoomResource(
           'digitalsamba://rooms',
@@ -158,7 +163,7 @@ describe('Room Resources', () => {
 
       it('should use API key from environment variable as fallback', async () => {
         (getApiKeyFromRequest as jest.Mock).mockReturnValue(null);
-        process.env.DIGITAL_SAMBA_API_KEY = 'env-api-key';
+        process.env.DIGITAL_SAMBA_DEVELOPER_KEY = 'env-api-key';
         mockApiClient.listRooms.mockResolvedValue(mockRoomsList);
 
         const result = await handleRoomResource(
@@ -276,14 +281,18 @@ describe('Room Tools', () => {
     it('should register all room tools', () => {
       const tools = registerRoomTools();
       
-      expect(tools).toHaveLength(6);
+      expect(tools).toHaveLength(10);
       expect(tools.map(t => t.name)).toEqual([
         'create-room',
         'update-room',
         'delete-room',
         'generate-token',
         'get-default-room-settings',
-        'update-default-room-settings'
+        'update-default-room-settings',
+        'list-rooms',
+        'get-room-details',
+        'list-live-rooms',
+        'list-live-participants'
       ]);
       
       tools.forEach(tool => {

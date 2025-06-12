@@ -11,10 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions CI/CD pipeline with automated testing
 - Coverage badge integration with multiple options (static, Codecov, dynamic)
 - CHANGELOG.md for version tracking
+- Hybrid approach implementation: Added 31 reader tools that mirror resources for AI assistant compatibility
+  - Room reader tools: list-rooms, get-room-details, list-live-rooms, list-live-participants
+  - Session reader tools: list-sessions, get-session-details, list-session-participants, list-room-sessions
+  - Analytics reader tools: get-usage-analytics, get-live-analytics, get-live-room-analytics, get-session-analytics, get-participant-analytics
+  - Content library reader tools: list-libraries, get-library-details, get-library-hierarchy, list-library-folders, get-library-folder-details, list-library-files, get-library-file-details
+  - Export reader tools: export-chat-messages, export-qa-data, export-session-transcripts, export-poll-results, export-recording-metadata, export-session-summary, export-session-metadata
+- Unit tests for library management and export tools
+- Documentation explaining the resources vs tools limitation in AI assistants
 
 ### Changed
 - Updated Jest configuration to include json-summary coverage reporter
 - Improved documentation structure - moved internal docs to .ai_dev directory
+- Updated README to reflect 90 total tools (was 70)
+- Added note about hybrid approach for AI assistant compatibility
 
 ### Fixed
 - Privacy field now correctly defaults to 'public' when creating rooms

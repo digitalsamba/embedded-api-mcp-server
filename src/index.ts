@@ -92,6 +92,10 @@ import {
   registerWebhookTools,
   executeWebhookTool,
 } from "./tools/webhook-management/index.js";
+import {
+  registerExportTools,
+  executeExportTool,
+} from "./tools/export-tools/index.js";
 
 // Import version information
 import { VERSION, PACKAGE_NAME, VERSION_INFO } from "./version.js";
@@ -138,7 +142,7 @@ const versionResource = {
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
   // For listing resources, we don't need an API key - just return the schema
   // API key will be checked when actually reading resources
-  const apiKey = process.env.DIGITAL_SAMBA_API_KEY;
+  const apiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
 
   // Create a dummy client if needed for analytics registration
   let client = null;
@@ -160,11 +164,11 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 });
 
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-  const apiKey = process.env.DIGITAL_SAMBA_API_KEY;
+  const apiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
   if (!apiKey) {
     throw new McpError(
       ErrorCode.InvalidRequest,
-      "DIGITAL_SAMBA_API_KEY not configured",
+      "DIGITAL_SAMBA_DEVELOPER_KEY not configured",
     );
   }
 
@@ -216,36 +220,44 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   // For listing tools, we don't need an API key - just return the schema
   // API key will be checked when actually executing tools
-  return {
-    tools: [
-      {
-        name: "get-server-version",
-        description: `[Server Info] Get the current version and build information of the MCP server. Use to check: "server version", "what version is running", "is this the latest version", "build time". Current version: ${VERSION}`,
-        inputSchema: {
-          type: "object",
-          properties: {},
-        },
+  const allTools = [
+    {
+      name: "get-server-version",
+      description: `[Server Info] Get the current version and build information of the MCP server. Use to check: "server version", "what version is running", "is this the latest version", "build time". Current version: ${VERSION}`,
+      inputSchema: {
+        type: "object",
+        properties: {},
       },
-      ...registerRoomTools(),
-      ...registerSessionTools(),
-      ...registerRecordingTools(),
-      ...registerAnalyticsTools(),
-      ...registerLiveSessionTools(),
-      ...registerCommunicationTools(),
-      ...registerPollTools(),
-      ...registerLibraryTools(),
-      ...registerRoleTools(),
-      ...registerWebhookTools(),
-    ],
+    },
+    ...registerRoomTools(),
+    ...registerSessionTools(),
+    ...registerRecordingTools(),
+    ...registerAnalyticsTools(),
+    ...registerLiveSessionTools(),
+    ...registerCommunicationTools(),
+    ...registerPollTools(),
+    ...registerLibraryTools(),
+    ...registerRoleTools(),
+    ...registerWebhookTools(),
+    ...registerExportTools(),
+  ];
+  
+  // Log export tools for debugging
+  const exportTools = allTools.filter(t => t.name.includes('export'));
+  logger.debug(`ListToolsRequest: Registered ${allTools.length} total tools`);
+  logger.debug(`Export tools (${exportTools.length}): ${exportTools.map(t => t.name).join(', ')}`);
+  
+  return {
+    tools: allTools,
   };
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const apiKey = process.env.DIGITAL_SAMBA_API_KEY;
+  const apiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
   if (!apiKey) {
     throw new McpError(
       ErrorCode.InvalidRequest,
-      "DIGITAL_SAMBA_API_KEY not configured",
+      "DIGITAL_SAMBA_DEVELOPER_KEY not configured",
     );
   }
 
@@ -274,7 +286,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       name === "delete-room" ||
       name === "generate-token" ||
       name === "get-default-room-settings" ||
-      name === "update-default-room-settings"
+      name === "update-default-room-settings" ||
+      name === "list-rooms" ||
+      name === "get-room-details" ||
+      name === "list-live-rooms" ||
+      name === "list-live-participants"
     ) {
       return await executeRoomTool(name, args || {}, request, {
         apiUrl:
@@ -286,7 +302,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     else if (
       name === "get-participant-statistics" ||
       name === "get-room-analytics" ||
-      name === "get-usage-statistics"
+      name === "get-usage-statistics" ||
+      name === "get-usage-analytics" ||
+      name === "get-live-analytics" ||
+      name === "get-live-room-analytics" ||
+      name === "get-session-analytics" ||
+      name === "get-participant-analytics"
     ) {
       return await executeAnalyticsTool(name, args || {}, client);
     }
@@ -297,7 +318,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       name === "get-all-room-sessions" ||
       name === "hard-delete-session-resources" ||
       name === "bulk-delete-session-data" ||
-      name === "get-session-statistics"
+      name === "get-session-statistics" ||
+      name === "list-sessions" ||
+      name === "get-session-details" ||
+      name === "list-session-participants" ||
+      name === "list-room-sessions"
     ) {
       return await executeSessionTool(name, args || {}, client, request);
     }
@@ -319,6 +344,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     ) {
       return await executeLiveSessionTool(name, args || {}, client);
     }
+    // Export tools (moved before communication tools to avoid conflicts)
+    else if (name.includes("export-")) {
+      logger.debug(`Routing export tool: ${name} to executeExportTool`);
+      return await executeExportTool(name, args || {}, request, {
+        apiUrl:
+          process.env.DIGITAL_SAMBA_API_URL ||
+          "https://api.digitalsamba.com/api/v1",
+      });
+    }
     // Communication management tools
     else if (
       name.includes("-chats") ||
@@ -335,6 +369,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     // Library management tools
     else if (
       name.includes("library") ||
+      name.includes("libraries") ||
       name.includes("webapp") ||
       name.includes("whiteboard") ||
       name === "get-file-links"
@@ -350,6 +385,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return await executeWebhookTool(name, args || {}, client);
     }
 
+    logger.error(`Unknown tool requested: ${name}`, { 
+      availablePatterns: [
+        'get-server-version',
+        'create-room, update-room, delete-room, etc.',
+        'get-participant-statistics, get-room-analytics, etc.',
+        'end-session, get-session-summary, etc.',
+        'delete-recording, update-recording, etc.',
+        'start-transcription, stop-transcription, etc.',
+        'delete-session-chats, delete-room-chats, etc.',
+        'create-poll, update-poll, etc.',
+        'includes("library") or includes("libraries")',
+        'includes("role") or get-permissions',
+        'includes("webhook") or list-webhook-events',
+        'includes("export-")'
+      ]
+    });
     throw new McpError(ErrorCode.InvalidRequest, `Unknown tool: ${name}`);
   } catch (error: any) {
     logger.error(`Tool execution error: ${error.message}`, error);
@@ -376,13 +427,13 @@ async function main() {
     (arg) => arg === "--developer-key" || arg === "-k",
   );
   if (apiKeyArgIndex !== -1 && args[apiKeyArgIndex + 1]) {
-    process.env.DIGITAL_SAMBA_API_KEY = args[apiKeyArgIndex + 1];
+    process.env.DIGITAL_SAMBA_DEVELOPER_KEY = args[apiKeyArgIndex + 1];
   }
 
   // Log developer key status (don't exit if not found - it will be checked when needed)
-  if (!process.env.DIGITAL_SAMBA_API_KEY) {
+  if (!process.env.DIGITAL_SAMBA_DEVELOPER_KEY) {
     logger.warn(
-      "DIGITAL_SAMBA_API_KEY not set. Developer key will be required for operations.",
+      "DIGITAL_SAMBA_DEVELOPER_KEY not set. Developer key will be required for operations.",
     );
   } else {
     logger.info("Developer key configured");

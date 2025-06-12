@@ -10,39 +10,39 @@ import { extractApiKey, getApiKeyFromRequest } from '../../src/auth';
 
 describe('Authentication Module Tests', () => {
   // Store original env value
-  const originalApiKey = process.env.DIGITAL_SAMBA_API_KEY;
+  const originalApiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
   
   beforeEach(() => {
     // Clear environment variable before each test
-    delete process.env.DIGITAL_SAMBA_API_KEY;
+    delete process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
   });
   
   afterEach(() => {
     // Restore original value
     if (originalApiKey) {
-      process.env.DIGITAL_SAMBA_API_KEY = originalApiKey;
+      process.env.DIGITAL_SAMBA_DEVELOPER_KEY = originalApiKey;
     } else {
-      delete process.env.DIGITAL_SAMBA_API_KEY;
+      delete process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
     }
   });
 
   describe('getApiKeyFromRequest', () => {
     it('should return API key from environment variable', () => {
-      process.env.DIGITAL_SAMBA_API_KEY = 'test-api-key';
+      process.env.DIGITAL_SAMBA_DEVELOPER_KEY = 'test-api-key';
       
       const apiKey = getApiKeyFromRequest({});
       expect(apiKey).toBe('test-api-key');
     });
     
     it('should return null if environment variable is not set', () => {
-      delete process.env.DIGITAL_SAMBA_API_KEY;
+      delete process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
       
       const apiKey = getApiKeyFromRequest({});
       expect(apiKey).toBeNull();
     });
     
     it('should handle empty environment variable', () => {
-      process.env.DIGITAL_SAMBA_API_KEY = '';
+      process.env.DIGITAL_SAMBA_DEVELOPER_KEY = '';
       
       const apiKey = getApiKeyFromRequest({});
       // Empty string is falsy, so it returns null
@@ -52,21 +52,21 @@ describe('Authentication Module Tests', () => {
   
   describe('extractApiKey', () => {
     it('should extract API key from environment variable', () => {
-      process.env.DIGITAL_SAMBA_API_KEY = 'env-api-key';
+      process.env.DIGITAL_SAMBA_DEVELOPER_KEY = 'env-api-key';
       
       const apiKey = extractApiKey();
       expect(apiKey).toBe('env-api-key');
     });
     
     it('should return null when no API key is available', () => {
-      delete process.env.DIGITAL_SAMBA_API_KEY;
+      delete process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
       
       const apiKey = extractApiKey();
       expect(apiKey).toBeNull();
     });
     
     it('should handle various input parameters (for backwards compatibility)', () => {
-      process.env.DIGITAL_SAMBA_API_KEY = 'test-key';
+      process.env.DIGITAL_SAMBA_DEVELOPER_KEY = 'test-key';
       
       // Should ignore any parameters and use env variable
       expect(extractApiKey({})).toBe('test-key');
@@ -80,7 +80,7 @@ describe('Authentication Module Tests', () => {
   describe('Environment Variable Handling', () => {
     it('should handle special characters in API key', () => {
       const specialKey = 'key-with_special.chars!@#$%^&*()';
-      process.env.DIGITAL_SAMBA_API_KEY = specialKey;
+      process.env.DIGITAL_SAMBA_DEVELOPER_KEY = specialKey;
       
       expect(getApiKeyFromRequest({})).toBe(specialKey);
       expect(extractApiKey()).toBe(specialKey);
@@ -88,7 +88,7 @@ describe('Authentication Module Tests', () => {
     
     it('should handle very long API keys', () => {
       const longKey = 'x'.repeat(1000);
-      process.env.DIGITAL_SAMBA_API_KEY = longKey;
+      process.env.DIGITAL_SAMBA_DEVELOPER_KEY = longKey;
       
       expect(getApiKeyFromRequest({})).toBe(longKey);
       expect(extractApiKey()).toBe(longKey);

@@ -34,6 +34,34 @@ export function registerRoomResources(): Resource[] {
         '[Room Data] Get complete details for a specific room. Use to access: "show room details", "get room info", "room configuration", "room settings", "what are room parameters". Requires roomId parameter. Returns full room object with all settings, max participants, features, and URLs.',
       mimeType: "application/json",
     },
+    {
+      uri: "digitalsamba://rooms/live",
+      name: "rooms-live",
+      description:
+        '[Live Sessions] List all rooms currently with active participants. Use when users say: "show live rooms", "active meetings", "rooms with participants", "current sessions", "who is online", "active rooms". Returns rooms with participant counts and session duration.',
+      mimeType: "application/json",
+    },
+    {
+      uri: "digitalsamba://rooms/live/participants",
+      name: "rooms-live-participants",
+      description:
+        '[Live Sessions] List all rooms with detailed participant information. Use when users say: "show who is in meetings", "list participants in all rooms", "active participants", "who is in which room". Returns rooms with full participant details including names and join times.',
+      mimeType: "application/json",
+    },
+    {
+      uri: "digitalsamba://rooms/{roomId}/live",
+      name: "room-live",
+      description:
+        '[Live Session] Get live session info for a specific room. Use when users say: "is room active", "how many in room", "room participant count", "check if meeting is live". Requires roomId. Returns participant count and session duration.',
+      mimeType: "application/json",
+    },
+    {
+      uri: "digitalsamba://rooms/{roomId}/live/participants",
+      name: "room-live-participants",
+      description:
+        '[Live Session] Get detailed participant list for a specific room. Use when users say: "who is in the room", "list room participants", "show attendees", "participant details". Requires roomId. Returns full participant information.',
+      mimeType: "application/json",
+    },
   ];
 }
 
@@ -64,9 +92,53 @@ export async function handleRoomResource(
 
   // Parse the URI to determine which resource is being requested
   const uriParts = uri.split("/");
-  const isSpecificRoom = uriParts.length > 3 && uriParts[3] !== "";
+  const isLiveRequest = uri.includes("/live");
+  const isParticipantsRequest = uri.includes("/live/participants");
+  const isSpecificRoom = uriParts.length > 3 && uriParts[3] !== "" && uriParts[3] !== "live";
 
-  if (isSpecificRoom) {
+  // Handle live rooms listing (all rooms with live sessions)
+  if (uri === "digitalsamba://rooms/live" || uri === "digitalsamba://rooms/live/participants") {
+    logger.info("Listing live rooms", { includeParticipants: isParticipantsRequest });
+
+    // Get API key
+    let apiKey = options?.apiKey;
+    if (!apiKey) {
+      apiKey = getApiKeyFromRequest(request);
+    }
+    if (!apiKey && process.env.DIGITAL_SAMBA_DEVELOPER_KEY) {
+      apiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
+    }
+    if (!apiKey) {
+      throw new Error("No API key found. Please include an Authorization header with a Bearer token.");
+    }
+
+    const client = new DigitalSambaApiClient(apiKey, apiUrl, apiCache);
+
+    try {
+      // Fetch live rooms from API
+      const liveRooms = isParticipantsRequest 
+        ? await client.getLiveRoomsWithParticipants()
+        : await client.getLiveRooms();
+
+      logger.info("Fetched live rooms successfully", { count: liveRooms.data.length });
+
+      // Format as resource contents
+      const contents = liveRooms.data.map((room) => ({
+        uri: `digitalsamba://rooms/${room.id}/live`,
+        text: JSON.stringify(room, null, 2),
+        mimeType: "application/json",
+      }));
+
+      return { contents };
+    } catch (error) {
+      logger.error("Error fetching live rooms", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  if (isSpecificRoom || (uriParts.length > 3 && isLiveRequest)) {
     // Handle specific room request
     const roomId = params.roomId || uriParts[3];
 
@@ -91,20 +163,31 @@ export async function handleRoomResource(
     const client = new DigitalSambaApiClient(apiKey, apiUrl, apiCache);
 
     try {
-      // Get room from API
-      const room = await client.getRoom(roomId);
+      // Determine which endpoint to call based on the URI
+      let data;
+      if (isParticipantsRequest) {
+        // Get live participants data for specific room
+        data = await client.getRoomLiveParticipantsData(roomId);
+      } else if (isLiveRequest) {
+        // Get live participant count for specific room
+        data = await client.getRoomLiveParticipantsCount(roomId);
+      } else {
+        // Get room details
+        data = await client.getRoom(roomId);
+      }
 
-      // Format room as resource content
+      // Format as resource content
       const content = {
         uri: uri,
-        text: JSON.stringify(room, null, 2),
+        text: JSON.stringify(data, null, 2),
         mimeType: "application/json",
       };
 
       return { contents: [content] };
     } catch (error) {
-      logger.error("Error fetching room", {
+      logger.error("Error fetching room data", {
         roomId,
+        isLive: isLiveRequest,
         error: error instanceof Error ? error.message : String(error),
       });
       throw error;
@@ -123,8 +206,8 @@ export async function handleRoomResource(
       apiKey = getApiKeyFromRequest(request);
     }
 
-    if (!apiKey && process.env.DIGITAL_SAMBA_API_KEY) {
-      apiKey = process.env.DIGITAL_SAMBA_API_KEY;
+    if (!apiKey && process.env.DIGITAL_SAMBA_DEVELOPER_KEY) {
+      apiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
       logger.debug("Using API key from environment variable");
     }
 

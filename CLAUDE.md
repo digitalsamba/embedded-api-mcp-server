@@ -55,7 +55,8 @@ src/
     ├── live-session-controls/# Live session controls
     ├── communication-management/# Chat/Q&A/Transcripts
     ├── poll-management/      # Poll tools
-    └── library-management/   # Content library
+    ├── library-management/   # Content library
+    └── webhook-management/   # Webhook tools
 ```
 
 ### Key Design Principles
@@ -72,7 +73,6 @@ src/
 - Winston logging (replaced with simple console logger)
 - Connection management and pooling
 - Token management complexity
-- Webhooks functionality
 - Resource optimization
 - Graceful degradation patterns
 
@@ -120,3 +120,39 @@ src/
 - Maintain backward compatibility
 - No breaking changes to existing functionality
 - Simple, maintainable code over complex patterns
+
+## Known Issues & Design Considerations
+
+### MCP Resources vs Tools in AI Assistants
+**Issue**: AI assistants (like Claude) can only access MCP tools, not resources, even though the MCP protocol supports both.
+
+**Context**: This MCP server correctly implements:
+- 32 Resources (read-only operations like listing rooms, viewing analytics)
+- 70+ Tools (actions that modify data like creating rooms, starting recordings)
+
+**The Problem**: 
+- The MCP protocol correctly separates read operations (resources) from write operations (tools)
+- Our server implementation follows this pattern correctly
+- However, AI assistants integrated with MCP (like Claude Desktop) only expose tools, not resources
+- This means half of the server's functionality (all read-only resources) is inaccessible to AI assistants
+
+**Current Workarounds**:
+1. Use tools that provide similar functionality (e.g., `get-recordings` tool instead of `digitalsamba://recordings` resource)
+2. Consider adding "reader tools" for commonly needed resources (though this creates redundancy)
+3. Wait for AI assistant MCP integrations to support resource reading
+
+**Ideal Solution**: The fix should be in AI assistant MCP client implementations (e.g., Claude Desktop) to expose a way to read resources, perhaps through a special tool or direct resource access.
+
+**Note**: This is not a bug in our MCP server - it's a limitation in how current AI assistants consume MCP servers.
+
+### Hybrid Approach Implementation
+
+To work around this limitation, we're implementing a **hybrid approach**:
+
+1. **Keep all existing resources** - For future compatibility when Claude Desktop adds resource selection
+2. **Create tool equivalents for all resources** - For immediate functionality in AI assistants
+3. **Clear naming convention** - Tools use verbs like `list-rooms`, `get-room-details` to distinguish from resources
+
+This ensures the MCP server works with current AI assistants while remaining compatible with future MCP client improvements.
+
+See `.ai_dev/mcp-resources-vs-tools-issue.md` for detailed analysis and `.ai_dev/resources-to-tools-conversion-plan.md` for implementation progress.
