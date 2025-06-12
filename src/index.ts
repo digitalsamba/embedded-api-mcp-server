@@ -220,28 +220,35 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   // For listing tools, we don't need an API key - just return the schema
   // API key will be checked when actually executing tools
-  return {
-    tools: [
-      {
-        name: "get-server-version",
-        description: `[Server Info] Get the current version and build information of the MCP server. Use to check: "server version", "what version is running", "is this the latest version", "build time". Current version: ${VERSION}`,
-        inputSchema: {
-          type: "object",
-          properties: {},
-        },
+  const allTools = [
+    {
+      name: "get-server-version",
+      description: `[Server Info] Get the current version and build information of the MCP server. Use to check: "server version", "what version is running", "is this the latest version", "build time". Current version: ${VERSION}`,
+      inputSchema: {
+        type: "object",
+        properties: {},
       },
-      ...registerRoomTools(),
-      ...registerSessionTools(),
-      ...registerRecordingTools(),
-      ...registerAnalyticsTools(),
-      ...registerLiveSessionTools(),
-      ...registerCommunicationTools(),
-      ...registerPollTools(),
-      ...registerLibraryTools(),
-      ...registerRoleTools(),
-      ...registerWebhookTools(),
-      ...registerExportTools(),
-    ],
+    },
+    ...registerRoomTools(),
+    ...registerSessionTools(),
+    ...registerRecordingTools(),
+    ...registerAnalyticsTools(),
+    ...registerLiveSessionTools(),
+    ...registerCommunicationTools(),
+    ...registerPollTools(),
+    ...registerLibraryTools(),
+    ...registerRoleTools(),
+    ...registerWebhookTools(),
+    ...registerExportTools(),
+  ];
+  
+  // Log export tools for debugging
+  const exportTools = allTools.filter(t => t.name.includes('export'));
+  logger.info(`ListToolsRequest: Registered ${allTools.length} total tools`);
+  logger.info(`Export tools (${exportTools.length}): ${exportTools.map(t => t.name).join(', ')}`);
+  
+  return {
+    tools: allTools,
   };
 });
 

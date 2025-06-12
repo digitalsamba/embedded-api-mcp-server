@@ -24,7 +24,7 @@ export async function executeExportTool(
   options: { apiUrl?: string },
 ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
   try {
-    logger.info(`Executing export tool: ${toolName}`, { params });
+    logger.info(`Executing export tool: ${toolName}`, { params, toolName });
 
     const apiKey = getApiKeyFromRequest(request) || process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
     if (!apiKey) {
