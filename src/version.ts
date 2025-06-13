@@ -6,7 +6,7 @@
 
 // Default version info - will be replaced by build script in production
 const versionInfo = {
-  version: "0.1.0",
+  version: "0.1.1",
   name: "@digitalsamba/embedded-api-mcp-server",
   buildTime: "development",
   nodeVersion: process.version,
