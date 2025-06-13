@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2025-01-07
+## [0.1.0] - 2025-06-13
 
 ### Added
 - GitHub Actions CI/CD pipeline with automated testing and production release workflow
@@ -51,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dead code: RedisCache, createCacheMiddleware, unused npm scripts
 - Co-author attribution from future commits
 
-## [0.1.0-beta.1] - 2025-01-06
+## [0.1.0-beta.1] - 2025-06-01
 
 ### Added
 - Complete MCP server implementation for Digital Samba Embedded API
@@ -80,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TypeScript with full type definitions
 - Modular architecture with clear separation of resources and tools
 
-## [0.0.1-alpha] - 2024-12-01
+## [0.0.1-alpha] - 2025-05-25
 
 ### Added
 - Initial project structure
