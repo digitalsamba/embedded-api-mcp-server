@@ -164,13 +164,13 @@ jobs:
             exit 1
           fi
           
-          if [ ! -f "dist/index.js" ]; then
-            echo "❌ Build failed: dist/index.js not found"
+          if [ ! -f "dist/src/index.js" ]; then
+            echo "❌ Build failed: dist/src/index.js not found"
             exit 1
           fi
           
           # Check build size
-          npm run build:size-check --if-present || true
+          npm run size-check --if-present || true
           
           echo "✅ Build verification passed"
 
