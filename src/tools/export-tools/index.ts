@@ -8,7 +8,6 @@
  */
 
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod";
 import { getApiKeyFromRequest } from "../../auth.js";
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";

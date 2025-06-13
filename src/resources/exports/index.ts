@@ -115,7 +115,7 @@ export class ExportResources {
         });
         description = `Q&A export for room ${roomId}`;
         break;
-      case "transcripts":
+      case "transcripts": {
         // For transcripts, the session ID is in the path position where room ID would be
         const transcriptSessionId = roomId; // Actually the session ID for transcripts
         exportData = await this.api.exportTranscripts(transcriptSessionId, {
@@ -123,6 +123,7 @@ export class ExportResources {
         });
         description = `Transcript export for session ${transcriptSessionId}`;
         break;
+      }
       default:
         throw new McpError(
           ErrorCode.InvalidRequest,
@@ -201,7 +202,7 @@ export class ExportResources {
           },
         ],
       };
-    } catch (error) {
+    } catch {
       throw new McpError(
         ErrorCode.InvalidRequest,
         `Recording ${recordingId} not found or not accessible`,
@@ -254,7 +255,7 @@ export class ExportResources {
             `Unknown session export type: ${exportType}`,
           );
       }
-    } catch (error) {
+    } catch {
       throw new McpError(
         ErrorCode.InvalidRequest,
         `Session ${sessionId} not found or not accessible`,

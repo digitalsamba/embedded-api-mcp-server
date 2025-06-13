@@ -190,18 +190,6 @@ export function registerAnalyticsTools(): Tool[] {
 }
 
 /**
- * Convert camelCase parameters to snake_case for API
- */
-function convertCamelToSnake(params: Record<string, any>): Record<string, any> {
-  const converted: Record<string, any> = {};
-  for (const [key, value] of Object.entries(params)) {
-    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-    converted[snakeKey] = value;
-  }
-  return converted;
-}
-
-/**
  * Handle analytics tool execution
  *
  * @param toolName - The name of the tool being executed
@@ -357,23 +345,6 @@ export async function executeAnalyticsTool(
           {
             type: "text",
             text: JSON.stringify(liveRoomData, null, 2),
-          },
-        ],
-      };
-    }
-
-    case "get-session-analytics": {
-      // This case already exists - keeping the existing implementation
-      logger.info("Executing session analytics query", { args });
-      const sessionResult = await analytics.getSessionAnalytics(
-        args.sessionId || args.sessionId,
-        filters,
-      );
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(sessionResult, null, 2),
           },
         ],
       };

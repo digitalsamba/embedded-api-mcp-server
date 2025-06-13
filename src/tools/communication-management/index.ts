@@ -553,13 +553,11 @@ async function handleDeleteRoomTranscripts(
 
     // Delete transcripts for each session
     let deletedCount = 0;
-    let failedCount = 0;
     for (const session of sessions) {
       try {
         await apiClient.deleteSessionData(session.id, "transcripts");
         deletedCount++;
       } catch (error) {
-        failedCount++;
         logger.warn("Failed to delete transcripts for session", {
           sessionId: session.id,
           error: error instanceof Error ? error.message : String(error),
@@ -696,13 +694,11 @@ async function handleDeleteRoomSummaries(
 
     // Delete summaries for each session
     let deletedCount = 0;
-    let failedCount = 0;
     for (const session of sessions) {
       try {
         await apiClient.deleteSessionSummaries(session.id);
         deletedCount++;
       } catch (error) {
-        failedCount++;
         logger.warn("Failed to delete summaries for session", {
           sessionId: session.id,
           error: error instanceof Error ? error.message : String(error),
