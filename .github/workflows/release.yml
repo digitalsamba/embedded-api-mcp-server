@@ -86,7 +86,7 @@ jobs:
         run: npm run lint --if-present
 
       - name: Run tests with coverage
-        run: npm run test:coverage
+        run: npm run test:ci
 
       - name: Upload coverage to Codecov
         if: matrix.node-version == 20
