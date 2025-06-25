@@ -121,9 +121,6 @@ src/
 - No breaking changes to existing functionality
 - Simple, maintainable code over complex patterns
 
-## AI Collaboration Guidelines
-- No claude as co-author
-
 ## Known Issues & Design Considerations
 
 ### MCP Resources vs Tools in AI Assistants
