@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Overview
 
-Digital Samba Embedded API MCP Server - A lightweight Model Context Protocol server for Digital Samba's Embedded API.
+Digital Samba Embedded API MCP Server - A lightweight Model Context Protocol server for Digital Samba's Embedded API. Provides 102 tools and 38 resources covering 100+ API endpoints for complete control over video conferencing features.
 
 ## API Reference
 
@@ -16,12 +16,23 @@ Digital Samba Embedded API MCP Server - A lightweight Model Context Protocol ser
 ### Build & Development
 - `npm run build` - Build TypeScript to dist/
 - `npm run build:clean` - Clean build (removes dist/)
-- `npm run dev` - Development mode
-- `npm run dev:clean` - Clean restart of development environment
+- `npm start` - Run the built server
+- `npm run dev` - Development mode using tsx
+- `npm run dev -- --developer-key YOUR_KEY` - Run in development mode with key
 
 ### Testing  
-- `npm test` - Run all tests
+- `npm test` - Run all tests with Jest
 - `npm run test:coverage` - Tests with coverage report
+- `npm run test:unit` - Run only unit tests
+- `npm run test:integration` - Run integration tests
+- `npm run test:ci` - CI-specific test configuration (unit tests only with coverage)
+
+### Code Quality
+- `npm run lint` - ESLint code linting
+- `npm run format` - Prettier code formatting
+- `npm run size-check` - Check build size (must be under 250KB)
+- `npm run coverage:analyze` - Analyze test coverage
+- `npm run release:check` - Pre-release checklist
 
 ### Running the Server
 - `npx @digitalsamba/embedded-api-mcp-server --developer-key YOUR_KEY` - Run MCP server (stdio mode only)
@@ -56,7 +67,9 @@ src/
     ├── communication-management/# Chat/Q&A/Transcripts
     ├── poll-management/      # Poll tools
     ├── library-management/   # Content library
-    └── webhook-management/   # Webhook tools
+    ├── webhook-management/   # Webhook tools
+    ├── role-management/      # Role and permission management
+    └── export-tools/        # Data export tools
 ```
 
 ### Key Design Principles
@@ -97,6 +110,25 @@ src/
 - Analytics queries (team, room, session analytics)
 - Content library management
 
+## Technical Stack
+
+### Core Dependencies (Only 3!)
+- `@modelcontextprotocol/sdk` (^1.12.1) - MCP protocol implementation
+- `dotenv` (^16.5.0) - Environment variable management  
+- `zod` (^3.22.4) - Runtime type validation
+
+### Development Stack
+- **TypeScript** (^5.8.3) - Type safety and modern JavaScript
+- **Jest** (^30.0.0) with ts-jest - Testing framework
+- **ESLint** (^9.28.0) - Code linting
+- **Prettier** (^3.2.5) - Code formatting
+- **tsx** (^4.7.0) - TypeScript execution for development
+
+### Requirements
+- Node.js >=18.0.0
+- ES Modules (`"type": "module"` in package.json)
+- TypeScript target: ES2020 with NodeNext module resolution
+
 ## Import Guidelines
 1. Node.js built-ins first
 2. External dependencies second  
@@ -109,6 +141,12 @@ src/
 - Integration tests for API interactions
 - E2E tests for MCP protocol compliance
 - Mock API responses for testing
+
+### Running Specific Tests
+- Run a single test file: `npm test -- path/to/test.test.ts`
+- Run tests matching a pattern: `npm test -- --testNamePattern="should create room"`
+- Run tests in watch mode: `npm test -- --watch`
+- Debug tests: `node --inspect-brk node_modules/.bin/jest --runInBand`
 
 ## Deployment
 - Beta versions deployed automatically from `develop` branch
