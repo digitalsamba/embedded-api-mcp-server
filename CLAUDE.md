@@ -159,6 +159,19 @@ src/
 - No breaking changes to existing functionality
 - Simple, maintainable code over complex patterns
 
+## AI Collaboration Guidelines
+- No claude as co-author
+
+## Important Account Settings
+
+### Single Session per External ID
+**Important**: Digital Samba accounts can have "single session per external ID" enabled in the dashboard. When this setting is active:
+- Each `externalId` can only have one active session at a time
+- If a user joins with an `externalId` that's already in use, the previous session will be disconnected
+- This is a dashboard-only setting that cannot be queried via API
+
+**Best Practice**: Always use unique `externalId` values when generating tokens, especially for moderators or when the user wants to prevent duplicate sessions. Ask the user if their account has this setting enabled when relevant.
+
 ## Known Issues & Design Considerations
 
 ### MCP Resources vs Tools in AI Assistants
