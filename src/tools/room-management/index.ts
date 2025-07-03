@@ -324,7 +324,7 @@ export function registerRoomTools(): Tool[] {
     {
       name: "generate-token",
       description:
-        '[Room Management] Generate an access token for users to join a room. Use when users say: "create a join link", "generate access token", "create invite link", "get room access", "invite someone to room", "create moderator link". Requires roomId. Returns a token with join URL.',
+        '[Room Management] Generate an access token for users to join a room. Use when users say: "create a join link", "generate access token", "create invite link", "get room access", "invite someone to room", "create moderator link". Requires roomId. Returns a token with join URL. IMPORTANT: Always use unique externalId values for each user to support single-session enforcement if enabled on the account.',
       inputSchema: {
         type: "object",
         properties: {
@@ -344,7 +344,27 @@ export function registerRoomTools(): Tool[] {
           },
           externalId: {
             type: "string",
-            description: "External user ID",
+            description: "External user ID - Use this to enforce single session per user. When the account has 'single session per external ID' enabled, users with the same external ID will be disconnected from other sessions when joining",
+          },
+          initials: {
+            type: "string",
+            description: "User initials to display (e.g., 'JD' for John Doe)",
+          },
+          avatar: {
+            type: "string",
+            description: "Avatar URL for the user",
+          },
+          breakoutId: {
+            type: "string",
+            description: "Breakout room ID to join directly",
+          },
+          notBefore: {
+            type: "string",
+            description: "Token not valid before this date/time (ISO 8601 format)",
+          },
+          expiration: {
+            type: "number",
+            description: "Token expiration time in minutes from creation",
           },
         },
         required: ["roomId"],
@@ -694,7 +714,7 @@ export async function executeRoomTool(
     }
 
     case "generate-token": {
-      const { roomId, userName, role, externalId } = args;
+      const { roomId, userName, role, externalId, initials, avatar, breakoutId, notBefore, expiration } = args;
 
       // Validate required fields
       if (!roomId) {
@@ -713,6 +733,11 @@ export async function executeRoomTool(
           u: userName || undefined,
           role: role || undefined,
           ud: externalId || undefined,
+          initials: initials || undefined,
+          avatar: avatar || undefined,
+          breakoutId: breakoutId || undefined,
+          nbf: notBefore || undefined,
+          exp: expiration || undefined,
         };
 
         // Generate token - simplified version for MCP
