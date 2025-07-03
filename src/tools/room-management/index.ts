@@ -148,6 +148,18 @@ export function registerRoomTools(): Tool[] {
             type: "boolean",
             description: "Allow recording sessions",
           },
+          pollsEnabled: {
+            type: "boolean",
+            description: "Enable polls functionality",
+          },
+          qaEnabled: {
+            type: "boolean",
+            description: "Enable Q&A functionality",
+          },
+          transcriptionEnabled: {
+            type: "boolean",
+            description: "Enable transcription functionality",
+          },
         },
         required: ["name"],
       },
@@ -278,6 +290,18 @@ export function registerRoomTools(): Tool[] {
             type: "boolean",
             description: "Allow recording sessions",
           },
+          pollsEnabled: {
+            type: "boolean",
+            description: "Enable polls functionality",
+          },
+          qaEnabled: {
+            type: "boolean",
+            description: "Enable Q&A functionality",
+          },
+          transcriptionEnabled: {
+            type: "boolean",
+            description: "Enable transcription functionality",
+          },
         },
         required: ["roomId"],
       },
@@ -368,6 +392,9 @@ export function registerRoomTools(): Tool[] {
               chatEnabled: { type: "boolean" },
               privateChatEnabled: { type: "boolean" },
               recordingsEnabled: { type: "boolean" },
+              pollsEnabled: { type: "boolean" },
+              qaEnabled: { type: "boolean" },
+              transcriptionEnabled: { type: "boolean" },
               maxParticipants: { type: "number" },
               maxBroadcasters: { type: "number" },
               defaultRole: { type: "string" },
