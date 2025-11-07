@@ -328,10 +328,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     // Recording management tools
     else if (
-      name.includes("recording") ||
-      name === "get-recordings" ||
       name === "archive-recording" ||
-      name === "unarchive-recording"
+      name === "delete-recording" ||
+      name === "get-recording" ||
+      name === "get-recording-download-link" ||
+      name === "get-recordings" ||
+      name === "start-recording" ||
+      name === "stop-recording" ||
+      name === "unarchive-recording" ||
+      name === "update-recording"
     ) {
       return await executeRecordingTool(name, args || {}, client);
     }
@@ -345,7 +350,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return await executeLiveSessionTool(name, args || {}, client);
     }
     // Export tools (moved before communication tools to avoid conflicts)
-    else if (name.includes("export-")) {
+    else if (
+      name === "export-chat-messages" ||
+      name === "export-poll-results" ||
+      name === "export-qa-data" ||
+      name === "export-recording-metadata" ||
+      name === "export-session-metadata" ||
+      name === "export-session-summary" ||
+      name === "export-session-transcripts"
+    ) {
       logger.debug(`Routing export tool: ${name} to executeExportTool`);
       return await executeExportTool(name, args || {}, request, {
         apiUrl:
@@ -355,53 +368,87 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
     // Communication management tools
     else if (
-      name.includes("-chats") ||
-      name.includes("-qa") ||
-      name.includes("-transcripts") ||
-      name.includes("-summaries")
+      name === "delete-room-chats" ||
+      name === "delete-room-qa" ||
+      name === "delete-room-summaries" ||
+      name === "delete-room-transcripts" ||
+      name === "delete-session-chats" ||
+      name === "delete-session-qa" ||
+      name === "delete-session-summaries" ||
+      name === "delete-session-transcripts"
     ) {
       return await executeCommunicationTool(name, args || {}, client);
     }
     // Poll management tools
-    else if (name.includes("poll")) {
+    else if (
+      name === "create-poll" ||
+      name === "delete-poll" ||
+      name === "delete-room-polls" ||
+      name === "delete-session-polls" ||
+      name === "publish-poll-results" ||
+      name === "update-poll"
+    ) {
       return await executePollTool(name, args || {}, client);
     }
     // Library management tools
     else if (
-      name.includes("library") ||
-      name.includes("libraries") ||
-      name.includes("webapp") ||
-      name.includes("whiteboard") ||
-      name === "get-file-links"
+      name === "bulk-delete-library-files" ||
+      name === "bulk-upload-library-files" ||
+      name === "copy-library-content" ||
+      name === "create-library" ||
+      name === "create-library-file" ||
+      name === "create-library-folder" ||
+      name === "create-webapp" ||
+      name === "create-whiteboard" ||
+      name === "delete-library" ||
+      name === "delete-library-file" ||
+      name === "delete-library-folder" ||
+      name === "get-file-links" ||
+      name === "get-library-details" ||
+      name === "get-library-file-details" ||
+      name === "get-library-folder-details" ||
+      name === "get-library-hierarchy" ||
+      name === "list-libraries" ||
+      name === "list-library-files" ||
+      name === "list-library-folders" ||
+      name === "move-library-file" ||
+      name === "move-library-folder" ||
+      name === "search-libraries" ||
+      name === "update-library" ||
+      name === "update-library-file" ||
+      name === "update-library-folder" ||
+      name === "verify-library-id"
     ) {
       return await executeLibraryTool(name, args || {}, client);
     }
     // Role management tools
-    else if (name.includes("role") || name === "get-permissions") {
+    else if (
+      name === "create-role" ||
+      name === "delete-role" ||
+      name === "get-permissions" ||
+      name === "get-role" ||
+      name === "get-roles" ||
+      name === "update-role"
+    ) {
       return await executeRoleTool(name, args || {}, client);
     }
     // Webhook management tools
-    else if (name.includes("webhook") || name === "list-webhook-events") {
+    else if (
+      name === "create-webhook" ||
+      name === "delete-webhook" ||
+      name === "get-webhook" ||
+      name === "list-webhook-events" ||
+      name === "list-webhooks" ||
+      name === "update-webhook"
+    ) {
       return await executeWebhookTool(name, args || {}, client);
     }
 
-    logger.error(`Unknown tool requested: ${name}`, { 
-      availablePatterns: [
-        'get-server-version',
-        'create-room, update-room, delete-room, etc.',
-        'get-participant-statistics, get-room-analytics, etc.',
-        'end-session, get-session-summary, etc.',
-        'delete-recording, update-recording, etc.',
-        'start-transcription, stop-transcription, etc.',
-        'delete-session-chats, delete-room-chats, etc.',
-        'create-poll, update-poll, etc.',
-        'includes("library") or includes("libraries")',
-        'includes("role") or get-permissions',
-        'includes("webhook") or list-webhook-events',
-        'includes("export-")'
-      ]
-    });
-    throw new McpError(ErrorCode.InvalidRequest, `Unknown tool: ${name}`);
+    logger.error(`Unknown tool requested: ${name}. Use ListTools request to see all available tools.`);
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      `Unknown tool: ${name}. Use the ListTools request to see all available tools.`,
+    );
   } catch (error: any) {
     logger.error(`Tool execution error: ${error.message}`, error);
 
