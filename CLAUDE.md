@@ -6,6 +6,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 Digital Samba Embedded API MCP Server - A lightweight Model Context Protocol server for Digital Samba's Embedded API. Provides 102 tools and 38 resources covering 100+ API endpoints for complete control over video conferencing features.
 
+## Active Improvement Project
+
+**Status**: Planning phase for MCP best practices compliance
+
+**Key Documents**:
+- **[MCP_IMPROVEMENT_ROADMAP.md](./MCP_IMPROVEMENT_ROADMAP.md)** - Comprehensive 6-phase roadmap with 29 tasks to reduce tool bloat (101→25 tools) and implement 2025 MCP spec compliance
+- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - At-a-glance summary, tool consolidation breakdown, and common commands
+- **[MCP_CODEBASE_ANALYSIS.md](./MCP_CODEBASE_ANALYSIS.md)** - Technical analysis identifying 8 critical issues and best practices violations
+
+**Current Focus**: The server has excessive tool count (101) causing context bloat. Roadmap addresses consolidation, routing improvements, and modernization.
+
+**When working on improvements**: Always reference the roadmap to understand phase dependencies, acceptance criteria, and progress tracking.
+
 ## API Reference
 
 - Official OpenAPI Specification: https://developer.digitalsamba.com/rest-api/openapi.yaml
