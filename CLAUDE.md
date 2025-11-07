@@ -219,4 +219,18 @@ To work around this limitation, we're implementing a **hybrid approach**:
 
 This ensures the MCP server works with current AI assistants while remaining compatible with future MCP client improvements.
 
-See `.ai_dev/mcp-resources-vs-tools-issue.md` for detailed analysis and `.ai_dev/resources-to-tools-conversion-plan.md` for implementation progress.
+## Improvement Roadmap
+
+We are actively improving this MCP server to follow 2025 best practices. See these documents for full details:
+
+- **[PROJECT_MASTER_TRACKER.md](./PROJECT_MASTER_TRACKER.md)** - Master tracking document with deployment workflows, GitHub issues, API updates
+- **[MCP_IMPROVEMENT_ROADMAP.md](./MCP_IMPROVEMENT_ROADMAP.md)** - Detailed 6-phase improvement plan (29 tasks)
+- **[MCP_CODEBASE_ANALYSIS.md](./MCP_CODEBASE_ANALYSIS.md)** - Comprehensive codebase analysis
+- **[QUICK_REFERENCE.md](./QUICK_REFERENCE.md)** - Quick reference for improvements
+
+**Key Improvements Planned**:
+- Consolidate 101 tools → 25 tools (75% reduction in context usage)
+- Fix pattern-based routing with explicit routing
+- Add 2025 MCP spec features (output schemas, human-in-the-loop)
+- Remove dead code and resolve TODOs
+- Comprehensive testing and documentation

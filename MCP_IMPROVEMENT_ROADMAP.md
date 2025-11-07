@@ -4,6 +4,8 @@
 **Last Updated**: 2025-11-07
 **Target Completion**: TBD
 
+> 📊 **See [PROJECT_MASTER_TRACKER.md](./PROJECT_MASTER_TRACKER.md) for deployment workflows, GitHub issues, API updates, and comprehensive tracking**
+
 ## Executive Summary
 
 This roadmap addresses critical MCP best practices violations identified in the Digital Samba Embedded API MCP Server. The primary goals are:
@@ -19,6 +21,25 @@ This roadmap addresses critical MCP best practices violations identified in the 
 - Maintenance complexity: Significantly reduced
 - MCP spec compliance: Full 2025 compliance
 - Developer experience: Improved with composable tools
+
+## Deployment & Release Strategy
+
+See **[PROJECT_MASTER_TRACKER.md](./PROJECT_MASTER_TRACKER.md)** for complete deployment workflows.
+
+**Quick Summary**:
+- **Beta Deployment**: Push to `develop` → Auto-deploy to npm@beta
+- **Production Deployment**: Tag on `main` (e.g., v2.0.0) → Auto-deploy to npm@latest
+- **Version Plan**: Current v0.1.3 → v2.0.0 (major breaking changes)
+- **Required Secrets**: NPM_TOKEN (for deployment)
+
+**Testing Before ANY Deployment**:
+```bash
+npm test              # All tests must pass
+npm run lint          # Linting must pass
+npm run build         # Build must succeed
+npm run size-check    # Package must be <250KB
+npm run test:coverage # Coverage must be >80%
+```
 
 ---
 
