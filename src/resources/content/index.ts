@@ -22,7 +22,6 @@
 // import { z } from 'zod'; // Removed: unused
 
 // MCP SDK imports
-// import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'; // TODO: Direct MCP server integration
 import {
   ErrorCode,
   McpError,

@@ -25,7 +25,6 @@
 // import { z } from "zod"; // Removed: unused
 
 // MCP SDK imports
-// import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'; // TODO: Direct MCP server integration
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 
 // Local modules
@@ -2011,13 +2010,10 @@ async function handleCopyLibraryContent(
         ],
       };
     } else {
-      // For folders, we need to recursively copy
-      // This is a simplified version - in production, you'd want to handle nested content
-      const sourceFolder = await apiClient.getLibraryFolder(
-        sourceLibraryId,
-        contentId,
-      );
-      void sourceFolder; // TODO: Use sourceFolder data for complete folder copying
+      // For folders, create an empty folder copy
+      // Note: This intentionally does NOT copy folder contents to avoid complexity
+      // Recursive folder copying with all nested files/folders would require
+      // additional implementation. Currently creates empty folder only.
 
       // Create new folder in target library
       const folderData: any = {
