@@ -114,11 +114,37 @@ const server = new Server(
   },
 );
 
-// API client instance (created per request with API key)
+/**
+ * API client singleton instance
+ *
+ * DESIGN NOTE: This uses a singleton pattern that creates one client instance
+ * per server process. This is intentional and correct for MCP stdio mode:
+ *
+ * - Each MCP server runs as a separate process with one API key
+ * - The API key comes from DIGITAL_SAMBA_DEVELOPER_KEY environment variable
+ * - The key never changes during the process lifetime
+ * - Once created, the client is reused for all subsequent requests
+ *
+ * This pattern would NOT be appropriate for:
+ * - HTTP servers handling multiple tenants/API keys
+ * - Long-running services that need to support key rotation
+ * - Environments where the API key can change at runtime
+ *
+ * For the MCP stdio use case, this singleton provides optimal performance
+ * by avoiding unnecessary client recreation.
+ */
 let apiClient: DigitalSambaApiClient | null = null;
 
 /**
  * Get or create API client with the provided API key
+ *
+ * @param apiKey - Digital Samba API key (typically from environment variable)
+ * @returns Singleton DigitalSambaApiClient instance
+ *
+ * @remarks
+ * This function implements lazy initialization of the API client singleton.
+ * The client is created once on first call and reused for all subsequent
+ * calls. The apiKey parameter is only used during initial client creation.
  */
 function getApiClient(apiKey: string): DigitalSambaApiClient {
   if (!apiClient) {
