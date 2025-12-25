@@ -40,7 +40,7 @@ export function registerRoomTools(): Tool[] {
             maxLength: 500,
             description: "Room description",
           },
-          friendlyUrl: {
+          friendly_url: {
             type: "string",
             minLength: 3,
             maxLength: 32,
@@ -52,21 +52,21 @@ export function registerRoomTools(): Tool[] {
             default: "public",
             description: "Room privacy setting",
           },
-          externalId: {
+          external_id: {
             type: "string",
             description: "External identifier for the room",
           },
-          maxParticipants: {
+          max_participants: {
             type: "number",
             minimum: 2,
             maximum: 2000,
             description: "Maximum number of participants",
           },
-          maxBroadcasters: {
+          max_broadcasters: {
             type: "number",
             description: "Maximum number of broadcasters",
           },
-          isLocked: {
+          is_locked: {
             type: "boolean",
             description: "Whether the room is locked",
           },
@@ -75,38 +75,38 @@ export function registerRoomTools(): Tool[] {
             items: { type: "string" },
             description: "Available roles in the room",
           },
-          defaultRole: {
+          default_role: {
             type: "string",
             description: "Default role for participants",
           },
 
           // UI Settings
-          topbarEnabled: {
+          topbar_enabled: {
             type: "boolean",
             description: "Show/hide the top bar",
           },
-          toolbarEnabled: {
+          toolbar_enabled: {
             type: "boolean",
             description: "Show/hide the toolbar",
           },
-          toolbarPosition: {
+          toolbar_position: {
             type: "string",
             enum: ["left", "right", "bottom"],
             description: "Position of the toolbar",
           },
-          toolbarColor: {
+          toolbar_color: {
             type: "string",
             description: "Toolbar background color (hex)",
           },
-          primaryColor: {
+          primary_color: {
             type: "string",
             description: "Primary theme color (hex)",
           },
-          backgroundColor: {
+          background_color: {
             type: "string",
             description: "Room background color (hex)",
           },
-          paletteMode: {
+          palette_mode: {
             type: "string",
             enum: ["light", "dark"],
             description: "Color theme mode",
@@ -123,53 +123,53 @@ export function registerRoomTools(): Tool[] {
             },
             description: "Available languages for participants to choose from. Valid values: ar-SA, en, es-ES, de-DE, it-IT, pt-PT, ro-RO, zh-CN, zh-TW",
           },
-          languageSelectionEnabled: {
+          language_selection_enabled: {
             type: "boolean",
             description: "Allow users to change language",
           },
 
           // Meeting features
-          audioOnJoinEnabled: {
+          audio_on_join_enabled: {
             type: "boolean",
             description: "Auto-enable audio when joining",
           },
-          videoOnJoinEnabled: {
+          video_on_join_enabled: {
             type: "boolean",
             description: "Auto-enable video when joining",
           },
-          screenshareEnabled: {
+          screenshare_enabled: {
             type: "boolean",
             description: "Allow screen sharing",
           },
-          participantsListEnabled: {
+          participants_list_enabled: {
             type: "boolean",
             description: "Show participants list",
           },
-          chatEnabled: {
+          chat_enabled: {
             type: "boolean",
             description: "Enable chat functionality",
           },
-          privateChatEnabled: {
+          private_chat_enabled: {
             type: "boolean",
             description: "Allow private messages",
           },
-          recordingsEnabled: {
+          recordings_enabled: {
             type: "boolean",
             description: "Allow recording sessions (enables the record button)",
           },
-          recordingAutostartEnabled: {
+          recording_autostart_enabled: {
             type: "boolean",
             description: "Automatically start recording when the first participant joins",
           },
-          pollsEnabled: {
+          polls_enabled: {
             type: "boolean",
             description: "Enable polls functionality",
           },
-          qaEnabled: {
+          qa_enabled: {
             type: "boolean",
             description: "Enable Q&A functionality",
           },
-          transcriptionEnabled: {
+          transcription_enabled: {
             type: "boolean",
             description: "Enable transcription functionality",
           },
@@ -180,11 +180,11 @@ export function registerRoomTools(): Tool[] {
     {
       name: "update-room",
       description:
-        '[Room Management] Update an existing room\'s settings. Use when users say: "change room settings", "update the room", "modify room configuration", "edit room details", "change max participants", "rename the room", "change toolbar position", "update room colors", "change room layout". Requires roomId. Returns the updated room object.',
+        '[Room Management] Update an existing room\'s settings. Use when users say: "change room settings", "update the room", "modify room configuration", "edit room details", "change max participants", "rename the room", "change toolbar position", "update room colors", "change room layout". Requires room_id. Returns the updated room object.',
       inputSchema: {
         type: "object",
         properties: {
-          roomId: {
+          room_id: {
             type: "string",
             description: "Room ID (required)",
           },
@@ -199,7 +199,7 @@ export function registerRoomTools(): Tool[] {
             maxLength: 500,
             description: "Room description",
           },
-          friendlyUrl: {
+          friendly_url: {
             type: "string",
             minLength: 3,
             maxLength: 32,
@@ -210,17 +210,17 @@ export function registerRoomTools(): Tool[] {
             enum: ["public", "private"],
             description: "Room privacy setting",
           },
-          maxParticipants: {
+          max_participants: {
             type: "number",
             minimum: 2,
             maximum: 2000,
             description: "Maximum number of participants",
           },
-          maxBroadcasters: {
+          max_broadcasters: {
             type: "number",
             description: "Maximum number of broadcasters",
           },
-          isLocked: {
+          is_locked: {
             type: "boolean",
             description: "Whether the room is locked",
           },
@@ -229,38 +229,38 @@ export function registerRoomTools(): Tool[] {
             items: { type: "string" },
             description: "Available roles in the room",
           },
-          defaultRole: {
+          default_role: {
             type: "string",
             description: "Default role for participants",
           },
 
           // UI Settings
-          topbarEnabled: {
+          topbar_enabled: {
             type: "boolean",
             description: "Show/hide the top bar",
           },
-          toolbarEnabled: {
+          toolbar_enabled: {
             type: "boolean",
             description: "Show/hide the toolbar",
           },
-          toolbarPosition: {
+          toolbar_position: {
             type: "string",
             enum: ["left", "right", "bottom"],
             description: "Position of the toolbar",
           },
-          toolbarColor: {
+          toolbar_color: {
             type: "string",
             description: "Toolbar background color (hex)",
           },
-          primaryColor: {
+          primary_color: {
             type: "string",
             description: "Primary theme color (hex)",
           },
-          backgroundColor: {
+          background_color: {
             type: "string",
             description: "Room background color (hex)",
           },
-          paletteMode: {
+          palette_mode: {
             type: "string",
             enum: ["light", "dark"],
             description: "Color theme mode",
@@ -277,87 +277,87 @@ export function registerRoomTools(): Tool[] {
             },
             description: "Available languages for participants to choose from. Valid values: ar-SA, en, es-ES, de-DE, it-IT, pt-PT, ro-RO, zh-CN, zh-TW",
           },
-          languageSelectionEnabled: {
+          language_selection_enabled: {
             type: "boolean",
             description: "Allow users to change language",
           },
 
           // Meeting features
-          audioOnJoinEnabled: {
+          audio_on_join_enabled: {
             type: "boolean",
             description: "Auto-enable audio when joining",
           },
-          videoOnJoinEnabled: {
+          video_on_join_enabled: {
             type: "boolean",
             description: "Auto-enable video when joining",
           },
-          screenshareEnabled: {
+          screenshare_enabled: {
             type: "boolean",
             description: "Allow screen sharing",
           },
-          participantsListEnabled: {
+          participants_list_enabled: {
             type: "boolean",
             description: "Show participants list",
           },
-          chatEnabled: {
+          chat_enabled: {
             type: "boolean",
             description: "Enable chat functionality",
           },
-          privateChatEnabled: {
+          private_chat_enabled: {
             type: "boolean",
             description: "Allow private messages",
           },
-          recordingsEnabled: {
+          recordings_enabled: {
             type: "boolean",
             description: "Allow recording sessions (enables the record button)",
           },
-          recordingAutostartEnabled: {
+          recording_autostart_enabled: {
             type: "boolean",
             description: "Automatically start recording when the first participant joins",
           },
-          pollsEnabled: {
+          polls_enabled: {
             type: "boolean",
             description: "Enable polls functionality",
           },
-          qaEnabled: {
+          qa_enabled: {
             type: "boolean",
             description: "Enable Q&A functionality",
           },
-          transcriptionEnabled: {
+          transcription_enabled: {
             type: "boolean",
             description: "Enable transcription functionality",
           },
         },
-        required: ["roomId"],
+        required: ["room_id"],
       },
     },
     {
       name: "delete-room",
       description:
-        '[Room Management] Permanently delete a room. Use when users say: "delete the room", "remove this room", "delete meeting room", "remove conference room", "permanently delete room". Requires roomId. This action cannot be undone.',
+        '[Room Management] Permanently delete a room. Use when users say: "delete the room", "remove this room", "delete meeting room", "remove conference room", "permanently delete room". Requires room_id. This action cannot be undone.',
       inputSchema: {
         type: "object",
         properties: {
-          roomId: {
+          room_id: {
             type: "string",
             description: "Room ID (required)",
           },
         },
-        required: ["roomId"],
+        required: ["room_id"],
       },
     },
     {
       name: "generate-token",
       description:
-        '[Room Management] Generate an access token for users to join a room. Use when users say: "create a join link", "generate access token", "create invite link", "get room access", "invite someone to room", "create moderator link". Requires roomId. Returns a token with join URL. IMPORTANT: Always use unique externalId values for each user to support single-session enforcement if enabled on the account.',
+        '[Room Management] Generate an access token for users to join a room. Use when users say: "create a join link", "generate access token", "create invite link", "get room access", "invite someone to room", "create moderator link". Requires room_id. Returns a token with join URL. IMPORTANT: Always use unique external_id values for each user to support single-session enforcement if enabled on the account.',
       inputSchema: {
         type: "object",
         properties: {
-          roomId: {
+          room_id: {
             type: "string",
             description: "Room ID (required)",
           },
-          userName: {
+          user_name: {
             type: "string",
             minLength: 1,
             maxLength: 100,
@@ -367,7 +367,7 @@ export function registerRoomTools(): Tool[] {
             type: "string",
             description: "User role (e.g., moderator, participant)",
           },
-          externalId: {
+          external_id: {
             type: "string",
             description: "External user ID - Use this to enforce single session per user. When the account has 'single session per external ID' enabled, users with the same external ID will be disconnected from other sessions when joining",
           },
@@ -379,11 +379,11 @@ export function registerRoomTools(): Tool[] {
             type: "string",
             description: "Avatar URL for the user",
           },
-          breakoutId: {
+          breakout_id: {
             type: "string",
             description: "Breakout room ID to join directly",
           },
-          notBefore: {
+          not_before: {
             type: "string",
             description: "Token not valid before this date/time (ISO 8601 format)",
           },
@@ -392,7 +392,7 @@ export function registerRoomTools(): Tool[] {
             description: "Token expiration time in minutes from creation",
           },
         },
-        required: ["roomId"],
+        required: ["room_id"],
       },
     },
     {
@@ -416,33 +416,33 @@ export function registerRoomTools(): Tool[] {
             description: "Settings object with configuration options",
             properties: {
               language: { type: "string" },
-              languageSelectionEnabled: { type: "boolean" },
-              topbarEnabled: { type: "boolean" },
-              toolbarEnabled: { type: "boolean" },
-              toolbarPosition: {
+              language_selection_enabled: { type: "boolean" },
+              topbar_enabled: { type: "boolean" },
+              toolbar_enabled: { type: "boolean" },
+              toolbar_position: {
                 type: "string",
                 enum: ["left", "right", "bottom"],
               },
-              toolbarColor: { type: "string" },
-              primaryColor: { type: "string" },
-              backgroundColor: { type: "string" },
-              paletteMode: {
+              toolbar_color: { type: "string" },
+              primary_color: { type: "string" },
+              background_color: { type: "string" },
+              palette_mode: {
                 type: "string",
                 enum: ["light", "dark"],
               },
-              audioOnJoinEnabled: { type: "boolean" },
-              videoOnJoinEnabled: { type: "boolean" },
-              screenshareEnabled: { type: "boolean" },
-              participantsListEnabled: { type: "boolean" },
-              chatEnabled: { type: "boolean" },
-              privateChatEnabled: { type: "boolean" },
-              recordingsEnabled: { type: "boolean" },
-              pollsEnabled: { type: "boolean" },
-              qaEnabled: { type: "boolean" },
-              transcriptionEnabled: { type: "boolean" },
-              maxParticipants: { type: "number" },
-              maxBroadcasters: { type: "number" },
-              defaultRole: { type: "string" },
+              audio_on_join_enabled: { type: "boolean" },
+              video_on_join_enabled: { type: "boolean" },
+              screenshare_enabled: { type: "boolean" },
+              participants_list_enabled: { type: "boolean" },
+              chat_enabled: { type: "boolean" },
+              private_chat_enabled: { type: "boolean" },
+              recordings_enabled: { type: "boolean" },
+              polls_enabled: { type: "boolean" },
+              qa_enabled: { type: "boolean" },
+              transcription_enabled: { type: "boolean" },
+              max_participants: { type: "number" },
+              max_broadcasters: { type: "number" },
+              default_role: { type: "string" },
             },
           },
         },
@@ -471,16 +471,16 @@ export function registerRoomTools(): Tool[] {
     {
       name: "get-room-details",
       description:
-        '[Room Management - TOOL] Get complete details for a specific room. Use when users say: "show room details", "get room info", "room configuration", "room settings", "what are room parameters", "describe room". Requires roomId. This TOOL provides the same data as the digitalsamba://rooms/{roomId} resource. Returns full room object with all settings, max participants, features, and URLs.',
+        '[Room Management - TOOL] Get complete details for a specific room. Use when users say: "show room details", "get room info", "room configuration", "room settings", "what are room parameters", "describe room". Requires room_id. This TOOL provides the same data as the digitalsamba://rooms/{room_id} resource. Returns full room object with all settings, max participants, features, and URLs.',
       inputSchema: {
         type: "object",
         properties: {
-          roomId: {
+          room_id: {
             type: "string",
             description: "Room ID (required)",
           },
         },
-        required: ["roomId"],
+        required: ["room_id"],
       },
     },
     {
@@ -504,17 +504,6 @@ export function registerRoomTools(): Tool[] {
   ];
 }
 
-/**
- * Convert camelCase parameters to snake_case for API
- */
-function convertCamelToSnake(params: Record<string, any>): Record<string, any> {
-  const converted: Record<string, any> = {};
-  for (const [key, value] of Object.entries(params)) {
-    const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-    converted[snakeKey] = value;
-  }
-  return converted;
-}
 
 /**
  * Execute a room management tool
@@ -540,17 +529,15 @@ function convertCamelToSnake(params: Record<string, any>): Record<string, any> {
  * const result = await executeRoomTool('create-room', {
  *   name: 'Team Meeting',
  *   privacy: 'private',
- *   maxParticipants: 50
+ *   max_participants: 50
  * }, request, { apiUrl: 'https://api.digitalsamba.com/api/v1' });
  *
  * @example
  * // Generate access token
  * const result = await executeRoomTool('generate-token', {
- *   roomId: 'room-123',
- *   options: {
- *     u: 'John Doe',
- *     role: 'moderator'
- *   }
+ *   room_id: 'room-123',
+ *   user_name: 'John Doe',
+ *   role: 'moderator'
  * }, request, { apiUrl: 'https://api.digitalsamba.com/api/v1' });
  *
  * @since 1.0.0
@@ -595,8 +582,8 @@ export async function executeRoomTool(
 
   switch (toolName) {
     case "create-room": {
-      const { roomId, ...settings } = args; // Extract all settings except roomId
-      void roomId; // roomId is ignored in room creation since it's generated by the API
+      const { room_id, ...settings } = args; // Extract all settings except room_id
+      void room_id; // room_id is ignored in room creation since it's generated by the API
 
       logger.info("Creating room", {
         roomName: settings.name,
@@ -617,11 +604,8 @@ export async function executeRoomTool(
         // Normalize boolean values (Claude sometimes sends 0/1 instead of true/false)
         const normalizedSettings = normalizeBooleans(settings);
 
-        // Convert camelCase to snake_case for API
-        const apiSettings = convertCamelToSnake(normalizedSettings) as RoomCreateSettings;
-        
-        // Create room with all provided settings
-        const room = await client.createRoom(apiSettings);
+        // Create room with all provided settings (args already in snake_case)
+        const room = await client.createRoom(normalizedSettings as RoomCreateSettings);
         logger.info("Room created successfully", { roomId: room.id });
 
         return {
@@ -650,9 +634,9 @@ export async function executeRoomTool(
     }
 
     case "update-room": {
-      const { roomId, ...settings } = args; // Extract roomId and all other settings
+      const { room_id, ...settings } = args; // Extract room_id and all other settings
 
-      if (!roomId) {
+      if (!room_id) {
         return {
           content: [{ type: "text", text: "Room ID is required." }],
           isError: true,
@@ -660,7 +644,7 @@ export async function executeRoomTool(
       }
 
       logger.info("Updating room", {
-        roomId,
+        roomId: room_id,
         settings: Object.keys(settings), // Log which settings are being updated
       });
 
@@ -668,11 +652,8 @@ export async function executeRoomTool(
         // Normalize boolean values (Claude sometimes sends 0/1 instead of true/false)
         const normalizedSettings = normalizeBooleans(settings);
 
-        // Convert camelCase to snake_case for API
-        const apiSettings = convertCamelToSnake(normalizedSettings) as Partial<RoomCreateSettings>;
-        
-        // Update room with all provided settings
-        const room = await client.updateRoom(roomId, apiSettings);
+        // Update room with all provided settings (args already in snake_case)
+        const room = await client.updateRoom(room_id, normalizedSettings as Partial<RoomCreateSettings>);
         logger.info("Room updated successfully", { roomId: room.id });
 
         return {
@@ -685,7 +666,7 @@ export async function executeRoomTool(
         };
       } catch (error) {
         logger.error("Error updating room", {
-          roomId,
+          roomId: room_id,
           error: error instanceof Error ? error.message : String(error),
         });
 
@@ -702,33 +683,33 @@ export async function executeRoomTool(
     }
 
     case "delete-room": {
-      const { roomId } = args;
+      const { room_id } = args;
 
-      if (!roomId) {
+      if (!room_id) {
         return {
           content: [{ type: "text", text: "Room ID is required." }],
           isError: true,
         };
       }
 
-      logger.info("Deleting room", { roomId });
+      logger.info("Deleting room", { roomId: room_id });
 
       try {
         // Delete room
-        await client.deleteRoom(roomId);
-        logger.info("Room deleted successfully", { roomId });
+        await client.deleteRoom(room_id);
+        logger.info("Room deleted successfully", { roomId: room_id });
 
         return {
           content: [
             {
               type: "text",
-              text: `Room ${roomId} deleted successfully!`,
+              text: `Room ${room_id} deleted successfully!`,
             },
           ],
         };
       } catch (error) {
         logger.error("Error deleting room", {
-          roomId,
+          roomId: room_id,
           error: error instanceof Error ? error.message : String(error),
         });
 
@@ -745,29 +726,29 @@ export async function executeRoomTool(
     }
 
     case "generate-token": {
-      const { roomId, userName, role, externalId, initials, avatar, breakoutId, notBefore, expiration } = args;
+      const { room_id, user_name, role, external_id, initials, avatar, breakout_id, not_before, expiration } = args;
 
       // Validate required fields
-      if (!roomId) {
-        throw new Error("roomId is required");
+      if (!room_id) {
+        throw new Error("room_id is required");
       }
 
       logger.info("Generating room token", {
-        roomId,
-        userName,
+        roomId: room_id,
+        userName: user_name,
         role,
       });
 
       try {
         // Generate token options
         const tokenOptions = {
-          u: userName || undefined,
+          u: user_name || undefined,
           role: role || undefined,
-          ud: externalId || undefined,
+          ud: external_id || undefined,
           initials: initials || undefined,
           avatar: avatar || undefined,
-          breakoutId: breakoutId || undefined,
-          nbf: notBefore || undefined,
+          breakoutId: breakout_id || undefined,
+          nbf: not_before || undefined,
           exp: expiration || undefined,
         };
 
@@ -775,16 +756,16 @@ export async function executeRoomTool(
         let token;
         if (request.sessionId) {
           // Use standard token generation
-          token = await client.generateRoomToken(roomId, tokenOptions);
+          token = await client.generateRoomToken(room_id, tokenOptions);
           logger.info("Generated token", {
-            roomId,
+            roomId: room_id,
             expiresAt: token.expiresAt,
           });
         } else {
           // Standard token generation
-          token = await client.generateRoomToken(roomId, tokenOptions);
+          token = await client.generateRoomToken(room_id, tokenOptions);
         }
-        logger.info("Token generated successfully", { roomId });
+        logger.info("Token generated successfully", { roomId: room_id });
 
         return {
           content: [
@@ -796,7 +777,7 @@ export async function executeRoomTool(
         };
       } catch (error) {
         logger.error("Error generating token", {
-          roomId,
+          roomId: room_id,
           error: error instanceof Error ? error.message : String(error),
         });
 
@@ -854,8 +835,9 @@ export async function executeRoomTool(
         // Normalize boolean values (Claude sometimes sends 0/1 instead of true/false)
         const normalizedSettings = normalizeBooleans(settings || {});
 
+        // Settings already in snake_case from schema
         const updatedSettings =
-          await client.updateDefaultRoomSettings(convertCamelToSnake(normalizedSettings));
+          await client.updateDefaultRoomSettings(normalizedSettings);
 
         return {
           content: [
@@ -917,20 +899,20 @@ export async function executeRoomTool(
     }
 
     case "get-room-details": {
-      const { roomId } = args;
+      const { room_id } = args;
 
-      if (!roomId) {
+      if (!room_id) {
         return {
           content: [{ type: "text", text: "Room ID is required." }],
           isError: true,
         };
       }
 
-      logger.info("Getting room details", { roomId });
+      logger.info("Getting room details", { roomId: room_id });
 
       try {
-        const room = await client.getRoom(roomId);
-        logger.info("Fetched room details successfully", { roomId });
+        const room = await client.getRoom(room_id);
+        logger.info("Fetched room details successfully", { roomId: room_id });
 
         return {
           content: [
@@ -942,7 +924,7 @@ export async function executeRoomTool(
         };
       } catch (error) {
         logger.error("Error getting room details", {
-          roomId,
+          roomId: room_id,
           error: error instanceof Error ? error.message : String(error),
         });
 

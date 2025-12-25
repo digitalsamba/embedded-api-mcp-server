@@ -263,7 +263,7 @@ describe('Recording Tools', () => {
         mockApiClient.deleteRecording.mockResolvedValue(undefined);
 
         const result = await executeRecordingTool('delete-recording', {
-          recordingId: 'test-recording-id'
+          recording_id: 'test-recording-id'
         }, mockApiClient);
 
         expect(mockApiClient.deleteRecording).toHaveBeenCalledWith('test-recording-id');
@@ -274,7 +274,7 @@ describe('Recording Tools', () => {
         mockApiClient.deleteRecording.mockRejectedValue(new Error('Recording not found'));
 
         await expect(executeRecordingTool('delete-recording', {
-          recordingId: 'test-recording-id'
+          recording_id: 'test-recording-id'
         }, mockApiClient)).rejects.toThrow('Recording not found');
       });
     });
@@ -282,7 +282,7 @@ describe('Recording Tools', () => {
     describe('update-recording', () => {
       it('should indicate update is not supported', async () => {
         const result = await executeRecordingTool('update-recording', {
-          recordingId: 'test-recording-id',
+          recording_id: 'test-recording-id',
           name: 'New Recording Name'
         }, mockApiClient);
 

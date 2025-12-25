@@ -177,40 +177,40 @@ describe('MCP Server Integration', () => {
       const createResponseText = createResult.content[0].text;
       const roomDataMatch = createResponseText.match(/\{[\s\S]*\}/);
       const roomData = JSON.parse(roomDataMatch![0]);
-      const roomId = roomData.id;
-      
+      const createdRoomId = roomData.id;
+
       // Generate token for the room
       const tokenResult = await client.callTool({
         name: 'generate-token',
         arguments: {
-          roomId,
-          userName: 'Test User',
+          room_id: createdRoomId,
+          user_name: 'Test User',
           role: 'moderator',
         },
       });
-      
+
       // Verify token response
       expect(tokenResult).toBeDefined();
       expect(tokenResult.content[0].text).toContain('successfully');
-      
+
       const tokenDataMatch = tokenResult.content[0].text.match(/\{[\s\S]*\}/);
       expect(tokenDataMatch).toBeTruthy();
-      
+
       if (tokenDataMatch) {
         const tokenData = JSON.parse(tokenDataMatch[0]);
         expect(tokenData).toHaveProperty('token');
         expect(tokenData).toHaveProperty('link');
-        expect(tokenData.link).toContain(roomId);
+        expect(tokenData.link).toContain(createdRoomId);
       }
     });
-    
+
     it('should handle errors gracefully', async () => {
       // Try to generate token for non-existent room
       const result = await client.callTool({
         name: 'generate-token',
         arguments: {
-          roomId: 'non-existent-room',
-          userName: 'Test User',
+          room_id: 'non-existent-room',
+          user_name: 'Test User',
           role: 'moderator',
         },
       });

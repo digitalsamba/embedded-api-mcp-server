@@ -204,7 +204,7 @@ describe('Room Reader Tools', () => {
       });
 
       const result = await executeRoomTool('get-room-details', {
-        roomId: 'room-1'
+        room_id: 'room-1'
       }, mockRequest, options);
 
       expect(mockApiClient.getRoom).toHaveBeenCalledWith('room-1');
@@ -227,7 +227,7 @@ describe('Room Reader Tools', () => {
       mockApiClient.getRoom.mockRejectedValue(new Error('Room not found'));
 
       const result = await executeRoomTool('get-room-details', {
-        roomId: 'non-existent'
+        room_id: 'non-existent'
       }, mockRequest, options);
 
       expect(result.content[0].text).toContain('Error getting room details: Room not found');

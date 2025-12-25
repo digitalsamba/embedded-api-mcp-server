@@ -283,29 +283,29 @@ describe('MCP Protocol Compliance Tests', () => {
         await client.callTool({
           name: 'generate-token',
           arguments: {
-            // Missing required roomId
-            userName: 'Test User',
+            // Missing required room_id
+            user_name: 'Test User',
           },
         });
-        
+
         // Should have thrown an error
         throw new Error('Expected an error to be thrown');
       } catch (error: any) {
         // Should get an error for missing required argument
         expect(error).toBeDefined();
-        expect(error.message).toContain('roomId');
+        expect(error.message).toContain('room_id');
       }
     });
-    
+
     it('should validate tool arguments against schema', async () => {
       // Get tool definition
       const { tools } = await client.listTools();
       const generateTokenTool = tools.find(t => t.name === 'generate-token');
-      
+
       expect(generateTokenTool).toBeDefined();
       expect(generateTokenTool!.inputSchema).toBeDefined();
-      expect(generateTokenTool!.inputSchema.required).toContain('roomId');
-      
+      expect(generateTokenTool!.inputSchema.required).toContain('room_id');
+
       // Test that tools have proper schema definitions
       tools.forEach(tool => {
         expect(tool.inputSchema).toBeDefined();

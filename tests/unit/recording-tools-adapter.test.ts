@@ -57,7 +57,7 @@ describe("Recording Tools Adapter", () => {
     it("should delete a recording", async () => {
       const result = await executeRecordingTool(
         "delete-recording",
-        { recordingId: "rec123" },
+        { recording_id: "rec123" },
         mockClient
       );
 
@@ -68,7 +68,7 @@ describe("Recording Tools Adapter", () => {
     it("should handle update-recording (not supported)", async () => {
       const result = await executeRecordingTool(
         "update-recording",
-        { recordingId: "rec123", name: "New Name" },
+        { recording_id: "rec123", name: "New Name" },
         mockClient
       );
 
@@ -124,7 +124,7 @@ describe("Recording Tools Adapter", () => {
     it("should archive recording", async () => {
       const result = await executeRecordingTool(
         "archive-recording",
-        { recordingId: "rec123" },
+        { recording_id: "rec123" },
         mockClient
       );
 
@@ -135,7 +135,7 @@ describe("Recording Tools Adapter", () => {
     it("should unarchive recording", async () => {
       const result = await executeRecordingTool(
         "unarchive-recording",
-        { recordingId: "rec123" },
+        { recording_id: "rec123" },
         mockClient
       );
 
@@ -146,7 +146,7 @@ describe("Recording Tools Adapter", () => {
     it("should get recording details", async () => {
       const result = await executeRecordingTool(
         "get-recording",
-        { recordingId: "rec123" },
+        { recording_id: "rec123" },
         mockClient
       );
 
@@ -158,7 +158,7 @@ describe("Recording Tools Adapter", () => {
     it("should get recording download link", async () => {
       const result = await executeRecordingTool(
         "get-recording-download-link",
-        { recordingId: "rec123", validForMinutes: 60 },
+        { recording_id: "rec123", valid_for_minutes: 60 },
         mockClient
       );
 

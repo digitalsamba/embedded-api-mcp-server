@@ -11,32 +11,32 @@ export function registerRecordingTools(): Tool[] {
     {
       name: "delete-recording",
       description:
-        '[Recording Management] Permanently delete a recording. Use when users say: "delete recording", "remove recording", "delete video", "remove video recording", "delete meeting recording". Requires recordingId. This action cannot be undone.',
+        '[Recording Management] Permanently delete a recording. Use when users say: "delete recording", "remove recording", "delete video", "remove video recording", "delete meeting recording". Requires recording_id. This action cannot be undone.',
       inputSchema: {
         type: "object",
         properties: {
-          recordingId: {
+          recording_id: {
             type: "string",
             description: "The ID of the recording to delete",
           },
         },
-        required: ["recordingId"],
+        required: ["recording_id"],
       },
     },
     {
       name: "update-recording",
       description:
-        '[Recording Management] Update recording metadata like name or description. Use when users say: "rename recording", "update recording name", "change recording title", "edit recording details". Requires recordingId. Currently limited to name updates.',
+        '[Recording Management] Update recording metadata like name or description. Use when users say: "rename recording", "update recording name", "change recording title", "edit recording details". Requires recording_id. Currently limited to name updates.',
       inputSchema: {
         type: "object",
         properties: {
-          recordingId: {
+          recording_id: {
             type: "string",
             description: "The ID of the recording",
           },
           name: { type: "string", description: "New name for the recording" },
         },
-        required: ["recordingId"],
+        required: ["recording_id"],
       },
     },
     {
@@ -89,65 +89,65 @@ export function registerRecordingTools(): Tool[] {
     {
       name: "archive-recording",
       description:
-        '[Recording Management] Move a recording to archived status for long-term storage. Use when users say: "archive recording", "archive video", "move to archive", "store recording", "archive old recording". Requires recordingId. Archived recordings can be unarchived later.',
+        '[Recording Management] Move a recording to archived status for long-term storage. Use when users say: "archive recording", "archive video", "move to archive", "store recording", "archive old recording". Requires recording_id. Archived recordings can be unarchived later.',
       inputSchema: {
         type: "object",
         properties: {
-          recordingId: {
+          recording_id: {
             type: "string",
             description: "The ID of the recording to archive",
           },
         },
-        required: ["recordingId"],
+        required: ["recording_id"],
       },
     },
     {
       name: "get-recording",
       description:
-        '[Recording Management] Get detailed information about a specific recording. Use when users say: "show recording details", "get recording info", "recording information", "details about recording", "show video details". Requires recordingId. Returns full recording metadata including status, duration, and URLs.',
+        '[Recording Management] Get detailed information about a specific recording. Use when users say: "show recording details", "get recording info", "recording information", "details about recording", "show video details". Requires recording_id. Returns full recording metadata including status, duration, and URLs.',
       inputSchema: {
         type: "object",
         properties: {
-          recordingId: {
+          recording_id: {
             type: "string",
             description: "The ID of the recording",
           },
         },
-        required: ["recordingId"],
+        required: ["recording_id"],
       },
     },
     {
       name: "get-recording-download-link",
       description:
-        '[Recording Management] Generate a temporary download link for a recording. Use when users say: "download recording", "get download link", "export recording", "download video", "get recording URL". Requires recordingId. Returns a time-limited download URL. Recording must be in READY status.',
+        '[Recording Management] Generate a temporary download link for a recording. Use when users say: "download recording", "get download link", "export recording", "download video", "get recording URL". Requires recording_id. Returns a time-limited download URL. Recording must be in READY status.',
       inputSchema: {
         type: "object",
         properties: {
-          recordingId: {
+          recording_id: {
             type: "string",
             description: "The ID of the recording",
           },
-          validForMinutes: {
+          valid_for_minutes: {
             type: "number",
             description: "How long the link should be valid (1-1440 minutes)",
           },
         },
-        required: ["recordingId"],
+        required: ["recording_id"],
       },
     },
     {
       name: "unarchive-recording",
       description:
-        '[Recording Management] Restore an archived recording back to active status. Use when users say: "unarchive recording", "restore recording", "unarchive video", "bring back from archive", "restore archived recording". Requires recordingId. Only works on archived recordings.',
+        '[Recording Management] Restore an archived recording back to active status. Use when users say: "unarchive recording", "restore recording", "unarchive video", "bring back from archive", "restore archived recording". Requires recording_id. Only works on archived recordings.',
       inputSchema: {
         type: "object",
         properties: {
-          recordingId: {
+          recording_id: {
             type: "string",
             description: "The ID of the recording to unarchive",
           },
         },
-        required: ["recordingId"],
+        required: ["recording_id"],
       },
     },
   ];
@@ -160,12 +160,12 @@ export async function executeRecordingTool(
 ) {
   switch (name) {
     case "delete-recording":
-      await client.deleteRecording(args.recordingId);
+      await client.deleteRecording(args.recording_id);
       return {
         content: [
           {
             type: "text",
-            text: `Recording ${args.recordingId} deleted successfully`,
+            text: `Recording ${args.recording_id} deleted successfully`,
           },
         ],
       };
@@ -216,29 +216,29 @@ export async function executeRecordingTool(
       };
 
     case "archive-recording":
-      await client.archiveRecording(args.recordingId);
+      await client.archiveRecording(args.recording_id);
       return {
         content: [
           {
             type: "text",
-            text: `Recording ${args.recordingId} archived successfully`,
+            text: `Recording ${args.recording_id} archived successfully`,
           },
         ],
       };
 
     case "unarchive-recording":
-      await client.unarchiveRecording(args.recordingId);
+      await client.unarchiveRecording(args.recording_id);
       return {
         content: [
           {
             type: "text",
-            text: `Recording ${args.recordingId} unarchived successfully`,
+            text: `Recording ${args.recording_id} unarchived successfully`,
           },
         ],
       };
 
     case "get-recording": {
-      const recording = await client.getRecording(args.recordingId);
+      const recording = await client.getRecording(args.recording_id);
       return {
         content: [
           {
@@ -251,8 +251,8 @@ export async function executeRecordingTool(
 
     case "get-recording-download-link": {
       const downloadLink = await client.getRecordingDownloadLink(
-        args.recordingId,
-        args.validForMinutes
+        args.recording_id,
+        args.valid_for_minutes
       );
       return {
         content: [

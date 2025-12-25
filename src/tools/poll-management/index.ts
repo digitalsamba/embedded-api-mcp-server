@@ -51,11 +51,11 @@ export function registerPollTools(): ToolDefinition[] {
     {
       name: "create-poll",
       description:
-        '[Poll Management] Create a new poll/survey in a room. Use when users say: "create a poll", "add a survey", "make a poll", "create voting question", "add multiple choice question". Requires roomId, question, and at least 2 options. Returns poll ID for tracking.',
+        '[Poll Management] Create a new poll/survey in a room. Use when users say: "create a poll", "add a survey", "make a poll", "create voting question", "add multiple choice question". Requires room_id, question, and at least 2 options. Returns poll ID for tracking.',
       inputSchema: {
         type: "object",
         properties: {
-          roomId: {
+          room_id: {
             type: "string",
             description: "The ID of the room to create the poll in",
           },
@@ -91,26 +91,26 @@ export function registerPollTools(): ToolDefinition[] {
             type: "boolean",
             description: "Whether the poll is anonymous",
           },
-          showResults: {
+          show_results: {
             type: "boolean",
             description: "Whether to show results to participants",
           },
         },
-        required: ["roomId", "question", "options"],
+        required: ["room_id", "question", "options"],
       },
     },
     {
       name: "update-poll",
       description:
-        '[Poll Management] Update an existing poll\'s question, options, or settings. Use when users say: "change poll question", "update poll", "edit poll options", "modify survey", "change poll settings". Requires roomId and pollId. Can update question, options, type, or visibility settings.',
+        '[Poll Management] Update an existing poll\'s question, options, or settings. Use when users say: "change poll question", "update poll", "edit poll options", "modify survey", "change poll settings". Requires room_id and poll_id. Can update question, options, type, or visibility settings.',
       inputSchema: {
         type: "object",
         properties: {
-          roomId: {
+          room_id: {
             type: "string",
             description: "The ID of the room containing the poll",
           },
-          pollId: {
+          poll_id: {
             type: "string",
             description: "The ID of the poll to update",
           },
@@ -145,84 +145,84 @@ export function registerPollTools(): ToolDefinition[] {
             type: "boolean",
             description: "Updated anonymous setting",
           },
-          showResults: {
+          show_results: {
             type: "boolean",
             description: "Updated show results setting",
           },
         },
-        required: ["roomId", "pollId"],
+        required: ["room_id", "poll_id"],
       },
     },
     {
       name: "delete-poll",
       description:
-        '[Poll Management] Delete a specific poll from a room. Use when users say: "delete poll", "remove poll", "delete survey", "remove voting question", "cancel poll". Requires roomId and pollId. This action cannot be undone.',
+        '[Poll Management] Delete a specific poll from a room. Use when users say: "delete poll", "remove poll", "delete survey", "remove voting question", "cancel poll". Requires room_id and poll_id. This action cannot be undone.',
       inputSchema: {
         type: "object",
         properties: {
-          roomId: {
+          room_id: {
             type: "string",
             description: "The ID of the room containing the poll",
           },
-          pollId: {
+          poll_id: {
             type: "string",
             description: "The ID of the poll to delete",
           },
         },
-        required: ["roomId", "pollId"],
+        required: ["room_id", "poll_id"],
       },
     },
     {
       name: "delete-session-polls",
       description:
-        '[Poll Management] Delete ALL polls from a specific session. Use when users say: "delete all session polls", "remove all polls from session", "clear session polls", "delete all surveys from meeting". Requires sessionId. Removes all poll data from that session.',
+        '[Poll Management] Delete ALL polls from a specific session. Use when users say: "delete all session polls", "remove all polls from session", "clear session polls", "delete all surveys from meeting". Requires session_id. Removes all poll data from that session.',
       inputSchema: {
         type: "object",
         properties: {
-          sessionId: {
+          session_id: {
             type: "string",
             description: "The ID of the session to delete polls from",
           },
         },
-        required: ["sessionId"],
+        required: ["session_id"],
       },
     },
     {
       name: "delete-room-polls",
       description:
-        '[Poll Management] Delete ALL polls from ALL sessions in a room. Use when users say: "delete all room polls", "remove all polls from room", "clear room poll history", "wipe all room surveys". Requires roomId. Affects all past and current session polls.',
+        '[Poll Management] Delete ALL polls from ALL sessions in a room. Use when users say: "delete all room polls", "remove all polls from room", "clear room poll history", "wipe all room surveys". Requires room_id. Affects all past and current session polls.',
       inputSchema: {
         type: "object",
         properties: {
-          roomId: {
+          room_id: {
             type: "string",
             description: "The ID of the room to delete polls from",
           },
         },
-        required: ["roomId"],
+        required: ["room_id"],
       },
     },
     {
       name: "publish-poll-results",
       description:
-        '[Poll Management] Publish/share poll results with participants. Use when users say: "show poll results", "publish poll results", "share voting results", "display poll outcome", "reveal survey results". Requires roomId, pollId, and sessionId. Makes results visible to all participants.',
+        '[Poll Management] Publish/share poll results with participants. Use when users say: "show poll results", "publish poll results", "share voting results", "display poll outcome", "reveal survey results". Requires room_id, poll_id, and session_id. Makes results visible to all participants.',
       inputSchema: {
         type: "object",
         properties: {
-          roomId: {
+          room_id: {
             type: "string",
             description: "The ID of the room containing the poll",
           },
-          pollId: {
+          poll_id: {
             type: "string",
             description: "The ID of the poll to publish results for",
           },
-          sessionId: {
+          session_id: {
             type: "string",
             description: "The ID of the specific session (optional)",
           },
         },
-        required: ["roomId", "pollId"],
+        required: ["room_id", "poll_id"],
       },
     },
   ];
@@ -264,25 +264,25 @@ export async function executePollTool(
  */
 async function handleCreatePoll(
   params: {
-    roomId: string;
+    room_id: string;
     question: string;
     options: Array<{ text: string; id?: string }>;
     type?: "single" | "multiple";
     anonymous?: boolean;
-    showResults?: boolean;
+    show_results?: boolean;
   },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const {
-    roomId,
+    room_id,
     question,
     options,
     type = "single",
     anonymous = false,
-    showResults = true,
+    show_results = true,
   } = params;
 
-  if (!roomId || roomId.trim() === "") {
+  if (!room_id || room_id.trim() === "") {
     return {
       content: [
         {
@@ -319,7 +319,7 @@ async function handleCreatePoll(
   }
 
   logger.info("Creating poll", {
-    roomId,
+    roomId: room_id,
     question,
     optionCount: options.length,
   });
@@ -327,7 +327,7 @@ async function handleCreatePoll(
   try {
     // Normalize boolean values (Claude sometimes sends 0/1 instead of true/false)
     const normalizedAnonymous = normalizeBoolean(anonymous) ?? false;
-    const normalizedShowResults = normalizeBoolean(showResults) ?? true;
+    const normalizedShowResults = normalizeBoolean(show_results) ?? true;
 
     const pollData = {
       question,
@@ -337,19 +337,19 @@ async function handleCreatePoll(
       show_results: normalizedShowResults,
     };
 
-    const result = await apiClient.createPoll(roomId, pollData);
+    const result = await apiClient.createPoll(room_id, pollData);
 
     return {
       content: [
         {
           type: "text",
-          text: `Successfully created poll "${question}" with ${options.length} options in room ${roomId}. Poll ID: ${result.id}`,
+          text: `Successfully created poll "${question}" with ${options.length} options in room ${room_id}. Poll ID: ${result.id}`,
         },
       ],
     };
   } catch (error) {
     logger.error("Error creating poll", {
-      roomId,
+      roomId: room_id,
       error: error instanceof Error ? error.message : String(error),
     });
 
@@ -360,7 +360,7 @@ async function handleCreatePoll(
       errorMessage.includes("Room not found") ||
       errorMessage.includes("404")
     ) {
-      displayMessage = `Room with ID ${roomId} not found`;
+      displayMessage = `Room with ID ${room_id} not found`;
     }
 
     return {
@@ -380,19 +380,19 @@ async function handleCreatePoll(
  */
 async function handleUpdatePoll(
   params: {
-    roomId: string;
-    pollId: string;
+    room_id: string;
+    poll_id: string;
     question?: string;
     options?: Array<{ text: string; id?: string }>;
     type?: "single" | "multiple";
     anonymous?: boolean;
-    showResults?: boolean;
+    show_results?: boolean;
   },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { roomId, pollId, ...updateData } = params;
+  const { room_id, poll_id, ...updateData } = params;
 
-  if (!roomId || roomId.trim() === "") {
+  if (!room_id || room_id.trim() === "") {
     return {
       content: [
         {
@@ -404,7 +404,7 @@ async function handleUpdatePoll(
     };
   }
 
-  if (!pollId || pollId.trim() === "") {
+  if (!poll_id || poll_id.trim() === "") {
     return {
       content: [
         {
@@ -430,7 +430,7 @@ async function handleUpdatePoll(
     };
   }
 
-  logger.info("Updating poll", { pollId, updates: Object.keys(updateData) });
+  logger.info("Updating poll", { pollId: poll_id, updates: Object.keys(updateData) });
 
   try {
     // Transform and normalize update data for API
@@ -443,13 +443,14 @@ async function handleUpdatePoll(
         apiUpdateData.anonymous = normalized;
       }
     }
-    if ("showResults" in apiUpdateData) {
-      const normalized = normalizeBoolean(apiUpdateData.showResults);
-      apiUpdateData.show_results = normalized ?? apiUpdateData.showResults;
-      delete apiUpdateData.showResults;
+    if ("show_results" in apiUpdateData) {
+      const normalized = normalizeBoolean(apiUpdateData.show_results);
+      if (normalized !== undefined) {
+        apiUpdateData.show_results = normalized;
+      }
     }
 
-    await apiClient.updatePoll(roomId, pollId, apiUpdateData);
+    await apiClient.updatePoll(room_id, poll_id, apiUpdateData);
 
     const updateSummary = Object.keys(updateData).join(", ");
 
@@ -457,13 +458,13 @@ async function handleUpdatePoll(
       content: [
         {
           type: "text",
-          text: `Successfully updated poll ${pollId}. Updated fields: ${updateSummary}`,
+          text: `Successfully updated poll ${poll_id}. Updated fields: ${updateSummary}`,
         },
       ],
     };
   } catch (error) {
     logger.error("Error updating poll", {
-      pollId,
+      pollId: poll_id,
       error: error instanceof Error ? error.message : String(error),
     });
 
@@ -474,7 +475,7 @@ async function handleUpdatePoll(
       errorMessage.includes("Poll not found") ||
       errorMessage.includes("404")
     ) {
-      displayMessage = `Poll with ID ${pollId} not found`;
+      displayMessage = `Poll with ID ${poll_id} not found`;
     }
 
     return {
@@ -493,12 +494,12 @@ async function handleUpdatePoll(
  * Handle delete poll
  */
 async function handleDeletePoll(
-  params: { roomId: string; pollId: string },
+  params: { room_id: string; poll_id: string },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { roomId, pollId } = params;
+  const { room_id, poll_id } = params;
 
-  if (!roomId || roomId.trim() === "") {
+  if (!room_id || room_id.trim() === "") {
     return {
       content: [
         {
@@ -510,7 +511,7 @@ async function handleDeletePoll(
     };
   }
 
-  if (!pollId || pollId.trim() === "") {
+  if (!poll_id || poll_id.trim() === "") {
     return {
       content: [
         {
@@ -522,22 +523,22 @@ async function handleDeletePoll(
     };
   }
 
-  logger.info("Deleting poll", { roomId, pollId });
+  logger.info("Deleting poll", { roomId: room_id, pollId: poll_id });
 
   try {
-    await apiClient.deletePoll(roomId, pollId);
+    await apiClient.deletePoll(room_id, poll_id);
 
     return {
       content: [
         {
           type: "text",
-          text: `Successfully deleted poll ${pollId}`,
+          text: `Successfully deleted poll ${poll_id}`,
         },
       ],
     };
   } catch (error) {
     logger.error("Error deleting poll", {
-      pollId,
+      pollId: poll_id,
       error: error instanceof Error ? error.message : String(error),
     });
 
@@ -548,7 +549,7 @@ async function handleDeletePoll(
       errorMessage.includes("Poll not found") ||
       errorMessage.includes("404")
     ) {
-      displayMessage = `Poll with ID ${pollId} not found`;
+      displayMessage = `Poll with ID ${poll_id} not found`;
     }
 
     return {
@@ -567,12 +568,12 @@ async function handleDeletePoll(
  * Handle delete session polls
  */
 async function handleDeleteSessionPolls(
-  params: { sessionId: string },
+  params: { session_id: string },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { sessionId } = params;
+  const { session_id } = params;
 
-  if (!sessionId || sessionId.trim() === "") {
+  if (!session_id || session_id.trim() === "") {
     return {
       content: [
         {
@@ -584,22 +585,22 @@ async function handleDeleteSessionPolls(
     };
   }
 
-  logger.info("Deleting session polls", { sessionId });
+  logger.info("Deleting session polls", { sessionId: session_id });
 
   try {
-    await apiClient.deleteSessionPolls(sessionId);
+    await apiClient.deleteSessionPolls(session_id);
 
     return {
       content: [
         {
           type: "text",
-          text: `Successfully deleted all polls for session ${sessionId}`,
+          text: `Successfully deleted all polls for session ${session_id}`,
         },
       ],
     };
   } catch (error) {
     logger.error("Error deleting session polls", {
-      sessionId,
+      sessionId: session_id,
       error: error instanceof Error ? error.message : String(error),
     });
 
@@ -610,7 +611,7 @@ async function handleDeleteSessionPolls(
       errorMessage.includes("Session not found") ||
       errorMessage.includes("404")
     ) {
-      displayMessage = `Session with ID ${sessionId} not found`;
+      displayMessage = `Session with ID ${session_id} not found`;
     }
 
     return {
@@ -629,12 +630,12 @@ async function handleDeleteSessionPolls(
  * Handle delete room polls
  */
 async function handleDeleteRoomPolls(
-  params: { roomId: string },
+  params: { room_id: string },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { roomId } = params;
+  const { room_id } = params;
 
-  if (!roomId || roomId.trim() === "") {
+  if (!room_id || room_id.trim() === "") {
     return {
       content: [
         {
@@ -646,11 +647,11 @@ async function handleDeleteRoomPolls(
     };
   }
 
-  logger.info("Deleting room polls", { roomId });
+  logger.info("Deleting room polls", { roomId: room_id });
 
   try {
     // Get all sessions for the room
-    const sessionsResponse = await apiClient.listSessions({ room_id: roomId });
+    const sessionsResponse = await apiClient.listSessions({ room_id: room_id });
     const sessions = sessionsResponse.data;
 
     if (!sessions || sessions.length === 0) {
@@ -658,7 +659,7 @@ async function handleDeleteRoomPolls(
         content: [
           {
             type: "text",
-            text: `No sessions found for room ${roomId}`,
+            text: `No sessions found for room ${room_id}`,
           },
         ],
       };
@@ -682,13 +683,13 @@ async function handleDeleteRoomPolls(
       content: [
         {
           type: "text",
-          text: `Successfully deleted polls from ${deletedCount} sessions in room ${roomId}`,
+          text: `Successfully deleted polls from ${deletedCount} sessions in room ${room_id}`,
         },
       ],
     };
   } catch (error) {
     logger.error("Error deleting room polls", {
-      roomId,
+      roomId: room_id,
       error: error instanceof Error ? error.message : String(error),
     });
 
@@ -708,12 +709,12 @@ async function handleDeleteRoomPolls(
  * Handle publish poll results
  */
 async function handlePublishPollResults(
-  params: { roomId: string; pollId: string; sessionId?: string },
+  params: { room_id: string; poll_id: string; session_id?: string },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { roomId, pollId, sessionId } = params;
+  const { room_id, poll_id, session_id } = params;
 
-  if (!roomId || roomId.trim() === "") {
+  if (!room_id || room_id.trim() === "") {
     return {
       content: [
         {
@@ -725,7 +726,7 @@ async function handlePublishPollResults(
     };
   }
 
-  if (!pollId || pollId.trim() === "") {
+  if (!poll_id || poll_id.trim() === "") {
     return {
       content: [
         {
@@ -737,12 +738,12 @@ async function handlePublishPollResults(
     };
   }
 
-  logger.info("Publishing poll results", { roomId, pollId, sessionId });
+  logger.info("Publishing poll results", { roomId: room_id, pollId: poll_id, sessionId: session_id });
 
   try {
-    // The API method expects sessionId as a required parameter
+    // The API method expects session_id as a required parameter
     // If not provided, we'll need to get the current session or return an error
-    if (!sessionId) {
+    if (!session_id) {
       return {
         content: [
           {
@@ -754,21 +755,21 @@ async function handlePublishPollResults(
       };
     }
 
-    await apiClient.publishPollResults(pollId, sessionId);
+    await apiClient.publishPollResults(poll_id, session_id);
 
     return {
       content: [
         {
           type: "text",
-          text: `Successfully published results for poll ${pollId} in room ${roomId} (session ${sessionId})`,
+          text: `Successfully published results for poll ${poll_id} in room ${room_id} (session ${session_id})`,
         },
       ],
     };
   } catch (error) {
     logger.error("Error publishing poll results", {
-      roomId,
-      pollId,
-      sessionId,
+      roomId: room_id,
+      pollId: poll_id,
+      sessionId: session_id,
       error: error instanceof Error ? error.message : String(error),
     });
 
@@ -779,11 +780,11 @@ async function handlePublishPollResults(
       errorMessage.includes("Poll not found") ||
       errorMessage.includes("404")
     ) {
-      displayMessage = `Poll with ID ${pollId} not found`;
+      displayMessage = `Poll with ID ${poll_id} not found`;
     } else if (errorMessage.includes("Session not found")) {
-      displayMessage = `Session with ID ${sessionId} not found`;
+      displayMessage = `Session with ID ${session_id} not found`;
     } else if (errorMessage.includes("Room not found")) {
-      displayMessage = `Room with ID ${roomId} not found`;
+      displayMessage = `Room with ID ${room_id} not found`;
     }
 
     return {
