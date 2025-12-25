@@ -13,6 +13,7 @@ import { DigitalSambaApiClient, RoomCreateSettings } from "../../digital-samba-a
 // Removed enhanced client import - using standard client
 import { getApiKeyFromRequest } from "../../auth.js";
 import logger from "../../logger.js";
+import { normalizeBooleans } from "../../utils.js";
 
 /**
  * Register all room management tools
@@ -589,8 +590,11 @@ export async function executeRoomTool(
           settings.privacy = "public";
         }
 
+        // Normalize boolean values (Claude sometimes sends 0/1 instead of true/false)
+        const normalizedSettings = normalizeBooleans(settings);
+
         // Convert camelCase to snake_case for API
-        const apiSettings = convertCamelToSnake(settings) as RoomCreateSettings;
+        const apiSettings = convertCamelToSnake(normalizedSettings) as RoomCreateSettings;
         
         // Create room with all provided settings
         const room = await client.createRoom(apiSettings);
@@ -637,8 +641,11 @@ export async function executeRoomTool(
       });
 
       try {
+        // Normalize boolean values (Claude sometimes sends 0/1 instead of true/false)
+        const normalizedSettings = normalizeBooleans(settings);
+
         // Convert camelCase to snake_case for API
-        const apiSettings = convertCamelToSnake(settings) as Partial<RoomCreateSettings>;
+        const apiSettings = convertCamelToSnake(normalizedSettings) as Partial<RoomCreateSettings>;
         
         // Update room with all provided settings
         const room = await client.updateRoom(roomId, apiSettings);
@@ -820,8 +827,11 @@ export async function executeRoomTool(
       });
 
       try {
+        // Normalize boolean values (Claude sometimes sends 0/1 instead of true/false)
+        const normalizedSettings = normalizeBooleans(settings || {});
+
         const updatedSettings =
-          await client.updateDefaultRoomSettings(convertCamelToSnake(settings));
+          await client.updateDefaultRoomSettings(convertCamelToSnake(normalizedSettings));
 
         return {
           content: [

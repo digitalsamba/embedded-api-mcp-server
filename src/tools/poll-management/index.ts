@@ -28,6 +28,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 // import { getApiKeyFromRequest } from '../../auth.js'; // Removed: unused
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
+import { normalizeBoolean } from "../../utils.js";
 
 /**
  * Tool definition interface
@@ -324,12 +325,16 @@ async function handleCreatePoll(
   });
 
   try {
+    // Normalize boolean values (Claude sometimes sends 0/1 instead of true/false)
+    const normalizedAnonymous = normalizeBoolean(anonymous) ?? false;
+    const normalizedShowResults = normalizeBoolean(showResults) ?? true;
+
     const pollData = {
       question,
       options,
       type,
-      anonymous,
-      show_results: showResults,
+      anonymous: normalizedAnonymous,
+      show_results: normalizedShowResults,
     };
 
     const result = await apiClient.createPoll(roomId, pollData);
@@ -428,10 +433,19 @@ async function handleUpdatePoll(
   logger.info("Updating poll", { pollId, updates: Object.keys(updateData) });
 
   try {
-    // Transform showResults to show_results for API
+    // Transform and normalize update data for API
     const apiUpdateData: any = { ...updateData };
+
+    // Normalize boolean values (Claude sometimes sends 0/1 instead of true/false)
+    if ("anonymous" in apiUpdateData) {
+      const normalized = normalizeBoolean(apiUpdateData.anonymous);
+      if (normalized !== undefined) {
+        apiUpdateData.anonymous = normalized;
+      }
+    }
     if ("showResults" in apiUpdateData) {
-      apiUpdateData.show_results = apiUpdateData.showResults;
+      const normalized = normalizeBoolean(apiUpdateData.showResults);
+      apiUpdateData.show_results = normalized ?? apiUpdateData.showResults;
       delete apiUpdateData.showResults;
     }
 
