@@ -39,6 +39,7 @@ export interface Room {
   chat_enabled?: boolean;
   private_chat_enabled?: boolean;
   recordings_enabled?: boolean;
+  recording_autostart_enabled?: boolean;
   polls_enabled?: boolean;
   qa_enabled?: boolean;
   transcription_enabled?: boolean;
@@ -82,6 +83,7 @@ export interface RoomCreateSettings {
   chat_enabled?: boolean;
   private_chat_enabled?: boolean;
   recordings_enabled?: boolean;
+  recording_autostart_enabled?: boolean;
   polls_enabled?: boolean;
   qa_enabled?: boolean;
   transcription_enabled?: boolean;

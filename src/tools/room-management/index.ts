@@ -155,7 +155,11 @@ export function registerRoomTools(): Tool[] {
           },
           recordingsEnabled: {
             type: "boolean",
-            description: "Allow recording sessions",
+            description: "Allow recording sessions (enables the record button)",
+          },
+          recordingAutostartEnabled: {
+            type: "boolean",
+            description: "Automatically start recording when the first participant joins",
           },
           pollsEnabled: {
             type: "boolean",
@@ -305,7 +309,11 @@ export function registerRoomTools(): Tool[] {
           },
           recordingsEnabled: {
             type: "boolean",
-            description: "Allow recording sessions",
+            description: "Allow recording sessions (enables the record button)",
+          },
+          recordingAutostartEnabled: {
+            type: "boolean",
+            description: "Automatically start recording when the first participant joins",
           },
           pollsEnabled: {
             type: "boolean",
