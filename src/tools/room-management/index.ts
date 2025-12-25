@@ -113,7 +113,15 @@ export function registerRoomTools(): Tool[] {
           },
           language: {
             type: "string",
-            description: "Default language",
+            description: "Default UI language (e.g., 'en', 'es-ES', 'de-DE')",
+          },
+          languages: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: ["ar-SA", "en", "es-ES", "de-DE", "it-IT", "pt-PT", "ro-RO", "zh-CN", "zh-TW"]
+            },
+            description: "Available languages for participants to choose from. Valid values: ar-SA, en, es-ES, de-DE, it-IT, pt-PT, ro-RO, zh-CN, zh-TW",
           },
           languageSelectionEnabled: {
             type: "boolean",
@@ -255,7 +263,15 @@ export function registerRoomTools(): Tool[] {
           },
           language: {
             type: "string",
-            description: "Default language",
+            description: "Default UI language (e.g., 'en', 'es-ES', 'de-DE')",
+          },
+          languages: {
+            type: "array",
+            items: {
+              type: "string",
+              enum: ["ar-SA", "en", "es-ES", "de-DE", "it-IT", "pt-PT", "ro-RO", "zh-CN", "zh-TW"]
+            },
+            description: "Available languages for participants to choose from. Valid values: ar-SA, en, es-ES, de-DE, it-IT, pt-PT, ro-RO, zh-CN, zh-TW",
           },
           languageSelectionEnabled: {
             type: "boolean",

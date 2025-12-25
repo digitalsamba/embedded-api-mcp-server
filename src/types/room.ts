@@ -28,6 +28,7 @@ export interface Room {
   background_color?: string;
   palette_mode?: "light" | "dark";
   language?: string;
+  languages?: string[];
   language_selection_enabled?: boolean;
 
   // Meeting features
@@ -70,6 +71,7 @@ export interface RoomCreateSettings {
   background_color?: string;
   palette_mode?: "light" | "dark";
   language?: string;
+  languages?: string[];
   language_selection_enabled?: boolean;
 
   // Meeting features
