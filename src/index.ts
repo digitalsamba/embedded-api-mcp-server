@@ -385,7 +385,46 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return await executeWebhookTool(name, args || {}, client);
     }
 
-    logger.error(`Unknown tool requested: ${name}`, { 
+    // Check if user tried to call a resource name as a tool
+    // This happens when Claude Desktop shows resources in the tools menu
+    const resourceToToolMap: Record<string, string> = {
+      // Room resources → tools
+      "rooms": "list-rooms",
+      "room": "get-room-details",
+      "rooms-live": "list-live-rooms",
+      "rooms-live-participants": "list-live-participants",
+      "room-live": "list-live-rooms",
+      "room-live-participants": "list-live-participants",
+      "room-settings": "get-default-room-settings",
+      // Session resources → tools
+      "sessions": "list-sessions",
+      "session": "get-session-details",
+      "session-participants": "list-session-participants",
+      "session-statistics": "get-session-statistics",
+      "room-sessions": "list-room-sessions",
+      // Recording resources → tools
+      "recordings": "get-recordings",
+      "recording": "get-recording-details",
+      // Analytics resources → tools
+      "team-analytics": "get-usage-statistics",
+      "room-analytics": "get-room-analytics",
+      "session-analytics": "get-session-analytics",
+      // Content resources → tools
+      "content": "list-libraries",
+      "content-library": "get-library",
+      // Version
+      "server-version": "get-server-version",
+    };
+
+    if (resourceToToolMap[name]) {
+      const suggestedTool = resourceToToolMap[name];
+      throw new McpError(
+        ErrorCode.InvalidRequest,
+        `'${name}' is a resource, not a tool. Use the '${suggestedTool}' tool instead.`
+      );
+    }
+
+    logger.error(`Unknown tool requested: ${name}`, {
       availablePatterns: [
         'get-server-version',
         'create-room, update-room, delete-room, etc.',
