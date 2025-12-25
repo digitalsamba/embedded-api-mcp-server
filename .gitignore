@@ -83,3 +83,6 @@ out
 
 # AI development and handover files
 .ai_dev/
+
+# Claude Code local commands (personal project management)
+.claude/commands/
