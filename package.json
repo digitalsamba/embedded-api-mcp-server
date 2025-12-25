@@ -52,9 +52,9 @@
     "release:check": "node scripts/pre-release-checklist.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@modelcontextprotocol/sdk": "^1.25.1",
     "dotenv": "^16.5.0",
-    "zod": "^3.22.4"
+    "zod": "^4.2.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
