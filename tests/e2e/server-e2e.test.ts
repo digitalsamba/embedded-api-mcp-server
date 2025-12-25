@@ -163,8 +163,8 @@ describe('End-to-End Tests', () => {
       const tokenResult = await client.callTool({
         name: 'generate-token',
         arguments: {
-          roomId: roomData.id,
-          userName: 'E2E Test User',
+          room_id: roomData.id,
+          user_name: 'E2E Test User',
           role: 'host',
         },
       });
@@ -298,8 +298,8 @@ describe('End-to-End Tests', () => {
       const result = await client.callTool({
         name: 'generate-token',
         arguments: {
-          roomId: 'non-existent-room',
-          userName: 'Test User',
+          room_id: 'non-existent-room',
+          user_name: 'Test User',
         },
       });
       

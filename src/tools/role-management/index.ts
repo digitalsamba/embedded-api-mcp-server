@@ -26,6 +26,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 // Local modules
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
+import { normalizeBoolean } from "../../utils.js";
 
 /**
  * Tool definition interface
@@ -224,11 +225,20 @@ async function handleCreateRole(
   logger.info("Creating new role", { name });
 
   try {
+    // Normalize boolean values in permissions (Claude sometimes sends 0/1)
+    const normalizedPermissions: Record<string, boolean> = {};
+    for (const [key, value] of Object.entries(permissions)) {
+      const normalized = normalizeBoolean(value);
+      if (normalized !== undefined) {
+        normalizedPermissions[key] = normalized;
+      }
+    }
+
     const role = await apiClient.createRole({
       name,
       display_name: displayName,
       description,
-      permissions,
+      permissions: normalizedPermissions,
     });
 
     return {
@@ -308,7 +318,20 @@ async function handleUpdateRole(
   logger.info("Updating role", { roleId, updates });
 
   try {
-    const role = await apiClient.updateRole(roleId, updates);
+    // Normalize boolean values in permissions (Claude sometimes sends 0/1)
+    const normalizedUpdates = { ...updates };
+    if (normalizedUpdates.permissions) {
+      const normalizedPermissions: Record<string, boolean> = {};
+      for (const [key, value] of Object.entries(normalizedUpdates.permissions)) {
+        const normalized = normalizeBoolean(value);
+        if (normalized !== undefined) {
+          normalizedPermissions[key] = normalized;
+        }
+      }
+      normalizedUpdates.permissions = normalizedPermissions;
+    }
+
+    const role = await apiClient.updateRole(roleId, normalizedUpdates);
 
     const updatedFields = Object.keys(updates).join(", ");
 

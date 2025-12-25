@@ -28,6 +28,7 @@ export interface Room {
   background_color?: string;
   palette_mode?: "light" | "dark";
   language?: string;
+  languages?: string[];
   language_selection_enabled?: boolean;
 
   // Meeting features
@@ -38,6 +39,7 @@ export interface Room {
   chat_enabled?: boolean;
   private_chat_enabled?: boolean;
   recordings_enabled?: boolean;
+  recording_autostart_enabled?: boolean;
   polls_enabled?: boolean;
   qa_enabled?: boolean;
   transcription_enabled?: boolean;
@@ -70,6 +72,7 @@ export interface RoomCreateSettings {
   background_color?: string;
   palette_mode?: "light" | "dark";
   language?: string;
+  languages?: string[];
   language_selection_enabled?: boolean;
 
   // Meeting features
@@ -80,6 +83,7 @@ export interface RoomCreateSettings {
   chat_enabled?: boolean;
   private_chat_enabled?: boolean;
   recordings_enabled?: boolean;
+  recording_autostart_enabled?: boolean;
   polls_enabled?: boolean;
   qa_enabled?: boolean;
   transcription_enabled?: boolean;

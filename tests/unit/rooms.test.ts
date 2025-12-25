@@ -200,7 +200,7 @@ describe('Room Resources', () => {
 
         const result = await handleRoomResource(
           'digitalsamba://rooms/test-room-id',
-          { roomId: 'test-room-id' },
+          { room_id: 'test-room-id' },
           mockRequest,
           options
         );
@@ -355,7 +355,7 @@ describe('Room Tools', () => {
         mockApiClient.updateRoom.mockResolvedValue(mockRoom);
 
         const result = await executeRoomTool('update-room', {
-          roomId: 'test-room-id',
+          room_id: 'test-room-id',
           name: 'Updated Room',
           privacy: 'private'
         }, mockRequest, options);
@@ -381,7 +381,7 @@ describe('Room Tools', () => {
         mockApiClient.updateRoom.mockRejectedValue(new Error('Room not found'));
 
         const result = await executeRoomTool('update-room', {
-          roomId: 'test-room-id',
+          room_id: 'test-room-id',
           name: 'Updated Room'
         }, mockRequest, options);
 
@@ -395,7 +395,7 @@ describe('Room Tools', () => {
         mockApiClient.deleteRoom.mockResolvedValue(undefined);
 
         const result = await executeRoomTool('delete-room', {
-          roomId: 'test-room-id'
+          room_id: 'test-room-id'
         }, mockRequest, options);
 
         expect(mockApiClient.deleteRoom).toHaveBeenCalledWith('test-room-id');
@@ -414,7 +414,7 @@ describe('Room Tools', () => {
         mockApiClient.deleteRoom.mockRejectedValue(new Error('Room not found'));
 
         const result = await executeRoomTool('delete-room', {
-          roomId: 'test-room-id'
+          room_id: 'test-room-id'
         }, mockRequest, options);
 
         expect(result.content[0].text).toContain('Error deleting room: Room not found');
@@ -427,10 +427,10 @@ describe('Room Tools', () => {
         mockApiClient.generateRoomToken.mockResolvedValue(mockToken);
 
         const result = await executeRoomTool('generate-token', {
-          roomId: 'test-room-id',
-          userName: 'John Doe',
+          room_id: 'test-room-id',
+          user_name: 'John Doe',
           role: 'moderator',
-          externalId: 'user-123'
+          external_id: 'user-123'
         }, mockRequest, options);
 
         expect(mockApiClient.generateRoomToken).toHaveBeenCalledWith('test-room-id', {
@@ -446,7 +446,7 @@ describe('Room Tools', () => {
         mockApiClient.generateRoomToken.mockResolvedValue(mockToken);
 
         const result = await executeRoomTool('generate-token', {
-          roomId: 'test-room-id'
+          room_id: 'test-room-id'
         }, mockRequest, options);
 
         expect(mockApiClient.generateRoomToken).toHaveBeenCalledWith('test-room-id', {
@@ -461,7 +461,7 @@ describe('Room Tools', () => {
         mockApiClient.generateRoomToken.mockRejectedValue(new Error('Room not found'));
 
         const result = await executeRoomTool('generate-token', {
-          roomId: 'test-room-id'
+          room_id: 'test-room-id'
         }, mockRequest, options);
 
         expect(result.content[0].text).toContain('Error generating token: Room not found');
