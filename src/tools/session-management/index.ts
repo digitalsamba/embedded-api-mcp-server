@@ -13,6 +13,7 @@ import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import { getApiKeyFromRequest } from "../../auth.js";
 import logger from "../../logger.js";
+import { getToolAnnotations } from "../../tool-annotations.js";
 
 /**
  * Register all session management tools
@@ -25,6 +26,7 @@ export function registerSessionTools(): Tool[] {
       name: "get-all-room-sessions",
       description:
         '[Session Management] Get all sessions (past and live) for a specific room. Use when users say: "list sessions for room", "show room sessions", "get meeting history", "show past meetings", "list all sessions", "show live sessions". Requires roomId. Returns paginated session list with details.',
+      annotations: getToolAnnotations("get-all-room-sessions"),
       inputSchema: {
         type: "object",
         properties: {
@@ -68,6 +70,7 @@ export function registerSessionTools(): Tool[] {
       name: "hard-delete-session-resources",
       description:
         '[Session Management] Permanently delete ALL stored data for a session including recordings, chats, Q&A. Use when users say: "permanently delete session data", "remove all session resources", "hard delete session", "wipe session data", "delete everything from session". Requires sessionId. This action cannot be undone!',
+      annotations: getToolAnnotations("hard-delete-session-resources"),
       inputSchema: {
         type: "object",
         properties: {
@@ -83,6 +86,7 @@ export function registerSessionTools(): Tool[] {
       name: "bulk-delete-session-data",
       description:
         '[Session Management] Delete specific types of session data (chat, Q&A, transcripts, etc). Use when users say: "delete session chat and transcripts", "remove multiple session data types", "bulk delete session content", "clean up session data". Requires sessionId and dataTypes array. More selective than hard-delete.',
+      annotations: getToolAnnotations("bulk-delete-session-data"),
       inputSchema: {
         type: "object",
         properties: {
@@ -115,6 +119,7 @@ export function registerSessionTools(): Tool[] {
       name: "get-session-summary",
       description:
         '[Session Management] Get a comprehensive summary of a session including participants, duration, and activities. Use when users say: "show session summary", "get meeting summary", "session details", "what happened in the session", "meeting report". Requires sessionId. Returns detailed session information.',
+      annotations: getToolAnnotations("get-session-summary"),
       inputSchema: {
         type: "object",
         properties: {
@@ -130,6 +135,7 @@ export function registerSessionTools(): Tool[] {
       name: "end-session",
       description:
         '[Session Management] Force end a currently live/active session. Use when users say: "end the session", "stop the meeting", "close the session", "terminate the call", "end live session now". Requires sessionId. Only works on active sessions. Disconnects all participants.',
+      annotations: getToolAnnotations("end-session"),
       inputSchema: {
         type: "object",
         properties: {
@@ -145,6 +151,7 @@ export function registerSessionTools(): Tool[] {
       name: "get-session-statistics",
       description:
         '[Session Management] Get detailed usage statistics and metrics for a session. Use when users say: "show session statistics", "get meeting metrics", "session analytics", "participant statistics", "session usage data". Requires sessionId. Returns participant count, duration, activity metrics.',
+      annotations: getToolAnnotations("get-session-statistics"),
       inputSchema: {
         type: "object",
         properties: {
@@ -165,6 +172,7 @@ export function registerSessionTools(): Tool[] {
       name: "list-sessions",
       description:
         '[Session Management - TOOL] List all sessions across all rooms. Use when users say: "show all sessions", "list meetings", "session history", "all past meetings", "meeting directory". This TOOL provides the same data as the digitalsamba://sessions resource. Returns paginated list of session objects with room info, start/end times, and participant counts.',
+      annotations: getToolAnnotations("list-sessions"),
       inputSchema: {
         type: "object",
         properties: {
@@ -191,6 +199,7 @@ export function registerSessionTools(): Tool[] {
       name: "get-session-details",
       description:
         '[Session Management - TOOL] Get comprehensive details for a specific session. Use when users say: "session details", "meeting summary", "what happened in session", "session report", "session overview". Requires sessionId. This TOOL provides the same data as digitalsamba://sessions/{sessionId} resource. Returns detailed session data with duration, participants, and activity.',
+      annotations: getToolAnnotations("get-session-details"),
       inputSchema: {
         type: "object",
         properties: {
@@ -206,6 +215,7 @@ export function registerSessionTools(): Tool[] {
       name: "list-session-participants",
       description:
         '[Session Management - TOOL] List all participants in a session. Use when users say: "who attended session", "session attendees", "participant list", "meeting participants", "session roster". Requires sessionId. This TOOL provides the same data as digitalsamba://sessions/{sessionId}/participants resource. Returns participant details with join/leave times and roles.',
+      annotations: getToolAnnotations("list-session-participants"),
       inputSchema: {
         type: "object",
         properties: {
@@ -221,6 +231,7 @@ export function registerSessionTools(): Tool[] {
       name: "get-session-statistics-details",
       description:
         '[Session Management - TOOL] Get detailed usage statistics for a session. Use when users say: "session metrics details", "detailed session analytics", "comprehensive participant statistics", "full meeting usage data", "complete session performance". Requires sessionId. This TOOL provides the same data as digitalsamba://sessions/{sessionId}/statistics resource. Returns participant count, duration, activity metrics.',
+      annotations: getToolAnnotations("get-session-statistics-details"),
       inputSchema: {
         type: "object",
         properties: {
@@ -236,6 +247,7 @@ export function registerSessionTools(): Tool[] {
       name: "list-room-sessions",
       description:
         '[Session Management - TOOL] List all sessions for a specific room. Use when users say: "room meeting history", "sessions in room", "room session list", "meetings for this room", "room activity history". Requires roomId. This TOOL provides the same data as digitalsamba://rooms/{roomId}/sessions resource. Returns chronological list of sessions in that room.',
+      annotations: getToolAnnotations("list-room-sessions"),
       inputSchema: {
         type: "object",
         properties: {

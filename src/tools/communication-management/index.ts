@@ -30,6 +30,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 // import { getApiKeyFromRequest } from '../../auth.js'; // Removed: unused
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
+import { getToolAnnotations } from "../../tool-annotations.js";
 
 /**
  * Tool definition interface
@@ -38,6 +39,10 @@ interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: any;
+  annotations?: {
+    audience?: string[];
+    title?: string;
+  };
 }
 
 /**
@@ -52,6 +57,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-chats",
       description:
         '[Communication Management] Delete all chat messages for a session. Use when users say: "delete session chat", "remove chat messages", "clear session chat history", "delete chat from session", "wipe chat messages". Requires sessionId. This permanently removes all chat data.',
+      annotations: getToolAnnotations("delete-session-chats"),
       inputSchema: {
         type: "object",
         properties: {
@@ -67,6 +73,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-room-chats",
       description:
         '[Communication Management] Delete all chat messages from ALL sessions in a room. Use when users say: "delete all room chats", "clear room chat history", "remove all chat messages from room", "wipe room chats". Requires roomId. Affects all past and current sessions.',
+      annotations: getToolAnnotations("delete-room-chats"),
       inputSchema: {
         type: "object",
         properties: {
@@ -84,6 +91,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-qa",
       description:
         '[Communication Management] Delete all Q&A (questions and answers) from a session. Use when users say: "delete session Q&A", "remove questions and answers", "clear Q&A history", "delete session questions", "wipe Q&A data". Requires sessionId. Removes all Q&A interactions.',
+      annotations: getToolAnnotations("delete-session-qa"),
       inputSchema: {
         type: "object",
         properties: {
@@ -99,6 +107,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-room-qa",
       description:
         '[Communication Management] Delete all Q&A from ALL sessions in a room. Use when users say: "delete all room Q&A", "clear room questions", "remove all Q&A from room", "wipe room Q&A history". Requires roomId. Affects all sessions\' Q&A data.',
+      annotations: getToolAnnotations("delete-room-qa"),
       inputSchema: {
         type: "object",
         properties: {
@@ -116,6 +125,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-transcripts",
       description:
         '[Communication Management] Delete all transcription data from a session. Use when users say: "delete session transcript", "remove transcription", "clear transcript", "delete meeting transcript", "wipe transcription data". Requires sessionId. Permanently removes transcript records.',
+      annotations: getToolAnnotations("delete-session-transcripts"),
       inputSchema: {
         type: "object",
         properties: {
@@ -131,6 +141,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-room-transcripts",
       description:
         '[Communication Management] Delete all transcripts from ALL sessions in a room. Use when users say: "delete all room transcripts", "clear room transcription history", "remove all transcripts from room", "wipe room transcripts". Requires roomId. Affects all sessions\' transcripts.',
+      annotations: getToolAnnotations("delete-room-transcripts"),
       inputSchema: {
         type: "object",
         properties: {
@@ -148,6 +159,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-summaries",
       description:
         '[Communication Management] Delete AI-generated summaries from a session. Use when users say: "delete session summary", "remove AI summary", "clear meeting summary", "delete session notes", "wipe summary data". Requires sessionId. Removes all AI-generated session summaries.',
+      annotations: getToolAnnotations("delete-session-summaries"),
       inputSchema: {
         type: "object",
         properties: {
@@ -163,6 +175,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-room-summaries",
       description:
         '[Communication Management] Delete all AI summaries from ALL sessions in a room. Use when users say: "delete all room summaries", "clear room AI summaries", "remove all summaries from room", "wipe room summary history". Requires roomId. Affects all sessions\' AI summaries.',
+      annotations: getToolAnnotations("delete-room-summaries"),
       inputSchema: {
         type: "object",
         properties: {

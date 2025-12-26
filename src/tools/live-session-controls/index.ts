@@ -30,6 +30,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { getApiKeyFromRequest } from "../../auth.js";
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
+import { getToolAnnotations } from "../../tool-annotations.js";
 
 /**
  * Tool definition interface
@@ -38,6 +39,10 @@ interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: any;
+  annotations?: {
+    audience?: string[];
+    title?: string;
+  };
 }
 
 /**
@@ -55,6 +60,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "start-transcription",
       description:
         '[Live Session Controls] Start real-time transcription for an active room session. Use when users say: "start transcription", "enable transcription", "transcribe the meeting", "turn on transcription", "start live captions". Requires roomId with an active session. Transcripts can be exported later.',
+      annotations: getToolAnnotations("start-transcription"),
       inputSchema: {
         type: "object",
         properties: {
@@ -70,6 +76,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "stop-transcription",
       description:
         '[Live Session Controls] Stop ongoing transcription in a room. Use when users say: "stop transcription", "disable transcription", "turn off transcription", "stop live captions", "end transcription". Requires roomId. Only works if transcription is currently active.',
+      annotations: getToolAnnotations("stop-transcription"),
       inputSchema: {
         type: "object",
         properties: {
@@ -85,6 +92,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "phone-participants-joined",
       description:
         '[Live Session Controls] Register phone/dial-in participants joining a room. Use when users say: "add phone participant", "someone dialed in", "phone user joined", "register dial-in participant". Requires roomId and participant details including callId. Used for tracking phone-based attendees.',
+      annotations: getToolAnnotations("phone-participants-joined"),
       inputSchema: {
         type: "object",
         properties: {
@@ -126,6 +134,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "phone-participants-left",
       description:
         '[Live Session Controls] Register phone/dial-in participants leaving a room. Use when users say: "phone participant left", "dial-in user disconnected", "remove phone participant", "phone user hung up". Requires roomId and callIds array. Updates participant tracking.',
+      annotations: getToolAnnotations("phone-participants-left"),
       inputSchema: {
         type: "object",
         properties: {

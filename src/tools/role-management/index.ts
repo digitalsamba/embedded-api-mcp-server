@@ -27,6 +27,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
 import { normalizeBoolean } from "../../utils.js";
+import { getToolAnnotations } from "../../tool-annotations.js";
 
 /**
  * Tool definition interface
@@ -35,6 +36,10 @@ interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: any;
+  annotations?: {
+    audience?: string[];
+    title?: string;
+  };
 }
 
 /**
@@ -48,6 +53,7 @@ export function registerRoleTools(): ToolDefinition[] {
       name: "create-role",
       description:
         '[Role Management] Create a custom role with specific permissions. Use when users say: "create role", "add custom role", "make new role", "define permissions", "create user role". Requires name, displayName, and permissions object. Role names must use letters, numbers, dashes, underscores only.',
+      annotations: getToolAnnotations("create-role"),
       inputSchema: {
         type: "object",
         properties: {
@@ -79,6 +85,7 @@ export function registerRoleTools(): ToolDefinition[] {
       name: "update-role",
       description:
         '[Role Management] Update role settings, name, or permissions. Use when users say: "update role", "change permissions", "modify role", "edit role settings", "update role permissions". Requires roleId. Can update display name, description, or permission settings.',
+      annotations: getToolAnnotations("update-role"),
       inputSchema: {
         type: "object",
         properties: {
@@ -109,6 +116,7 @@ export function registerRoleTools(): ToolDefinition[] {
       name: "delete-role",
       description:
         '[Role Management] Permanently delete a custom role. Use when users say: "delete role", "remove role", "delete custom role", "remove permissions role". Requires roleId. Cannot delete system roles. Users with this role will lose it.',
+      annotations: getToolAnnotations("delete-role"),
       inputSchema: {
         type: "object",
         properties: {
@@ -124,6 +132,7 @@ export function registerRoleTools(): ToolDefinition[] {
       name: "get-roles",
       description:
         '[Role Management] List all available roles in the system. Use when users say: "list roles", "show all roles", "get roles", "what roles exist", "show permissions roles". Returns both system and custom roles with their permissions. Supports pagination.',
+      annotations: getToolAnnotations("get-roles"),
       inputSchema: {
         type: "object",
         properties: {
@@ -142,6 +151,7 @@ export function registerRoleTools(): ToolDefinition[] {
       name: "get-role",
       description:
         '[Role Management] Get detailed information about a specific role. Use when users say: "show role details", "get role info", "what permissions does role have", "describe role", "role information". Requires roleId. Returns full permission details.',
+      annotations: getToolAnnotations("get-role"),
       inputSchema: {
         type: "object",
         properties: {
@@ -157,6 +167,7 @@ export function registerRoleTools(): ToolDefinition[] {
       name: "get-permissions",
       description:
         '[Role Management] List all available permissions in the system. Use when users say: "list permissions", "show all permissions", "what permissions are available", "get permission list", "available role permissions". Returns complete permission catalog with descriptions.',
+      annotations: getToolAnnotations("get-permissions"),
       inputSchema: {
         type: "object",
         properties: {},
