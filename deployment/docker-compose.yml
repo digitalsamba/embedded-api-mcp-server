@@ -1,0 +1,43 @@
+# Digital Samba MCP Server - Development Deployment
+#
+# This is the production-ready docker-compose for deployment.
+# Images are pulled from the private registry.
+#
+# Usage:
+#   docker compose up -d
+#
+# Requires:
+#   - .env file with configuration
+#   - nginx-proxy network (external)
+
+services:
+  mcp-server:
+    image: ${REGISTRY}/digitalsamba-mcp-server:latest
+    container_name: digitalsamba-mcp
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - TRANSPORT=http
+      - PORT=3000
+      - HOST=0.0.0.0
+    env_file:
+      - mcp.env
+    networks:
+      - nginx-proxy
+    labels:
+      - "VIRTUAL_HOST=${DOMAIN}"
+      - "VIRTUAL_PORT=3000"
+      - "LETSENCRYPT_HOST=${DOMAIN}"
+      - "LETSENCRYPT_EMAIL=${ADMIN_EMAIL}"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  nginx-proxy:
+    external: true

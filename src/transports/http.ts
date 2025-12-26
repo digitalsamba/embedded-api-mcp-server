@@ -33,8 +33,8 @@ const transports: Map<string, StreamableHTTPServerTransport> = new Map();
  */
 function authMiddleware(requireAuth: boolean) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    // Skip auth for health check
-    if (req.path === "/health") {
+    // Skip auth for health check and server info
+    if (req.path === "/health" || req.path === "/") {
       next();
       return;
     }
