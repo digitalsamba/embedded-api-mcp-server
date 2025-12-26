@@ -1,20 +1,24 @@
-# Digital Samba MCP Server - Remote MCP Development Deployment
+# Digital Samba MCP Server - Remote MCP Deployment
 #
-# Deploys the HTTP transport MCP server to mcp-dev.digitalsamba.com
+# Deploys the HTTP transport MCP server
 #
-# Trigger: Manual only (workflow_dispatch) from feature/remote-mcp branch
+# Trigger: Manual only (workflow_dispatch)
 #
-# Required GitHub Secrets:
-#   - DOCKER_REGISTRY: Registry hostname (e.g., registry.nexus3-slingshot.digitalsamba.com)
+# GitHub Secrets Structure:
+#
+# Repository secrets (shared):
+#   - DOCKER_REGISTRY: Registry hostname
 #   - REGISTRY_USERNAME: Docker registry username
 #   - REGISTRY_PASSWORD: Docker registry password
-#   - DEPLOYMENT_SERVER: Target server (e.g., apps4.wbncf.net)
 #   - DEPLOYMENT_USER: SSH user for deployment
 #   - DEPLOYMENT_SSH_KEY: SSH private key
-#   - DEPLOYMENT_PATH: Server path (e.g., /opt/deployment/digitalsamba-mcp)
-#   - MCP_DEV_URL: Development URL for health check (e.g., https://mcp-dev.digitalsamba.com)
+#
+# Environment secrets (per environment):
+#   - DEPLOYMENT_SERVER: Target server hostname
+#   - DEPLOYMENT_PATH: Server path for deployment files
+#   - MCP_URL: Public URL for health checks
 
-name: Deploy Remote MCP (Development)
+name: Deploy Remote MCP
 
 on:
   workflow_dispatch:
@@ -26,6 +30,7 @@ on:
         type: choice
         options:
           - development
+          - production
 
 env:
   IMAGE_NAME: digitalsamba-mcp-server
@@ -34,7 +39,7 @@ jobs:
   build-and-deploy:
     name: Build and Deploy MCP Server
     runs-on: ubuntu-latest
-    environment: development
+    environment: ${{ inputs.environment }}
 
     steps:
       - name: Checkout code
@@ -50,6 +55,15 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
+      - name: Determine image tag
+        id: image-tag
+        run: |
+          if [ "${{ inputs.environment }}" = "production" ]; then
+            echo "tag=stable" >> $GITHUB_OUTPUT
+          else
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -58,7 +72,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -77,11 +91,12 @@ jobs:
         env:
           REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          IMAGE_TAG: ${{ steps.image-tag.outputs.tag }}
         with:
           host: ${{ secrets.DEPLOYMENT_SERVER }}
           username: ${{ secrets.DEPLOYMENT_USER }}
           key: ${{ secrets.DEPLOYMENT_SSH_KEY }}
-          envs: REGISTRY,IMAGE_NAME
+          envs: REGISTRY,IMAGE_NAME,IMAGE_TAG
           script: |
             cd ${{ secrets.DEPLOYMENT_PATH }}
 
@@ -89,7 +104,10 @@ jobs:
             echo "${{ secrets.REGISTRY_PASSWORD }}" | sudo docker login ${{ secrets.DOCKER_REGISTRY }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
 
             # Pull latest image
-            sudo docker pull ${REGISTRY}/${IMAGE_NAME}:latest
+            sudo docker pull ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+
+            # Update .env with correct image tag
+            sed -i "s|:latest|:${IMAGE_TAG}|g" docker-compose.yml 2>/dev/null || true
 
             # Stop and remove old container
             sudo docker compose down --remove-orphans || true
@@ -110,7 +128,7 @@ jobs:
           sleep 30
 
           # Health check
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.MCP_DEV_URL }}/health || echo "000")
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.MCP_URL }}/health || echo "000")
 
           if [ "$HTTP_STATUS" = "200" ]; then
             echo "Health check passed (HTTP $HTTP_STATUS)"
@@ -118,7 +136,7 @@ jobs:
             echo "Health check failed (HTTP $HTTP_STATUS)"
             echo "Note: First deployment may take longer for SSL certificate provisioning"
             echo "Attempting alternative check..."
-            curl -v ${{ secrets.MCP_DEV_URL }}/health || true
+            curl -v ${{ secrets.MCP_URL }}/health || true
             exit 1
           fi
 
@@ -128,9 +146,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Item | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Environment** | development |" >> $GITHUB_STEP_SUMMARY
-          echo "| **URL** | ${{ secrets.MCP_DEV_URL }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| **MCP Endpoint** | ${{ secrets.MCP_DEV_URL }}/mcp |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Environment** | ${{ inputs.environment }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **URL** | ${{ secrets.MCP_URL }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **MCP Endpoint** | ${{ secrets.MCP_URL }}/mcp |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image Tag** | ${{ steps.image-tag.outputs.tag }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Commit** | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Branch** | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Triggered by** | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
