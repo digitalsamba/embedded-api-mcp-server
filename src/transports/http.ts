@@ -12,6 +12,7 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 
 import { createServer, VERSION, VERSION_INFO } from "../server.js";
 import logger from "../logger.js";
+import apiKeyContext from "../auth.js";
 
 export interface HttpTransportConfig {
   /** Port to listen on (default: 3000) */
@@ -192,7 +193,15 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
         return;
       }
 
-      await transport.handleRequest(req, res, req.body);
+      // Run the request in the API key context so tools can access it
+      const apiKey = (req as any).apiKey;
+      if (apiKey) {
+        await apiKeyContext.run(apiKey, async () => {
+          await transport.handleRequest(req, res, req.body);
+        });
+      } else {
+        await transport.handleRequest(req, res, req.body);
+      }
     } catch (error: any) {
       logger.error(`MCP request error: ${error.message}`, error);
       res.status(500).json({
@@ -223,7 +232,14 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     }
 
     const transport = transports.get(sessionId)!;
-    await transport.handleRequest(req, res);
+    const apiKey = (req as any).apiKey;
+    if (apiKey) {
+      await apiKeyContext.run(apiKey, async () => {
+        await transport.handleRequest(req, res);
+      });
+    } else {
+      await transport.handleRequest(req, res);
+    }
   });
 
   // MCP DELETE handler - close session
@@ -243,7 +259,14 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     }
 
     const transport = transports.get(sessionId)!;
-    await transport.handleRequest(req, res);
+    const apiKey = (req as any).apiKey;
+    if (apiKey) {
+      await apiKeyContext.run(apiKey, async () => {
+        await transport.handleRequest(req, res);
+      });
+    } else {
+      await transport.handleRequest(req, res);
+    }
   });
 
   // Start listening
