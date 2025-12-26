@@ -22,15 +22,14 @@ services:
       - TRANSPORT=http
       - PORT=3000
       - HOST=0.0.0.0
+      - VIRTUAL_HOST=${DOMAIN}
+      - VIRTUAL_PORT=3000
+      - LETSENCRYPT_HOST=${DOMAIN}
+      - LETSENCRYPT_EMAIL=${ADMIN_EMAIL}
     env_file:
       - mcp.env
     networks:
       - proxy
-    labels:
-      - "VIRTUAL_HOST=${DOMAIN}"
-      - "VIRTUAL_PORT=3000"
-      - "LETSENCRYPT_HOST=${DOMAIN}"
-      - "LETSENCRYPT_EMAIL=${ADMIN_EMAIL}"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/health"]
       interval: 30s
