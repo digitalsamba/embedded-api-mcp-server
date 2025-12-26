@@ -13,6 +13,16 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createServer, VERSION, VERSION_INFO } from "../server.js";
 import logger from "../logger.js";
 import apiKeyContext from "../auth.js";
+import {
+  loadOAuthConfig,
+  generateState,
+  buildAuthorizationUrl,
+  completeOAuthFlow,
+  getAuthorizationServerMetadata,
+  getDeveloperKeyFromSession,
+  getActiveSessionCount,
+  type OAuthConfig,
+} from "../oauth.js";
 
 export interface HttpTransportConfig {
   /** Port to listen on (default: 3000) */
@@ -31,11 +41,17 @@ const transports: Map<string, StreamableHTTPServerTransport> = new Map();
 /**
  * Authentication middleware
  * Validates Bearer token and extracts API key
+ * Supports both direct API keys and OAuth session tokens
  */
 function authMiddleware(requireAuth: boolean) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    // Skip auth for health check and server info
-    if (req.path === "/health" || req.path === "/") {
+    // Skip auth for health check, server info, and OAuth endpoints
+    if (
+      req.path === "/health" ||
+      req.path === "/" ||
+      req.path.startsWith("/.well-known/") ||
+      req.path.startsWith("/oauth/")
+    ) {
       next();
       return;
     }
@@ -68,9 +84,31 @@ function authMiddleware(requireAuth: boolean) {
         return;
       }
 
-      // Store API key in request for use by server
-      // In production, this would be validated against DS auth service
-      (req as any).apiKey = token;
+      // Check if this is an OAuth session token
+      if (token.startsWith("oauth:")) {
+        const oauthSessionId = token.substring(6);
+        const developerKey = getDeveloperKeyFromSession(oauthSessionId);
+
+        if (!developerKey) {
+          res.status(401).json({
+            jsonrpc: "2.0",
+            error: {
+              code: -32001,
+              message: "Invalid or expired OAuth session. Please re-authenticate.",
+            },
+            id: null,
+          });
+          return;
+        }
+
+        // Use the developer key from the OAuth session
+        (req as any).apiKey = developerKey;
+        (req as any).oauthSession = oauthSessionId;
+        logger.debug(`OAuth session authenticated: ${oauthSessionId.substring(0, 8)}...`);
+      } else {
+        // Direct API key (legacy mode)
+        (req as any).apiKey = token;
+      }
     }
 
     next();
@@ -118,8 +156,12 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       version: VERSION,
       transport: "http",
       activeSessions: transports.size,
+      oauthSessions: getActiveSessionCount(),
     });
   });
+
+  // Load OAuth configuration
+  const oauthConfig = loadOAuthConfig();
 
   // Server info endpoint
   app.get("/", (_req, res) => {
@@ -131,10 +173,102 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       endpoints: {
         mcp: "/mcp",
         health: "/health",
+        ...(oauthConfig && {
+          oauth_metadata: "/.well-known/oauth-authorization-server",
+          oauth_authorize: "/oauth/authorize",
+          oauth_callback: "/oauth/callback",
+        }),
       },
+      oauth_enabled: !!oauthConfig,
       ...VERSION_INFO,
     });
   });
+
+  // OAuth endpoints (only if configured)
+  if (oauthConfig) {
+    // RFC 8414 - OAuth Authorization Server Metadata
+    app.get("/.well-known/oauth-authorization-server", (_req, res) => {
+      res.json(getAuthorizationServerMetadata(oauthConfig));
+    });
+
+    // Also support the alternative path used by some clients
+    app.get("/.well-known/oauth-protected-resource", (_req, res) => {
+      res.json({
+        resource: oauthConfig.issuer,
+        authorization_servers: [oauthConfig.issuer],
+      });
+    });
+
+    // OAuth authorize - redirect to DS Passport
+    app.get("/oauth/authorize", (req, res) => {
+      const state = generateState();
+      const authUrl = buildAuthorizationUrl(oauthConfig, state);
+
+      logger.info(`OAuth: Redirecting to DS Passport (state: ${state.substring(0, 8)}...)`);
+      res.redirect(authUrl);
+    });
+
+    // OAuth callback - handle code exchange
+    app.get("/oauth/callback", async (req, res) => {
+      const { code, state, error, error_description } = req.query;
+
+      if (error) {
+        logger.error(`OAuth error: ${error} - ${error_description}`);
+        res.status(400).json({
+          error: error as string,
+          error_description: error_description as string,
+        });
+        return;
+      }
+
+      if (!code || !state) {
+        res.status(400).json({
+          error: "invalid_request",
+          error_description: "Missing code or state parameter",
+        });
+        return;
+      }
+
+      try {
+        const { sessionId, session } = await completeOAuthFlow(
+          oauthConfig,
+          code as string,
+          state as string
+        );
+
+        logger.info(`OAuth: Session created for ${session.userEmail}`);
+
+        // Return session info to the client
+        // In production, this would set a secure cookie or return a token
+        res.json({
+          success: true,
+          message: "Authentication successful",
+          session_id: sessionId,
+          team: {
+            id: session.teamId,
+            domain: session.teamDomain,
+          },
+          user: {
+            email: session.userEmail,
+          },
+          // Include instructions for using the session
+          usage: {
+            header: "Authorization",
+            format: `Bearer oauth:${sessionId}`,
+            example: `curl -H "Authorization: Bearer oauth:${sessionId}" https://mcp.digitalsamba.com/mcp`,
+          },
+        });
+      } catch (err: any) {
+        logger.error(`OAuth callback error: ${err.message}`);
+        res.status(400).json({
+          error: "oauth_error",
+          error_description: err.message,
+        });
+      }
+    });
+
+    logger.info("OAuth endpoints enabled");
+  }
 
   // MCP POST handler - main request handler
   app.post("/mcp", async (req: Request, res: Response) => {
