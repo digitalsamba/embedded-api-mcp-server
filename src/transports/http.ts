@@ -59,6 +59,11 @@ function authMiddleware(requireAuth: boolean) {
     const authHeader = req.headers.authorization;
 
     if (!authHeader && requireAuth) {
+      // Include WWW-Authenticate header for OAuth discovery
+      res.setHeader(
+        "WWW-Authenticate",
+        'Bearer realm="mcp", resource_metadata="/.well-known/oauth-protected-resource"'
+      );
       res.status(401).json({
         jsonrpc: "2.0",
         error: {
