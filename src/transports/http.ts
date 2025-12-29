@@ -193,27 +193,6 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
   // Load OAuth configuration
   const oauthConfig = loadOAuthConfig();
 
-  // Server info endpoint
-  app.get("/", (_req, res) => {
-    res.json({
-      name: "Digital Samba MCP Server",
-      version: VERSION,
-      transport: "StreamableHTTP",
-      protocol: "MCP",
-      endpoints: {
-        mcp: "/mcp",
-        health: "/health",
-        ...(oauthConfig && {
-          oauth_metadata: "/.well-known/oauth-authorization-server",
-          oauth_authorize: "/oauth/authorize",
-          oauth_callback: "/oauth/callback",
-        }),
-      },
-      oauth_enabled: !!oauthConfig,
-      ...VERSION_INFO,
-    });
-  });
-
   // OAuth endpoints (only if configured)
   if (oauthConfig) {
     // RFC 8414 - OAuth Authorization Server Metadata
@@ -479,8 +458,8 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     logger.info("OAuth endpoints enabled (with DCR support)");
   }
 
-  // MCP POST handler - main request handler
-  app.post("/mcp", async (req: Request, res: Response) => {
+  // MCP handler function (shared between /mcp and / routes)
+  const handleMcpPost = async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string | undefined;
     let transport: StreamableHTTPServerTransport;
 
@@ -567,10 +546,10 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
         id: null,
       });
     }
-  });
+  };
 
-  // MCP GET handler - for SSE streaming (if client requests it)
-  app.get("/mcp", async (req: Request, res: Response) => {
+  // MCP GET handler function (for SSE streaming)
+  const handleMcpGet = async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string;
 
     if (!sessionId || !transports.has(sessionId)) {
@@ -594,10 +573,10 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     } else {
       await transport.handleRequest(req, res);
     }
-  });
+  };
 
-  // MCP DELETE handler - close session
-  app.delete("/mcp", async (req: Request, res: Response) => {
+  // MCP DELETE handler function
+  const handleMcpDelete = async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string;
 
     if (!sessionId || !transports.has(sessionId)) {
@@ -621,7 +600,42 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     } else {
       await transport.handleRequest(req, res);
     }
+  };
+
+  // Register MCP handlers on both /mcp and / (root) paths
+  // Claude Desktop may POST to root URL when connecting
+  app.post("/mcp", handleMcpPost);
+  app.get("/mcp", handleMcpGet);
+  app.delete("/mcp", handleMcpDelete);
+
+  // Also handle MCP on root path for Claude Desktop compatibility
+  app.post("/", handleMcpPost);
+  app.get("/", (req, res, next) => {
+    // If Accept header includes event-stream, treat as MCP SSE request
+    if (req.headers.accept?.includes("text/event-stream")) {
+      return handleMcpGet(req, res);
+    }
+    // Otherwise return server info (existing behavior)
+    res.json({
+      name: "@digitalsamba/embedded-api-mcp-server",
+      version: VERSION,
+      transport: "StreamableHTTP",
+      protocol: "MCP",
+      endpoints: {
+        mcp: "/mcp",
+        health: "/health",
+        ...(oauthConfig && {
+          oauth_metadata: "/.well-known/oauth-authorization-server",
+          oauth_authorize: "/oauth/authorize",
+          oauth_register: "/oauth/register",
+          oauth_token: "/oauth/token",
+        }),
+      },
+      oauth_enabled: !!oauthConfig,
+      ...VERSION_INFO,
+    });
   });
+  app.delete("/", handleMcpDelete);
 
   // Start listening
   app.listen(port, host, () => {
