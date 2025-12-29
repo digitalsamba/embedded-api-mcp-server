@@ -172,6 +172,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
 
   // Middleware
   app.use(express.json());
+  app.use(express.urlencoded({ extended: true })); // For OAuth token endpoint (form data)
   if (cors) {
     app.use(corsMiddleware);
   }
