@@ -19,7 +19,7 @@ import {
   buildAuthorizationUrl,
   completeOAuthFlow,
   getAuthorizationServerMetadata,
-  getDeveloperKeyFromSession,
+  getAccessTokenFromSession,
   getActiveSessionCount,
   type OAuthConfig,
 } from "../oauth.js";
@@ -87,9 +87,9 @@ function authMiddleware(requireAuth: boolean) {
       // Check if this is an OAuth session token
       if (token.startsWith("oauth:")) {
         const oauthSessionId = token.substring(6);
-        const developerKey = getDeveloperKeyFromSession(oauthSessionId);
+        const accessToken = getAccessTokenFromSession(oauthSessionId);
 
-        if (!developerKey) {
+        if (!accessToken) {
           res.status(401).json({
             jsonrpc: "2.0",
             error: {
@@ -101,13 +101,15 @@ function authMiddleware(requireAuth: boolean) {
           return;
         }
 
-        // Use the developer key from the OAuth session
-        (req as any).apiKey = developerKey;
-        (req as any).oauthSession = oauthSessionId;
+        // Use the OAuth access token directly with /oauth-api/v1/* endpoints
+        (req as any).apiKey = accessToken;
+        (req as any).isOAuthSession = true; // Flag to use OAuth API URL
+        (req as any).oauthSessionId = oauthSessionId;
         logger.debug(`OAuth session authenticated: ${oauthSessionId.substring(0, 8)}...`);
       } else {
-        // Direct API key (legacy mode)
+        // Direct API key (legacy mode) - uses /api/v1/*
         (req as any).apiKey = token;
+        (req as any).isOAuthSession = false;
       }
     }
 
@@ -230,32 +232,26 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       }
 
       try {
-        const { sessionId, session } = await completeOAuthFlow(
+        const { sessionId } = await completeOAuthFlow(
           oauthConfig,
           code as string,
           state as string
         );
 
-        logger.info(`OAuth: Session created for ${session.userEmail}`);
+        logger.info(`OAuth: Session created (${sessionId.substring(0, 8)}...)`);
 
         // Return session info to the client
-        // In production, this would set a secure cookie or return a token
+        // The access token will be used directly with /oauth-api/v1/* endpoints
         res.json({
           success: true,
           message: "Authentication successful",
           session_id: sessionId,
-          team: {
-            id: session.teamId,
-            domain: session.teamDomain,
-          },
-          user: {
-            email: session.userEmail,
-          },
           // Include instructions for using the session
           usage: {
             header: "Authorization",
             format: `Bearer oauth:${sessionId}`,
             example: `curl -H "Authorization: Bearer oauth:${sessionId}" https://mcp.digitalsamba.com/mcp`,
+            note: "Your OAuth token will be used with /oauth-api/v1/* endpoints",
           },
         });
       } catch (err: any) {
@@ -305,9 +301,20 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
 
         // Create server with API key from auth header if present
         const apiKey = (req as any).apiKey;
+        const isOAuthSession = (req as any).isOAuthSession;
+
+        // OAuth sessions use /oauth-api/v1/*, direct API keys use /api/v1/*
+        const defaultApiUrl = "https://api.digitalsamba.com/api/v1";
+        const oauthApiUrl = process.env.OAUTH_API_URL || "https://api.digitalsamba.com/oauth-api/v1";
+        const apiUrl = isOAuthSession
+          ? oauthApiUrl
+          : (process.env.DIGITAL_SAMBA_API_URL || defaultApiUrl);
+
+        logger.debug(`Creating server with API URL: ${apiUrl} (OAuth: ${isOAuthSession})`);
+
         const server = createServer({
           apiKey,
-          apiUrl: process.env.DIGITAL_SAMBA_API_URL,
+          apiUrl,
         });
 
         await server.connect(transport);

@@ -14,9 +14,10 @@ export interface OAuthConfig {
   clientSecret: string;
   authorizeUrl: string;
   tokenUrl: string;
-  stateUrl: string;
   redirectUri: string;
   issuer: string;
+  // Note: stateUrl removed - we no longer fetch from /dashboard-api/state
+  // Instead we use the access_token directly with /oauth-api/v1/* endpoints
 }
 
 // Token response from DS Passport
@@ -27,36 +28,17 @@ interface TokenResponse {
   refresh_token?: string;
 }
 
-// State response from DS dashboard-api
-interface StateResponse {
-  data: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    last_team: {
-      id: string;
-      domain: string;
-      developer_key?: string;
-      // ... other team properties
-    };
-    teams: Array<{
-      id: string;
-      domain: string;
-      role: string;
-    }>;
-  };
-}
+// Note: We no longer need to fetch user state from /dashboard-api/state
+// Instead, we use the OAuth access_token directly with /oauth-api/v1/* endpoints
+// which provide the same API but with OAuth token authentication
 
 // Session data stored after OAuth
 export interface OAuthSession {
   accessToken: string;
   refreshToken?: string;
   expiresAt: number;
-  developerKey: string;
-  teamId: string;
-  teamDomain: string;
-  userEmail: string;
+  // Note: We no longer store developerKey - the accessToken is used directly
+  // with /oauth-api/v1/* endpoints which handle auth via OAuth tokens
 }
 
 // In-memory session storage (replace with Redis in production)
@@ -83,8 +65,6 @@ export function loadOAuthConfig(): OAuthConfig | null {
     authorizeUrl:
       process.env.OAUTH_AUTHORIZE_URL || "https://api.digitalsamba.com/oauth/authorize",
     tokenUrl: process.env.OAUTH_TOKEN_URL || "https://api.digitalsamba.com/oauth/token",
-    stateUrl:
-      process.env.OAUTH_STATE_URL || "https://api.digitalsamba.com/dashboard-api/state",
     redirectUri:
       process.env.OAUTH_REDIRECT_URI || "https://mcp.digitalsamba.com/oauth/callback",
     issuer: process.env.OAUTH_ISSUER || "https://mcp.digitalsamba.com",
@@ -173,31 +153,14 @@ export async function exchangeCodeForTokens(
   return response.json() as Promise<TokenResponse>;
 }
 
-/**
- * Fetch user state and developer key from DS backend
- */
-export async function fetchUserState(
-  config: OAuthConfig,
-  accessToken: string
-): Promise<StateResponse> {
-  const response = await fetch(config.stateUrl, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    logger.error(`Failed to fetch user state: ${response.status} - ${error}`);
-    throw new Error(`Failed to fetch user state: ${response.status}`);
-  }
-
-  return response.json() as Promise<StateResponse>;
-}
+// fetchUserState removed - no longer needed
+// We use the OAuth access_token directly with /oauth-api/v1/* endpoints
 
 /**
  * Complete OAuth flow and create session
+ *
+ * Note: We no longer fetch user state or developer_key.
+ * The OAuth access_token is used directly with /oauth-api/v1/* endpoints.
  */
 export async function completeOAuthFlow(
   config: OAuthConfig,
@@ -207,33 +170,18 @@ export async function completeOAuthFlow(
   // Exchange code for tokens
   const tokens = await exchangeCodeForTokens(config, code, state);
 
-  // Fetch user state to get developer key
-  const userState = await fetchUserState(config, tokens.access_token);
-
-  const lastTeam = userState.data.last_team;
-  if (!lastTeam?.developer_key) {
-    throw new Error(
-      "No developer key available. You must be a team Admin to use this service."
-    );
-  }
-
-  // Create session
+  // Create session with the access token
+  // No need to fetch developer_key - we use the token directly with /oauth-api/v1/*
   const sessionId = randomBytes(32).toString("hex");
   const session: OAuthSession = {
     accessToken: tokens.access_token,
     refreshToken: tokens.refresh_token,
     expiresAt: Date.now() + tokens.expires_in * 1000,
-    developerKey: lastTeam.developer_key,
-    teamId: lastTeam.id,
-    teamDomain: lastTeam.domain,
-    userEmail: userState.data.email,
   };
 
   sessions.set(sessionId, session);
 
-  logger.info(
-    `OAuth session created for ${session.userEmail} (team: ${session.teamDomain})`
-  );
+  logger.info(`OAuth session created (session: ${sessionId.substring(0, 8)}...)`);
 
   return { sessionId, session };
 }
@@ -252,10 +200,10 @@ export function getSession(sessionId: string): OAuthSession | undefined {
 }
 
 /**
- * Get developer key from session
+ * Get access token from session (used for /oauth-api/v1/* calls)
  */
-export function getDeveloperKeyFromSession(sessionId: string): string | undefined {
-  return getSession(sessionId)?.developerKey;
+export function getAccessTokenFromSession(sessionId: string): string | undefined {
+  return getSession(sessionId)?.accessToken;
 }
 
 /**
