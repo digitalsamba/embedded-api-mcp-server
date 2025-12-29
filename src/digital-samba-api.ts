@@ -218,6 +218,9 @@ export class DigitalSambaApiClient {
       ? endpoint
       : `${this.apiBaseUrl}${endpoint}`;
     const method = options.method || "GET";
+
+    // Log the actual URL being called (INFO level for visibility)
+    logger.info(`API Request: ${method} ${url}`);
     const isCacheable = this.cache && method === "GET";
 
     // Generate a cache key based on endpoint and API key (to avoid cross-client leakage)
