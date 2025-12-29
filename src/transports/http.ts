@@ -460,15 +460,19 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
 
   // MCP handler function (shared between /mcp and / routes)
   const handleMcpPost = async (req: Request, res: Response) => {
-    const sessionId = req.headers["mcp-session-id"] as string | undefined;
+    const mcpSessionId = req.headers["mcp-session-id"] as string | undefined;
+    const authHeader = req.headers.authorization;
+
+    logger.info(`MCP POST: path=${req.path}, mcp-session-id=${mcpSessionId?.substring(0, 8) || 'none'}, auth=${authHeader ? 'present' : 'missing'}`);
+
     let transport: StreamableHTTPServerTransport;
 
     try {
-      if (sessionId && transports.has(sessionId)) {
+      if (mcpSessionId && transports.has(mcpSessionId)) {
         // Reuse existing session
-        transport = transports.get(sessionId)!;
-        logger.debug(`Reusing session: ${sessionId}`);
-      } else if (!sessionId && isInitializeRequest(req.body)) {
+        transport = transports.get(mcpSessionId)!;
+        logger.debug(`Reusing session: ${mcpSessionId}`);
+      } else if (!mcpSessionId && isInitializeRequest(req.body)) {
         // New session initialization
         logger.info("Initializing new MCP session");
 
@@ -517,7 +521,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
           jsonrpc: "2.0",
           error: {
             code: -32000,
-            message: sessionId
+            message: mcpSessionId
               ? "Session not found. Session may have expired."
               : "Invalid request. First request must be an initialize request.",
           },
