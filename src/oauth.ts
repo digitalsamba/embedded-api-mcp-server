@@ -3,10 +3,12 @@
  *
  * Implements OAuth authorization code flow with PKCE for MCP authentication.
  * Uses Digital Samba Passport as the OAuth provider.
+ * Sessions persisted in Redis (or in-memory for local dev).
  */
 
 import { randomBytes, createHash } from "node:crypto";
 import logger from "./logger.js";
+import { getStore, PREFIXES, TTL } from "./session-store.js";
 
 // OAuth Configuration - loaded from environment
 export interface OAuthConfig {
@@ -16,8 +18,6 @@ export interface OAuthConfig {
   tokenUrl: string;
   redirectUri: string;
   issuer: string;
-  // Note: stateUrl removed - we no longer fetch from /dashboard-api/state
-  // Instead we use the access_token directly with /oauth-api/v1/* endpoints
 }
 
 // Token response from DS Passport
@@ -28,77 +28,24 @@ interface TokenResponse {
   refresh_token?: string;
 }
 
-// Note: We no longer need to fetch user state from /dashboard-api/state
-// Instead, we use the OAuth access_token directly with /oauth-api/v1/* endpoints
-// which provide the same API but with OAuth token authentication
-
 // Session data stored after OAuth
 export interface OAuthSession {
   accessToken: string;
   refreshToken?: string;
   expiresAt: number;
-  // Note: We no longer store developerKey - the accessToken is used directly
-  // with /oauth-api/v1/* endpoints which handle auth via OAuth tokens
 }
 
-// In-memory session storage (replace with Redis in production)
-const sessions: Map<string, OAuthSession> = new Map();
-
-// PKCE code verifiers (temporary storage during auth flow)
-const codeVerifiers: Map<string, string> = new Map();
-
 // Pending authorization requests (state -> client request info)
-// Used to track the original client request while user authenticates with DS
 interface PendingClientAuth {
   clientId: string;
   redirectUri: string;
   codeChallenge?: string;
   codeChallengeMethod?: string;
-  state?: string; // Original state from client
+  state?: string;
   createdAt: number;
 }
-const pendingClientAuths: Map<string, PendingClientAuth> = new Map();
 
-/**
- * Store pending client authorization (before DS redirect)
- */
-export function storePendingClientAuth(
-  ourState: string,
-  clientId: string,
-  redirectUri: string,
-  codeChallenge?: string,
-  codeChallengeMethod?: string,
-  clientState?: string
-): void {
-  pendingClientAuths.set(ourState, {
-    clientId,
-    redirectUri,
-    codeChallenge,
-    codeChallengeMethod,
-    state: clientState,
-    createdAt: Date.now(),
-  });
-
-  // Clean up after 10 minutes
-  setTimeout(() => pendingClientAuths.delete(ourState), 10 * 60 * 1000);
-}
-
-/**
- * Get and remove pending client authorization
- */
-export function getPendingClientAuth(ourState: string): PendingClientAuth | undefined {
-  const pending = pendingClientAuths.get(ourState);
-  if (pending) {
-    pendingClientAuths.delete(ourState);
-  }
-  return pending;
-}
-
-// ============================================================================
-// Dynamic Client Registration (DCR) - RFC 7591
-// Claude Desktop registers itself as an OAuth client
-// ============================================================================
-
+// Registered OAuth client (DCR - RFC 7591)
 export interface RegisteredClient {
   client_id: string;
   client_secret?: string;
@@ -110,10 +57,7 @@ export interface RegisteredClient {
   created_at: number;
 }
 
-// Registered OAuth clients (in-memory, replace with persistent storage)
-const registeredClients: Map<string, RegisteredClient> = new Map();
-
-// Authorization codes pending exchange (code -> { client_id, redirect_uri, dsToken, ... })
+// Authorization codes pending exchange
 interface PendingAuth {
   clientId: string;
   redirectUri: string;
@@ -123,18 +67,54 @@ interface PendingAuth {
   codeChallengeMethod?: string;
   expiresAt: number;
 }
-const pendingAuths: Map<string, PendingAuth> = new Map();
+
+/**
+ * Store pending client authorization (before DS redirect)
+ */
+export async function storePendingClientAuth(
+  ourState: string,
+  clientId: string,
+  redirectUri: string,
+  codeChallenge?: string,
+  codeChallengeMethod?: string,
+  clientState?: string
+): Promise<void> {
+  const store = getStore();
+  const data: PendingClientAuth = {
+    clientId,
+    redirectUri,
+    codeChallenge,
+    codeChallengeMethod,
+    state: clientState,
+    createdAt: Date.now(),
+  };
+  await store.set(PREFIXES.PENDING_CLIENT + ourState, data, TTL.PENDING_AUTH);
+}
+
+/**
+ * Get and remove pending client authorization
+ */
+export async function getPendingClientAuth(ourState: string): Promise<PendingClientAuth | null> {
+  const store = getStore();
+  const key = PREFIXES.PENDING_CLIENT + ourState;
+  const pending = await store.get<PendingClientAuth>(key);
+  if (pending) {
+    await store.delete(key);
+  }
+  return pending;
+}
 
 /**
  * Register a new OAuth client (DCR - RFC 7591)
  */
-export function registerClient(request: {
+export async function registerClient(request: {
   client_name?: string;
   redirect_uris: string[];
   grant_types?: string[];
   response_types?: string[];
   token_endpoint_auth_method?: string;
-}): RegisteredClient {
+}): Promise<RegisteredClient> {
+  const store = getStore();
   const clientId = randomBytes(16).toString("hex");
   const clientSecret = randomBytes(32).toString("hex");
 
@@ -149,7 +129,7 @@ export function registerClient(request: {
     created_at: Date.now(),
   };
 
-  registeredClients.set(clientId, client);
+  await store.set(PREFIXES.CLIENT + clientId, client, TTL.CLIENT);
   logger.info(`DCR: Registered new client '${client.client_name}' (${clientId.substring(0, 8)}...)`);
 
   return client;
@@ -158,15 +138,16 @@ export function registerClient(request: {
 /**
  * Get a registered client by ID
  */
-export function getRegisteredClient(clientId: string): RegisteredClient | undefined {
-  return registeredClients.get(clientId);
+export async function getRegisteredClient(clientId: string): Promise<RegisteredClient | null> {
+  const store = getStore();
+  return store.get<RegisteredClient>(PREFIXES.CLIENT + clientId);
 }
 
 /**
  * Validate redirect URI for a client
  */
-export function validateRedirectUri(clientId: string, redirectUri: string): boolean {
-  const client = registeredClients.get(clientId);
+export async function validateRedirectUri(clientId: string, redirectUri: string): Promise<boolean> {
+  const client = await getRegisteredClient(clientId);
   if (!client) return false;
   return client.redirect_uris.includes(redirectUri);
 }
@@ -174,42 +155,43 @@ export function validateRedirectUri(clientId: string, redirectUri: string): bool
 /**
  * Create an authorization code for later exchange
  */
-export function createAuthorizationCode(
+export async function createAuthorizationCode(
   clientId: string,
   redirectUri: string,
   dsAccessToken: string,
   dsRefreshToken?: string,
   codeChallenge?: string,
   codeChallengeMethod?: string
-): string {
+): Promise<string> {
+  const store = getStore();
   const code = randomBytes(32).toString("hex");
 
-  pendingAuths.set(code, {
+  const pending: PendingAuth = {
     clientId,
     redirectUri,
     dsAccessToken,
     dsRefreshToken,
     codeChallenge,
     codeChallengeMethod,
-    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
-  });
+    expiresAt: Date.now() + TTL.AUTH_CODE * 1000,
+  };
 
-  // Clean up after expiry
-  setTimeout(() => pendingAuths.delete(code), 10 * 60 * 1000);
-
+  await store.set(PREFIXES.AUTH_CODE + code, pending, TTL.AUTH_CODE);
   return code;
 }
 
 /**
  * Exchange authorization code for tokens (called by Claude)
  */
-export function exchangeAuthorizationCode(
+export async function exchangeAuthorizationCode(
   code: string,
   clientId: string,
   redirectUri: string,
   codeVerifier?: string
-): { access_token: string; token_type: string; expires_in: number } | null {
-  const pending = pendingAuths.get(code);
+): Promise<{ access_token: string; token_type: string; expires_in: number } | null> {
+  const store = getStore();
+  const key = PREFIXES.AUTH_CODE + code;
+  const pending = await store.get<PendingAuth>(key);
 
   if (!pending) {
     logger.warn("Token exchange: Invalid or expired code");
@@ -217,7 +199,7 @@ export function exchangeAuthorizationCode(
   }
 
   if (pending.expiresAt < Date.now()) {
-    pendingAuths.delete(code);
+    await store.delete(key);
     logger.warn("Token exchange: Code expired");
     return null;
   }
@@ -246,25 +228,23 @@ export function exchangeAuthorizationCode(
   }
 
   // Clean up used code
-  pendingAuths.delete(code);
+  await store.delete(key);
 
   // Create session with DS token
   const sessionId = randomBytes(32).toString("hex");
   const session: OAuthSession = {
     accessToken: pending.dsAccessToken,
     refreshToken: pending.dsRefreshToken,
-    expiresAt: Date.now() + 3600 * 1000, // 1 hour
+    expiresAt: Date.now() + TTL.SESSION * 1000,
   };
-  sessions.set(sessionId, session);
+  await store.set(PREFIXES.SESSION + sessionId, session, TTL.SESSION);
 
   logger.info(`Token exchange successful, session: ${sessionId.substring(0, 8)}...`);
 
-  // Return a token that references our session
-  // Claude will use this in the Authorization header
   return {
-    access_token: sessionId, // Claude will send this as Bearer token
+    access_token: sessionId,
     token_type: "Bearer",
-    expires_in: 3600,
+    expires_in: TTL.SESSION,
   };
 }
 
@@ -311,20 +291,18 @@ export function generateState(): string {
 /**
  * Build authorization URL for OAuth flow
  */
-export function buildAuthorizationUrl(config: OAuthConfig, state: string): string {
+export async function buildAuthorizationUrl(config: OAuthConfig, state: string): Promise<string> {
+  const store = getStore();
   const pkce = generatePKCE();
 
   // Store code verifier for later token exchange
-  codeVerifiers.set(state, pkce.verifier);
-
-  // Clean up old verifiers after 10 minutes
-  setTimeout(() => codeVerifiers.delete(state), 10 * 60 * 1000);
+  await store.set(PREFIXES.CODE_VERIFIER + state, pkce.verifier, TTL.CODE_VERIFIER);
 
   const params = new URLSearchParams({
     client_id: config.clientId,
     redirect_uri: config.redirectUri,
     response_type: "code",
-    scope: "", // DS Passport may not require scopes
+    scope: "",
     state,
     code_challenge: pkce.challenge,
     code_challenge_method: "S256",
@@ -334,20 +312,23 @@ export function buildAuthorizationUrl(config: OAuthConfig, state: string): strin
 }
 
 /**
- * Exchange authorization code for tokens
+ * Exchange authorization code for tokens (with DS Passport)
  */
 export async function exchangeCodeForTokens(
   config: OAuthConfig,
   code: string,
   state: string
 ): Promise<TokenResponse> {
-  const codeVerifier = codeVerifiers.get(state);
+  const store = getStore();
+  const key = PREFIXES.CODE_VERIFIER + state;
+  const codeVerifier = await store.get<string>(key);
+
   if (!codeVerifier) {
     throw new Error("Invalid state or expired code verifier");
   }
 
   // Clean up used verifier
-  codeVerifiers.delete(state);
+  await store.delete(key);
 
   const response = await fetch(config.tokenUrl, {
     method: "POST",
@@ -374,25 +355,20 @@ export async function exchangeCodeForTokens(
   return response.json() as Promise<TokenResponse>;
 }
 
-// fetchUserState removed - no longer needed
-// We use the OAuth access_token directly with /oauth-api/v1/* endpoints
-
 /**
  * Complete OAuth flow and create session
- *
- * Note: We no longer fetch user state or developer_key.
- * The OAuth access_token is used directly with /oauth-api/v1/* endpoints.
  */
 export async function completeOAuthFlow(
   config: OAuthConfig,
   code: string,
   state: string
 ): Promise<{ sessionId: string; session: OAuthSession }> {
+  const store = getStore();
+
   // Exchange code for tokens
   const tokens = await exchangeCodeForTokens(config, code, state);
 
   // Create session with the access token
-  // No need to fetch developer_key - we use the token directly with /oauth-api/v1/*
   const sessionId = randomBytes(32).toString("hex");
   const session: OAuthSession = {
     accessToken: tokens.access_token,
@@ -400,7 +376,7 @@ export async function completeOAuthFlow(
     expiresAt: Date.now() + tokens.expires_in * 1000,
   };
 
-  sessions.set(sessionId, session);
+  await store.set(PREFIXES.SESSION + sessionId, session, TTL.SESSION);
 
   logger.info(`OAuth session created (session: ${sessionId.substring(0, 8)}...)`);
 
@@ -410,12 +386,14 @@ export async function completeOAuthFlow(
 /**
  * Get session by ID
  */
-export function getSession(sessionId: string): OAuthSession | undefined {
-  const session = sessions.get(sessionId);
+export async function getSession(sessionId: string): Promise<OAuthSession | null> {
+  const store = getStore();
+  const session = await store.get<OAuthSession>(PREFIXES.SESSION + sessionId);
+
   if (session && session.expiresAt < Date.now()) {
     // Session expired
-    sessions.delete(sessionId);
-    return undefined;
+    await store.delete(PREFIXES.SESSION + sessionId);
+    return null;
   }
   return session;
 }
@@ -423,33 +401,32 @@ export function getSession(sessionId: string): OAuthSession | undefined {
 /**
  * Get access token from session (used for /oauth-api/v1/* calls)
  */
-export function getAccessTokenFromSession(sessionId: string): string | undefined {
-  return getSession(sessionId)?.accessToken;
+export async function getAccessTokenFromSession(sessionId: string): Promise<string | null> {
+  const session = await getSession(sessionId);
+  return session?.accessToken ?? null;
 }
 
 /**
  * Delete session (logout)
  */
-export function deleteSession(sessionId: string): void {
-  sessions.delete(sessionId);
+export async function deleteSession(sessionId: string): Promise<void> {
+  const store = getStore();
+  await store.delete(PREFIXES.SESSION + sessionId);
 }
 
 /**
  * Get OAuth Authorization Server Metadata (RFC 8414)
- * Includes DCR endpoint for Claude Desktop support
  */
 export function getAuthorizationServerMetadata(config: OAuthConfig): object {
   return {
     issuer: config.issuer,
     authorization_endpoint: `${config.issuer}/oauth/authorize`,
     token_endpoint: `${config.issuer}/oauth/token`,
-    // DCR endpoint (RFC 7591) - required for Claude Desktop
     registration_endpoint: `${config.issuer}/oauth/register`,
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code"],
     code_challenge_methods_supported: ["S256"],
     token_endpoint_auth_methods_supported: ["none"],
-    // MCP-specific metadata (RFC 9728)
     service_documentation: "https://github.com/digitalsamba/embedded-api-mcp-server",
   };
 }
@@ -457,13 +434,15 @@ export function getAuthorizationServerMetadata(config: OAuthConfig): object {
 /**
  * Get registered client count
  */
-export function getRegisteredClientCount(): number {
-  return registeredClients.size;
+export async function getRegisteredClientCount(): Promise<number> {
+  const store = getStore();
+  return store.size(PREFIXES.CLIENT);
 }
 
 /**
  * Get active session count
  */
-export function getActiveSessionCount(): number {
-  return sessions.size;
+export async function getActiveSessionCount(): Promise<number> {
+  const store = getStore();
+  return store.size(PREFIXES.SESSION);
 }

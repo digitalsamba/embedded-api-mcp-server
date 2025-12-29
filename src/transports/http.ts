@@ -54,7 +54,7 @@ const transports: Map<string, StreamableHTTPServerTransport> = new Map();
  * Supports both direct API keys and OAuth session tokens
  */
 function authMiddleware(requireAuth: boolean) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     // Skip auth for health check, server info (GET only), and OAuth endpoints
     // POST/DELETE to "/" is the MCP endpoint and requires auth
     if (
@@ -107,14 +107,14 @@ function authMiddleware(requireAuth: boolean) {
         sessionId = token.substring(6);
       } else {
         // Try to use token directly as session ID (Claude Desktop DCR flow)
-        const directSession = getAccessTokenFromSession(token);
+        const directSession = await getAccessTokenFromSession(token);
         if (directSession) {
           sessionId = token;
         }
       }
 
       if (sessionId) {
-        const accessToken = getAccessTokenFromSession(sessionId);
+        const accessToken = await getAccessTokenFromSession(sessionId);
 
         if (!accessToken) {
           res.status(401).json({
@@ -180,14 +180,14 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
   app.use(authMiddleware(requireAuth));
 
   // Health check endpoint
-  app.get("/health", (_req, res) => {
+  app.get("/health", async (_req, res) => {
     res.json({
       status: "ok",
       version: VERSION,
       transport: "http",
       activeSessions: transports.size,
-      oauthSessions: getActiveSessionCount(),
-      registeredClients: getRegisteredClientCount(),
+      oauthSessions: await getActiveSessionCount(),
+      registeredClients: await getRegisteredClientCount(),
     });
   });
 
@@ -213,7 +213,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     // Dynamic Client Registration (DCR) - RFC 7591
     // Claude Desktop registers itself as an OAuth client
     // =========================================================================
-    app.post("/oauth/register", (req, res) => {
+    app.post("/oauth/register", async (req, res) => {
       const { client_name, redirect_uris, grant_types, response_types, token_endpoint_auth_method } =
         req.body;
 
@@ -226,7 +226,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       }
 
       try {
-        const client = registerClient({
+        const client = await registerClient({
           client_name,
           redirect_uris,
           grant_types,
@@ -259,7 +259,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     // OAuth authorize - Accept client request, redirect to DS Passport
     // Claude calls this with its client_id and redirect_uri
     // =========================================================================
-    app.get("/oauth/authorize", (req, res) => {
+    app.get("/oauth/authorize", async (req, res) => {
       const {
         client_id,
         redirect_uri,
@@ -279,7 +279,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       }
 
       // Validate the client exists
-      const client = getRegisteredClient(client_id as string);
+      const client = await getRegisteredClient(client_id as string);
       if (!client) {
         res.status(400).json({
           error: "invalid_client",
@@ -289,7 +289,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       }
 
       // Validate redirect_uri is registered for this client
-      if (!validateRedirectUri(client_id as string, redirect_uri as string)) {
+      if (!(await validateRedirectUri(client_id as string, redirect_uri as string))) {
         res.status(400).json({
           error: "invalid_request",
           error_description: "redirect_uri not registered for this client",
@@ -301,7 +301,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       const ourState = generateState();
 
       // Store the client's request so we can redirect back after DS auth
-      storePendingClientAuth(
+      await storePendingClientAuth(
         ourState,
         client_id as string,
         redirect_uri as string,
@@ -311,7 +311,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       );
 
       // Redirect to DS Passport for actual authentication
-      const authUrl = buildAuthorizationUrl(oauthConfig, ourState);
+      const authUrl = await buildAuthorizationUrl(oauthConfig, ourState);
 
       logger.info(
         `OAuth: Client ${(client_id as string).substring(0, 8)}... -> DS Passport (state: ${ourState.substring(0, 8)}...)`
@@ -343,7 +343,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       }
 
       // Get the pending client authorization
-      const pendingClient = getPendingClientAuth(state as string);
+      const pendingClient = await getPendingClientAuth(state as string);
 
       if (!pendingClient) {
         // No pending client auth - this might be a direct/legacy flow
@@ -378,7 +378,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
         const dsTokens = await exchangeCodeForTokens(oauthConfig, code as string, state as string);
 
         // Create an authorization code for the client (Claude)
-        const clientCode = createAuthorizationCode(
+        const clientCode = await createAuthorizationCode(
           pendingClient.clientId,
           pendingClient.redirectUri,
           dsTokens.access_token,
@@ -416,7 +416,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     // OAuth token endpoint - Exchange authorization code for access token
     // Claude calls this after receiving the code at its callback
     // =========================================================================
-    app.post("/oauth/token", (req, res) => {
+    app.post("/oauth/token", async (req, res) => {
       const { grant_type, code, client_id, redirect_uri, code_verifier } = req.body;
 
       if (grant_type !== "authorization_code") {
@@ -435,7 +435,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
         return;
       }
 
-      const tokens = exchangeAuthorizationCode(
+      const tokens = await exchangeAuthorizationCode(
         code as string,
         client_id as string,
         redirect_uri as string,

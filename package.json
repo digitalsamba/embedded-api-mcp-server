@@ -55,6 +55,7 @@
     "@modelcontextprotocol/sdk": "^1.25.1",
     "dotenv": "^16.5.0",
     "express": "^5.2.1",
+    "ioredis": "^5.8.2",
     "zod": "^4.2.1"
   },
   "devDependencies": {
