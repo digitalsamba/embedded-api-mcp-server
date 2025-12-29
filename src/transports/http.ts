@@ -21,6 +21,16 @@ import {
   getAuthorizationServerMetadata,
   getAccessTokenFromSession,
   getActiveSessionCount,
+  // DCR functions
+  registerClient,
+  getRegisteredClient,
+  validateRedirectUri,
+  storePendingClientAuth,
+  getPendingClientAuth,
+  createAuthorizationCode,
+  exchangeAuthorizationCode,
+  exchangeCodeForTokens,
+  getRegisteredClientCount,
   type OAuthConfig,
 } from "../oauth.js";
 
@@ -90,9 +100,20 @@ function authMiddleware(requireAuth: boolean) {
       }
 
       // Check if this is an OAuth session token
+      // Support both prefixed (oauth:xxx) and direct session IDs (from Claude Desktop DCR flow)
+      let sessionId: string | null = null;
       if (token.startsWith("oauth:")) {
-        const oauthSessionId = token.substring(6);
-        const accessToken = getAccessTokenFromSession(oauthSessionId);
+        sessionId = token.substring(6);
+      } else {
+        // Try to use token directly as session ID (Claude Desktop DCR flow)
+        const directSession = getAccessTokenFromSession(token);
+        if (directSession) {
+          sessionId = token;
+        }
+      }
+
+      if (sessionId) {
+        const accessToken = getAccessTokenFromSession(sessionId);
 
         if (!accessToken) {
           res.status(401).json({
@@ -109,8 +130,8 @@ function authMiddleware(requireAuth: boolean) {
         // Use the OAuth access token directly with /oauth-api/v1/* endpoints
         (req as any).apiKey = accessToken;
         (req as any).isOAuthSession = true; // Flag to use OAuth API URL
-        (req as any).oauthSessionId = oauthSessionId;
-        logger.debug(`OAuth session authenticated: ${oauthSessionId.substring(0, 8)}...`);
+        (req as any).oauthSessionId = sessionId;
+        logger.debug(`OAuth session authenticated: ${sessionId.substring(0, 8)}...`);
       } else {
         // Direct API key (legacy mode) - uses /api/v1/*
         (req as any).apiKey = token;
@@ -164,6 +185,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       transport: "http",
       activeSessions: transports.size,
       oauthSessions: getActiveSessionCount(),
+      registeredClients: getRegisteredClientCount(),
     });
   });
 
@@ -206,21 +228,124 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       });
     });
 
-    // OAuth authorize - redirect to DS Passport
-    app.get("/oauth/authorize", (req, res) => {
-      const state = generateState();
-      const authUrl = buildAuthorizationUrl(oauthConfig, state);
+    // =========================================================================
+    // Dynamic Client Registration (DCR) - RFC 7591
+    // Claude Desktop registers itself as an OAuth client
+    // =========================================================================
+    app.post("/oauth/register", (req, res) => {
+      const { client_name, redirect_uris, grant_types, response_types, token_endpoint_auth_method } =
+        req.body;
 
-      logger.info(`OAuth: Redirecting to DS Passport (state: ${state.substring(0, 8)}...)`);
+      if (!redirect_uris || !Array.isArray(redirect_uris) || redirect_uris.length === 0) {
+        res.status(400).json({
+          error: "invalid_client_metadata",
+          error_description: "redirect_uris is required and must be a non-empty array",
+        });
+        return;
+      }
+
+      try {
+        const client = registerClient({
+          client_name,
+          redirect_uris,
+          grant_types,
+          response_types,
+          token_endpoint_auth_method,
+        });
+
+        logger.info(`DCR: Client registered - ${client.client_name}`);
+
+        // Return client credentials per RFC 7591
+        res.status(201).json({
+          client_id: client.client_id,
+          client_secret: client.client_secret,
+          client_name: client.client_name,
+          redirect_uris: client.redirect_uris,
+          grant_types: client.grant_types,
+          response_types: client.response_types,
+          token_endpoint_auth_method: client.token_endpoint_auth_method,
+        });
+      } catch (err: any) {
+        logger.error(`DCR error: ${err.message}`);
+        res.status(500).json({
+          error: "server_error",
+          error_description: err.message,
+        });
+      }
+    });
+
+    // =========================================================================
+    // OAuth authorize - Accept client request, redirect to DS Passport
+    // Claude calls this with its client_id and redirect_uri
+    // =========================================================================
+    app.get("/oauth/authorize", (req, res) => {
+      const {
+        client_id,
+        redirect_uri,
+        response_type,
+        state: clientState,
+        code_challenge,
+        code_challenge_method,
+      } = req.query;
+
+      // Validate required parameters
+      if (!client_id || !redirect_uri || response_type !== "code") {
+        res.status(400).json({
+          error: "invalid_request",
+          error_description: "Missing required parameters: client_id, redirect_uri, response_type=code",
+        });
+        return;
+      }
+
+      // Validate the client exists
+      const client = getRegisteredClient(client_id as string);
+      if (!client) {
+        res.status(400).json({
+          error: "invalid_client",
+          error_description: "Unknown client_id. Register via /oauth/register first.",
+        });
+        return;
+      }
+
+      // Validate redirect_uri is registered for this client
+      if (!validateRedirectUri(client_id as string, redirect_uri as string)) {
+        res.status(400).json({
+          error: "invalid_request",
+          error_description: "redirect_uri not registered for this client",
+        });
+        return;
+      }
+
+      // Generate our state for DS Passport flow
+      const ourState = generateState();
+
+      // Store the client's request so we can redirect back after DS auth
+      storePendingClientAuth(
+        ourState,
+        client_id as string,
+        redirect_uri as string,
+        code_challenge as string | undefined,
+        code_challenge_method as string | undefined,
+        clientState as string | undefined
+      );
+
+      // Redirect to DS Passport for actual authentication
+      const authUrl = buildAuthorizationUrl(oauthConfig, ourState);
+
+      logger.info(
+        `OAuth: Client ${(client_id as string).substring(0, 8)}... -> DS Passport (state: ${ourState.substring(0, 8)}...)`
+      );
       res.redirect(authUrl);
     });
 
-    // OAuth callback - handle code exchange
+    // =========================================================================
+    // OAuth callback - Handle DS Passport return, redirect to client (Claude)
+    // =========================================================================
     app.get("/oauth/callback", async (req, res) => {
       const { code, state, error, error_description } = req.query;
 
       if (error) {
-        logger.error(`OAuth error: ${error} - ${error_description}`);
+        logger.error(`OAuth DS error: ${error} - ${error_description}`);
         res.status(400).json({
           error: error as string,
           error_description: error_description as string,
@@ -231,44 +356,126 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       if (!code || !state) {
         res.status(400).json({
           error: "invalid_request",
-          error_description: "Missing code or state parameter",
+          error_description: "Missing code or state parameter from DS Passport",
         });
         return;
       }
 
+      // Get the pending client authorization
+      const pendingClient = getPendingClientAuth(state as string);
+
+      if (!pendingClient) {
+        // No pending client auth - this might be a direct/legacy flow
+        // Fall back to the old behavior for backwards compatibility
+        try {
+          const { sessionId } = await completeOAuthFlow(oauthConfig, code as string, state as string);
+
+          logger.info(`OAuth (legacy): Session created (${sessionId.substring(0, 8)}...)`);
+
+          res.json({
+            success: true,
+            message: "Authentication successful",
+            session_id: sessionId,
+            usage: {
+              header: "Authorization",
+              format: `Bearer oauth:${sessionId}`,
+              example: `curl -H "Authorization: Bearer oauth:${sessionId}" ${oauthConfig.issuer}/mcp`,
+            },
+          });
+        } catch (err: any) {
+          logger.error(`OAuth callback error: ${err.message}`);
+          res.status(400).json({
+            error: "oauth_error",
+            error_description: err.message,
+          });
+        }
+        return;
+      }
+
+      // Exchange DS code for DS tokens
       try {
-        const { sessionId } = await completeOAuthFlow(
-          oauthConfig,
-          code as string,
-          state as string
+        const dsTokens = await exchangeCodeForTokens(oauthConfig, code as string, state as string);
+
+        // Create an authorization code for the client (Claude)
+        const clientCode = createAuthorizationCode(
+          pendingClient.clientId,
+          pendingClient.redirectUri,
+          dsTokens.access_token,
+          dsTokens.refresh_token,
+          pendingClient.codeChallenge,
+          pendingClient.codeChallengeMethod
         );
 
-        logger.info(`OAuth: Session created (${sessionId.substring(0, 8)}...)`);
+        // Build redirect URL back to client (Claude)
+        const redirectUrl = new URL(pendingClient.redirectUri);
+        redirectUrl.searchParams.set("code", clientCode);
+        if (pendingClient.state) {
+          redirectUrl.searchParams.set("state", pendingClient.state);
+        }
 
-        // Return session info to the client
-        // The access token will be used directly with /oauth-api/v1/* endpoints
-        res.json({
-          success: true,
-          message: "Authentication successful",
-          session_id: sessionId,
-          // Include instructions for using the session
-          usage: {
-            header: "Authorization",
-            format: `Bearer oauth:${sessionId}`,
-            example: `curl -H "Authorization: Bearer oauth:${sessionId}" https://mcp.digitalsamba.com/mcp`,
-            note: "Your OAuth token will be used with /oauth-api/v1/* endpoints",
-          },
-        });
+        logger.info(
+          `OAuth: DS auth complete, redirecting to client (${pendingClient.clientId.substring(0, 8)}...)`
+        );
+        res.redirect(redirectUrl.toString());
       } catch (err: any) {
         logger.error(`OAuth callback error: ${err.message}`);
-        res.status(400).json({
-          error: "oauth_error",
-          error_description: err.message,
-        });
+
+        // Redirect to client with error
+        const redirectUrl = new URL(pendingClient.redirectUri);
+        redirectUrl.searchParams.set("error", "server_error");
+        redirectUrl.searchParams.set("error_description", err.message);
+        if (pendingClient.state) {
+          redirectUrl.searchParams.set("state", pendingClient.state);
+        }
+        res.redirect(redirectUrl.toString());
       }
     });
 
-    logger.info("OAuth endpoints enabled");
+    // =========================================================================
+    // OAuth token endpoint - Exchange authorization code for access token
+    // Claude calls this after receiving the code at its callback
+    // =========================================================================
+    app.post("/oauth/token", (req, res) => {
+      const { grant_type, code, client_id, redirect_uri, code_verifier } = req.body;
+
+      if (grant_type !== "authorization_code") {
+        res.status(400).json({
+          error: "unsupported_grant_type",
+          error_description: "Only authorization_code grant is supported",
+        });
+        return;
+      }
+
+      if (!code || !client_id || !redirect_uri) {
+        res.status(400).json({
+          error: "invalid_request",
+          error_description: "Missing required parameters: code, client_id, redirect_uri",
+        });
+        return;
+      }
+
+      const tokens = exchangeAuthorizationCode(
+        code as string,
+        client_id as string,
+        redirect_uri as string,
+        code_verifier as string | undefined
+      );
+
+      if (!tokens) {
+        res.status(400).json({
+          error: "invalid_grant",
+          error_description: "Invalid, expired, or already-used authorization code",
+        });
+        return;
+      }
+
+      logger.info(`OAuth: Token issued for client ${(client_id as string).substring(0, 8)}...`);
+
+      // Return tokens per OAuth 2.0 spec
+      res.json(tokens);
+    });
+
+    logger.info("OAuth endpoints enabled (with DCR support)");
   }
 
   // MCP POST handler - main request handler

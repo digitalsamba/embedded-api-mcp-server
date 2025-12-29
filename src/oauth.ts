@@ -47,6 +47,227 @@ const sessions: Map<string, OAuthSession> = new Map();
 // PKCE code verifiers (temporary storage during auth flow)
 const codeVerifiers: Map<string, string> = new Map();
 
+// Pending authorization requests (state -> client request info)
+// Used to track the original client request while user authenticates with DS
+interface PendingClientAuth {
+  clientId: string;
+  redirectUri: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: string;
+  state?: string; // Original state from client
+  createdAt: number;
+}
+const pendingClientAuths: Map<string, PendingClientAuth> = new Map();
+
+/**
+ * Store pending client authorization (before DS redirect)
+ */
+export function storePendingClientAuth(
+  ourState: string,
+  clientId: string,
+  redirectUri: string,
+  codeChallenge?: string,
+  codeChallengeMethod?: string,
+  clientState?: string
+): void {
+  pendingClientAuths.set(ourState, {
+    clientId,
+    redirectUri,
+    codeChallenge,
+    codeChallengeMethod,
+    state: clientState,
+    createdAt: Date.now(),
+  });
+
+  // Clean up after 10 minutes
+  setTimeout(() => pendingClientAuths.delete(ourState), 10 * 60 * 1000);
+}
+
+/**
+ * Get and remove pending client authorization
+ */
+export function getPendingClientAuth(ourState: string): PendingClientAuth | undefined {
+  const pending = pendingClientAuths.get(ourState);
+  if (pending) {
+    pendingClientAuths.delete(ourState);
+  }
+  return pending;
+}
+
+// ============================================================================
+// Dynamic Client Registration (DCR) - RFC 7591
+// Claude Desktop registers itself as an OAuth client
+// ============================================================================
+
+export interface RegisteredClient {
+  client_id: string;
+  client_secret?: string;
+  client_name?: string;
+  redirect_uris: string[];
+  grant_types: string[];
+  response_types: string[];
+  token_endpoint_auth_method: string;
+  created_at: number;
+}
+
+// Registered OAuth clients (in-memory, replace with persistent storage)
+const registeredClients: Map<string, RegisteredClient> = new Map();
+
+// Authorization codes pending exchange (code -> { client_id, redirect_uri, dsToken, ... })
+interface PendingAuth {
+  clientId: string;
+  redirectUri: string;
+  dsAccessToken: string;
+  dsRefreshToken?: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: string;
+  expiresAt: number;
+}
+const pendingAuths: Map<string, PendingAuth> = new Map();
+
+/**
+ * Register a new OAuth client (DCR - RFC 7591)
+ */
+export function registerClient(request: {
+  client_name?: string;
+  redirect_uris: string[];
+  grant_types?: string[];
+  response_types?: string[];
+  token_endpoint_auth_method?: string;
+}): RegisteredClient {
+  const clientId = randomBytes(16).toString("hex");
+  const clientSecret = randomBytes(32).toString("hex");
+
+  const client: RegisteredClient = {
+    client_id: clientId,
+    client_secret: clientSecret,
+    client_name: request.client_name || "Unknown Client",
+    redirect_uris: request.redirect_uris || [],
+    grant_types: request.grant_types || ["authorization_code"],
+    response_types: request.response_types || ["code"],
+    token_endpoint_auth_method: request.token_endpoint_auth_method || "none",
+    created_at: Date.now(),
+  };
+
+  registeredClients.set(clientId, client);
+  logger.info(`DCR: Registered new client '${client.client_name}' (${clientId.substring(0, 8)}...)`);
+
+  return client;
+}
+
+/**
+ * Get a registered client by ID
+ */
+export function getRegisteredClient(clientId: string): RegisteredClient | undefined {
+  return registeredClients.get(clientId);
+}
+
+/**
+ * Validate redirect URI for a client
+ */
+export function validateRedirectUri(clientId: string, redirectUri: string): boolean {
+  const client = registeredClients.get(clientId);
+  if (!client) return false;
+  return client.redirect_uris.includes(redirectUri);
+}
+
+/**
+ * Create an authorization code for later exchange
+ */
+export function createAuthorizationCode(
+  clientId: string,
+  redirectUri: string,
+  dsAccessToken: string,
+  dsRefreshToken?: string,
+  codeChallenge?: string,
+  codeChallengeMethod?: string
+): string {
+  const code = randomBytes(32).toString("hex");
+
+  pendingAuths.set(code, {
+    clientId,
+    redirectUri,
+    dsAccessToken,
+    dsRefreshToken,
+    codeChallenge,
+    codeChallengeMethod,
+    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+  });
+
+  // Clean up after expiry
+  setTimeout(() => pendingAuths.delete(code), 10 * 60 * 1000);
+
+  return code;
+}
+
+/**
+ * Exchange authorization code for tokens (called by Claude)
+ */
+export function exchangeAuthorizationCode(
+  code: string,
+  clientId: string,
+  redirectUri: string,
+  codeVerifier?: string
+): { access_token: string; token_type: string; expires_in: number } | null {
+  const pending = pendingAuths.get(code);
+
+  if (!pending) {
+    logger.warn("Token exchange: Invalid or expired code");
+    return null;
+  }
+
+  if (pending.expiresAt < Date.now()) {
+    pendingAuths.delete(code);
+    logger.warn("Token exchange: Code expired");
+    return null;
+  }
+
+  if (pending.clientId !== clientId) {
+    logger.warn("Token exchange: Client ID mismatch");
+    return null;
+  }
+
+  if (pending.redirectUri !== redirectUri) {
+    logger.warn("Token exchange: Redirect URI mismatch");
+    return null;
+  }
+
+  // Verify PKCE if code_challenge was provided
+  if (pending.codeChallenge && pending.codeChallengeMethod === "S256") {
+    if (!codeVerifier) {
+      logger.warn("Token exchange: Missing code_verifier");
+      return null;
+    }
+    const expectedChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
+    if (expectedChallenge !== pending.codeChallenge) {
+      logger.warn("Token exchange: PKCE verification failed");
+      return null;
+    }
+  }
+
+  // Clean up used code
+  pendingAuths.delete(code);
+
+  // Create session with DS token
+  const sessionId = randomBytes(32).toString("hex");
+  const session: OAuthSession = {
+    accessToken: pending.dsAccessToken,
+    refreshToken: pending.dsRefreshToken,
+    expiresAt: Date.now() + 3600 * 1000, // 1 hour
+  };
+  sessions.set(sessionId, session);
+
+  logger.info(`Token exchange successful, session: ${sessionId.substring(0, 8)}...`);
+
+  // Return a token that references our session
+  // Claude will use this in the Authorization header
+  return {
+    access_token: sessionId, // Claude will send this as Bearer token
+    token_type: "Bearer",
+    expires_in: 3600,
+  };
+}
+
 /**
  * Load OAuth configuration from environment
  */
@@ -215,12 +436,15 @@ export function deleteSession(sessionId: string): void {
 
 /**
  * Get OAuth Authorization Server Metadata (RFC 8414)
+ * Includes DCR endpoint for Claude Desktop support
  */
 export function getAuthorizationServerMetadata(config: OAuthConfig): object {
   return {
     issuer: config.issuer,
     authorization_endpoint: `${config.issuer}/oauth/authorize`,
     token_endpoint: `${config.issuer}/oauth/token`,
+    // DCR endpoint (RFC 7591) - required for Claude Desktop
+    registration_endpoint: `${config.issuer}/oauth/register`,
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code"],
     code_challenge_methods_supported: ["S256"],
@@ -228,6 +452,13 @@ export function getAuthorizationServerMetadata(config: OAuthConfig): object {
     // MCP-specific metadata (RFC 9728)
     service_documentation: "https://github.com/digitalsamba/embedded-api-mcp-server",
   };
+}
+
+/**
+ * Get registered client count
+ */
+export function getRegisteredClientCount(): number {
+  return registeredClients.size;
 }
 
 /**
