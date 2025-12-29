@@ -92,20 +92,22 @@ import {
 
 import { VERSION, VERSION_INFO } from "./version.js";
 
-// API client instance cache
+// API client instance cache - keyed by apiKey:apiUrl to support different URLs per session
 let apiClientCache: Map<string, DigitalSambaApiClient> = new Map();
 
 /**
- * Get or create API client with the provided API key
+ * Get or create API client with the provided API key and URL
+ *
+ * Uses composite cache key (apiKey:apiUrl) to ensure OAuth sessions
+ * get clients with the correct /oauth-api/v1/* URL while direct API key
+ * sessions get clients with /api/v1/* URL.
  */
-function getApiClient(apiKey: string): DigitalSambaApiClient {
-  if (!apiClientCache.has(apiKey)) {
-    const baseUrl =
-      process.env.DIGITAL_SAMBA_API_URL ||
-      "https://api.digitalsamba.com/api/v1";
-    apiClientCache.set(apiKey, new DigitalSambaApiClient(apiKey, baseUrl));
+function getApiClient(apiKey: string, apiUrl: string): DigitalSambaApiClient {
+  const cacheKey = `${apiKey}:${apiUrl}`;
+  if (!apiClientCache.has(cacheKey)) {
+    apiClientCache.set(cacheKey, new DigitalSambaApiClient(apiKey, apiUrl));
   }
-  return apiClientCache.get(apiKey)!;
+  return apiClientCache.get(cacheKey)!;
 }
 
 /**
@@ -178,7 +180,7 @@ export function createServer(config: ServerConfig = {}): Server {
     const apiKey = getApiKey();
     let client = null;
     if (apiKey) {
-      client = getApiClient(apiKey);
+      client = getApiClient(apiKey, apiUrl);
     }
 
     return {
@@ -203,7 +205,7 @@ export function createServer(config: ServerConfig = {}): Server {
       );
     }
 
-    const client = getApiClient(apiKey);
+    const client = getApiClient(apiKey, apiUrl);
     const { uri } = request.params;
 
     logger.debug(`Reading resource: ${uri}`);
@@ -276,7 +278,7 @@ export function createServer(config: ServerConfig = {}): Server {
       );
     }
 
-    const client = getApiClient(apiKey);
+    const client = getApiClient(apiKey, apiUrl);
     const { name, arguments: args } = request.params;
 
     logger.debug(`Executing tool: ${name}`);
