@@ -2228,7 +2228,7 @@ describe('DigitalSambaApiClient', () => {
       const result = await client.getSessionStatistics('session-123', 'participants');
       
       expect(global.fetch).toHaveBeenCalledWith(
-        `${mockApiUrl}/sessions/session-123?metrics=participants`,
+        `${mockApiUrl}/sessions/session-123/statistics?metrics=participants`,
         expect.any(Object)
       );
       expect(result).toEqual(mockStats);

@@ -297,7 +297,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     {
       name: "create-webapp",
       description:
-        '[Content Library] Create a webapp/web application entry in library. Use when users say: "create webapp", "add web app", "create web application", "add webapp to library". Requires libraryId and name. Optional folderId. For embedding web content.',
+        '[Content Library] Create a webapp/web application entry in library. Use when users say: "create webapp", "add web app", "create web application", "add webapp to library". Requires libraryId and url. Optional name and folderId. For embedding web content from YouTube, Vimeo, Miro, Google Docs, etc.',
       annotations: getToolAnnotations("create-webapp"),
       inputSchema: {
         type: "object",
@@ -306,16 +306,20 @@ export function registerLibraryTools(): ToolDefinition[] {
             type: "string",
             description: "The ID of the library",
           },
+          url: {
+            type: "string",
+            description: "The URL of the web content to embed (e.g., YouTube, Vimeo, Miro, Google Docs)",
+          },
           name: {
             type: "string",
-            description: "Name of the webapp",
+            description: "Name of the webapp (optional)",
           },
           folderId: {
             type: "string",
             description: "Folder ID to place the webapp in",
           },
         },
-        required: ["libraryId", "name"],
+        required: ["libraryId", "url"],
       },
     },
     {
@@ -1518,10 +1522,10 @@ async function handleGetFileLinks(
  * Handle create webapp
  */
 async function handleCreateWebapp(
-  params: { libraryId: string; name: string; folderId?: string },
+  params: { libraryId: string; url: string; name?: string; folderId?: string },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { libraryId, name, folderId } = params;
+  const { libraryId, url, name, folderId } = params;
 
   if (!libraryId || libraryId.trim() === "") {
     return {
@@ -1535,43 +1539,50 @@ async function handleCreateWebapp(
     };
   }
 
-  if (!name || name.trim() === "") {
+  if (!url || url.trim() === "") {
     return {
       content: [
         {
           type: "text",
-          text: "Webapp name is required.",
+          text: "URL is required to create a webapp.",
         },
       ],
       isError: true,
     };
   }
 
-  logger.info("Creating webapp", { libraryId, name, folderId });
+  logger.info("Creating webapp", { libraryId, url, name, folderId });
 
   try {
-    const webappData: any = { name };
+    const webappData: { url: string; name?: string; folder_id?: string } = { url };
+    if (name !== undefined) webappData.name = name;
     if (folderId !== undefined) webappData.folder_id = folderId;
 
     const result = await apiClient.createWebapp(libraryId, webappData);
+
+    const displayName = name || result.file_name || url;
+    const expiresAt = result.expiration_timestamp
+      ? new Date(result.expiration_timestamp * 1000).toISOString()
+      : "Unknown";
 
     return {
       content: [
         {
           type: "text",
           text:
-            `Successfully created webapp "${name}" in library ${libraryId}.\n` +
+            `Successfully created webapp "${displayName}" in library ${libraryId}.\n` +
             `Webapp ID: ${result.file_id}\n` +
+            `URL: ${url}\n` +
             `Upload URL: ${result.external_storage_url}\n` +
             `Upload Token: ${result.token}\n` +
-            `Token expires at: ${new Date(result.expiration_timestamp * 1000).toISOString()}`,
+            `Token expires at: ${expiresAt}`,
         },
       ],
     };
   } catch (error) {
     logger.error("Error creating webapp", {
       libraryId,
-      name,
+      url,
       error: error instanceof Error ? error.message : String(error),
     });
 
@@ -1638,6 +1649,10 @@ async function handleCreateWhiteboard(
 
     const result = await apiClient.createWhiteboard(libraryId, whiteboardData);
 
+    const expiresAt = result.expiration_timestamp
+      ? new Date(result.expiration_timestamp * 1000).toISOString()
+      : "Unknown";
+
     return {
       content: [
         {
@@ -1647,7 +1662,7 @@ async function handleCreateWhiteboard(
             `Whiteboard ID: ${result.file_id}\n` +
             `Upload URL: ${result.external_storage_url}\n` +
             `Upload Token: ${result.token}\n` +
-            `Token expires at: ${new Date(result.expiration_timestamp * 1000).toISOString()}`,
+            `Token expires at: ${expiresAt}`,
         },
       ],
     };

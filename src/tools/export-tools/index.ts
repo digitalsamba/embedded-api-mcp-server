@@ -162,9 +162,34 @@ async function handleExportRecordingMetadata(
   params: { recordingId: string },
   exportResources: ExportResources,
 ): Promise<any> {
-  const uri = `digitalsamba://exports/recordings/${params.recordingId}`;
-  const result = await exportResources.handleResourceRequest(uri);
-  return { content: result.contents };
+  if (!params.recordingId || params.recordingId.trim() === "") {
+    return {
+      content: [
+        {
+          type: "text",
+          text: "Recording ID is required to export recording metadata.",
+        },
+      ],
+      isError: true,
+    };
+  }
+
+  try {
+    const uri = `digitalsamba://exports/recordings/${params.recordingId}`;
+    const result = await exportResources.handleResourceRequest(uri);
+    return { content: result.contents };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error exporting recording metadata: ${errorMessage}`,
+        },
+      ],
+      isError: true,
+    };
+  }
 }
 
 async function handleExportSessionSummary(

@@ -1212,7 +1212,7 @@ export class DigitalSambaApiClient {
     }
 
     const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
-    return this.request<SessionStatistics>(`/sessions/${sessionId}${query}`);
+    return this.request<SessionStatistics>(`/sessions/${sessionId}/statistics${query}`);
   }
 
   /**
@@ -1928,7 +1928,8 @@ export class DigitalSambaApiClient {
   async createWebapp(
     libraryId: string,
     settings: {
-      name: string;
+      url: string;
+      name?: string;
       folder_id?: string;
     },
   ): Promise<{
