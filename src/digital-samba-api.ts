@@ -1933,18 +1933,22 @@ export class DigitalSambaApiClient {
       folder_id?: string;
     },
   ): Promise<{
-    file_id: string;
-    file_name: string;
-    external_storage_url: string;
-    token: string;
-    expiration_timestamp: number;
+    id: string;
+    folder_id?: string;
+    name: string;
+    type: string;
+    url: string;
+    status: string;
+    created_at: string;
   }> {
     return this.request<{
-      file_id: string;
-      file_name: string;
-      external_storage_url: string;
-      token: string;
-      expiration_timestamp: number;
+      id: string;
+      folder_id?: string;
+      name: string;
+      type: string;
+      url: string;
+      status: string;
+      created_at: string;
     }>(`/libraries/${libraryId}/webapps`, {
       method: "POST",
       body: JSON.stringify(settings),
@@ -1963,18 +1967,26 @@ export class DigitalSambaApiClient {
       folder_id?: string;
     },
   ): Promise<{
-    file_id: string;
-    file_name: string;
-    external_storage_url: string;
-    token: string;
-    expiration_timestamp: number;
+    id: string;
+    folder_id?: string;
+    name: string;
+    type: string;
+    size: number;
+    storage_file_name: string;
+    storage_url: string;
+    status: string;
+    created_at: string;
   }> {
     return this.request<{
-      file_id: string;
-      file_name: string;
-      external_storage_url: string;
-      token: string;
-      expiration_timestamp: number;
+      id: string;
+      folder_id?: string;
+      name: string;
+      type: string;
+      size: number;
+      storage_file_name: string;
+      storage_url: string;
+      status: string;
+      created_at: string;
     }>(`/libraries/${libraryId}/whiteboards`, {
       method: "POST",
       body: JSON.stringify(settings),

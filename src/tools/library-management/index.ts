@@ -1560,22 +1560,17 @@ async function handleCreateWebapp(
 
     const result = await apiClient.createWebapp(libraryId, webappData);
 
-    const displayName = name || result.file_name || url;
-    const expiresAt = result.expiration_timestamp
-      ? new Date(result.expiration_timestamp * 1000).toISOString()
-      : "Unknown";
-
     return {
       content: [
         {
           type: "text",
           text:
-            `Successfully created webapp "${displayName}" in library ${libraryId}.\n` +
-            `Webapp ID: ${result.file_id}\n` +
-            `URL: ${url}\n` +
-            `Upload URL: ${result.external_storage_url}\n` +
-            `Upload Token: ${result.token}\n` +
-            `Token expires at: ${expiresAt}`,
+            `Successfully created webapp "${result.name}" in library ${libraryId}.\n` +
+            `Webapp ID: ${result.id}\n` +
+            `Type: ${result.type}\n` +
+            `URL: ${result.url}\n` +
+            `Status: ${result.status}\n` +
+            `Created: ${result.created_at}`,
         },
       ],
     };
@@ -1649,20 +1644,17 @@ async function handleCreateWhiteboard(
 
     const result = await apiClient.createWhiteboard(libraryId, whiteboardData);
 
-    const expiresAt = result.expiration_timestamp
-      ? new Date(result.expiration_timestamp * 1000).toISOString()
-      : "Unknown";
-
     return {
       content: [
         {
           type: "text",
           text:
-            `Successfully created whiteboard "${name}" in library ${libraryId}.\n` +
-            `Whiteboard ID: ${result.file_id}\n` +
-            `Upload URL: ${result.external_storage_url}\n` +
-            `Upload Token: ${result.token}\n` +
-            `Token expires at: ${expiresAt}`,
+            `Successfully created whiteboard "${result.name}" in library ${libraryId}.\n` +
+            `Whiteboard ID: ${result.id}\n` +
+            `Type: ${result.type}\n` +
+            `Storage URL: ${result.storage_url}\n` +
+            `Status: ${result.status}\n` +
+            `Created: ${result.created_at}`,
         },
       ],
     };
