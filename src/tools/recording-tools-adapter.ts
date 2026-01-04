@@ -160,6 +160,22 @@ export function registerRecordingTools(): Tool[] {
         required: ["recording_id"],
       },
     },
+    {
+      name: "get-recording-bookmarks",
+      description:
+        '[Recording Management] Get bookmarks for a recording. Use when users say: "get recording bookmarks", "show bookmarks", "list recording markers", "get recording highlights". Requires recording_id. Returns timestamps and labels of bookmarks added during recording.',
+      annotations: getToolAnnotations("get-recording-bookmarks"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          recording_id: {
+            type: "string",
+            description: "The ID of the recording",
+          },
+        },
+        required: ["recording_id"],
+      },
+    },
   ];
 }
 
@@ -269,6 +285,18 @@ export async function executeRecordingTool(
           {
             type: "text",
             text: JSON.stringify(downloadLink, null, 2),
+          },
+        ],
+      };
+    }
+
+    case "get-recording-bookmarks": {
+      const bookmarks = await client.getRecordingBookmarks(args.recording_id);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(bookmarks, null, 2),
           },
         ],
       };

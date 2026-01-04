@@ -885,6 +885,58 @@ export class DigitalSambaApiClient {
     });
   }
 
+  /**
+   * Raise participant's hand
+   */
+  async raiseParticipantHand(
+    roomId: string,
+    participantId: string,
+  ): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/participants/${participantId}/raise-hand`,
+      { method: "POST" },
+    );
+  }
+
+  /**
+   * Lower participant's hand
+   */
+  async lowerParticipantHand(
+    roomId: string,
+    participantId: string,
+  ): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/participants/${participantId}/lower-hand`,
+      { method: "POST" },
+    );
+  }
+
+  /**
+   * Raise phone participant's hand
+   */
+  async raisePhoneParticipantHand(
+    roomId: string,
+    callId: string,
+  ): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/phone-participants/${callId}/raise-hand`,
+      { method: "POST" },
+    );
+  }
+
+  /**
+   * Lower phone participant's hand
+   */
+  async lowerPhoneParticipantHand(
+    roomId: string,
+    callId: string,
+  ): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/phone-participants/${callId}/lower-hand`,
+      { method: "POST" },
+    );
+  }
+
   // Recordings
 
   /**
@@ -963,6 +1015,29 @@ export class DigitalSambaApiClient {
     return this.request<RecordingDownloadLink>(
       `/recordings/${recordingId}/download${query}`,
     );
+  }
+
+  /**
+   * Get bookmarks for a recording
+   */
+  async getRecordingBookmarks(
+    recordingId: string,
+  ): Promise<
+    Array<{
+      id: string;
+      timestamp: number;
+      label?: string;
+      created_at: string;
+    }>
+  > {
+    return this.request<
+      Array<{
+        id: string;
+        timestamp: number;
+        label?: string;
+        created_at: string;
+      }>
+    >(`/recordings/${recordingId}/bookmarks`);
   }
 
   /**
@@ -1374,6 +1449,133 @@ export class DigitalSambaApiClient {
     await this.request<void>(`/rooms/${roomId}/questions`, {
       method: "DELETE",
     });
+  }
+
+  // Transcripts
+
+  /**
+   * Get room transcripts (closed captioning data)
+   */
+  async getRoomTranscripts(
+    roomId: string,
+    params?: PaginationParams & {
+      session_id?: string;
+    },
+  ): Promise<
+    ApiResponse<{
+      id: string;
+      text: string;
+      participant_id: string;
+      participant_name: string;
+      session_id: string;
+      created_at: string;
+    }>
+  > {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+    return this.request<
+      ApiResponse<{
+        id: string;
+        text: string;
+        participant_id: string;
+        participant_name: string;
+        session_id: string;
+        created_at: string;
+      }>
+    >(`/rooms/${roomId}/transcripts${query}`);
+  }
+
+  /**
+   * Get session transcripts (closed captioning data)
+   */
+  async getSessionTranscripts(
+    sessionId: string,
+    params?: PaginationParams,
+  ): Promise<
+    ApiResponse<{
+      id: string;
+      text: string;
+      participant_id: string;
+      participant_name: string;
+      created_at: string;
+    }>
+  > {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+    return this.request<
+      ApiResponse<{
+        id: string;
+        text: string;
+        participant_id: string;
+        participant_name: string;
+        created_at: string;
+      }>
+    >(`/sessions/${sessionId}/transcripts${query}`);
+  }
+
+  /**
+   * Delete room transcripts
+   */
+  async deleteRoomTranscripts(roomId: string): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/transcripts`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Export room transcripts
+   */
+  async exportRoomTranscripts(
+    roomId: string,
+    options?: {
+      format?: "txt" | "json";
+    },
+  ): Promise<string> {
+    const queryParams = new URLSearchParams();
+    if (options) {
+      Object.entries(options).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+
+    const apiKey = this.getApiKey();
+    const response = await fetch(
+      `${this.apiBaseUrl}/rooms/${roomId}/transcripts/export${query}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Digital Samba API error (${response.status}): ${errorText}`,
+      );
+    }
+
+    return response.text();
   }
 
   // Polls
@@ -2324,5 +2526,31 @@ export class DigitalSambaApiClient {
         method: "POST",
       },
     );
+  }
+
+  /**
+   * Delete session recordings
+   */
+  async deleteSessionRecordings(sessionId: string): Promise<void> {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+
+    await this.request<void>(`/sessions/${sessionId}/recordings`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Delete session resources
+   */
+  async deleteSessionResources(sessionId: string): Promise<void> {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+
+    await this.request<void>(`/sessions/${sessionId}/resources`, {
+      method: "DELETE",
+    });
   }
 }
