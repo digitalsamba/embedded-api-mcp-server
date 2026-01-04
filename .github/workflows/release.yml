@@ -1,29 +1,30 @@
-# Production Release Workflow
-# 
-# This workflow handles production releases for the Digital Samba Embedded API MCP Server
-# It triggers on version tags (e.g., v0.0.1 or 0.0.1) and performs:
-# - Full test suite across multiple Node versions
-# - Security audit
-# - Build verification
-# - NPM publishing
-# - GitHub release creation with changelog
+# ARCHIVED - npm Release Workflow
 #
-# Required secrets:
-# - NPM_TOKEN: NPM automation token for publishing
+# ⚠️ DEPRECATED: This workflow is no longer used.
+# The npm package has been deprecated in favor of the hosted remote MCP server.
+# See: https://mcp.digitalsamba.com
 #
-# Status badges:
-# - Release: ![Release](https://github.com/digitalsamba/embedded-api-mcp-server/workflows/Release/badge.svg)
-# - NPM Version: ![npm version](https://img.shields.io/npm/v/@digitalsamba/embedded-api-mcp-server.svg)
-# - NPM Downloads: ![npm downloads](https://img.shields.io/npm/dm/@digitalsamba/embedded-api-mcp-server.svg)
+# This workflow previously handled npm publishing.
+# Kept for reference only - DO NOT RE-ENABLE.
+#
+# For production deployments of the remote MCP server, a new workflow will be created.
 
-name: Release
+name: "[ARCHIVED] npm Release"
 
+# DISABLED - Changed to manual-only with confirmation required
 on:
-  push:
-    tags:
-      # Matches tags like v0.0.1, v1.2.3, 0.0.1, 1.2.3
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'This workflow is deprecated. Type CONFIRM to run anyway.'
+        required: true
+
+# Original triggers (disabled):
+# on:
+#   push:
+#     tags:
+#       - 'v[0-9]+.[0-9]+.[0-9]+'
+#       - '[0-9]+.[0-9]+.[0-9]+'
 
 # Cancel any in-progress runs for the same tag
 concurrency:
@@ -31,8 +32,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Check if user confirmed they want to run deprecated workflow
+  confirm-deprecated:
+    name: Confirm Deprecated Workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "CONFIRM" ]; then
+            echo "❌ This workflow is DEPRECATED."
+            echo "The npm package is no longer maintained."
+            echo "Use the remote MCP server at https://mcp.digitalsamba.com instead."
+            exit 1
+          fi
+          echo "⚠️ Running deprecated workflow as requested..."
+
   # Verify the tag is on the main branch
   verify-branch:
+    needs: confirm-deprecated
     name: Verify Release Branch
     runs-on: ubuntu-latest
     outputs:
