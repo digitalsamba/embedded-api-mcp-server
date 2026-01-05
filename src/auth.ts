@@ -11,11 +11,18 @@ import { AsyncLocalStorage } from "async_hooks";
 const apiKeyContext = new AsyncLocalStorage<string>();
 
 /**
- * Get developer key from environment or request
- * In stdio mode, we use the environment variable
+ * Get developer key from environment or request context
+ * Checks AsyncLocalStorage context first (for HTTP mode),
+ * then falls back to environment variable (for stdio mode)
  */
 export function getApiKeyFromRequest(_request: any): string | null {
-  // In stdio mode, we use the environment variable
+  // Check AsyncLocalStorage context first (set by HTTP transport)
+  const contextKey = apiKeyContext.getStore();
+  if (contextKey) {
+    return contextKey;
+  }
+
+  // Fall back to environment variable (stdio mode)
   return process.env.DIGITAL_SAMBA_DEVELOPER_KEY || null;
 }
 

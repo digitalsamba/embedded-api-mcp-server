@@ -1,403 +1,351 @@
-# Digital Samba Embedded API MCP Server
+# Digital Samba MCP Server
 
 <div align="center">
-  <img src="https://www.digitalsamba.com/hs-fs/hubfs/Digital%20Samba%20-%20video%20conferencing%20software%2c%20webinar%20software%2c%20virtual%20classroom%2c%20video%20api.png" alt="Digital Samba Logo" width="200"/>
-  
-  **Use your AI assistant to interact with the Digital Samba Embedded API**
+  <img src="https://dashboard.digitalsamba.com/logo.svg" alt="Digital Samba Logo" width="200"/>
 
-  [![npm version](https://img.shields.io/npm/v/@digitalsamba/embedded-api-mcp-server.svg)](https://www.npmjs.com/package/@digitalsamba/embedded-api-mcp-server)
+  **Control your Digital Samba video platform with AI assistants**
+
+  [![Server Status](https://img.shields.io/badge/server-operational-brightgreen)](https://mcp.digitalsamba.com)
+  [![MCP Protocol](https://img.shields.io/badge/MCP-1.0-blue)](https://modelcontextprotocol.io)
   [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-  [![Node.js Version](https://img.shields.io/node/v/@digitalsamba/embedded-api-mcp-server.svg)](https://nodejs.org)
-  [![Coverage](https://img.shields.io/badge/dynamic/json?color=brightgreen&label=coverage&query=%24.coverage&suffix=%25&url=https%3A%2F%2Fgist.githubusercontent.com%2FConalMullan%2F5a01cdacdacf18806bf019c71896621a%2Fraw%2Fcoverage.json)](https://github.com/digitalsamba/embedded-api-mcp-server/actions)
 
-  [Installation](#installation) • [Quick Start](#quick-start) • [Features](#features) • [API Reference](#api-reference)
+  [Quick Start](#quick-start) • [Features](#features) • [Setup Guides](#setup-guides) • [Tools Reference](#available-tools)
 </div>
 
 ---
 
 ## Overview
 
-The Digital Samba Embedded API MCP Server is a comprehensive Model Context Protocol server that enables AI assistants like Claude to interact with Digital Samba's Embedded API. With support for 102 tools and 38 resources covering 100+ API endpoints, it provides complete control over rooms, sessions, recordings, analytics, and more.
+The Digital Samba MCP Server lets you manage your video conferencing platform using natural language through AI assistants like Claude and ChatGPT. Create rooms, manage recordings, view analytics, and control live sessions—just by asking.
 
-## Features
+**Server URL:** `https://mcp.digitalsamba.com`
 
-### 🏠 **Room Management**
-- Create, update, and delete rooms
-- Generate secure access tokens
-- Manage default room settings
-
-### 📊 **Analytics & Reporting**
-- Team-wide usage statistics
-- Room and session analytics
-- Participant analytics and tracking
-- Custom period reporting
-
-### 🎥 **Recording Management**
-- List and manage recordings
-- Archive and unarchive recordings
-- Download recording links
-- Bulk recording operations
-
-### 👥 **Live Session Control**
-- Monitor rooms with active participants
-- View real-time participant lists
-- Check participant counts and session duration
-- Start/stop recording sessions
-- Start/stop transcription
-- End active sessions
-- Real-time session monitoring
-- Phone participant integration
-
-### 💬 **Communication Tools**
-- Poll creation and management
-- Session data deletion (chat, Q&A, transcripts, summaries)
-
-### 📚 **Content Library**
-- Create and manage libraries
-- Upload files and documents
-- Organize with folders
-- Create webapps and whiteboards
-- Bulk file operations
-- Move and copy operations
-
-### 🔐 **Role & Permission Management**
-- Create custom roles
-- Update role permissions
-- Delete roles
-- List available permissions
-
-### 🔔 **Webhook Management**
-- List available webhook events
-- Create and configure webhooks
-- Update webhook settings
-- Delete webhooks
-- View webhook details
-
-### 📤 **Export Capabilities**
-- Export chat history
-- Export Q&A sessions
-- Export transcripts
-- Export poll results
-
-## Installation
-
-```bash
-# Install globally
-npm install -g @digitalsamba/embedded-api-mcp-server
-
-# Or use directly with npx (recommended)
-npx @digitalsamba/embedded-api-mcp-server@latest --developer-key YOUR_DEVELOPER_KEY
-```
-
-## Quick Start
-
-### 1. Get Your Developer Key
-
-Sign up at [Digital Samba](https://dashboard.digitalsamba.com) and get your developer key from the dashboard.
-
-### 2. Configure Claude Desktop
-
-Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on Mac):
-
-```json
-{
-  "mcpServers": {
-    "digital-samba": {
-      "command": "npx",
-      "args": ["@digitalsamba/embedded-api-mcp-server@latest", "--developer-key", "YOUR_DEVELOPER_KEY"]
-    }
-  }
-}
-```
-
-### 3. Start Using
-
-Restart Claude Desktop and you can now:
+### What You Can Do
 
 ```
 "Create a meeting room for our team standup"
-"Show me analytics for yesterday's meetings"  
+"Show me analytics for yesterday's meetings"
 "List all recordings from last week"
 "Generate a join link for john@example.com"
 "Create a poll asking about meeting preferences"
 "Export the chat transcript from today's session"
-"Upload our presentation to the content library"
 ```
 
-## Available MCP Resources & Tools
+---
 
-The MCP server exposes Digital Samba API functionality through two types of interfaces: Resources provide read-only access to data (like listing rooms or viewing analytics), while Tools enable actions that modify data (like creating rooms or starting recordings). These are accessed via MCP URIs, not direct API endpoints. For more details on MCP resources and tools, see the [official MCP documentation](https://modelcontextprotocol.io/docs/concepts/resources).
+## Quick Start
 
-> **Note on AI Assistant Compatibility**: While the MCP protocol supports both resources and tools, current AI assistants (like Claude Desktop) can only access tools, not resources. To work around this limitation, we've implemented a hybrid approach with reader tools: all read-only resources also have equivalent tool versions that provide the same data. For example, the `digitalsamba://rooms` resource can also be accessed via the `list-rooms` tool. Reader tools are clearly marked with "mirrors digitalsamba://..." in their descriptions. This ensures full functionality in AI assistants while maintaining compatibility with future MCP client improvements.
+### 1. Have a Digital Samba Account
 
-### Resources (Read-Only) - 32 Available
+Sign up at [Digital Samba](https://digitalsamba.com) if you don't have an account. You'll need **Admin** access to your team.
 
-#### Room Resources
-- `digitalsamba://rooms` - List all rooms
-- `digitalsamba://rooms/{id}` - Get room details
-- `digitalsamba://rooms/live` - List rooms with active participants
-- `digitalsamba://rooms/live/participants` - List rooms with participant details
-- `digitalsamba://rooms/{id}/live` - Get live session info for a room
-- `digitalsamba://rooms/{id}/live/participants` - Get participant list for a room
+### 2. Connect Your AI Assistant
 
-#### Session Resources
-- `digitalsamba://sessions` - List all sessions
-- `digitalsamba://sessions/{id}` - Get session summary
-- `digitalsamba://sessions/{id}/participants` - List session participants
-- `digitalsamba://sessions/{id}/statistics` - Get session statistics
-- `digitalsamba://rooms/{id}/sessions` - List sessions for a room
+Add our MCP server to your AI assistant:
 
-#### Recording Resources
-- `digitalsamba://recordings` - List all recordings
-- `digitalsamba://recordings/{id}` - Get recording details
-- `digitalsamba://recordings/archived` - List archived recordings
-- `digitalsamba://rooms/{id}/recordings` - List recordings for a room
+| Assistant | Server URL |
+|-----------|------------|
+| Claude Desktop | `https://mcp.digitalsamba.com` |
+| ChatGPT | `https://mcp.digitalsamba.com` |
+| Other MCP Clients | `https://mcp.digitalsamba.com` |
 
-#### Analytics Resources
-- `digitalsamba://analytics/team` - Team-wide statistics
-- `digitalsamba://analytics/rooms` - Room analytics
-- `digitalsamba://analytics/sessions/{id}` - Session analytics
-- `digitalsamba://analytics/participants` - Participant analytics
-- `digitalsamba://analytics/participants/{id}` - Specific participant stats
-- `digitalsamba://analytics/usage` - Usage statistics
-- `digitalsamba://analytics/live` - Live session analytics
-- `digitalsamba://analytics/live/{roomId}` - Live analytics for specific room
+### 3. Authenticate
 
-#### Content Library Resources
-- `digitalsamba://libraries` - List all libraries
-- `digitalsamba://libraries/{id}` - Library details
-- `digitalsamba://libraries/{id}/hierarchy` - Library folder structure
-- `digitalsamba://libraries/{id}/folders` - List folders
-- `digitalsamba://libraries/{id}/folders/{folderId}` - Folder details
-- `digitalsamba://libraries/{id}/files` - List files
-- `digitalsamba://libraries/{id}/files/{fileId}` - File details
+When you first connect, you'll be redirected to Digital Samba to log in. Once authenticated, you can start using natural language to manage your account.
 
-#### Export Resources
-- `digitalsamba://exports/communications/{roomId}/chat` - Export chat
-- `digitalsamba://exports/communications/{roomId}/qa` - Export Q&A
-- `digitalsamba://exports/communications/{sessionId}/transcripts` - Export transcripts
-- `digitalsamba://exports/polls/{roomId}` - Export polls
-- `digitalsamba://exports/recordings/{recordingId}` - Export recording metadata
-- `digitalsamba://exports/sessions/{sessionId}/summary` - Export session summary
-- `digitalsamba://exports/sessions/{sessionId}/metadata` - Export session metadata
+---
 
-### Tools (Actions) - 99 Available
+## Setup Guides
 
-#### Room Management
-- `create-room` - Create a new room
-- `update-room` - Update room settings
-- `delete-room` - Delete a room
-- `generate-token` - Generate access token
-- `get-default-room-settings` - Get default settings for new rooms
-- `update-default-room-settings` - Update default settings for new rooms
-- `list-rooms` - List all rooms (mirrors digitalsamba://rooms)
-- `get-room-details` - Get specific room details (mirrors digitalsamba://rooms/{id})
-- `list-live-rooms` - List rooms with active participants
-- `list-live-participants` - List all live participants across rooms
+Detailed setup instructions for each platform:
 
-#### Session Management  
-- `end-session` - End a live session
-- `get-session-summary` - Get session details
-- `get-all-room-sessions` - List all sessions for a room
-- `hard-delete-session-resources` - Permanently delete session data
-- `bulk-delete-session-data` - Delete multiple session data types
-- `get-session-statistics` - Get detailed session statistics
-- `list-sessions` - List all sessions (mirrors digitalsamba://sessions)
-- `get-session-details` - Get specific session details (mirrors digitalsamba://sessions/{id})
-- `list-session-participants` - List participants for a session
-- `list-room-sessions` - List sessions for a specific room
+- **[Claude Desktop Setup](https://digitalsamba.com/blog/mcp-claude-desktop)** - Connect via Custom Connectors with OAuth
+- **[ChatGPT Setup](https://digitalsamba.com/blog/mcp-chatgpt)** - Use with OpenAI's MCP integration
+- **[Other MCP Clients](https://digitalsamba.com/blog/mcp-other-clients)** - Cursor, Windsurf, and more
 
-#### Recording Management
-- `get-recordings` - List recordings with filters
-- `delete-recording` - Delete a recording
-- `get-recording` - Get recording details
-- `get-recording-download-link` - Get download URL
-- `archive-recording` - Archive a recording
-- `unarchive-recording` - Unarchive a recording
+---
 
-#### Live Session Controls
-- `start-recording` - Start recording a session
-- `stop-recording` - Stop recording
-- `start-transcription` - Start live transcription
-- `stop-transcription` - Stop transcription
-- `phone-participants-joined` - Register phone participants joining
-- `phone-participants-left` - Register phone participants leaving
+## Features
 
-#### Analytics Tools
-- `get-participant-statistics` - Participant analytics
-- `get-room-analytics` - Room usage analytics
-- `get-usage-statistics` - Overall usage metrics
-- `get-usage-analytics` - Usage analytics (mirrors digitalsamba://analytics/usage)
-- `get-live-analytics` - Live session analytics (mirrors digitalsamba://analytics/live)
-- `get-live-room-analytics` - Live analytics for specific room
-- `get-session-analytics` - Session analytics (mirrors digitalsamba://analytics/sessions/{id})
-- `get-participant-analytics` - Specific participant analytics
+### Room Management
+- Create, update, and delete rooms
+- Generate secure access tokens for participants
+- Manage default room settings
+- Configure room features (chat, Q&A, recordings, etc.)
 
-#### Communication Management
-- `delete-session-chats` - Delete chat messages for a session
-- `delete-room-chats` - Delete all chats for a room
-- `delete-session-qa` - Delete Q&A for a session
-- `delete-room-qa` - Delete all Q&A for a room
-- `delete-session-transcripts` - Delete transcripts
-- `delete-room-transcripts` - Delete all transcripts for a room
-- `delete-session-summaries` - Delete AI summaries
-- `delete-room-summaries` - Delete all summaries for a room
+### Analytics & Reporting
+- Team-wide usage statistics
+- Room and session analytics
+- Participant tracking and engagement metrics
+- Custom date range reporting
 
-#### Poll Management
-- `create-poll` - Create a new poll
-- `update-poll` - Update poll settings
-- `delete-poll` - Delete a poll
-- `delete-session-polls` - Delete all polls for a session
-- `delete-room-polls` - Delete all polls for a room
-- `publish-poll-results` - Publish results to participants
+### Recording Management
+- List and search recordings
+- Archive and unarchive recordings
+- Get download links
+- Bulk recording operations
+- Recording bookmarks
 
-#### Content Library Management
-- `create-library` - Create content library
-- `update-library` - Update library details
-- `delete-library` - Delete a library
-- `create-library-folder` - Create folder
-- `update-library-folder` - Update folder
-- `delete-library-folder` - Delete folder
-- `create-library-file` - Upload file
-- `update-library-file` - Update file details
-- `delete-library-file` - Delete file
-- `get-file-links` - Get file viewing links
-- `create-webapp` - Create webapp
-- `create-whiteboard` - Create whiteboard
-- `move-library-file` - Move file between folders
-- `move-library-folder` - Move folder
-- `bulk-delete-library-files` - Delete multiple files
-- `bulk-upload-library-files` - Upload multiple files
-- `copy-library-content` - Copy files/folders
-- `list-libraries` - List all libraries (mirrors digitalsamba://libraries)
-- `get-library-details` - Get library details (mirrors digitalsamba://libraries/{id})
-- `get-library-hierarchy` - Get folder structure (mirrors digitalsamba://libraries/{id}/hierarchy)
-- `list-library-folders` - List all folders (mirrors digitalsamba://libraries/{id}/folders)
-- `get-library-folder-details` - Get folder details
-- `list-library-files` - List all files (mirrors digitalsamba://libraries/{id}/files)
-- `get-library-file-details` - Get file details
+### Live Session Control
+- Monitor active rooms and participants
+- Start/stop recordings on demand
+- Start/stop live transcription
+- End sessions remotely
+- Raise/lower participant hands
+- Phone participant integration
 
-#### Role & Permission Management
-- `create-role` - Create custom role
-- `update-role` - Update role settings
-- `delete-role` - Delete a role
-- `get-roles` - List all roles
-- `get-role` - Get role details
-- `get-permissions` - List available permissions
+### Communication Tools
+- Create and manage polls
+- Export chat history, Q&A, and transcripts
+- Delete session data (GDPR compliance)
+- AI-generated session summaries
 
-#### Webhook Management
-- `list-webhook-events` - List available events to subscribe to
-- `list-webhooks` - List all configured webhooks
-- `create-webhook` - Create a new webhook
-- `get-webhook` - Get webhook details
-- `update-webhook` - Update webhook configuration
-- `delete-webhook` - Delete a webhook
+### Content Library
+- Create and organize libraries
+- Upload files and documents
+- Manage folders and hierarchy
+- Create webapps and whiteboards
+- Bulk file operations
 
-#### Export Tools
-- `export-chat-messages` - Export chat messages from a room (mirrors digitalsamba://exports/communications/{roomId}/chat)
-- `export-qa-data` - Export Q&A data from a room (mirrors digitalsamba://exports/communications/{roomId}/qa)
-- `export-session-transcripts` - Export transcripts from a session (mirrors digitalsamba://exports/communications/{sessionId}/transcripts)
-- `export-poll-results` - Export poll results from a room (mirrors digitalsamba://exports/polls/{roomId})
-- `export-recording-metadata` - Export recording metadata (mirrors digitalsamba://exports/recordings/{recordingId})
-- `export-session-summary` - Export session summary (mirrors digitalsamba://exports/sessions/{sessionId}/summary)
-- `export-session-metadata` - Export session metadata (mirrors digitalsamba://exports/sessions/{sessionId}/metadata)
+### Webhooks & Integrations
+- Subscribe to platform events
+- Configure webhook endpoints
+- Manage webhook lifecycle
 
-## Environment Variables
+### Role & Permission Management
+- Create custom roles
+- Assign granular permissions
+- Manage team access levels
 
-- `DIGITAL_SAMBA_DEVELOPER_KEY` - Your Digital Samba developer key (optional if using --developer-key or -k flag)
-- `DIGITAL_SAMBA_API_URL` - API base URL (optional, defaults to production)
-- `DS_LOG_LEVEL` - Logging level (error, warn, info, debug)
+---
 
-## Examples
+## Available Tools
 
-### Basic Room Creation
+The MCP server provides **113 tools** covering the complete Digital Samba API.
 
-```text
-"Create a private room called 'Executive Meeting' with space for 10 people"
-```
+### Room Management (11 tools)
+| Tool | Description |
+|------|-------------|
+| `create-room` | Create a new room |
+| `update-room` | Update room settings |
+| `delete-room` | Delete a room |
+| `generate-token` | Generate participant access token |
+| `get-default-room-settings` | Get default settings |
+| `update-default-room-settings` | Update default settings |
+| `list-rooms` | List all rooms |
+| `get-room-details` | Get room details |
+| `list-live-rooms` | List rooms with active sessions |
+| `list-live-participants` | List all live participants |
+| `get-room-live-info` | Get live session info for a room |
 
-### Generate Access Token
+### Session Management (12 tools)
+| Tool | Description |
+|------|-------------|
+| `list-sessions` | List all sessions |
+| `get-session-summary` | Get session details |
+| `list-session-participants` | List session participants |
+| `get-session-statistics-details` | Detailed session stats |
+| `list-room-sessions` | Sessions for a specific room |
+| `end-session` | End a live session |
+| `delete-session-recordings` | Delete session recordings |
+| `delete-session-resources` | Delete session resources |
+| `hard-delete-session-resources` | Permanently delete data |
+| `bulk-delete-session-data` | Bulk delete operations |
+| `list-room-transcripts` | List room transcripts |
+| `list-session-transcripts` | List session transcripts |
 
-```text
-"Generate a moderator token for sarah@company.com to join the executive meeting"
-```
+### Recording Management (10 tools)
+| Tool | Description |
+|------|-------------|
+| `get-recordings` | List recordings with filters |
+| `get-recording` | Get recording details |
+| `delete-recording` | Delete a recording |
+| `get-recording-download-link` | Get download URL |
+| `archive-recording` | Archive a recording |
+| `unarchive-recording` | Restore archived recording |
+| `get-archived-recordings` | List archived recordings |
+| `get-room-recordings` | Recordings for a room |
+| `get-recording-bookmarks` | Get recording bookmarks |
+| `bulk-delete-recordings` | Delete multiple recordings |
 
-### Manage Content Library
+### Live Session Controls (8 tools)
+| Tool | Description |
+|------|-------------|
+| `start-recording` | Start recording a session |
+| `stop-recording` | Stop recording |
+| `start-transcription` | Start live transcription |
+| `stop-transcription` | Stop transcription |
+| `raise-participant-hand` | Raise a participant's hand |
+| `lower-participant-hand` | Lower a participant's hand |
+| `raise-phone-participant-hand` | Raise phone participant hand |
+| `lower-phone-participant-hand` | Lower phone participant hand |
 
-```text
-"Create a library for our training materials and upload the onboarding presentation"
-```
+### Analytics Tools (8 tools)
+| Tool | Description |
+|------|-------------|
+| `get-team-statistics` | Team-wide metrics |
+| `get-room-analytics` | Room usage analytics |
+| `get-usage-statistics` | Overall usage stats |
+| `get-participant-statistics` | Participant analytics |
+| `get-session-analytics` | Session analytics |
+| `get-live-analytics` | Live session metrics |
+| `get-live-room-analytics` | Live metrics for a room |
+| `get-participant-analytics` | Specific participant stats |
 
-### Analytics and Reporting
+### Communication Management (13 tools)
+| Tool | Description |
+|------|-------------|
+| `delete-session-chats` | Delete session chat |
+| `delete-room-chats` | Delete all room chats |
+| `delete-session-qa` | Delete session Q&A |
+| `delete-room-qa` | Delete all room Q&A |
+| `delete-session-transcripts` | Delete session transcripts |
+| `delete-room-transcripts` | Delete all room transcripts |
+| `delete-session-summaries` | Delete AI summaries |
+| `delete-room-summaries` | Delete all room summaries |
+| `export-room-transcripts` | Export room transcripts |
+| `export-chat-messages` | Export chat history |
+| `export-qa-data` | Export Q&A data |
+| `export-session-transcripts` | Export transcripts |
+| `export-poll-results` | Export poll results |
 
-```text
-"Show me participant statistics for last month's sessions"
-```
+### Poll Management (6 tools)
+| Tool | Description |
+|------|-------------|
+| `create-poll` | Create a new poll |
+| `update-poll` | Update poll settings |
+| `delete-poll` | Delete a poll |
+| `delete-session-polls` | Delete session polls |
+| `delete-room-polls` | Delete all room polls |
+| `publish-poll-results` | Publish results |
 
-## Development
+### Content Library (26 tools)
+| Tool | Description |
+|------|-------------|
+| `list-libraries` | List all libraries |
+| `get-library-details` | Get library details |
+| `create-library` | Create a library |
+| `update-library` | Update library |
+| `delete-library` | Delete a library |
+| `get-library-hierarchy` | Get folder structure |
+| `list-library-folders` | List folders |
+| `get-library-folder-details` | Folder details |
+| `create-library-folder` | Create folder |
+| `update-library-folder` | Update folder |
+| `delete-library-folder` | Delete folder |
+| `list-library-files` | List files |
+| `get-library-file-details` | File details |
+| `create-library-file` | Upload file |
+| `update-library-file` | Update file |
+| `delete-library-file` | Delete file |
+| `get-file-links` | Get viewing links |
+| `create-webapp` | Create webapp |
+| `create-whiteboard` | Create whiteboard |
+| `move-library-file` | Move file |
+| `move-library-folder` | Move folder |
+| `copy-library-content` | Copy content |
+| `bulk-delete-library-files` | Bulk delete |
+| `bulk-upload-library-files` | Bulk upload |
+
+### Role & Permission Management (6 tools)
+| Tool | Description |
+|------|-------------|
+| `get-roles` | List all roles |
+| `get-role` | Get role details |
+| `create-role` | Create custom role |
+| `update-role` | Update role |
+| `delete-role` | Delete role |
+| `get-permissions` | List permissions |
+
+### Webhook Management (6 tools)
+| Tool | Description |
+|------|-------------|
+| `list-webhook-events` | Available events |
+| `list-webhooks` | List webhooks |
+| `get-webhook` | Webhook details |
+| `create-webhook` | Create webhook |
+| `update-webhook` | Update webhook |
+| `delete-webhook` | Delete webhook |
+
+### Export Tools (7 tools)
+| Tool | Description |
+|------|-------------|
+| `export-chat-messages` | Export chat |
+| `export-qa-data` | Export Q&A |
+| `export-session-transcripts` | Export transcripts |
+| `export-poll-results` | Export polls |
+| `export-recording-metadata` | Export recording data |
+| `export-session-summary` | Export summary |
+| `export-session-metadata` | Export metadata |
+
+---
+
+## Authentication
+
+The MCP server uses **OAuth 2.0** with Digital Samba as the identity provider. When you connect:
+
+1. Your AI assistant redirects you to Digital Samba login
+2. You authenticate with your Digital Samba credentials
+3. The MCP server receives authorization to act on your behalf
+4. All API calls use your account's permissions
+
+**Requirements:**
+- You must have **Admin** role on your Digital Samba team
+- OAuth tokens are valid for 24 hours and auto-refresh
+
+---
+
+## For Developers
+
+### Local Development
+
+If you want to run a local instance for development:
 
 ```bash
-# Clone the repository
 git clone https://github.com/digitalsamba/embedded-api-mcp-server.git
 cd embedded-api-mcp-server
-
-# Install dependencies
 npm install
-
-# Run in development mode
-npm run dev -- --developer-key YOUR_DEVELOPER_KEY  # or -k YOUR_DEVELOPER_KEY
-
-# Build for production
-npm run build
-
-# Run tests
-npm test
-
-# Run tests with coverage
-npm run test:coverage
+npm run dev -- --developer-key YOUR_DEVELOPER_KEY
 ```
 
-## Architecture
-
-The server follows a modular architecture:
-
-```
-src/
-├── index.ts              # Main MCP server entry
-├── digital-samba-api.ts  # API client wrapper
-├── resources/            # Read-only MCP resources
-│   ├── rooms/           # Room listings
-│   ├── sessions/        # Session data
-│   ├── analytics/       # Analytics data
-│   ├── recordings/      # Recording listings
-│   ├── content/         # Content libraries
-│   └── exports/         # Export functionality
-└── tools/               # MCP tools (actions)
-    ├── room-management/
-    ├── session-management/
-    ├── recording-management/
-    ├── analytics-tools/
-    ├── live-session-controls/
-    ├── communication-management/
-    ├── poll-management/
-    ├── library-management/
-    └── role-management/
-```
-
-## Contributing
+### Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+### API Reference
+
+- [Digital Samba REST API Documentation](https://developer.digitalsamba.com)
+- [OpenAPI Specification](https://developer.digitalsamba.com/rest-api/openapi.yaml)
+
+---
+
+## npm Package (Deprecated)
+
+> **Note:** The npm package `@digitalsamba/embedded-api-mcp-server` is deprecated. Please use the hosted MCP server at `https://mcp.digitalsamba.com` instead. The hosted version provides a better experience with OAuth authentication—no API keys to manage, no installation required.
+
+If you have the npm package installed, it will continue to work but will not receive updates.
+
+---
+
+## Support
+
+- **Documentation:** [developer.digitalsamba.com](https://developer.digitalsamba.com)
+- **Issues:** [GitHub Issues](https://github.com/digitalsamba/embedded-api-mcp-server/issues)
+- **Email:** support@digitalsamba.com
+
+---
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Support
-
-- 📧 Email: support@digitalsamba.com
-- 📚 [API Documentation](https://docs.digitalsamba.com)
-- 🐛 [Issue Tracker](https://github.com/digitalsamba/digital-samba-mcp-server/issues)
-
 ---
 
-Built with ❤️ by the Digital Samba team
+<div align="center">
+  <br>
+  <a href="https://digitalsamba.com">
+    <img src="https://dashboard.digitalsamba.com/logo.svg" alt="Digital Samba" width="120"/>
+  </a>
+  <br><br>
+  Built with care by the Digital Samba team
+</div>

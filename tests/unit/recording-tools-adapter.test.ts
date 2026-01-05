@@ -13,8 +13,8 @@ describe("Recording Tools Adapter", () => {
     it("should register all recording tools", () => {
       const tools = registerRecordingTools();
       
-      expect(tools).toHaveLength(9);
-      
+      expect(tools).toHaveLength(10);
+
       const toolNames = tools.map(t => t.name);
       expect(toolNames).toContain("delete-recording");
       expect(toolNames).toContain("update-recording");
@@ -25,6 +25,7 @@ describe("Recording Tools Adapter", () => {
       expect(toolNames).toContain("get-recording");
       expect(toolNames).toContain("get-recording-download-link");
       expect(toolNames).toContain("unarchive-recording");
+      expect(toolNames).toContain("get-recording-bookmarks");
       
       // Check that tools have proper structure
       tools.forEach(tool => {

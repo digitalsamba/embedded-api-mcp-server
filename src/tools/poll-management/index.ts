@@ -29,6 +29,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
 import { normalizeBoolean } from "../../utils.js";
+import { getToolAnnotations } from "../../tool-annotations.js";
 
 /**
  * Tool definition interface
@@ -37,6 +38,10 @@ interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: any;
+  annotations?: {
+    audience?: string[];
+    title?: string;
+  };
 }
 
 // Removed Zod schema - using JSON Schema directly in tool definitions
@@ -52,6 +57,7 @@ export function registerPollTools(): ToolDefinition[] {
       name: "create-poll",
       description:
         '[Poll Management] Create a new poll/survey in a room. Use when users say: "create a poll", "add a survey", "make a poll", "create voting question", "add multiple choice question". Requires room_id, question, and at least 2 options. Returns poll ID for tracking.',
+      annotations: getToolAnnotations("create-poll", "Create Poll"),
       inputSchema: {
         type: "object",
         properties: {
@@ -103,6 +109,7 @@ export function registerPollTools(): ToolDefinition[] {
       name: "update-poll",
       description:
         '[Poll Management] Update an existing poll\'s question, options, or settings. Use when users say: "change poll question", "update poll", "edit poll options", "modify survey", "change poll settings". Requires room_id and poll_id. Can update question, options, type, or visibility settings.',
+      annotations: getToolAnnotations("update-poll", "Update Poll"),
       inputSchema: {
         type: "object",
         properties: {
@@ -157,6 +164,7 @@ export function registerPollTools(): ToolDefinition[] {
       name: "delete-poll",
       description:
         '[Poll Management] Delete a specific poll from a room. Use when users say: "delete poll", "remove poll", "delete survey", "remove voting question", "cancel poll". Requires room_id and poll_id. This action cannot be undone.',
+      annotations: getToolAnnotations("delete-poll", "Delete Poll"),
       inputSchema: {
         type: "object",
         properties: {
@@ -176,6 +184,7 @@ export function registerPollTools(): ToolDefinition[] {
       name: "delete-session-polls",
       description:
         '[Poll Management] Delete ALL polls from a specific session. Use when users say: "delete all session polls", "remove all polls from session", "clear session polls", "delete all surveys from meeting". Requires session_id. Removes all poll data from that session.',
+      annotations: getToolAnnotations("delete-session-polls", "Delete Session Polls"),
       inputSchema: {
         type: "object",
         properties: {
@@ -191,6 +200,7 @@ export function registerPollTools(): ToolDefinition[] {
       name: "delete-room-polls",
       description:
         '[Poll Management] Delete ALL polls from ALL sessions in a room. Use when users say: "delete all room polls", "remove all polls from room", "clear room poll history", "wipe all room surveys". Requires room_id. Affects all past and current session polls.',
+      annotations: getToolAnnotations("delete-room-polls", "Delete Room Polls"),
       inputSchema: {
         type: "object",
         properties: {
@@ -206,6 +216,7 @@ export function registerPollTools(): ToolDefinition[] {
       name: "publish-poll-results",
       description:
         '[Poll Management] Publish/share poll results with participants. Use when users say: "show poll results", "publish poll results", "share voting results", "display poll outcome", "reveal survey results". Requires room_id, poll_id, and session_id. Makes results visible to all participants.',
+      annotations: getToolAnnotations("publish-poll-results", "Publish Poll Results"),
       inputSchema: {
         type: "object",
         properties: {

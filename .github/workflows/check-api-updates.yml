@@ -1,0 +1,91 @@
+name: Check for API Updates
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9am UTC
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check OpenAPI spec for changes
+        id: api-check
+        run: |
+          curl -s https://developer.digitalsamba.com/rest-api/openapi.yaml -o openapi-new.yaml
+
+          if ! diff -q openapi-stored.yaml openapi-new.yaml > /dev/null 2>&1; then
+            echo "api_changed=true" >> $GITHUB_OUTPUT
+            echo "API spec has changed"
+
+            # Generate a summary of changes
+            echo "## Changes detected:" > /tmp/diff-summary.md
+            diff openapi-stored.yaml openapi-new.yaml | head -100 >> /tmp/diff-summary.md || true
+          else
+            echo "api_changed=false" >> $GITHUB_OUTPUT
+            echo "API spec unchanged"
+          fi
+
+      - name: Create issue for API changes
+        if: steps.api-check.outputs.api_changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          EXISTING=$(gh issue list --label "api-update" --state open --json number --jq 'length')
+          if [ "$EXISTING" -gt 0 ]; then
+            echo "API update issue already exists"
+            exit 0
+          fi
+
+          DATE=$(date +%Y-%m-%d)
+          cat << 'ISSUE_BODY' > /tmp/issue-body.md
+          The Digital Samba OpenAPI specification has changed. The MCP server tools may need updating.
+
+          ## What to Check
+
+          1. **New endpoints** - May need new MCP tools
+          2. **Changed parameters** - Update existing tool schemas
+          3. **Removed endpoints** - Deprecate/remove affected tools
+          4. **Response changes** - Update type definitions
+
+          ## Next Steps
+
+          1. Start a Claude Code session in this repo
+          2. Run `/project-start`
+          3. Ask Claude to analyze the API changes:
+
+          ```
+          Compare openapi-stored.yaml with the current spec at https://developer.digitalsamba.com/rest-api/openapi.yaml
+
+          Identify:
+          - New endpoints that need MCP tools
+          - Changed parameters in existing endpoints
+          - Removed endpoints (flag tools for removal)
+          - Response type changes
+
+          Update the MCP server accordingly and replace openapi-stored.yaml with the new spec.
+          ```
+
+          ## Files to Update
+
+          - `src/digital-samba-api.ts` - API client methods
+          - `src/tools/*/index.ts` - Tool schemas and handlers
+          - `src/types/*.ts` - Type definitions
+          - `openapi-stored.yaml` - Replace with new spec after updates
+          ISSUE_BODY
+          echo "" >> /tmp/issue-body.md
+          echo "---" >> /tmp/issue-body.md
+          echo "*Detected by automated check on ${DATE}*" >> /tmp/issue-body.md
+
+          gh issue create \
+            --title "API Update Detected - Review MCP Tools" \
+            --label "api-update" \
+            --label "needs-review" \
+            --body-file /tmp/issue-body.md

@@ -30,6 +30,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { getApiKeyFromRequest } from "../../auth.js";
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
+import { getToolAnnotations } from "../../tool-annotations.js";
 
 /**
  * Tool definition interface
@@ -38,6 +39,10 @@ interface ToolDefinition {
   name: string;
   description: string;
   inputSchema: any;
+  annotations?: {
+    audience?: string[];
+    title?: string;
+  };
 }
 
 /**
@@ -55,6 +60,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "start-transcription",
       description:
         '[Live Session Controls] Start real-time transcription for an active room session. Use when users say: "start transcription", "enable transcription", "transcribe the meeting", "turn on transcription", "start live captions". Requires roomId with an active session. Transcripts can be exported later.',
+      annotations: getToolAnnotations("start-transcription", "Start Transcription"),
       inputSchema: {
         type: "object",
         properties: {
@@ -70,6 +76,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "stop-transcription",
       description:
         '[Live Session Controls] Stop ongoing transcription in a room. Use when users say: "stop transcription", "disable transcription", "turn off transcription", "stop live captions", "end transcription". Requires roomId. Only works if transcription is currently active.',
+      annotations: getToolAnnotations("stop-transcription", "Stop Transcription"),
       inputSchema: {
         type: "object",
         properties: {
@@ -85,6 +92,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "phone-participants-joined",
       description:
         '[Live Session Controls] Register phone/dial-in participants joining a room. Use when users say: "add phone participant", "someone dialed in", "phone user joined", "register dial-in participant". Requires roomId and participant details including callId. Used for tracking phone-based attendees.',
+      annotations: getToolAnnotations("phone-participants-joined", "Phone Participants Joined"),
       inputSchema: {
         type: "object",
         properties: {
@@ -126,6 +134,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "phone-participants-left",
       description:
         '[Live Session Controls] Register phone/dial-in participants leaving a room. Use when users say: "phone participant left", "dial-in user disconnected", "remove phone participant", "phone user hung up". Requires roomId and callIds array. Updates participant tracking.',
+      annotations: getToolAnnotations("phone-participants-left", "Phone Participants Left"),
       inputSchema: {
         type: "object",
         properties: {
@@ -142,6 +151,86 @@ export function registerLiveSessionTools(): ToolDefinition[] {
           },
         },
         required: ["roomId", "callIds"],
+      },
+    },
+    {
+      name: "raise-participant-hand",
+      description:
+        '[Live Session Controls] Raise a participant\'s hand in a live session. Use when users say: "raise hand for participant", "participant wants to speak", "raise their hand". Requires roomId and participantId. Only works during active sessions.',
+      annotations: getToolAnnotations("raise-participant-hand", "Raise Participant Hand"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+          participant_id: {
+            type: "string",
+            description: "The ID of the participant",
+          },
+        },
+        required: ["room_id", "participant_id"],
+      },
+    },
+    {
+      name: "lower-participant-hand",
+      description:
+        '[Live Session Controls] Lower a participant\'s hand in a live session. Use when users say: "lower hand", "dismiss hand raise", "acknowledge participant". Requires roomId and participantId. Only works during active sessions.',
+      annotations: getToolAnnotations("lower-participant-hand", "Lower Participant Hand"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+          participant_id: {
+            type: "string",
+            description: "The ID of the participant",
+          },
+        },
+        required: ["room_id", "participant_id"],
+      },
+    },
+    {
+      name: "raise-phone-participant-hand",
+      description:
+        '[Live Session Controls] Raise a phone participant\'s hand in a live session. Use when users say: "raise hand for phone user", "phone participant wants to speak". Requires roomId and callId. Only works for phone/dial-in participants.',
+      annotations: getToolAnnotations("raise-phone-participant-hand", "Raise Phone Participant Hand"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+          call_id: {
+            type: "string",
+            description: "The call ID of the phone participant",
+          },
+        },
+        required: ["room_id", "call_id"],
+      },
+    },
+    {
+      name: "lower-phone-participant-hand",
+      description:
+        '[Live Session Controls] Lower a phone participant\'s hand in a live session. Use when users say: "lower phone participant hand", "dismiss phone user hand raise". Requires roomId and callId. Only works for phone/dial-in participants.',
+      annotations: getToolAnnotations("lower-phone-participant-hand", "Lower Phone Participant Hand"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+          call_id: {
+            type: "string",
+            description: "The call ID of the phone participant",
+          },
+        },
+        required: ["room_id", "call_id"],
       },
     },
   ];
@@ -172,6 +261,14 @@ export async function executeLiveSessionTool(
       return handlePhoneParticipantsJoined(params, _apiClient);
     case "phone-participants-left":
       return handlePhoneParticipantsLeft(params, _apiClient);
+    case "raise-participant-hand":
+      return handleRaiseParticipantHand(params, _apiClient);
+    case "lower-participant-hand":
+      return handleLowerParticipantHand(params, _apiClient);
+    case "raise-phone-participant-hand":
+      return handleRaisePhoneParticipantHand(params, _apiClient);
+    case "lower-phone-participant-hand":
+      return handleLowerPhoneParticipantHand(params, _apiClient);
     default:
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
   }
@@ -466,6 +563,218 @@ async function handlePhoneParticipantsLeft(
         {
           type: "text",
           text: displayMessage,
+        },
+      ],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle raise participant hand
+ */
+async function handleRaiseParticipantHand(
+  params: { room_id: string; participant_id: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id, participant_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  if (!participant_id || participant_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Participant ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Raising participant hand", { room_id, participant_id });
+
+  try {
+    await apiClient.raiseParticipantHand(room_id, participant_id);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully raised hand for participant ${participant_id} in room ${room_id}.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error("Error raising participant hand", {
+      room_id,
+      participant_id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error raising hand: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle lower participant hand
+ */
+async function handleLowerParticipantHand(
+  params: { room_id: string; participant_id: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id, participant_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  if (!participant_id || participant_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Participant ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Lowering participant hand", { room_id, participant_id });
+
+  try {
+    await apiClient.lowerParticipantHand(room_id, participant_id);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully lowered hand for participant ${participant_id} in room ${room_id}.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error("Error lowering participant hand", {
+      room_id,
+      participant_id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error lowering hand: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle raise phone participant hand
+ */
+async function handleRaisePhoneParticipantHand(
+  params: { room_id: string; call_id: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id, call_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  if (!call_id || call_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Call ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Raising phone participant hand", { room_id, call_id });
+
+  try {
+    await apiClient.raisePhoneParticipantHand(room_id, call_id);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully raised hand for phone participant ${call_id} in room ${room_id}.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error("Error raising phone participant hand", {
+      room_id,
+      call_id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error raising hand: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle lower phone participant hand
+ */
+async function handleLowerPhoneParticipantHand(
+  params: { room_id: string; call_id: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id, call_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  if (!call_id || call_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Call ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Lowering phone participant hand", { room_id, call_id });
+
+  try {
+    await apiClient.lowerPhoneParticipantHand(room_id, call_id);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully lowered hand for phone participant ${call_id} in room ${room_id}.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error("Error lowering phone participant hand", {
+      room_id,
+      call_id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error lowering hand: ${error instanceof Error ? error.message : String(error)}`,
         },
       ],
       isError: true,

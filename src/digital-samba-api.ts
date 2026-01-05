@@ -218,6 +218,9 @@ export class DigitalSambaApiClient {
       ? endpoint
       : `${this.apiBaseUrl}${endpoint}`;
     const method = options.method || "GET";
+
+    // Log the actual URL being called (INFO level for visibility)
+    logger.info(`API Request: ${method} ${url}`);
     const isCacheable = this.cache && method === "GET";
 
     // Generate a cache key based on endpoint and API key (to avoid cross-client leakage)
@@ -882,6 +885,58 @@ export class DigitalSambaApiClient {
     });
   }
 
+  /**
+   * Raise participant's hand
+   */
+  async raiseParticipantHand(
+    roomId: string,
+    participantId: string,
+  ): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/participants/${participantId}/raise-hand`,
+      { method: "POST" },
+    );
+  }
+
+  /**
+   * Lower participant's hand
+   */
+  async lowerParticipantHand(
+    roomId: string,
+    participantId: string,
+  ): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/participants/${participantId}/lower-hand`,
+      { method: "POST" },
+    );
+  }
+
+  /**
+   * Raise phone participant's hand
+   */
+  async raisePhoneParticipantHand(
+    roomId: string,
+    callId: string,
+  ): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/phone-participants/${callId}/raise-hand`,
+      { method: "POST" },
+    );
+  }
+
+  /**
+   * Lower phone participant's hand
+   */
+  async lowerPhoneParticipantHand(
+    roomId: string,
+    callId: string,
+  ): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/phone-participants/${callId}/lower-hand`,
+      { method: "POST" },
+    );
+  }
+
   // Recordings
 
   /**
@@ -960,6 +1015,29 @@ export class DigitalSambaApiClient {
     return this.request<RecordingDownloadLink>(
       `/recordings/${recordingId}/download${query}`,
     );
+  }
+
+  /**
+   * Get bookmarks for a recording
+   */
+  async getRecordingBookmarks(
+    recordingId: string,
+  ): Promise<
+    Array<{
+      id: string;
+      timestamp: number;
+      label?: string;
+      created_at: string;
+    }>
+  > {
+    return this.request<
+      Array<{
+        id: string;
+        timestamp: number;
+        label?: string;
+        created_at: string;
+      }>
+    >(`/recordings/${recordingId}/bookmarks`);
   }
 
   /**
@@ -1209,7 +1287,7 @@ export class DigitalSambaApiClient {
     }
 
     const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
-    return this.request<SessionStatistics>(`/sessions/${sessionId}${query}`);
+    return this.request<SessionStatistics>(`/sessions/${sessionId}/statistics${query}`);
   }
 
   /**
@@ -1371,6 +1449,133 @@ export class DigitalSambaApiClient {
     await this.request<void>(`/rooms/${roomId}/questions`, {
       method: "DELETE",
     });
+  }
+
+  // Transcripts
+
+  /**
+   * Get room transcripts (closed captioning data)
+   */
+  async getRoomTranscripts(
+    roomId: string,
+    params?: PaginationParams & {
+      session_id?: string;
+    },
+  ): Promise<
+    ApiResponse<{
+      id: string;
+      text: string;
+      participant_id: string;
+      participant_name: string;
+      session_id: string;
+      created_at: string;
+    }>
+  > {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+    return this.request<
+      ApiResponse<{
+        id: string;
+        text: string;
+        participant_id: string;
+        participant_name: string;
+        session_id: string;
+        created_at: string;
+      }>
+    >(`/rooms/${roomId}/transcripts${query}`);
+  }
+
+  /**
+   * Get session transcripts (closed captioning data)
+   */
+  async getSessionTranscripts(
+    sessionId: string,
+    params?: PaginationParams,
+  ): Promise<
+    ApiResponse<{
+      id: string;
+      text: string;
+      participant_id: string;
+      participant_name: string;
+      created_at: string;
+    }>
+  > {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+    return this.request<
+      ApiResponse<{
+        id: string;
+        text: string;
+        participant_id: string;
+        participant_name: string;
+        created_at: string;
+      }>
+    >(`/sessions/${sessionId}/transcripts${query}`);
+  }
+
+  /**
+   * Delete room transcripts
+   */
+  async deleteRoomTranscripts(roomId: string): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/transcripts`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Export room transcripts
+   */
+  async exportRoomTranscripts(
+    roomId: string,
+    options?: {
+      format?: "txt" | "json";
+    },
+  ): Promise<string> {
+    const queryParams = new URLSearchParams();
+    if (options) {
+      Object.entries(options).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+
+    const apiKey = this.getApiKey();
+    const response = await fetch(
+      `${this.apiBaseUrl}/rooms/${roomId}/transcripts/export${query}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Digital Samba API error (${response.status}): ${errorText}`,
+      );
+    }
+
+    return response.text();
   }
 
   // Polls
@@ -1925,22 +2130,27 @@ export class DigitalSambaApiClient {
   async createWebapp(
     libraryId: string,
     settings: {
-      name: string;
+      url: string;
+      name?: string;
       folder_id?: string;
     },
   ): Promise<{
-    file_id: string;
-    file_name: string;
-    external_storage_url: string;
-    token: string;
-    expiration_timestamp: number;
+    id: string;
+    folder_id?: string;
+    name: string;
+    type: string;
+    url: string;
+    status: string;
+    created_at: string;
   }> {
     return this.request<{
-      file_id: string;
-      file_name: string;
-      external_storage_url: string;
-      token: string;
-      expiration_timestamp: number;
+      id: string;
+      folder_id?: string;
+      name: string;
+      type: string;
+      url: string;
+      status: string;
+      created_at: string;
     }>(`/libraries/${libraryId}/webapps`, {
       method: "POST",
       body: JSON.stringify(settings),
@@ -1959,18 +2169,26 @@ export class DigitalSambaApiClient {
       folder_id?: string;
     },
   ): Promise<{
-    file_id: string;
-    file_name: string;
-    external_storage_url: string;
-    token: string;
-    expiration_timestamp: number;
+    id: string;
+    folder_id?: string;
+    name: string;
+    type: string;
+    size: number;
+    storage_file_name: string;
+    storage_url: string;
+    status: string;
+    created_at: string;
   }> {
     return this.request<{
-      file_id: string;
-      file_name: string;
-      external_storage_url: string;
-      token: string;
-      expiration_timestamp: number;
+      id: string;
+      folder_id?: string;
+      name: string;
+      type: string;
+      size: number;
+      storage_file_name: string;
+      storage_url: string;
+      status: string;
+      created_at: string;
     }>(`/libraries/${libraryId}/whiteboards`, {
       method: "POST",
       body: JSON.stringify(settings),
@@ -2308,5 +2526,31 @@ export class DigitalSambaApiClient {
         method: "POST",
       },
     );
+  }
+
+  /**
+   * Delete session recordings
+   */
+  async deleteSessionRecordings(sessionId: string): Promise<void> {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+
+    await this.request<void>(`/sessions/${sessionId}/recordings`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Delete session resources
+   */
+  async deleteSessionResources(sessionId: string): Promise<void> {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+
+    await this.request<void>(`/sessions/${sessionId}/resources`, {
+      method: "DELETE",
+    });
   }
 }

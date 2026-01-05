@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Overview
 
-Digital Samba Embedded API MCP Server - A lightweight Model Context Protocol server for Digital Samba's Embedded API. Provides 102 tools and 38 resources covering 100+ API endpoints for complete control over video conferencing features.
+Digital Samba Embedded API MCP Server - A lightweight Model Context Protocol server for Digital Samba's Embedded API. Provides 113 tools and 37 resources covering 100+ API endpoints for complete control over video conferencing features.
 
 ## API Reference
 

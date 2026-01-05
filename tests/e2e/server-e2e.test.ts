@@ -91,65 +91,65 @@ describe('End-to-End Tests', () => {
       const result = await client.readResource({
         uri: 'digitalsamba://rooms',
       });
-      
+
       expect(result).toBeDefined();
       expect(result.contents).toBeDefined();
       expect(result.contents.length).toBeGreaterThan(0);
-      
-      // Parse and verify room data
+
+      // Parse and verify room data (DS API uses 'topic' for room name)
       const room = JSON.parse(result.contents[0].text);
       expect(room).toHaveProperty('id');
-      expect(room).toHaveProperty('name');
+      expect(room).toHaveProperty('topic');
       expect(room).toHaveProperty('privacy');
     });
     
     it('should create a room', async () => {
-      // Create a room
+      // Create a room (DS API uses 'topic' for room name)
       const result = await client.callTool({
         name: 'create-room',
         arguments: {
-          name: 'E2E Test Room',
+          topic: 'E2E Test Room',
           privacy: 'public',
           description: 'Room created by E2E test',
           max_participants: 50,
         },
       });
-      
+
       expect(result).toBeDefined();
       expect(result.content).toBeDefined();
       expect(result.content.length).toBe(1);
       expect(result.content[0].text).toContain('successfully');
-      
+
       // Extract room data from response
       const responseText = result.content[0].text;
       const roomDataMatch = responseText.match(/\{[\s\S]*\}/);
       expect(roomDataMatch).toBeTruthy();
-      
+
       const roomData = JSON.parse(roomDataMatch![0]);
       expect(roomData).toHaveProperty('id');
-      expect(roomData).toHaveProperty('name', 'E2E Test Room');
-      
+      expect(roomData).toHaveProperty('topic', 'E2E Test Room');
+
       // Read the specific room to verify it was created
       const roomResult = await client.readResource({
         uri: `digitalsamba://rooms/${roomData.id}`,
       });
-      
+
       expect(roomResult).toBeDefined();
       expect(roomResult.contents).toBeDefined();
       expect(roomResult.contents.length).toBe(1);
-      
+
       // Parse and verify room data
       const room = JSON.parse(roomResult.contents[0].text);
       expect(room).toHaveProperty('id', roomData.id);
-      expect(room).toHaveProperty('name', 'E2E Test Room');
+      expect(room).toHaveProperty('topic', 'E2E Test Room');
     });
     
     it('should generate a room token', async () => {
-      // First create a room
+      // First create a room (DS API uses 'topic' for room name)
       const createResult = await client.callTool({
         name: 'create-room',
         arguments: {
-          name: 'Token Test Room',
+          topic: 'Token Test Room',
           privacy: 'public',
         },
       });

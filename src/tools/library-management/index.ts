@@ -41,6 +41,7 @@ import {
   handleListLibraryFiles,
   handleGetLibraryFileDetails,
 } from "./reader-handlers.js";
+import { getToolAnnotations } from "../../tool-annotations.js";
 
 /**
  * Tool definition interface
@@ -48,6 +49,10 @@ import {
 interface ToolDefinition {
   name: string;
   description: string;
+  annotations?: {
+    audience?: string[];
+    title?: string;
+  };
   inputSchema: any;
 }
 
@@ -63,6 +68,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "create-library",
       description:
         '[Content Library] Create a new content library for storing files and documents. Use when users say: "create library", "make content library", "new file storage", "create document library", "set up content repository". Requires externalId. Returns library ID for file uploads.',
+      annotations: getToolAnnotations("create-library", "Create Library"),
       inputSchema: {
         type: "object",
         properties: {
@@ -82,6 +88,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "update-library",
       description:
         '[Content Library] Update library name or external ID. Use when users say: "rename library", "update library", "change library name", "modify library details", "edit library settings". Requires libraryId. Can update name and external identifier.',
+      annotations: getToolAnnotations("update-library", "Update Library"),
       inputSchema: {
         type: "object",
         properties: {
@@ -105,6 +112,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "delete-library",
       description:
         '[Content Library] Permanently delete a content library and all its contents. Use when users say: "delete library", "remove content library", "delete file storage", "remove library". Requires libraryId. This deletes ALL files and folders within!',
+      annotations: getToolAnnotations("delete-library", "Delete Library"),
       inputSchema: {
         type: "object",
         properties: {
@@ -122,6 +130,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "create-library-folder",
       description:
         '[Content Library] Create a folder for organizing files. Use when users say: "create folder", "make directory", "add folder", "create subfolder", "organize files in folders". Requires libraryId. Optional parentId for nested folders. Returns folder ID.',
+      annotations: getToolAnnotations("create-library-folder", "Create Library Folder"),
       inputSchema: {
         type: "object",
         properties: {
@@ -145,6 +154,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "update-library-folder",
       description:
         '[Content Library] Update folder name or move to different parent. Use when users say: "rename folder", "update folder", "change folder name", "move folder", "reorganize folders". Requires libraryId and folderId. Can change name or parent folder.',
+      annotations: getToolAnnotations("update-library-folder", "Update Library Folder"),
       inputSchema: {
         type: "object",
         properties: {
@@ -172,6 +182,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "delete-library-folder",
       description:
         '[Content Library] Delete a folder and optionally its contents. Use when users say: "delete folder", "remove directory", "delete folder and files", "remove subfolder". Requires libraryId and folderId. May delete contained files depending on settings.',
+      annotations: getToolAnnotations("delete-library-folder", "Delete Library Folder"),
       inputSchema: {
         type: "object",
         properties: {
@@ -193,6 +204,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "create-library-file",
       description:
         '[Content Library] Create file entry and get upload URL. Use when users say: "upload file", "add document", "upload to library", "add file", "store document". Requires libraryId and name. Returns upload URL for actual file transfer. Optional folderId.',
+      annotations: getToolAnnotations("create-library-file", "Create Library File"),
       inputSchema: {
         type: "object",
         properties: {
@@ -216,6 +228,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "update-library-file",
       description:
         '[Content Library] Update file name or move to different folder. Use when users say: "rename file", "update file", "change file name", "move file to folder", "reorganize files". Requires libraryId and fileId. Can change name or folder location.',
+      annotations: getToolAnnotations("update-library-file", "Update Library File"),
       inputSchema: {
         type: "object",
         properties: {
@@ -243,6 +256,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "delete-library-file",
       description:
         '[Content Library] Permanently delete a file from library. Use when users say: "delete file", "remove document", "delete upload", "remove file from library". Requires libraryId and fileId. This action cannot be undone.',
+      annotations: getToolAnnotations("delete-library-file", "Delete Library File"),
       inputSchema: {
         type: "object",
         properties: {
@@ -262,6 +276,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "get-file-links",
       description:
         '[Content Library] Get viewing and thumbnail URLs for a file. Use when users say: "get file link", "share file", "view file", "get download link", "access file URL". Requires libraryId and fileId. Returns URLs for viewing and thumbnails.',
+      annotations: getToolAnnotations("get-file-links", "Get File Links"),
       inputSchema: {
         type: "object",
         properties: {
@@ -282,7 +297,8 @@ export function registerLibraryTools(): ToolDefinition[] {
     {
       name: "create-webapp",
       description:
-        '[Content Library] Create a webapp/web application entry in library. Use when users say: "create webapp", "add web app", "create web application", "add webapp to library". Requires libraryId and name. Optional folderId. For embedding web content.',
+        '[Content Library] Create a webapp/web application entry in library. Use when users say: "create webapp", "add web app", "create web application", "add webapp to library". Requires libraryId and url. Optional name and folderId. For embedding web content from YouTube, Vimeo, Miro, Google Docs, etc.',
+      annotations: getToolAnnotations("create-webapp", "Create Web App"),
       inputSchema: {
         type: "object",
         properties: {
@@ -290,22 +306,27 @@ export function registerLibraryTools(): ToolDefinition[] {
             type: "string",
             description: "The ID of the library",
           },
+          url: {
+            type: "string",
+            description: "The URL of the web content to embed (e.g., YouTube, Vimeo, Miro, Google Docs)",
+          },
           name: {
             type: "string",
-            description: "Name of the webapp",
+            description: "Name of the webapp (optional)",
           },
           folderId: {
             type: "string",
             description: "Folder ID to place the webapp in",
           },
         },
-        required: ["libraryId", "name"],
+        required: ["libraryId", "url"],
       },
     },
     {
       name: "create-whiteboard",
       description:
         '[Content Library] Create a collaborative whiteboard in library. Use when users say: "create whiteboard", "add whiteboard", "create drawing board", "make collaborative board". Requires libraryId and name. Optional folderId. For visual collaboration.',
+      annotations: getToolAnnotations("create-whiteboard", "Create Whiteboard"),
       inputSchema: {
         type: "object",
         properties: {
@@ -331,6 +352,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "move-library-file",
       description:
         '[Content Library] Move a file to a different folder. Use when users say: "move file", "relocate file", "move to folder", "reorganize file", "change file location". Requires libraryId and fileId. Moves file within same library only.',
+      annotations: getToolAnnotations("move-library-file", "Move Library File"),
       inputSchema: {
         type: "object",
         properties: {
@@ -354,6 +376,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "move-library-folder",
       description:
         '[Content Library] Move a folder to a different parent location. Use when users say: "move folder", "relocate directory", "reorganize folders", "change folder parent", "nest folder". Requires libraryId and folderId. Moves entire folder tree.',
+      annotations: getToolAnnotations("move-library-folder", "Move Library Folder"),
       inputSchema: {
         type: "object",
         properties: {
@@ -377,6 +400,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "bulk-delete-library-files",
       description:
         '[Content Library] Delete multiple files in one operation. Use when users say: "delete multiple files", "bulk delete", "remove several files", "mass delete files", "delete file batch". Requires libraryId and fileIds array. Efficient for cleanup tasks.',
+      annotations: getToolAnnotations("bulk-delete-library-files", "Bulk Delete Library Files"),
       inputSchema: {
         type: "object",
         properties: {
@@ -399,6 +423,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "bulk-upload-library-files",
       description:
         '[Content Library] Get upload URLs for multiple files in batch. Use when users say: "upload multiple files", "bulk upload", "batch upload", "upload many files", "mass file upload". Requires libraryId and files array with names, sizes, and MIME types.',
+      annotations: getToolAnnotations("bulk-upload-library-files", "Bulk Upload Library Files"),
       inputSchema: {
         type: "object",
         properties: {
@@ -440,6 +465,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "copy-library-content",
       description:
         '[Content Library] Copy files or folders within/between libraries. Use when users say: "copy file", "duplicate folder", "copy to another library", "clone content", "duplicate files". Requires source/target library IDs, content type and ID. Can rename during copy.',
+      annotations: getToolAnnotations("copy-library-content", "Copy Library Content"),
       inputSchema: {
         type: "object",
         properties: {
@@ -484,6 +510,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "list-libraries",
       description:
         '[Content Library - TOOL] List all content libraries in your account. Use when users say: "show libraries", "list libraries", "get all libraries", "view content libraries", "show file storage", "find library", "search for library". This TOOL provides the same data as digitalsamba://libraries resource. Returns array of library objects with names, IDs, and file counts. Can search by name.',
+      annotations: getToolAnnotations("list-libraries", "List All Libraries"),
       inputSchema: {
         type: "object",
         properties: {
@@ -506,6 +533,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "search-libraries",
       description:
         '[Content Library - TOOL] Search for libraries by name. Use when users say: "find library named", "search for library", "locate library", "where is library", "find Conal\'s library". Searches through ALL libraries in the account to find matches by name or external ID.',
+      annotations: getToolAnnotations("search-libraries", "Search Libraries"),
       inputSchema: {
         type: "object",
         properties: {
@@ -521,6 +549,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "verify-library-id",
       description:
         '[Content Library - TOOL] Verify if a library ID exists by attempting to retrieve it. Use when users say: "check if library ID exists", "verify library ID", "test library ID", "validate library ID". Useful for checking if a specific library ID is valid.',
+      annotations: getToolAnnotations("verify-library-id", "Verify Library ID"),
       inputSchema: {
         type: "object",
         properties: {
@@ -536,6 +565,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "get-library-details",
       description:
         '[Content Library - TOOL] Get detailed information about a specific library. Use when users say: "show library details", "get library info", "library information", "describe library", "library metadata". Requires libraryId. This TOOL provides the same data as digitalsamba://libraries/{id} resource. Returns complete library information and statistics.',
+      annotations: getToolAnnotations("get-library-details", "Get Library Details"),
       inputSchema: {
         type: "object",
         properties: {
@@ -551,6 +581,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "get-library-hierarchy",
       description:
         '[Content Library - TOOL] Get complete folder and file hierarchy of a library. Use when users say: "show library structure", "get folder tree", "library hierarchy", "folder organization", "library tree view". Requires libraryId. This TOOL provides the same data as digitalsamba://libraries/{id}/hierarchy resource. Returns nested structure showing all folders and their relationships.',
+      annotations: getToolAnnotations("get-library-hierarchy", "Get Library Hierarchy"),
       inputSchema: {
         type: "object",
         properties: {
@@ -566,6 +597,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "list-library-folders",
       description:
         '[Content Library - TOOL] List all folders in a library. Use when users say: "list folders", "show library folders", "get folders", "view directories", "folder list". Requires libraryId. This TOOL provides the same data as digitalsamba://libraries/{id}/folders resource. Returns flat list of all folders with names, IDs, and parent relationships.',
+      annotations: getToolAnnotations("list-library-folders", "List Library Folders"),
       inputSchema: {
         type: "object",
         properties: {
@@ -589,6 +621,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "get-library-folder-details",
       description:
         '[Content Library - TOOL] Get details of a specific folder in a library. Use when users say: "show folder details", "get folder info", "folder contents", "folder information", "describe folder". Requires libraryId and folderId. This TOOL provides the same data as digitalsamba://libraries/{id}/folders/{folderId} resource. Returns folder information and contained files.',
+      annotations: getToolAnnotations("get-library-folder-details", "Get Library Folder Details"),
       inputSchema: {
         type: "object",
         properties: {
@@ -608,6 +641,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "list-library-files",
       description:
         '[Content Library - TOOL] List all files in a library. Use when users say: "list files", "show library files", "get files", "view documents", "file list". Requires libraryId. This TOOL provides the same data as digitalsamba://libraries/{id}/files resource. Returns array of file objects with names, sizes, types, and folder locations.',
+      annotations: getToolAnnotations("list-library-files", "List Library Files"),
       inputSchema: {
         type: "object",
         properties: {
@@ -631,6 +665,7 @@ export function registerLibraryTools(): ToolDefinition[] {
       name: "get-library-file-details",
       description:
         '[Content Library - TOOL] Get detailed information about a specific file. Use when users say: "show file details", "get file info", "file information", "describe file", "file metadata". Requires libraryId and fileId. This TOOL provides the same data as digitalsamba://libraries/{id}/files/{fileId} resource. Returns complete file information including size, type, upload date, and access URLs.',
+      annotations: getToolAnnotations("get-library-file-details", "Get Library File Details"),
       inputSchema: {
         type: "object",
         properties: {
@@ -1487,10 +1522,10 @@ async function handleGetFileLinks(
  * Handle create webapp
  */
 async function handleCreateWebapp(
-  params: { libraryId: string; name: string; folderId?: string },
+  params: { libraryId: string; url: string; name?: string; folderId?: string },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { libraryId, name, folderId } = params;
+  const { libraryId, url, name, folderId } = params;
 
   if (!libraryId || libraryId.trim() === "") {
     return {
@@ -1504,22 +1539,23 @@ async function handleCreateWebapp(
     };
   }
 
-  if (!name || name.trim() === "") {
+  if (!url || url.trim() === "") {
     return {
       content: [
         {
           type: "text",
-          text: "Webapp name is required.",
+          text: "URL is required to create a webapp.",
         },
       ],
       isError: true,
     };
   }
 
-  logger.info("Creating webapp", { libraryId, name, folderId });
+  logger.info("Creating webapp", { libraryId, url, name, folderId });
 
   try {
-    const webappData: any = { name };
+    const webappData: { url: string; name?: string; folder_id?: string } = { url };
+    if (name !== undefined) webappData.name = name;
     if (folderId !== undefined) webappData.folder_id = folderId;
 
     const result = await apiClient.createWebapp(libraryId, webappData);
@@ -1529,18 +1565,19 @@ async function handleCreateWebapp(
         {
           type: "text",
           text:
-            `Successfully created webapp "${name}" in library ${libraryId}.\n` +
-            `Webapp ID: ${result.file_id}\n` +
-            `Upload URL: ${result.external_storage_url}\n` +
-            `Upload Token: ${result.token}\n` +
-            `Token expires at: ${new Date(result.expiration_timestamp * 1000).toISOString()}`,
+            `Successfully created webapp "${result.name}" in library ${libraryId}.\n` +
+            `Webapp ID: ${result.id}\n` +
+            `Type: ${result.type}\n` +
+            `URL: ${result.url}\n` +
+            `Status: ${result.status}\n` +
+            `Created: ${result.created_at}`,
         },
       ],
     };
   } catch (error) {
     logger.error("Error creating webapp", {
       libraryId,
-      name,
+      url,
       error: error instanceof Error ? error.message : String(error),
     });
 
@@ -1612,11 +1649,12 @@ async function handleCreateWhiteboard(
         {
           type: "text",
           text:
-            `Successfully created whiteboard "${name}" in library ${libraryId}.\n` +
-            `Whiteboard ID: ${result.file_id}\n` +
-            `Upload URL: ${result.external_storage_url}\n` +
-            `Upload Token: ${result.token}\n` +
-            `Token expires at: ${new Date(result.expiration_timestamp * 1000).toISOString()}`,
+            `Successfully created whiteboard "${result.name}" in library ${libraryId}.\n` +
+            `Whiteboard ID: ${result.id}\n` +
+            `Type: ${result.type}\n` +
+            `Storage URL: ${result.storage_url}\n` +
+            `Status: ${result.status}\n` +
+            `Created: ${result.created_at}`,
         },
       ],
     };
