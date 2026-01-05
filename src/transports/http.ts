@@ -620,8 +620,8 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     if (req.headers.accept?.includes("text/event-stream")) {
       return handleMcpGet(req, res);
     }
-    // Otherwise return server info (existing behavior)
-    res.json({
+
+    const serverInfo = {
       name: "@digitalsamba/embedded-api-mcp-server",
       version: VERSION,
       transport: "StreamableHTTP",
@@ -638,7 +638,181 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       },
       oauth_enabled: !!oauthConfig,
       ...VERSION_INFO,
-    });
+    };
+
+    // Return JSON if explicitly requested
+    if (req.headers.accept?.includes("application/json")) {
+      return res.json(serverInfo);
+    }
+
+    // Return branded HTML landing page for browsers
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Samba MCP Server</title>
+  <link rel="icon" href="https://digitalsamba.com/favicon.ico">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      max-width: 600px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      padding: 40px;
+      text-align: center;
+    }
+    .logo {
+      width: 180px;
+      height: auto;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+    .header .version {
+      color: rgba(255,255,255,0.8);
+      font-size: 0.875rem;
+      margin-top: 8px;
+    }
+    .content {
+      padding: 40px;
+    }
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      padding: 12px 16px;
+      background: #f0fdf4;
+      border-radius: 8px;
+      color: #166534;
+    }
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      background: #22c55e;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .section {
+      margin-bottom: 24px;
+    }
+    .section h2 {
+      font-size: 1rem;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+    .section p {
+      color: #6b7280;
+      line-height: 1.6;
+    }
+    .code {
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 0.875rem;
+      color: #1f2937;
+      overflow-x: auto;
+    }
+    .links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .links a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      background: #f3f4f6;
+      color: #374151;
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+    .links a:hover {
+      background: #e5e7eb;
+    }
+    .links a.primary {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+    }
+    .links a.primary:hover {
+      opacity: 0.9;
+    }
+    .footer {
+      padding: 20px 40px;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://digitalsamba.com/wp-content/themes/developer/assets/images/ds-logo-white.svg" alt="Digital Samba" class="logo">
+      <h1>MCP Server</h1>
+      <div class="version">v${VERSION}</div>
+    </div>
+    <div class="content">
+      <div class="status">
+        <div class="status-dot"></div>
+        <span>Server is running</span>
+      </div>
+
+      <div class="section">
+        <h2>What is this?</h2>
+        <p>This is a Model Context Protocol (MCP) server for Digital Samba's video conferencing API. Connect it to Claude Desktop or other MCP clients to manage your Digital Samba account using natural language.</p>
+      </div>
+
+      <div class="section">
+        <h2>Connect with Claude Desktop</h2>
+        <div class="code">${req.protocol}://${req.get("host")}</div>
+      </div>
+
+      <div class="section">
+        <h2>Resources</h2>
+        <div class="links">
+          <a href="https://developer.digitalsamba.com" class="primary">API Documentation</a>
+          <a href="https://github.com/digitalsamba/embedded-api-mcp-server">GitHub</a>
+          <a href="/health">Health Check</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      &copy; ${new Date().getFullYear()} Digital Samba. Model Context Protocol Server.
+    </div>
+  </div>
+</body>
+</html>`;
+    res.type("html").send(html);
   });
   app.delete("/", handleMcpDelete);
 
