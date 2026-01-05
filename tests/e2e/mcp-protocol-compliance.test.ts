@@ -166,10 +166,10 @@ describe('MCP Protocol Compliance Tests', () => {
       expect(roomResult.contents).toBeDefined();
       expect(roomResult.contents.length).toBe(1);
       
-      // Verify room data
+      // Verify room data (DS API uses 'topic' for room name)
       const room = JSON.parse(roomResult.contents[0].text);
       expect(room).toHaveProperty('id', roomId);
-      expect(room).toHaveProperty('name');
+      expect(room).toHaveProperty('topic');
     });
     
     it('should handle resource errors correctly', async () => {

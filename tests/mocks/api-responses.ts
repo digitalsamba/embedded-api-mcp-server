@@ -3,13 +3,13 @@
  */
 
 export const mockApiResponses = {
-  // Room Responses
+  // Room Responses (DS API uses 'topic' for room name)
   rooms: {
     list: {
       data: [
         {
           id: 'room-1',
-          name: 'Test Room 1',
+          topic: 'Test Room 1',
           description: 'A test room',
           friendly_url: 'test-room-1',
           privacy: 'public',
@@ -18,7 +18,7 @@ export const mockApiResponses = {
         },
         {
           id: 'room-2',
-          name: 'Test Room 2',
+          topic: 'Test Room 2',
           description: 'Another test room',
           friendly_url: 'test-room-2',
           privacy: 'private',
@@ -30,7 +30,7 @@ export const mockApiResponses = {
     },
     single: {
       id: 'room-1',
-      name: 'Test Room 1',
+      topic: 'Test Room 1',
       description: 'A test room',
       friendly_url: 'test-room-1',
       privacy: 'public',

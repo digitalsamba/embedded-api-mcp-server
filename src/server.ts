@@ -133,15 +133,6 @@ const resourceToToolMap: Record<string, string> = {
   "session-analytics": "get-session-analytics",
   "content": "list-libraries",
   "content-library": "get-library",
-  "server-version": "get-server-version",
-};
-
-// Version resource definition
-const versionResource = {
-  uri: "digitalsamba://version",
-  name: "server-version",
-  description: `[Server Info] Get the current version and build information. Use when users ask: "what version is this", "check version", "server version".`,
-  mimeType: "application/json",
 };
 
 export interface ServerConfig {
@@ -185,7 +176,6 @@ export function createServer(config: ServerConfig = {}): Server {
 
     return {
       resources: [
-        versionResource,
         ...registerRoomResources(),
         ...registerSessionResources(),
         ...registerRecordingResources(),
@@ -210,18 +200,6 @@ export function createServer(config: ServerConfig = {}): Server {
 
     logger.debug(`Reading resource: ${uri}`);
 
-    if (uri === "digitalsamba://version") {
-      return {
-        contents: [
-          {
-            uri: uri,
-            text: JSON.stringify(VERSION_INFO, null, 2),
-            mimeType: "application/json",
-          },
-        ],
-      };
-    }
-
     if (uri.startsWith("digitalsamba://rooms")) {
       return handleRoomResource(uri, {}, request, { apiUrl });
     } else if (uri.startsWith("digitalsamba://sessions")) {
@@ -243,14 +221,6 @@ export function createServer(config: ServerConfig = {}): Server {
   // Register tool handlers
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     const allTools = [
-      {
-        name: "get-server-version",
-        description: `[Server Info] Get the current version and build information of the MCP server. Current version: ${VERSION}`,
-        inputSchema: {
-          type: "object",
-          properties: {},
-        },
-      },
       ...registerRoomTools(),
       ...registerSessionTools(),
       ...registerRecordingTools(),
@@ -284,14 +254,8 @@ export function createServer(config: ServerConfig = {}): Server {
     logger.debug(`Executing tool: ${name}`);
 
     try {
-      // Version tool
-      if (name === "get-server-version") {
-        return {
-          content: [{ type: "text", text: JSON.stringify(VERSION_INFO, null, 2) }],
-        };
-      }
       // Room management tools
-      else if (
+      if (
         name === "create-room" ||
         name === "update-room" ||
         name === "delete-room" ||

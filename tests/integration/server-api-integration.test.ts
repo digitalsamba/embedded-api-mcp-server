@@ -69,10 +69,10 @@ describe('MCP Server Integration', () => {
       expect(contents).toBeDefined();
       expect(contents.length).toBeGreaterThan(0);
       
-      // Parse first room
+      // Parse first room (DS API uses 'topic' for room name)
       const firstRoom = JSON.parse(contents[0].text);
       expect(firstRoom).toHaveProperty('id');
-      expect(firstRoom).toHaveProperty('name');
+      expect(firstRoom).toHaveProperty('topic');
     });
     
     it('should get a specific room through the MCP protocol', async () => {
@@ -95,9 +95,9 @@ describe('MCP Server Integration', () => {
       
       const room = JSON.parse(contents[0].text);
       expect(room.id).toBe(roomId);
-      expect(room).toHaveProperty('name');
+      expect(room).toHaveProperty('topic');
     });
-    
+
     it('should list analytics resources', async () => {
       // List available resources
       const { resources } = await client.listResources();
