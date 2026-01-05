@@ -653,162 +653,394 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Digital Samba MCP Server</title>
   <link rel="icon" href="https://digitalsamba.com/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --ds-blue: #3771e0;
+      --ds-blue-dark: #264f9c;
+      --ds-coral: #f06859;
+      --ds-navy: #323e66;
+      --ds-text: #222326;
+      --ds-gray: #6a6d77;
+      --ds-light: #fafafa;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--ds-light);
       min-height: 100vh;
+      color: var(--ds-text);
+      overflow-x: hidden;
+    }
+    .hero {
+      background: linear-gradient(165deg, var(--ds-navy) 0%, #1a2340 100%);
+      padding: 60px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(55, 113, 224, 0.15) 0%, transparent 70%);
+      animation: float 20s ease-in-out infinite;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -10%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(240, 104, 89, 0.1) 0%, transparent 70%);
+      animation: float 15s ease-in-out infinite reverse;
+    }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(30px, -20px) scale(1.1); }
+    }
+    .hero-content {
+      max-width: 680px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .logo {
+      height: 32px;
+      width: auto;
+    }
+    .badge {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.9);
+      letter-spacing: 0.02em;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 700;
+      color: white;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--ds-blue) 0%, #5a9aff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.125rem;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.7;
+      max-width: 520px;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      padding: 8px 16px;
+      border-radius: 100px;
+      margin-top: 24px;
+      font-size: 14px;
+      color: #4ade80;
+      font-weight: 500;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
+    }
+    .main {
+      max-width: 680px;
+      margin: -40px auto 0;
+      padding: 0 24px 60px;
+      position: relative;
+      z-index: 2;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 20px 40px -8px rgba(50, 62, 102, 0.12);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #eef1f6;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-header h2 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ds-text);
+      letter-spacing: -0.01em;
+    }
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--ds-blue) 0%, var(--ds-blue-dark) 100%);
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
-    }
-    .container {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-      max-width: 600px;
-      width: 100%;
-      overflow: hidden;
-    }
-    .header {
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-      padding: 40px;
-      text-align: center;
-    }
-    .logo {
-      width: 180px;
-      height: auto;
-      margin-bottom: 16px;
-    }
-    .header h1 {
       color: white;
-      font-size: 1.5rem;
-      font-weight: 600;
+      font-size: 18px;
     }
-    .header .version {
-      color: rgba(255,255,255,0.8);
-      font-size: 0.875rem;
-      margin-top: 8px;
+    .card-body {
+      padding: 24px;
     }
-    .content {
-      padding: 40px;
-    }
-    .status {
+    .url-box {
+      background: var(--ds-navy);
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: #a8c7fa;
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 24px;
-      padding: 12px 16px;
-      background: #f0fdf4;
-      border-radius: 8px;
-      color: #166534;
-    }
-    .status-dot {
-      width: 10px;
-      height: 10px;
-      background: #22c55e;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    .section {
-      margin-bottom: 24px;
-    }
-    .section h2 {
-      font-size: 1rem;
-      color: #374151;
-      margin-bottom: 12px;
-    }
-    .section p {
-      color: #6b7280;
-      line-height: 1.6;
-    }
-    .code {
-      background: #f3f4f6;
-      border-radius: 8px;
-      padding: 16px;
-      font-family: 'SF Mono', Monaco, monospace;
-      font-size: 0.875rem;
-      color: #1f2937;
-      overflow-x: auto;
-    }
-    .links {
-      display: flex;
+      justify-content: space-between;
       gap: 12px;
-      flex-wrap: wrap;
     }
-    .links a {
-      display: inline-flex;
+    .url-box code {
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .copy-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .copy-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .platforms {
+      display: grid;
+      gap: 12px;
+    }
+    .platform-link {
+      display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 10px 16px;
-      background: #f3f4f6;
-      color: #374151;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--ds-light);
+      border-radius: 12px;
       text-decoration: none;
-      border-radius: 8px;
-      font-size: 0.875rem;
+      color: var(--ds-text);
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .platform-link:hover {
+      background: white;
+      border-color: #e5e8ed;
+      transform: translateX(4px);
+    }
+    .platform-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .platform-icon.claude { background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); }
+    .platform-icon.chatgpt { background: linear-gradient(135deg, #059669 0%, #10b981 100%); }
+    .platform-icon.other { background: linear-gradient(135deg, var(--ds-gray) 0%, #8b8f99 100%); }
+    .platform-info h3 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .platform-info p {
+      font-size: 13px;
+      color: var(--ds-gray);
+    }
+    .platform-arrow {
+      margin-left: auto;
+      color: var(--ds-gray);
+      opacity: 0;
+      transform: translateX(-8px);
       transition: all 0.2s;
     }
-    .links a:hover {
-      background: #e5e7eb;
+    .platform-link:hover .platform-arrow {
+      opacity: 1;
+      transform: translateX(0);
     }
-    .links a.primary {
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    .quick-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .quick-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--ds-light);
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--ds-text);
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .quick-link:hover {
+      background: white;
+      border-color: #e5e8ed;
+      color: var(--ds-blue);
+    }
+    .quick-link.primary {
+      background: var(--ds-blue);
       color: white;
     }
-    .links a.primary:hover {
-      opacity: 0.9;
+    .quick-link.primary:hover {
+      background: var(--ds-blue-dark);
+      border-color: transparent;
+      color: white;
     }
     .footer {
-      padding: 20px 40px;
-      background: #f9fafb;
-      border-top: 1px solid #e5e7eb;
       text-align: center;
-      color: #9ca3af;
-      font-size: 0.75rem;
+      padding: 24px;
+      color: var(--ds-gray);
+      font-size: 13px;
+    }
+    .footer a {
+      color: var(--ds-blue);
+      text-decoration: none;
+    }
+    .version-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      background: rgba(55, 113, 224, 0.1);
+      color: var(--ds-blue);
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-left: auto;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <img src="https://digitalsamba.com/wp-content/themes/developer/assets/images/ds-logo-white.svg" alt="Digital Samba" class="logo">
-      <h1>MCP Server</h1>
-      <div class="version">v${VERSION}</div>
+  <div class="hero">
+    <div class="hero-content">
+      <div class="logo-row">
+        <img src="https://dashboard.digitalsamba.com/logo-light.svg" alt="Digital Samba" class="logo">
+        <span class="badge">MCP Server</span>
+      </div>
+      <h1>Manage your video platform<br>with <span>natural language</span></h1>
+      <p>Connect your Digital Samba account to AI assistants like Claude and ChatGPT. Create rooms, manage recordings, and control your video infrastructure—just by asking.</p>
+      <div class="status-pill">
+        <span class="status-dot"></span>
+        Server operational
+      </div>
     </div>
-    <div class="content">
-      <div class="status">
-        <div class="status-dot"></div>
-        <span>Server is running</span>
-      </div>
+  </div>
 
-      <div class="section">
-        <h2>What is this?</h2>
-        <p>This is a Model Context Protocol (MCP) server for Digital Samba's video conferencing API. Connect it to Claude Desktop or other MCP clients to manage your Digital Samba account using natural language.</p>
+  <div class="main">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">⚡</div>
+        <h2>Quick Connect</h2>
+        <span class="version-tag">v${VERSION}</span>
       </div>
-
-      <div class="section">
-        <h2>Connect with Claude Desktop</h2>
-        <div class="code">${req.protocol}://${req.get("host")}</div>
-      </div>
-
-      <div class="section">
-        <h2>Resources</h2>
-        <div class="links">
-          <a href="https://developer.digitalsamba.com" class="primary">API Documentation</a>
-          <a href="https://github.com/digitalsamba/embedded-api-mcp-server">GitHub</a>
-          <a href="/health">Health Check</a>
+      <div class="card-body">
+        <div class="url-box">
+          <code id="serverUrl">${req.protocol}://${req.get("host")}</code>
+          <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('serverUrl').textContent);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)">Copy</button>
         </div>
       </div>
     </div>
-    <div class="footer">
-      &copy; ${new Date().getFullYear()} Digital Samba. Model Context Protocol Server.
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">🔌</div>
+        <h2>Setup Guides</h2>
+      </div>
+      <div class="card-body">
+        <div class="platforms">
+          <a href="https://digitalsamba.com/blog/mcp-claude-desktop" class="platform-link">
+            <div class="platform-icon claude">🤖</div>
+            <div class="platform-info">
+              <h3>Claude Desktop</h3>
+              <p>Connect via Custom Connectors with OAuth</p>
+            </div>
+            <span class="platform-arrow">→</span>
+          </a>
+          <a href="https://digitalsamba.com/blog/mcp-chatgpt" class="platform-link">
+            <div class="platform-icon chatgpt">💬</div>
+            <div class="platform-info">
+              <h3>ChatGPT</h3>
+              <p>Use with OpenAI's MCP integration</p>
+            </div>
+            <span class="platform-arrow">→</span>
+          </a>
+          <a href="https://digitalsamba.com/blog/mcp-other-clients" class="platform-link">
+            <div class="platform-icon other">🔧</div>
+            <div class="platform-info">
+              <h3>Other MCP Clients</h3>
+              <p>Cursor, Windsurf, and more</p>
+            </div>
+            <span class="platform-arrow">→</span>
+          </a>
+        </div>
+      </div>
     </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📚</div>
+        <h2>Resources</h2>
+      </div>
+      <div class="card-body">
+        <div class="quick-links">
+          <a href="https://developer.digitalsamba.com" class="quick-link primary">API Docs</a>
+          <a href="https://github.com/digitalsamba/embedded-api-mcp-server" class="quick-link">GitHub</a>
+          <a href="/health" class="quick-link">Health Check</a>
+          <a href="/.well-known/oauth-authorization-server" class="quick-link">OAuth Info</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    &copy; ${new Date().getFullYear()} <a href="https://digitalsamba.com">Digital Samba</a> · Model Context Protocol Server
   </div>
 </body>
 </html>`;
