@@ -13,7 +13,7 @@ export function registerRecordingTools(): Tool[] {
       name: "delete-recording",
       description:
         '[Recording Management] Permanently delete a recording. Use when users say: "delete recording", "remove recording", "delete video", "remove video recording", "delete meeting recording". Requires recording_id. This action cannot be undone.',
-      annotations: getToolAnnotations("delete-recording"),
+      annotations: getToolAnnotations("delete-recording", "Delete Recording"),
       inputSchema: {
         type: "object",
         properties: {
@@ -29,7 +29,7 @@ export function registerRecordingTools(): Tool[] {
       name: "update-recording",
       description:
         '[Recording Management] Update recording metadata like name or description. Use when users say: "rename recording", "update recording name", "change recording title", "edit recording details". Requires recording_id. Currently limited to name updates.',
-      annotations: getToolAnnotations("update-recording"),
+      annotations: getToolAnnotations("update-recording", "Update Recording"),
       inputSchema: {
         type: "object",
         properties: {
@@ -46,7 +46,7 @@ export function registerRecordingTools(): Tool[] {
       name: "get-recordings",
       description:
         '[Recording Management - TOOL] Filter and search recordings with specific criteria. Use when users need to: "filter recordings by room", "search recordings", "find recordings from date", "get recordings with limit". NOT for simply listing all recordings - use digitalsamba://recordings resource instead. NOT for listing rooms. Returns filtered recording results.',
-      annotations: getToolAnnotations("get-recordings"),
+      annotations: getToolAnnotations("get-recordings", "Get Recordings"),
       inputSchema: {
         type: "object",
         properties: {
@@ -64,7 +64,7 @@ export function registerRecordingTools(): Tool[] {
       name: "start-recording",
       description:
         '[Recording Management] Start recording an active room session. Use when users say: "start recording", "begin recording", "record this meeting", "start recording the room", "record session". Requires room_id. Room must have an active session.',
-      annotations: getToolAnnotations("start-recording"),
+      annotations: getToolAnnotations("start-recording", "Start Recording"),
       inputSchema: {
         type: "object",
         properties: {
@@ -80,7 +80,7 @@ export function registerRecordingTools(): Tool[] {
       name: "stop-recording",
       description:
         '[Recording Management] Stop an ongoing room recording. Use when users say: "stop recording", "end recording", "finish recording", "stop recording the room", "halt recording". Requires room_id. Only works if recording is currently active.',
-      annotations: getToolAnnotations("stop-recording"),
+      annotations: getToolAnnotations("stop-recording", "Stop Recording"),
       inputSchema: {
         type: "object",
         properties: {
@@ -96,7 +96,7 @@ export function registerRecordingTools(): Tool[] {
       name: "archive-recording",
       description:
         '[Recording Management] Move a recording to archived status for long-term storage. Use when users say: "archive recording", "archive video", "move to archive", "store recording", "archive old recording". Requires recording_id. Archived recordings can be unarchived later.',
-      annotations: getToolAnnotations("archive-recording"),
+      annotations: getToolAnnotations("archive-recording", "Archive Recording"),
       inputSchema: {
         type: "object",
         properties: {
@@ -112,7 +112,7 @@ export function registerRecordingTools(): Tool[] {
       name: "get-recording",
       description:
         '[Recording Management] Get detailed information about a specific recording. Use when users say: "show recording details", "get recording info", "recording information", "details about recording", "show video details". Requires recording_id. Returns full recording metadata including status, duration, and URLs.',
-      annotations: getToolAnnotations("get-recording"),
+      annotations: getToolAnnotations("get-recording", "Get Recording Details"),
       inputSchema: {
         type: "object",
         properties: {
@@ -128,7 +128,7 @@ export function registerRecordingTools(): Tool[] {
       name: "get-recording-download-link",
       description:
         '[Recording Management] Generate a temporary download link for a recording. Use when users say: "download recording", "get download link", "export recording", "download video", "get recording URL". Requires recording_id. Returns a time-limited download URL. Recording must be in READY status.',
-      annotations: getToolAnnotations("get-recording-download-link"),
+      annotations: getToolAnnotations("get-recording-download-link", "Get Recording Download Link"),
       inputSchema: {
         type: "object",
         properties: {
@@ -148,7 +148,7 @@ export function registerRecordingTools(): Tool[] {
       name: "unarchive-recording",
       description:
         '[Recording Management] Restore an archived recording back to active status. Use when users say: "unarchive recording", "restore recording", "unarchive video", "bring back from archive", "restore archived recording". Requires recording_id. Only works on archived recordings.',
-      annotations: getToolAnnotations("unarchive-recording"),
+      annotations: getToolAnnotations("unarchive-recording", "Unarchive Recording"),
       inputSchema: {
         type: "object",
         properties: {
@@ -164,7 +164,7 @@ export function registerRecordingTools(): Tool[] {
       name: "get-recording-bookmarks",
       description:
         '[Recording Management] Get bookmarks for a recording. Use when users say: "get recording bookmarks", "show bookmarks", "list recording markers", "get recording highlights". Requires recording_id. Returns timestamps and labels of bookmarks added during recording.',
-      annotations: getToolAnnotations("get-recording-bookmarks"),
+      annotations: getToolAnnotations("get-recording-bookmarks", "Get Recording Bookmarks"),
       inputSchema: {
         type: "object",
         properties: {

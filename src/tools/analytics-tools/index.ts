@@ -25,7 +25,7 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-participant-statistics",
       description:
         '[Analytics] Get detailed participant statistics and behavior analytics. Use when users say: "show participant stats", "participant analytics", "user activity report", "attendee statistics", "who attended meetings", "participant engagement metrics". Optional filters for date range, room, or specific participant. Returns attendance, duration, and activity data.',
-      annotations: getToolAnnotations("get-participant-statistics"),
+      annotations: getToolAnnotations("get-participant-statistics", "Get Participant Statistics"),
       inputSchema: {
         type: "object",
         properties: {
@@ -57,7 +57,7 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-room-analytics",
       description:
         '[Analytics] Get comprehensive room usage analytics and performance metrics. Use when users say: "room analytics", "room usage statistics", "meeting room performance", "room activity report", "how is the room being used", "room metrics". Optional roomId for specific room or all rooms. Returns usage patterns, participant counts, session data.',
-      annotations: getToolAnnotations("get-room-analytics"),
+      annotations: getToolAnnotations("get-room-analytics", "Get Room Analytics"),
       inputSchema: {
         type: "object",
         properties: {
@@ -86,7 +86,7 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-usage-statistics",
       description:
         '[Analytics - TOOL] Get filtered platform usage statistics with specific date ranges and periods. Use when users need: "analytics for specific dates", "weekly/monthly analytics", "analytics for last week", "analytics between dates". For simple "show analytics" use digitalsamba://analytics/team resource instead. Returns sessions, participants, minutes filtered by your criteria.',
-      annotations: getToolAnnotations("get-usage-statistics"),
+      annotations: getToolAnnotations("get-usage-statistics", "Get Usage Statistics"),
       inputSchema: {
         type: "object",
         properties: {
@@ -112,7 +112,7 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-usage-analytics",
       description:
         '[Analytics - TOOL] Get platform usage statistics and growth trends. Use when users say: "usage trends", "platform growth", "total meeting minutes", "usage statistics", "growth metrics". This TOOL provides the same data as digitalsamba://analytics/usage resource. Supports date filters and period grouping. Returns total sessions, participants, minutes, and growth rates.',
-      annotations: getToolAnnotations("get-usage-analytics"),
+      annotations: getToolAnnotations("get-usage-analytics", "Get Usage Analytics"),
       inputSchema: {
         type: "object",
         properties: {
@@ -136,7 +136,7 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-live-analytics",
       description:
         '[Analytics - TOOL] Get real-time analytics for all active sessions. Use when users say: "live session data", "current activity", "real-time analytics", "active sessions", "live meeting stats". This TOOL provides the same data as digitalsamba://analytics/live resource. Returns current active sessions and participant counts.',
-      annotations: getToolAnnotations("get-live-analytics"),
+      annotations: getToolAnnotations("get-live-analytics", "Get Live Analytics"),
       inputSchema: {
         type: "object",
         properties: {
@@ -151,7 +151,7 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-live-room-analytics",
       description:
         '[Analytics - TOOL] Get real-time analytics for a specific room. Use when users say: "live room analytics", "current room activity", "real-time room data", "active room session", "live room stats". Requires roomId. This TOOL provides the same data as digitalsamba://analytics/live/{roomId} resource. Returns current session status and participant activity for that room.',
-      annotations: getToolAnnotations("get-live-room-analytics"),
+      annotations: getToolAnnotations("get-live-room-analytics", "Get Live Room Analytics"),
       inputSchema: {
         type: "object",
         properties: {
@@ -167,7 +167,7 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-session-analytics",
       description:
         '[Analytics - TOOL] Get detailed analytics for a specific session. Use when users say: "session analytics", "meeting analytics", "session performance data", "session metrics", "meeting statistics". Requires sessionId. This TOOL provides the same data as digitalsamba://analytics/sessions/{sessionId} resource. Returns comprehensive session analytics including participant engagement and activity patterns.',
-      annotations: getToolAnnotations("get-session-analytics"),
+      annotations: getToolAnnotations("get-session-analytics", "Get Session Analytics"),
       inputSchema: {
         type: "object",
         properties: {
@@ -183,7 +183,7 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-participant-analytics",
       description:
         '[Analytics - TOOL] Get analytics for a specific participant across sessions. Use when users say: "user analytics", "participant history", "individual user stats", "participant metrics", "user engagement data". Requires participantId. This TOOL provides the same data as digitalsamba://analytics/participants/{participantId} resource. Returns participant activity across all sessions they joined.',
-      annotations: getToolAnnotations("get-participant-analytics"),
+      annotations: getToolAnnotations("get-participant-analytics", "Get Participant Analytics"),
       inputSchema: {
         type: "object",
         properties: {

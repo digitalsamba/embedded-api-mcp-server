@@ -27,7 +27,7 @@ export function registerRoomTools(): Tool[] {
       name: "create-room",
       description:
         '[Room Management] Create a new room with specified settings. Use when users say: "create a room", "set up a meeting space", "make a new video room", "create a conference room", "set up a virtual meeting room", "create room with toolbar on right". Returns the created room object with ID, join URL, and all settings.',
-      annotations: getToolAnnotations("create-room"),
+      annotations: getToolAnnotations("create-room", "Create Room"),
       inputSchema: {
         type: "object",
         properties: {
@@ -183,7 +183,7 @@ export function registerRoomTools(): Tool[] {
       name: "update-room",
       description:
         '[Room Management] Update an existing room\'s settings. Use when users say: "change room settings", "update the room", "modify room configuration", "edit room details", "change max participants", "rename the room", "change toolbar position", "update room colors", "change room layout". Requires room_id. Returns the updated room object.',
-      annotations: getToolAnnotations("update-room"),
+      annotations: getToolAnnotations("update-room", "Update Room Settings"),
       inputSchema: {
         type: "object",
         properties: {
@@ -338,7 +338,7 @@ export function registerRoomTools(): Tool[] {
       name: "delete-room",
       description:
         '[Room Management] Permanently delete a room. Use when users say: "delete the room", "remove this room", "delete meeting room", "remove conference room", "permanently delete room". Requires room_id. This action cannot be undone.',
-      annotations: getToolAnnotations("delete-room"),
+      annotations: getToolAnnotations("delete-room", "Delete Room"),
       inputSchema: {
         type: "object",
         properties: {
@@ -354,7 +354,7 @@ export function registerRoomTools(): Tool[] {
       name: "generate-token",
       description:
         '[Room Management] Generate an access token for users to join a room. Use when users say: "create a join link", "generate access token", "create invite link", "get room access", "invite someone to room", "create moderator link". Requires room_id. Returns a token with join URL. IMPORTANT: Always use unique external_id values for each user to support single-session enforcement if enabled on the account.',
-      annotations: getToolAnnotations("generate-token"),
+      annotations: getToolAnnotations("generate-token", "Generate Access Token"),
       inputSchema: {
         type: "object",
         properties: {
@@ -404,7 +404,7 @@ export function registerRoomTools(): Tool[] {
       name: "get-default-room-settings",
       description:
         '[Room Management] Get the default settings that are automatically applied to all new rooms. Use when users say: "show default room settings", "what are the default settings", "get room defaults", "show room template settings". Returns all default configuration options.',
-      annotations: getToolAnnotations("get-default-room-settings"),
+      annotations: getToolAnnotations("get-default-room-settings", "Get Default Room Settings"),
       inputSchema: {
         type: "object",
         properties: {},
@@ -414,7 +414,7 @@ export function registerRoomTools(): Tool[] {
       name: "update-default-room-settings",
       description:
         '[Room Management] Update the default settings template for all future rooms. Use when users say: "change default room settings", "update room defaults", "modify default configuration", "set default language", "change default room template". Requires settings object. Affects only new rooms created after this change.',
-      annotations: getToolAnnotations("update-default-room-settings"),
+      annotations: getToolAnnotations("update-default-room-settings", "Update Default Room Settings"),
       inputSchema: {
         type: "object",
         properties: {
@@ -461,7 +461,7 @@ export function registerRoomTools(): Tool[] {
       name: "list-rooms",
       description:
         '[Room Management - TOOL] List all rooms in your account. Use when users say: "show rooms", "list rooms", "show all rooms", "get rooms", "display rooms", "view rooms", "list meeting rooms", "get room list", "what rooms exist", "room directory", "all rooms", "my rooms". This TOOL provides the same data as the digitalsamba://rooms resource but is accessible to AI assistants. Returns array of room objects with IDs, names, settings, and join URLs.',
-      annotations: getToolAnnotations("list-rooms"),
+      annotations: getToolAnnotations("list-rooms", "List All Rooms"),
       inputSchema: {
         type: "object",
         properties: {
@@ -480,7 +480,7 @@ export function registerRoomTools(): Tool[] {
       name: "get-room-details",
       description:
         '[Room Management - TOOL] Get complete details for a specific room. Use when users say: "show room details", "get room info", "room configuration", "room settings", "what are room parameters", "describe room". Requires room_id. This TOOL provides the same data as the digitalsamba://rooms/{room_id} resource. Returns full room object with all settings, max participants, features, and URLs.',
-      annotations: getToolAnnotations("get-room-details"),
+      annotations: getToolAnnotations("get-room-details", "Get Room Details"),
       inputSchema: {
         type: "object",
         properties: {
@@ -496,7 +496,7 @@ export function registerRoomTools(): Tool[] {
       name: "list-live-rooms",
       description:
         '[Room Management - TOOL] List all rooms currently with active participants. Use when users say: "show live rooms", "active meetings", "rooms with participants", "current sessions", "who is online", "active rooms", "ongoing meetings". This TOOL provides the same data as the digitalsamba://rooms/live resource. Returns rooms with participant counts and session duration.',
-      annotations: getToolAnnotations("list-live-rooms"),
+      annotations: getToolAnnotations("list-live-rooms", "List Live Rooms"),
       inputSchema: {
         type: "object",
         properties: {},
@@ -506,7 +506,7 @@ export function registerRoomTools(): Tool[] {
       name: "list-live-participants",
       description:
         '[Room Management - TOOL] List all rooms with detailed participant information. Use when users say: "show who is in meetings", "list participants in all rooms", "active participants", "who is in which room", "all attendees". This TOOL provides the same data as the digitalsamba://rooms/live/participants resource. Returns rooms with full participant details including names and join times.',
-      annotations: getToolAnnotations("list-live-participants"),
+      annotations: getToolAnnotations("list-live-participants", "List Live Participants"),
       inputSchema: {
         type: "object",
         properties: {},

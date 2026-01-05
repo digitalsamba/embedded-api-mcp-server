@@ -60,7 +60,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "start-transcription",
       description:
         '[Live Session Controls] Start real-time transcription for an active room session. Use when users say: "start transcription", "enable transcription", "transcribe the meeting", "turn on transcription", "start live captions". Requires roomId with an active session. Transcripts can be exported later.',
-      annotations: getToolAnnotations("start-transcription"),
+      annotations: getToolAnnotations("start-transcription", "Start Transcription"),
       inputSchema: {
         type: "object",
         properties: {
@@ -76,7 +76,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "stop-transcription",
       description:
         '[Live Session Controls] Stop ongoing transcription in a room. Use when users say: "stop transcription", "disable transcription", "turn off transcription", "stop live captions", "end transcription". Requires roomId. Only works if transcription is currently active.',
-      annotations: getToolAnnotations("stop-transcription"),
+      annotations: getToolAnnotations("stop-transcription", "Stop Transcription"),
       inputSchema: {
         type: "object",
         properties: {
@@ -92,7 +92,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "phone-participants-joined",
       description:
         '[Live Session Controls] Register phone/dial-in participants joining a room. Use when users say: "add phone participant", "someone dialed in", "phone user joined", "register dial-in participant". Requires roomId and participant details including callId. Used for tracking phone-based attendees.',
-      annotations: getToolAnnotations("phone-participants-joined"),
+      annotations: getToolAnnotations("phone-participants-joined", "Phone Participants Joined"),
       inputSchema: {
         type: "object",
         properties: {
@@ -134,7 +134,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "phone-participants-left",
       description:
         '[Live Session Controls] Register phone/dial-in participants leaving a room. Use when users say: "phone participant left", "dial-in user disconnected", "remove phone participant", "phone user hung up". Requires roomId and callIds array. Updates participant tracking.',
-      annotations: getToolAnnotations("phone-participants-left"),
+      annotations: getToolAnnotations("phone-participants-left", "Phone Participants Left"),
       inputSchema: {
         type: "object",
         properties: {
@@ -157,7 +157,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "raise-participant-hand",
       description:
         '[Live Session Controls] Raise a participant\'s hand in a live session. Use when users say: "raise hand for participant", "participant wants to speak", "raise their hand". Requires roomId and participantId. Only works during active sessions.',
-      annotations: getToolAnnotations("raise-participant-hand"),
+      annotations: getToolAnnotations("raise-participant-hand", "Raise Participant Hand"),
       inputSchema: {
         type: "object",
         properties: {
@@ -177,7 +177,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "lower-participant-hand",
       description:
         '[Live Session Controls] Lower a participant\'s hand in a live session. Use when users say: "lower hand", "dismiss hand raise", "acknowledge participant". Requires roomId and participantId. Only works during active sessions.',
-      annotations: getToolAnnotations("lower-participant-hand"),
+      annotations: getToolAnnotations("lower-participant-hand", "Lower Participant Hand"),
       inputSchema: {
         type: "object",
         properties: {
@@ -197,7 +197,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "raise-phone-participant-hand",
       description:
         '[Live Session Controls] Raise a phone participant\'s hand in a live session. Use when users say: "raise hand for phone user", "phone participant wants to speak". Requires roomId and callId. Only works for phone/dial-in participants.',
-      annotations: getToolAnnotations("raise-phone-participant-hand"),
+      annotations: getToolAnnotations("raise-phone-participant-hand", "Raise Phone Participant Hand"),
       inputSchema: {
         type: "object",
         properties: {
@@ -217,7 +217,7 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "lower-phone-participant-hand",
       description:
         '[Live Session Controls] Lower a phone participant\'s hand in a live session. Use when users say: "lower phone participant hand", "dismiss phone user hand raise". Requires roomId and callId. Only works for phone/dial-in participants.',
-      annotations: getToolAnnotations("lower-phone-participant-hand"),
+      annotations: getToolAnnotations("lower-phone-participant-hand", "Lower Phone Participant Hand"),
       inputSchema: {
         type: "object",
         properties: {

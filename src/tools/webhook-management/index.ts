@@ -49,7 +49,7 @@ export function registerWebhookTools(): ToolDefinition[] {
       name: "list-webhook-events",
       description:
         '[Webhook Management] List all available webhook event types. Use when users say: "list webhook events", "show available events", "what events can I subscribe to", "webhook event types", "available webhooks". Returns complete catalog of subscribable events like room.created, session.ended, etc.',
-      annotations: getToolAnnotations("list-webhook-events"),
+      annotations: getToolAnnotations("list-webhook-events", "List Webhook Events"),
       inputSchema: {
         type: "object",
         properties: {},
@@ -59,7 +59,7 @@ export function registerWebhookTools(): ToolDefinition[] {
       name: "list-webhooks",
       description:
         '[Webhook Management] List all configured webhooks in your account. Use when users say: "list webhooks", "show webhooks", "get all webhooks", "show webhook configurations", "active webhooks". Returns webhook endpoints, subscribed events, and status. Supports pagination.',
-      annotations: getToolAnnotations("list-webhooks"),
+      annotations: getToolAnnotations("list-webhooks", "List All Webhooks"),
       inputSchema: {
         type: "object",
         properties: {
@@ -78,7 +78,7 @@ export function registerWebhookTools(): ToolDefinition[] {
       name: "create-webhook",
       description:
         '[Webhook Management] Create a new webhook endpoint subscription. Use when users say: "create webhook", "add webhook", "subscribe to events", "set up webhook", "configure webhook notifications". Requires endpoint URL and events array. Optional auth header for security.',
-      annotations: getToolAnnotations("create-webhook"),
+      annotations: getToolAnnotations("create-webhook", "Create Webhook"),
       inputSchema: {
         type: "object",
         properties: {
@@ -110,7 +110,7 @@ export function registerWebhookTools(): ToolDefinition[] {
       name: "get-webhook",
       description:
         '[Webhook Management] Get detailed information about a specific webhook. Use when users say: "show webhook details", "get webhook info", "webhook configuration", "describe webhook", "webhook settings". Requires webhookId. Returns endpoint, events, and configuration.',
-      annotations: getToolAnnotations("get-webhook"),
+      annotations: getToolAnnotations("get-webhook", "Get Webhook Details"),
       inputSchema: {
         type: "object",
         properties: {
@@ -126,7 +126,7 @@ export function registerWebhookTools(): ToolDefinition[] {
       name: "update-webhook",
       description:
         '[Webhook Management] Update webhook endpoint, events, or settings. Use when users say: "update webhook", "change webhook URL", "modify webhook events", "edit webhook", "change webhook configuration". Requires webhookId. Can update endpoint, name, events, or auth.',
-      annotations: getToolAnnotations("update-webhook"),
+      annotations: getToolAnnotations("update-webhook", "Update Webhook"),
       inputSchema: {
         type: "object",
         properties: {
@@ -161,7 +161,7 @@ export function registerWebhookTools(): ToolDefinition[] {
       name: "delete-webhook",
       description:
         '[Webhook Management] Permanently delete a webhook subscription. Use when users say: "delete webhook", "remove webhook", "unsubscribe webhook", "cancel webhook", "disable webhook". Requires webhookId. Stops all future event deliveries to this endpoint.',
-      annotations: getToolAnnotations("delete-webhook"),
+      annotations: getToolAnnotations("delete-webhook", "Delete Webhook"),
       inputSchema: {
         type: "object",
         properties: {
