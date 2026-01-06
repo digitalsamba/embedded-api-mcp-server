@@ -290,6 +290,7 @@ export function createServer(config: ServerConfig = {}): Server {
         name === "hard-delete-session-resources" ||
         name === "bulk-delete-session-data" ||
         name === "get-session-statistics" ||
+        name === "get-session-statistics-details" ||
         name === "list-sessions" ||
         name === "get-session-details" ||
         name === "list-session-participants" ||
@@ -324,7 +325,9 @@ export function createServer(config: ServerConfig = {}): Server {
         name.includes("-chats") ||
         name.includes("-qa") ||
         name.includes("-transcripts") ||
-        name.includes("-summaries")
+        name.includes("-summaries") ||
+        name === "delete-session-recordings" ||
+        name === "delete-session-resources"
       ) {
         return await executeCommunicationTool(name, args || {}, client);
       }
