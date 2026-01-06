@@ -129,11 +129,14 @@ jobs:
             # Update docker-compose to use production tag
             sed -i 's/:latest/:production/g' docker-compose.yml
 
+            # Set production network name (apps3 uses deployment_proxy)
+            export PROXY_NETWORK=deployment_proxy
+
             # Stop and remove old container
-            sudo docker compose down --remove-orphans || true
+            sudo PROXY_NETWORK=$PROXY_NETWORK docker compose down --remove-orphans || true
 
             # Start new container
-            sudo docker compose up -d
+            sudo PROXY_NETWORK=$PROXY_NETWORK docker compose up -d
 
             # Wait for service to be healthy
             echo "Waiting for service to be healthy..."
