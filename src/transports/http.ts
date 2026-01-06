@@ -659,7 +659,9 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Digital Samba MCP Server</title>
-  <link rel="icon" href="https://digitalsamba.com/favicon.ico">
+  <link rel="icon" type="image/x-icon" href="https://dashboard.digitalsamba.com/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="https://dashboard.digitalsamba.com/favicon-blank-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://dashboard.digitalsamba.com/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
