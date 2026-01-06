@@ -298,6 +298,10 @@ export function createServer(config: ServerConfig = {}): Server {
       ) {
         return await executeSessionTool(name, args || {}, client, request);
       }
+      // Export tools (check BEFORE recording tools - export-recording-metadata contains "recording")
+      else if (name.includes("export-")) {
+        return await executeExportTool(name, args || {}, request, { apiUrl });
+      }
       // Recording management tools
       else if (
         name.includes("recording") ||
@@ -315,10 +319,6 @@ export function createServer(config: ServerConfig = {}): Server {
         name === "phone-participants-left"
       ) {
         return await executeLiveSessionTool(name, args || {}, client);
-      }
-      // Export tools
-      else if (name.includes("export-")) {
-        return await executeExportTool(name, args || {}, request, { apiUrl });
       }
       // Communication management tools
       else if (
