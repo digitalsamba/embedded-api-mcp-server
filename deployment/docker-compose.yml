@@ -1,4 +1,4 @@
-# Digital Samba MCP Server - Development Deployment
+# Digital Samba MCP Server - Deployment
 #
 # This is the production-ready docker-compose for deployment.
 # Images are pulled from the private registry.
@@ -9,6 +9,11 @@
 # Requires:
 #   - .env file with configuration
 #   - nginx-proxy network (external)
+#
+# Environment Variables:
+#   - PROXY_NETWORK: External network name (default: proxy)
+#     - Dev (apps4): proxy
+#     - Prod (apps3): deployment_proxy
 
 services:
   mcp-server:
@@ -63,6 +68,7 @@ volumes:
 
 networks:
   proxy:
+    name: ${PROXY_NETWORK:-proxy}
     external: true
   internal:
     driver: bridge

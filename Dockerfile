@@ -11,6 +11,12 @@
 
 FROM node:20-alpine AS builder
 
+# Build arguments for version info
+ARG GIT_COMMIT=unknown
+ARG GIT_REF=unknown
+ARG BUILD_TIME=unknown
+ARG COMMITS_AHEAD=0
+
 WORKDIR /app
 
 # Copy package files
@@ -21,6 +27,9 @@ RUN npm ci
 
 # Copy source
 COPY . .
+
+# Generate version info file
+RUN echo "{\"commit\":\"${GIT_COMMIT}\",\"ref\":\"${GIT_REF}\",\"buildTime\":\"${BUILD_TIME}\",\"commitsAhead\":${COMMITS_AHEAD}}" > version.json
 
 # Build TypeScript
 RUN npm run build
@@ -36,9 +45,10 @@ COPY package*.json ./
 # Install production dependencies only
 RUN npm ci --omit=dev && npm cache clean --force
 
-# Copy built files
+# Copy built files and version info
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/bin ./bin
+COPY --from=builder /app/version.json ./version.json
 
 # Set environment variables
 ENV NODE_ENV=production

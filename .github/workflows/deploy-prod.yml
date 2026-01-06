@@ -59,6 +59,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -94,6 +97,10 @@ jobs:
             ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
             ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:production
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+            GIT_REF=${{ github.ref_name }}
+            BUILD_TIME=${{ github.event.head_commit.timestamp }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -129,11 +136,14 @@ jobs:
             # Update docker-compose to use production tag
             sed -i 's/:latest/:production/g' docker-compose.yml
 
+            # Set production network name (apps3 uses deployment_proxy)
+            export PROXY_NETWORK=deployment_proxy
+
             # Stop and remove old container
-            sudo docker compose down --remove-orphans || true
+            sudo PROXY_NETWORK=$PROXY_NETWORK docker compose down --remove-orphans || true
 
             # Start new container
-            sudo docker compose up -d
+            sudo PROXY_NETWORK=$PROXY_NETWORK docker compose up -d
 
             # Wait for service to be healthy
             echo "Waiting for service to be healthy..."
@@ -175,3 +185,13 @@ jobs:
           echo "| **Version** | ${{ steps.version.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Commit** | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
           echo "| **Triggered by** | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Sync develop branch with main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin develop
+          git checkout develop
+          git merge main --no-edit -m "chore: sync develop with main after ${{ steps.version.outputs.version }} release"
+          git push origin develop
+          echo "✅ Develop branch synced with main" >> $GITHUB_STEP_SUMMARY

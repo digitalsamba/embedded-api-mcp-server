@@ -90,7 +90,15 @@ import {
   executeExportTool,
 } from "./tools/export-tools/index.js";
 
-import { VERSION, VERSION_INFO } from "./version.js";
+import {
+  VERSION,
+  VERSION_INFO,
+  GIT_COMMIT,
+  GIT_REF,
+  COMMITS_AHEAD,
+  getDisplayVersion,
+  isDevBuild,
+} from "./version.js";
 
 // API client instance cache - keyed by apiKey:apiUrl to support different URLs per session
 let apiClientCache: Map<string, DigitalSambaApiClient> = new Map();
@@ -290,12 +298,17 @@ export function createServer(config: ServerConfig = {}): Server {
         name === "hard-delete-session-resources" ||
         name === "bulk-delete-session-data" ||
         name === "get-session-statistics" ||
+        name === "get-session-statistics-details" ||
         name === "list-sessions" ||
         name === "get-session-details" ||
         name === "list-session-participants" ||
         name === "list-room-sessions"
       ) {
         return await executeSessionTool(name, args || {}, client, request);
+      }
+      // Export tools (check BEFORE recording tools - export-recording-metadata contains "recording")
+      else if (name.includes("export-")) {
+        return await executeExportTool(name, args || {}, request, { apiUrl });
       }
       // Recording management tools
       else if (
@@ -315,16 +328,14 @@ export function createServer(config: ServerConfig = {}): Server {
       ) {
         return await executeLiveSessionTool(name, args || {}, client);
       }
-      // Export tools
-      else if (name.includes("export-")) {
-        return await executeExportTool(name, args || {}, request, { apiUrl });
-      }
       // Communication management tools
       else if (
         name.includes("-chats") ||
         name.includes("-qa") ||
         name.includes("-transcripts") ||
-        name.includes("-summaries")
+        name.includes("-summaries") ||
+        name === "delete-session-recordings" ||
+        name === "delete-session-resources"
       ) {
         return await executeCommunicationTool(name, args || {}, client);
       }
@@ -379,4 +390,12 @@ export function createServer(config: ServerConfig = {}): Server {
   return server;
 }
 
-export { VERSION, VERSION_INFO };
+export {
+  VERSION,
+  VERSION_INFO,
+  GIT_COMMIT,
+  GIT_REF,
+  COMMITS_AHEAD,
+  getDisplayVersion,
+  isDevBuild,
+};
