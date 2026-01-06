@@ -188,10 +188,12 @@ export class ExportResources {
     }
 
     const recordingId = pathParts[1];
+    logger.info("handleRecordingExport: fetching recording", { recordingId });
 
     try {
       // Get recording metadata first
       const recording = await this.api.getRecording(recordingId);
+      logger.info("handleRecordingExport: recording fetched successfully", { recordingId, status: recording?.status });
 
       return {
         contents: [
@@ -201,10 +203,17 @@ export class ExportResources {
           },
         ],
       };
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error("handleRecordingExport: API error", {
+        recordingId,
+        errorMessage,
+        errorType: error?.constructor?.name,
+        errorResponse: error?.response?.data
+      });
       throw new McpError(
         ErrorCode.InvalidRequest,
-        `Recording ${recordingId} not found or not accessible`,
+        `Recording ${recordingId} not found or not accessible: ${errorMessage}`,
       );
     }
   }

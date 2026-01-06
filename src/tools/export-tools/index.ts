@@ -162,7 +162,10 @@ async function handleExportRecordingMetadata(
   params: { recordingId: string },
   exportResources: ExportResources,
 ): Promise<any> {
+  logger.info("handleExportRecordingMetadata called", { params });
+
   if (!params.recordingId || params.recordingId.trim() === "") {
+    logger.error("Missing recordingId parameter", { params });
     return {
       content: [
         {
@@ -176,10 +179,19 @@ async function handleExportRecordingMetadata(
 
   try {
     const uri = `digitalsamba://exports/recordings/${params.recordingId}`;
+    logger.info("Fetching recording metadata", { uri, recordingId: params.recordingId });
     const result = await exportResources.handleResourceRequest(uri);
+    logger.info("Recording metadata fetched successfully", { recordingId: params.recordingId });
     return { content: result.contents };
-  } catch (error) {
+  } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    logger.error("Error fetching recording metadata", {
+      recordingId: params.recordingId,
+      errorMessage,
+      errorStack,
+      errorType: error?.constructor?.name
+    });
     return {
       content: [
         {
