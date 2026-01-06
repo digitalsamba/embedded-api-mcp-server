@@ -71,6 +71,18 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
+      - name: Calculate commits ahead of latest tag
+        id: commits
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LATEST_TAG" ]; then
+            COMMITS_AHEAD=$(git rev-list ${LATEST_TAG}..HEAD --count)
+          else
+            COMMITS_AHEAD=0
+          fi
+          echo "ahead=$COMMITS_AHEAD" >> $GITHUB_OUTPUT
+          echo "Commits ahead of $LATEST_TAG: $COMMITS_AHEAD"
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -84,6 +96,7 @@ jobs:
             GIT_COMMIT=${{ github.sha }}
             GIT_REF=${{ github.ref_name }}
             BUILD_TIME=${{ github.event.head_commit.timestamp }}
+            COMMITS_AHEAD=${{ steps.commits.outputs.ahead }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

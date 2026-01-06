@@ -14,6 +14,7 @@ import {
   createServer,
   VERSION,
   VERSION_INFO,
+  COMMITS_AHEAD,
   getDisplayVersion,
   isDevBuild,
 } from "../server.js";
@@ -974,6 +975,11 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
+    .commits-ahead {
+      color: var(--ds-gray);
+      font-size: 11px;
+      font-weight: 400;
+    }
   </style>
 </head>
 <body>
@@ -997,7 +1003,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       <div class="card-header">
         <div class="card-icon">⚡</div>
         <h2>Quick Connect</h2>
-        <span class="version-tag">${isDevBuild() ? '<span class="dev-badge">Dev</span>' : ""}v${getDisplayVersion()}</span>
+        <span class="version-tag">${isDevBuild() ? '<span class="dev-badge">Dev</span>' : ""}v${getDisplayVersion()}${COMMITS_AHEAD > 0 ? ` <span class="commits-ahead">+${COMMITS_AHEAD} commits</span>` : ""}</span>
       </div>
       <div class="card-body">
         <div class="url-box">

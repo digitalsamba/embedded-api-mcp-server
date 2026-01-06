@@ -20,7 +20,7 @@ const packagePath = path.join(__dirname, '..', 'package.json');
 const packageData = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
 
 // Try to read version.json (generated during Docker build)
-let gitInfo = { commit: 'dev', ref: 'local', buildTime: new Date().toISOString() };
+let gitInfo = { commit: 'dev', ref: 'local', buildTime: new Date().toISOString(), commitsAhead: 0 };
 const versionJsonPath = path.join(__dirname, '..', 'version.json');
 if (fs.existsSync(versionJsonPath)) {
   try {
@@ -37,6 +37,7 @@ const versionInfo = {
   commit: gitInfo.commit,
   ref: gitInfo.ref,
   buildTime: gitInfo.buildTime,
+  commitsAhead: gitInfo.commitsAhead || 0,
   nodeVersion: process.version
 };
 
@@ -53,6 +54,7 @@ export const PACKAGE_NAME = '${versionInfo.name}';
 export const BUILD_TIME = '${versionInfo.buildTime}';
 export const GIT_COMMIT = '${versionInfo.commit}';
 export const GIT_REF = '${versionInfo.ref}';
+export const COMMITS_AHEAD = ${versionInfo.commitsAhead};
 
 /**
  * Get a formatted version string for display
@@ -107,6 +109,7 @@ export interface VersionInfo {
   commit: string;
   ref: string;
   buildTime: string;
+  commitsAhead: number;
   nodeVersion: string;
 }
 
@@ -116,6 +119,7 @@ export declare const PACKAGE_NAME: string;
 export declare const BUILD_TIME: string;
 export declare const GIT_COMMIT: string;
 export declare const GIT_REF: string;
+export declare const COMMITS_AHEAD: number;
 export declare function getDisplayVersion(): string;
 export declare function isDevBuild(): boolean;
 `;

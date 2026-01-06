@@ -15,6 +15,7 @@ FROM node:20-alpine AS builder
 ARG GIT_COMMIT=unknown
 ARG GIT_REF=unknown
 ARG BUILD_TIME=unknown
+ARG COMMITS_AHEAD=0
 
 WORKDIR /app
 
@@ -28,7 +29,7 @@ RUN npm ci
 COPY . .
 
 # Generate version info file
-RUN echo "{\"commit\":\"${GIT_COMMIT}\",\"ref\":\"${GIT_REF}\",\"buildTime\":\"${BUILD_TIME}\"}" > version.json
+RUN echo "{\"commit\":\"${GIT_COMMIT}\",\"ref\":\"${GIT_REF}\",\"buildTime\":\"${BUILD_TIME}\",\"commitsAhead\":${COMMITS_AHEAD}}" > version.json
 
 # Build TypeScript
 RUN npm run build

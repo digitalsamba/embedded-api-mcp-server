@@ -95,6 +95,7 @@ import {
   VERSION_INFO,
   GIT_COMMIT,
   GIT_REF,
+  COMMITS_AHEAD,
   getDisplayVersion,
   isDevBuild,
 } from "./version.js";
@@ -394,6 +395,7 @@ export {
   VERSION_INFO,
   GIT_COMMIT,
   GIT_REF,
+  COMMITS_AHEAD,
   getDisplayVersion,
   isDevBuild,
 };

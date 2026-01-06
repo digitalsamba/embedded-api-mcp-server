@@ -20,6 +20,7 @@ interface VersionInfo {
   commit: string;
   ref: string;
   buildTime: string;
+  commitsAhead: number;
   nodeVersion: string;
 }
 
@@ -34,7 +35,7 @@ try {
   const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
 
   // Try to read version.json (production builds)
-  let gitInfo = { commit: "dev", ref: "local", buildTime: "development" };
+  let gitInfo = { commit: "dev", ref: "local", buildTime: "development", commitsAhead: 0 };
   try {
     const versionJsonPath = join(__dirname, "..", "..", "version.json");
     gitInfo = JSON.parse(readFileSync(versionJsonPath, "utf-8"));
@@ -48,6 +49,7 @@ try {
     commit: gitInfo.commit,
     ref: gitInfo.ref,
     buildTime: gitInfo.buildTime,
+    commitsAhead: gitInfo.commitsAhead || 0,
     nodeVersion: process.version,
   };
 } catch {
@@ -58,6 +60,7 @@ try {
     commit: "unknown",
     ref: "unknown",
     buildTime: "unknown",
+    commitsAhead: 0,
     nodeVersion: process.version,
   };
 }
@@ -68,6 +71,7 @@ export const PACKAGE_NAME = versionInfo.name;
 export const BUILD_TIME = versionInfo.buildTime;
 export const GIT_COMMIT = versionInfo.commit;
 export const GIT_REF = versionInfo.ref;
+export const COMMITS_AHEAD = versionInfo.commitsAhead;
 
 /**
  * Get a formatted version string for display
