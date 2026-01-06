@@ -77,14 +77,21 @@ jobs:
       - name: Calculate commits ahead of latest tag
         id: commits
         run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          # Get the latest tag by date (works even if tag is on different branch)
+          LATEST_TAG=$(git tag --sort=-creatordate | head -1)
           if [ -n "$LATEST_TAG" ]; then
-            COMMITS_AHEAD=$(git rev-list ${LATEST_TAG}..HEAD --count)
+            # Find merge base between tag and HEAD, then count commits since
+            MERGE_BASE=$(git merge-base $LATEST_TAG HEAD 2>/dev/null || echo "")
+            if [ -n "$MERGE_BASE" ]; then
+              COMMITS_AHEAD=$(git rev-list ${MERGE_BASE}..HEAD --count)
+            else
+              COMMITS_AHEAD=0
+            fi
           else
             COMMITS_AHEAD=0
           fi
           echo "ahead=$COMMITS_AHEAD" >> $GITHUB_OUTPUT
-          echo "Commits ahead of $LATEST_TAG: $COMMITS_AHEAD"
+          echo "Latest tag: $LATEST_TAG, Merge base: $MERGE_BASE, Commits ahead: $COMMITS_AHEAD"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
