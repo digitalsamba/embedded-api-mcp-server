@@ -10,7 +10,13 @@ import { randomUUID } from "node:crypto";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 
-import { createServer, VERSION, VERSION_INFO } from "../server.js";
+import {
+  createServer,
+  VERSION,
+  VERSION_INFO,
+  getDisplayVersion,
+  isDevBuild,
+} from "../server.js";
 import logger from "../logger.js";
 import apiKeyContext from "../auth.js";
 import {
@@ -954,6 +960,19 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       padding: 4px 10px;
       border-radius: 6px;
       margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dev-badge {
+      background: var(--ds-coral);
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
   </style>
 </head>
@@ -978,7 +997,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       <div class="card-header">
         <div class="card-icon">⚡</div>
         <h2>Quick Connect</h2>
-        <span class="version-tag">v${VERSION}</span>
+        <span class="version-tag">${isDevBuild() ? '<span class="dev-badge">Dev</span>' : ""}v${getDisplayVersion()}</span>
       </div>
       <div class="card-body">
         <div class="url-box">

@@ -90,7 +90,14 @@ import {
   executeExportTool,
 } from "./tools/export-tools/index.js";
 
-import { VERSION, VERSION_INFO } from "./version.js";
+import {
+  VERSION,
+  VERSION_INFO,
+  GIT_COMMIT,
+  GIT_REF,
+  getDisplayVersion,
+  isDevBuild,
+} from "./version.js";
 
 // API client instance cache - keyed by apiKey:apiUrl to support different URLs per session
 let apiClientCache: Map<string, DigitalSambaApiClient> = new Map();
@@ -382,4 +389,11 @@ export function createServer(config: ServerConfig = {}): Server {
   return server;
 }
 
-export { VERSION, VERSION_INFO };
+export {
+  VERSION,
+  VERSION_INFO,
+  GIT_COMMIT,
+  GIT_REF,
+  getDisplayVersion,
+  isDevBuild,
+};
