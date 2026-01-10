@@ -207,3 +207,18 @@ To work around this limitation, we're implementing a **hybrid approach**:
 This ensures the MCP server works with current AI assistants while remaining compatible with future MCP client improvements.
 
 See `.ai_dev/mcp-resources-vs-tools-issue.md` for detailed analysis and `.ai_dev/resources-to-tools-conversion-plan.md` for implementation progress.
+
+## Pending Improvements
+
+### Automate GitHub Release Creation
+Currently, when tagging a release:
+- Tag push (`v*`) auto-triggers `deploy-prod.yml` → deploys to production server
+- GitHub Release must be created manually with `gh release create`
+
+**TODO**: Add auto-release step to `deploy-prod.yml`:
+```yaml
+- name: Create GitHub Release
+  run: gh release create ${{ github.ref_name }} --generate-notes
+```
+
+This would auto-generate release notes from commit messages when a tag is pushed.
