@@ -280,6 +280,25 @@ The MCP server provides **113 tools** covering the complete Digital Samba API.
 
 ---
 
+## Troubleshooting
+
+### Authentication Issues
+- **"Not authorized" error**: Ensure you have Admin role on your Digital Samba team
+- **OAuth redirect fails**: Check your browser allows popups from claude.ai
+- **Token expired**: Reconnect - tokens auto-refresh but may require re-authentication after 24 hours
+
+### Common Issues
+- **"Room not found"**: Verify the room ID is correct and hasn't been deleted
+- **"Rate limit exceeded"**: Wait a few minutes and try again
+- **Tools not appearing**: Restart your AI assistant after adding the server
+
+### Getting Help
+- Check our [API documentation](https://developer.digitalsamba.com)
+- Open an issue on [GitHub](https://github.com/digitalsamba/embedded-api-mcp-server/issues)
+- Contact support@digitalsamba.com
+
+---
+
 ## Authentication
 
 The MCP server uses **OAuth 2.0** with Digital Samba as the identity provider. When you connect:
