@@ -65,10 +65,12 @@ const transports: Map<string, StreamableHTTPServerTransport> = new Map();
  */
 function authMiddleware(requireAuth: boolean) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    // Skip auth for health check, server info (GET only), and OAuth endpoints
+    // Skip auth for health check, server info (GET only), favicon, and OAuth endpoints
     // POST/DELETE to "/" is the MCP endpoint and requires auth
     if (
       req.path === "/health" ||
+      req.path === "/favicon.svg" ||
+      req.path === "/favicon.ico" ||
       (req.path === "/" && req.method === "GET") ||
       req.path.startsWith("/.well-known/") ||
       req.path.startsWith("/oauth/")
