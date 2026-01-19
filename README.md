@@ -16,7 +16,7 @@
 
 ## Overview
 
-The Digital Samba MCP Server lets you manage your video conferencing platform using natural language through AI assistants like Claude and ChatGPT. Create rooms, manage recordings, view analytics, and control live sessions—just by asking.
+The Digital Samba Embedded MCP Server lets you manage your video conferencing platform using natural language through AI assistants like Claude and ChatGPT. Create rooms, manage recordings, view analytics, and control live sessions—just by asking.
 
 **Server URL:** `https://mcp.digitalsamba.com`
 
