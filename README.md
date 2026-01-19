@@ -6,7 +6,7 @@
   **Control your Digital Samba video platform with AI assistants**
 
   [![Server Status](https://img.shields.io/badge/server-operational-brightgreen)](https://mcp.digitalsamba.com)
-  [![MCP Protocol](https://img.shields.io/badge/MCP-1.0-blue)](https://modelcontextprotocol.io)
+  [![MCP Protocol](https://img.shields.io/badge/MCP-Protocol-blue)](https://modelcontextprotocol.io)
   [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
   [Quick Start](#quick-start) • [Features](#features) • [Setup Guides](#setup-guides) • [Tools Reference](#available-tools)
