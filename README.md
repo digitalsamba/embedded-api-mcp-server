@@ -57,11 +57,37 @@ When you first connect, you'll be redirected to Digital Samba to log in. Once au
 
 ## Setup Guides
 
-Detailed setup instructions for each platform:
+### Claude Code
 
-- **[Claude Desktop Setup](https://digitalsamba.com/blog/mcp-claude-desktop)** - Connect via Custom Connectors with OAuth
-- **[ChatGPT Setup](https://digitalsamba.com/blog/mcp-chatgpt)** - Use with OpenAI's MCP integration
-- **[Other MCP Clients](https://digitalsamba.com/blog/mcp-other-clients)** - Cursor, Windsurf, and more
+```bash
+claude mcp add --transport http digitalsamba https://mcp.digitalsamba.com/mcp
+```
+
+Then use the `/mcp` command in Claude Code to authenticate.
+
+### Claude Desktop
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "digitalsamba": {
+      "url": "https://mcp.digitalsamba.com/mcp"
+    }
+  }
+}
+```
+
+**Config file location:**
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+Restart Claude Desktop and authenticate when prompted.
+
+### Other MCP Clients
+
+Use the server URL `https://mcp.digitalsamba.com/mcp` with any MCP-compatible client.
 
 ---
 
