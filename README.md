@@ -1,4 +1,4 @@
-# Digital Samba MCP Server
+# Digital Samba Embedded API MCP Server
 
 <div align="center">
   <img src="https://dashboard.digitalsamba.com/logo.svg" alt="Digital Samba Logo" width="200"/>
