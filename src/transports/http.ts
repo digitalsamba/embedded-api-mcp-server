@@ -7,6 +7,9 @@
 
 import express, { Request, Response, NextFunction } from "express";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 
@@ -196,6 +199,29 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       oauthSessions: await getActiveSessionCount(),
       registeredClients: await getRegisteredClientCount(),
     });
+  });
+
+  // Favicon endpoint - serve the Digital Samba embedded icon
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  let faviconSvg: string;
+  try {
+    faviconSvg = readFileSync(join(__dirname, "../assets/favicon.svg"), "utf-8");
+  } catch {
+    faviconSvg = ""; // Fallback if file not found
+  }
+
+  app.get("/favicon.svg", (_req, res) => {
+    if (faviconSvg) {
+      res.type("image/svg+xml").send(faviconSvg);
+    } else {
+      res.status(404).send("Not found");
+    }
+  });
+
+  app.get("/favicon.ico", (_req, res) => {
+    // Redirect to SVG - browsers handle this fine
+    res.redirect("/favicon.svg");
   });
 
   // Load OAuth configuration
@@ -659,9 +685,9 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Digital Samba MCP Server</title>
-  <link rel="icon" type="image/x-icon" href="https://dashboard.digitalsamba.com/favicon.ico">
-  <link rel="icon" type="image/png" sizes="16x16" href="https://dashboard.digitalsamba.com/favicon-blank-16x16.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="https://dashboard.digitalsamba.com/apple-touch-icon.png">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">

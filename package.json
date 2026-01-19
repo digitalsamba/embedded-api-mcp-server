@@ -36,8 +36,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc --skipLibCheck && node scripts/inject-version.js && node scripts/copy-bin.js",
-    "build:clean": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\" && tsc --skipLibCheck && node scripts/inject-version.js && node scripts/copy-bin.js",
+    "build": "tsc --skipLibCheck && node scripts/inject-version.js && node scripts/copy-bin.js && cp -r src/assets dist/src/",
+    "build:clean": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true})}catch{}\" && tsc --skipLibCheck && node scripts/inject-version.js && node scripts/copy-bin.js && cp -r src/assets dist/src/",
     "start": "node dist/src/index.js",
     "dev": "tsx src/index.ts",
     "lint": "eslint src",
