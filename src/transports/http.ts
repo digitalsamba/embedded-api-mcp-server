@@ -226,6 +226,11 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     res.redirect("/favicon.svg");
   });
 
+  // OpenAI domain verification
+  app.get("/.well-known/openai-apps-challenge", (_req, res) => {
+    res.type("text/plain").send("hevvpZcBGrNfzsXv4xcA9B84z9RLpRUs2JHpXzXsiWw");
+  });
+
   // Load OAuth configuration
   const oauthConfig = loadOAuthConfig();
 
