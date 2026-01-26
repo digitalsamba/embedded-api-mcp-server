@@ -37,7 +37,7 @@ export interface QuizChoice {
 
 export interface QuizQuestion {
   id?: string;
-  question: string;
+  text: string;
   choices: QuizChoice[];
 }
 

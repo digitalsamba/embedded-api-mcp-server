@@ -96,7 +96,7 @@ export function registerQuizTools(): ToolDefinition[] {
             items: {
               type: "object",
               properties: {
-                question: {
+                text: {
                   type: "string",
                   description: "The question text",
                 },
@@ -120,7 +120,7 @@ export function registerQuizTools(): ToolDefinition[] {
                   description: "Array of choices (minimum 2)",
                 },
               },
-              required: ["question", "choices"],
+              required: ["text", "choices"],
             },
             minItems: 1,
             description: "Array of questions with choices (minimum 1)",
@@ -178,7 +178,7 @@ export function registerQuizTools(): ToolDefinition[] {
             items: {
               type: "object",
               properties: {
-                question: {
+                text: {
                   type: "string",
                   description: "The question text",
                 },
@@ -201,7 +201,7 @@ export function registerQuizTools(): ToolDefinition[] {
                   description: "Array of choices",
                 },
               },
-              required: ["question", "choices"],
+              required: ["text", "choices"],
             },
             description: "Updated array of questions",
           },
@@ -396,7 +396,7 @@ async function handleCreateQuiz(
     title: string;
     time_limit_minutes?: number;
     questions: Array<{
-      question: string;
+      text: string;
       choices: Array<{ text: string; correct: boolean }>;
     }>;
   },
@@ -598,7 +598,7 @@ async function handleUpdateQuiz(
     title?: string;
     time_limit_minutes?: number;
     questions?: Array<{
-      question: string;
+      text: string;
       choices: Array<{ text: string; correct: boolean }>;
     }>;
   },
