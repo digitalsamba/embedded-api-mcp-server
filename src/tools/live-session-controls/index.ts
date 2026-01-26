@@ -233,6 +233,83 @@ export function registerLiveSessionTools(): ToolDefinition[] {
         required: ["room_id", "call_id"],
       },
     },
+    {
+      name: "connect-phone",
+      description:
+        '[Live Session Controls] Connect to SIP phone bridge for a room. Use when users say: "connect phone", "enable phone bridge", "connect SIP", "start phone dial-in". Requires room_id. Enables phone/dial-in capability for the room.',
+      annotations: getToolAnnotations("connect-phone", "Connect Phone"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room to connect phone bridge for",
+          },
+        },
+        required: ["room_id"],
+      },
+    },
+    {
+      name: "disconnect-phone",
+      description:
+        '[Live Session Controls] Disconnect from SIP phone bridge for a room. Use when users say: "disconnect phone", "disable phone bridge", "disconnect SIP", "stop phone dial-in". Requires room_id.',
+      annotations: getToolAnnotations("disconnect-phone", "Disconnect Phone"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room to disconnect phone bridge for",
+          },
+        },
+        required: ["room_id"],
+      },
+    },
+    {
+      name: "start-restreamer",
+      description:
+        '[Live Session Controls] Start live streaming to an external provider (YouTube, Vimeo, Cloudflare, or custom RTMP). Use when users say: "start streaming", "go live", "start restream", "broadcast to YouTube/Vimeo". Requires room_id and stream_key. Optionally specify type (youtube/vimeo/cloudflare) or custom server_url.',
+      annotations: getToolAnnotations("start-restreamer", "Start Restreamer"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room to start streaming from",
+          },
+          type: {
+            type: "string",
+            enum: ["youtube", "vimeo", "cloudflare"],
+            description: "The streaming provider type (optional if server_url is provided)",
+          },
+          server_url: {
+            type: "string",
+            description: "Custom RTMP server URL (optional if type is provided)",
+          },
+          stream_key: {
+            type: "string",
+            description: "The stream key for authentication with the streaming provider (required)",
+          },
+        },
+        required: ["room_id", "stream_key"],
+      },
+    },
+    {
+      name: "stop-restreamer",
+      description:
+        '[Live Session Controls] Stop live streaming to external provider. Use when users say: "stop streaming", "end broadcast", "stop restream", "go offline". Requires room_id.',
+      annotations: getToolAnnotations("stop-restreamer", "Stop Restreamer"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room to stop streaming from",
+          },
+        },
+        required: ["room_id"],
+      },
+    },
   ];
 }
 
@@ -269,6 +346,14 @@ export async function executeLiveSessionTool(
       return handleRaisePhoneParticipantHand(params, _apiClient);
     case "lower-phone-participant-hand":
       return handleLowerPhoneParticipantHand(params, _apiClient);
+    case "connect-phone":
+      return handleConnectPhone(params, _apiClient);
+    case "disconnect-phone":
+      return handleDisconnectPhone(params, _apiClient);
+    case "start-restreamer":
+      return handleStartRestreamer(params, _apiClient);
+    case "stop-restreamer":
+      return handleStopRestreamer(params, _apiClient);
     default:
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
   }
@@ -775,6 +860,222 @@ async function handleLowerPhoneParticipantHand(
         {
           type: "text",
           text: `Error lowering hand: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle connect phone
+ */
+async function handleConnectPhone(
+  params: { room_id: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Connecting phone bridge", { room_id });
+
+  try {
+    await apiClient.connectPhone(room_id);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully connected phone bridge for room ${room_id}.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error("Error connecting phone bridge", {
+      room_id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    let displayMessage = `Error connecting phone bridge: ${errorMessage}`;
+
+    if (errorMessage.includes("not found") || errorMessage.includes("404")) {
+      displayMessage = `Room with ID ${room_id} not found`;
+    }
+
+    return {
+      content: [{ type: "text", text: displayMessage }],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle disconnect phone
+ */
+async function handleDisconnectPhone(
+  params: { room_id: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Disconnecting phone bridge", { room_id });
+
+  try {
+    await apiClient.disconnectPhone(room_id);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully disconnected phone bridge for room ${room_id}.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error("Error disconnecting phone bridge", {
+      room_id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error disconnecting phone bridge: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle start restreamer
+ */
+async function handleStartRestreamer(
+  params: {
+    room_id: string;
+    type?: "youtube" | "vimeo" | "cloudflare";
+    server_url?: string;
+    stream_key: string;
+  },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id, type, server_url, stream_key } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  if (!stream_key || stream_key.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Stream key is required." }],
+      isError: true,
+    };
+  }
+
+  if (!type && !server_url) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: "Either type (youtube/vimeo/cloudflare) or server_url must be provided.",
+        },
+      ],
+      isError: true,
+    };
+  }
+
+  logger.info("Starting restreamer", { room_id, type, server_url: server_url ? "[provided]" : undefined });
+
+  try {
+    await apiClient.startRestreamer(room_id, { type, server_url, stream_key });
+
+    const destination = type || server_url;
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully started live streaming from room ${room_id} to ${destination}.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error("Error starting restreamer", {
+      room_id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    let displayMessage = `Error starting restreamer: ${errorMessage}`;
+
+    if (errorMessage.includes("not found") || errorMessage.includes("404")) {
+      displayMessage = `Room with ID ${room_id} not found`;
+    } else if (errorMessage.includes("feature") || errorMessage.includes("enabled")) {
+      displayMessage = `Restreaming feature may not be enabled for this account. ${errorMessage}`;
+    }
+
+    return {
+      content: [{ type: "text", text: displayMessage }],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle stop restreamer
+ */
+async function handleStopRestreamer(
+  params: { room_id: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Stopping restreamer", { room_id });
+
+  try {
+    await apiClient.stopRestreamer(room_id);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully stopped live streaming for room ${room_id}.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error("Error stopping restreamer", {
+      room_id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error stopping restreamer: ${error instanceof Error ? error.message : String(error)}`,
         },
       ],
       isError: true,

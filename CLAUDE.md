@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Overview
 
-Digital Samba Embedded API MCP Server - A lightweight Model Context Protocol server for Digital Samba's Embedded API. Provides 113 tools and 37 resources covering 100+ API endpoints for complete control over video conferencing features.
+Digital Samba Embedded API MCP Server - A lightweight Model Context Protocol server for Digital Samba's Embedded API. Provides 123 tools and 37 resources covering 100+ API endpoints for complete control over video conferencing features.
 
 ## API Reference
 
@@ -63,9 +63,10 @@ src/
     ├── session-management/   # Session control
     ├── analytics-tools/      # Analytics queries
     ├── recording-management/ # Recording tools
-    ├── live-session-controls/# Live session controls
+    ├── live-session-controls/# Live session controls (transcription, phone, restreamer)
     ├── communication-management/# Chat/Q&A/Transcripts
     ├── poll-management/      # Poll tools
+    ├── quiz-management/      # Quiz tools
     ├── library-management/   # Content library
     ├── webhook-management/   # Webhook tools
     ├── role-management/      # Role and permission management

@@ -74,6 +74,10 @@ import {
   executePollTool,
 } from "./tools/poll-management/index.js";
 import {
+  registerQuizTools,
+  executeQuizTool,
+} from "./tools/quiz-management/index.js";
+import {
   registerLibraryTools,
   executeLibraryTool,
 } from "./tools/library-management/index.js";
@@ -236,6 +240,7 @@ export function createServer(config: ServerConfig = {}): Server {
       ...registerLiveSessionTools(),
       ...registerCommunicationTools(),
       ...registerPollTools(),
+      ...registerQuizTools(),
       ...registerLibraryTools(),
       ...registerRoleTools(),
       ...registerWebhookTools(),
@@ -324,9 +329,21 @@ export function createServer(config: ServerConfig = {}): Server {
         name === "start-transcription" ||
         name === "stop-transcription" ||
         name === "phone-participants-joined" ||
-        name === "phone-participants-left"
+        name === "phone-participants-left" ||
+        name === "raise-participant-hand" ||
+        name === "lower-participant-hand" ||
+        name === "raise-phone-participant-hand" ||
+        name === "lower-phone-participant-hand" ||
+        name === "connect-phone" ||
+        name === "disconnect-phone" ||
+        name === "start-restreamer" ||
+        name === "stop-restreamer"
       ) {
         return await executeLiveSessionTool(name, args || {}, client);
+      }
+      // Quiz management tools
+      else if (name.includes("quiz")) {
+        return await executeQuizTool(name, args || {}, client);
       }
       // Communication management tools
       else if (

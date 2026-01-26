@@ -34,42 +34,46 @@ import type {
   PaginationParams,
   DateRangeParams,
   ApiResponse,
-  
+
   // Room types
   Room,
   RoomCreateSettings,
   BreakoutRoom,
   BreakoutRoomCreateSettings,
   BreakoutRoomParticipantAssignment,
-  
+
   // Session types
   Session,
   SessionStatistics,
-  
+
   // Participant types
   Participant,
   ParticipantDetail,
   TokenOptions,
   TokenResponse,
-  
+
   // Recording types
   Recording,
   RecordingDownloadLink,
-  
+
   // Communication types
   Poll,
   PollOption,
   PollCreateSettings,
-  
+  Quiz,
+  QuizCreateSettings,
+  QuizResult,
+  RestreamerOptions,
+
   // Content types
   Library,
   LibraryFolder,
   LibraryFile,
-  
+
   // Webhook types
   Webhook,
   WebhookCreateSettings,
-  
+
   // Role types
   Role,
   RoleCreateSettings
@@ -81,42 +85,46 @@ export type {
   PaginationParams,
   DateRangeParams,
   ApiResponse,
-  
+
   // Room types
   Room,
   RoomCreateSettings,
   BreakoutRoom,
   BreakoutRoomCreateSettings,
   BreakoutRoomParticipantAssignment,
-  
+
   // Session types
   Session,
   SessionStatistics,
-  
+
   // Participant types
   Participant,
   ParticipantDetail,
   TokenOptions,
   TokenResponse,
-  
+
   // Recording types
   Recording,
   RecordingDownloadLink,
-  
+
   // Communication types
   Poll,
   PollOption,
   PollCreateSettings,
-  
+  Quiz,
+  QuizCreateSettings,
+  QuizResult,
+  RestreamerOptions,
+
   // Content types
   Library,
   LibraryFolder,
   LibraryFile,
-  
+
   // Webhook types
   Webhook,
   WebhookCreateSettings,
-  
+
   // Role types
   Role,
   RoleCreateSettings
@@ -2551,6 +2559,201 @@ export class DigitalSambaApiClient {
 
     await this.request<void>(`/sessions/${sessionId}/resources`, {
       method: "DELETE",
+    });
+  }
+
+  // Phone Bridge
+
+  /**
+   * Connect to SIP phone bridge
+   */
+  async connectPhone(roomId: string): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/phone/connect`, {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Disconnect from SIP phone bridge
+   */
+  async disconnectPhone(roomId: string): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/phone/disconnect`, {
+      method: "POST",
+    });
+  }
+
+  // Quizzes
+
+  /**
+   * List quizzes for a room
+   */
+  async listQuizzes(
+    roomId: string,
+    params?: PaginationParams,
+  ): Promise<ApiResponse<Quiz>> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+    return this.request<ApiResponse<Quiz>>(`/rooms/${roomId}/quizzes${query}`);
+  }
+
+  /**
+   * Create a quiz
+   */
+  async createQuiz(
+    roomId: string,
+    settings: QuizCreateSettings,
+  ): Promise<Quiz> {
+    return this.request<Quiz>(`/rooms/${roomId}/quizzes`, {
+      method: "POST",
+      body: JSON.stringify(settings),
+    });
+  }
+
+  /**
+   * Get a specific quiz
+   */
+  async getQuiz(roomId: string, quizId: string): Promise<Quiz> {
+    return this.request<Quiz>(`/rooms/${roomId}/quizzes/${quizId}`);
+  }
+
+  /**
+   * Update a quiz
+   */
+  async updateQuiz(
+    roomId: string,
+    quizId: string,
+    settings: Partial<QuizCreateSettings>,
+  ): Promise<Quiz> {
+    return this.request<Quiz>(`/rooms/${roomId}/quizzes/${quizId}`, {
+      method: "PATCH",
+      body: JSON.stringify(settings),
+    });
+  }
+
+  /**
+   * Delete a quiz
+   */
+  async deleteQuiz(roomId: string, quizId: string): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/quizzes/${quizId}`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Delete all quizzes for a room
+   */
+  async deleteRoomQuizzes(roomId: string): Promise<void> {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+
+    await this.request<void>(`/rooms/${roomId}/quizzes`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Delete all quizzes for a session
+   */
+  async deleteSessionQuizzes(sessionId: string): Promise<void> {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+
+    await this.request<void>(`/sessions/${sessionId}/quizzes`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Get quiz results
+   */
+  async getQuizResults(
+    roomId: string,
+    quizId: string,
+    sessionId?: string,
+  ): Promise<QuizResult[]> {
+    const queryParams = new URLSearchParams();
+    if (sessionId) {
+      queryParams.append("session_id", sessionId);
+    }
+
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+    return this.request<QuizResult[]>(
+      `/rooms/${roomId}/quizzes/${quizId}/results${query}`,
+    );
+  }
+
+  /**
+   * Export quizzes
+   */
+  async exportQuizzes(
+    roomId: string,
+    options?: {
+      session_id?: string;
+      format?: "txt" | "json";
+    },
+  ): Promise<string> {
+    const queryParams = new URLSearchParams();
+    if (options) {
+      Object.entries(options).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+
+    const apiKey = this.getApiKey();
+    const response = await fetch(
+      `${this.apiBaseUrl}/rooms/${roomId}/quizzes/export${query}`,
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Digital Samba API error (${response.status}): ${errorText}`,
+      );
+    }
+
+    return response.text();
+  }
+
+  // Restreamers
+
+  /**
+   * Start live streaming to a provider
+   */
+  async startRestreamer(
+    roomId: string,
+    options: RestreamerOptions,
+  ): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/restreamers/start`, {
+      method: "POST",
+      body: JSON.stringify(options),
+    });
+  }
+
+  /**
+   * Stop live streaming
+   */
+  async stopRestreamer(roomId: string): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/restreamers/stop`, {
+      method: "POST",
     });
   }
 }
