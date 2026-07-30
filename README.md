@@ -147,9 +147,9 @@ Use the server URL `https://mcp.digitalsamba.com/mcp` with any MCP-compatible cl
 
 ## Available Tools
 
-The MCP server provides **123 tools** covering the complete Digital Samba API.
+The MCP server provides **144 tools** covering the complete Digital Samba API.
 
-### Room Management (10 tools)
+### Room Management (11 tools)
 | Tool | Description |
 |------|-------------|
 | `create-room` | Create a new room |
@@ -162,6 +162,7 @@ The MCP server provides **123 tools** covering the complete Digital Samba API.
 | `get-room-details` | Get room details |
 | `list-live-rooms` | List rooms with active sessions |
 | `list-live-participants` | List all live participants |
+| `delete-rooms-by-tag` | Bulk delete rooms matching tags |
 
 ### Session Management (11 tools)
 | Tool | Description |
@@ -192,7 +193,7 @@ The MCP server provides **123 tools** covering the complete Digital Samba API.
 | `start-recording` | Start recording a session |
 | `stop-recording` | Stop recording |
 
-### Live Session Controls (12 tools)
+### Live Session Controls (14 tools)
 | Tool | Description |
 |------|-------------|
 | `start-transcription` | Start live transcription |
@@ -201,6 +202,8 @@ The MCP server provides **123 tools** covering the complete Digital Samba API.
 | `lower-participant-hand` | Lower a participant's hand |
 | `raise-phone-participant-hand` | Raise phone participant hand |
 | `lower-phone-participant-hand` | Lower phone participant hand |
+| `mute-phone-participant` | Mute a phone participant |
+| `unmute-phone-participant` | Unmute a phone participant |
 | `phone-participants-joined` | Register joined phone participants |
 | `phone-participants-left` | Register left phone participants |
 | `connect-phone` | Connect a phone call to a room |
@@ -220,7 +223,7 @@ The MCP server provides **123 tools** covering the complete Digital Samba API.
 | `get-live-room-analytics` | Live metrics for a room |
 | `get-participant-analytics` | Specific participant stats |
 
-### Communication Management (13 tools)
+### Communication Management (27 tools)
 | Tool | Description |
 |------|-------------|
 | `list-room-transcripts` | List room transcripts |
@@ -236,8 +239,22 @@ The MCP server provides **123 tools** covering the complete Digital Samba API.
 | `delete-room-summaries` | Delete all room summaries |
 | `delete-session-recordings` | Delete session recordings |
 | `delete-session-resources` | Delete session resources |
+| `send-chat-message` | Send a chat message to a room |
+| `create-question` | Create a Q&A question |
+| `update-question` | Update a question |
+| `delete-question` | Delete a question |
+| `dismiss-question` | Dismiss a question |
+| `reopen-question` | Reopen a dismissed question |
+| `upvote-question` | Upvote a question |
+| `remove-question-vote` | Remove a question vote |
+| `answer-question` | Post a text answer |
+| `update-question-answer` | Update an answer |
+| `delete-question-answer` | Delete an answer |
+| `start-question-live-answer` | Start a live answer |
+| `stop-question-live-answer` | Stop a live answer |
+| `cancel-question-live-answer` | Cancel a live answer |
 
-### Poll Management (6 tools)
+### Poll Management (8 tools)
 | Tool | Description |
 |------|-------------|
 | `create-poll` | Create a new poll |
@@ -246,8 +263,10 @@ The MCP server provides **123 tools** covering the complete Digital Samba API.
 | `delete-session-polls` | Delete session polls |
 | `delete-room-polls` | Delete all room polls |
 | `publish-poll-results` | Publish results |
+| `get-poll-import-template` | Download poll CSV import template |
+| `import-polls` | Import polls from CSV |
 
-### Quiz Management (8 tools)
+### Quiz Management (10 tools)
 | Tool | Description |
 |------|-------------|
 | `list-room-quizzes` | List quizzes for a room |
@@ -258,6 +277,8 @@ The MCP server provides **123 tools** covering the complete Digital Samba API.
 | `delete-room-quizzes` | Delete all room quizzes |
 | `delete-session-quizzes` | Delete session quizzes |
 | `get-quiz-results` | Get quiz results |
+| `get-quiz-import-template` | Download quiz CSV import template |
+| `import-quizzes` | Import quizzes from CSV |
 
 ### Content Library (26 tools)
 | Tool | Description |

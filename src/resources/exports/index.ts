@@ -96,6 +96,7 @@ export class ExportResources {
 
     const format = searchParams.get("format") || "json";
     const sessionId = searchParams.get("session_id") || undefined;
+    const locale = searchParams.get("locale") || undefined;
 
     let exportData: string;
     let description: string;
@@ -105,6 +106,7 @@ export class ExportResources {
         exportData = await this.api.exportChatMessages(roomId, {
           format: format as "txt" | "json",
           session_id: sessionId,
+          locale,
         });
         description = `Chat messages export for room ${roomId}`;
         break;
@@ -112,6 +114,7 @@ export class ExportResources {
         exportData = await this.api.exportQA(roomId, {
           format: format as "txt" | "json",
           session_id: sessionId,
+          locale,
         });
         description = `Q&A export for room ${roomId}`;
         break;
@@ -120,6 +123,7 @@ export class ExportResources {
         const transcriptSessionId = roomId; // Actually the session ID for transcripts
         exportData = await this.api.exportTranscripts(transcriptSessionId, {
           format: format as "txt" | "json",
+          locale,
         });
         description = `Transcript export for session ${transcriptSessionId}`;
         break;
@@ -158,10 +162,12 @@ export class ExportResources {
     const roomId = pathParts[1];
     const format = searchParams.get("format") || "json";
     const sessionId = searchParams.get("session_id") || undefined;
+    const locale = searchParams.get("locale") || undefined;
 
     const exportData = await this.api.exportPolls(roomId, {
       format: format as "txt" | "json",
       session_id: sessionId,
+      locale,
     });
 
     return {

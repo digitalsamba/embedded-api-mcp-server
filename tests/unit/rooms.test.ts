@@ -281,11 +281,12 @@ describe('Room Tools', () => {
     it('should register all room tools', () => {
       const tools = registerRoomTools();
       
-      expect(tools).toHaveLength(10);
+      expect(tools).toHaveLength(11);
       expect(tools.map(t => t.name)).toEqual([
         'create-room',
         'update-room',
         'delete-room',
+        'delete-rooms-by-tag',
         'generate-token',
         'get-default-room-settings',
         'update-default-room-settings',
@@ -398,7 +399,7 @@ describe('Room Tools', () => {
           room_id: 'test-room-id'
         }, mockRequest, options);
 
-        expect(mockApiClient.deleteRoom).toHaveBeenCalledWith('test-room-id');
+        expect(mockApiClient.deleteRoom).toHaveBeenCalledWith('test-room-id', undefined);
         expect(result.content[0].text).toBe('Room test-room-id deleted successfully!');
         expect(result.isError).toBeUndefined();
       });

@@ -92,6 +92,23 @@ export function registerQuizTools(): ToolDefinition[] {
             description:
               "Optional time limit in minutes for completing the quiz",
           },
+          timing_mode: {
+            type: "string",
+            enum: ["quiz", "question"],
+            description:
+              "Whether the time limit applies to the whole quiz or per question",
+          },
+          time_limit_seconds: {
+            type: "integer",
+            minimum: 1,
+            description: "Optional time limit in seconds",
+          },
+          passing_score: {
+            type: "number",
+            minimum: 0,
+            maximum: 100,
+            description: "Minimum score (0-100) required to pass the quiz",
+          },
           questions: {
             type: "array",
             items: {
@@ -173,6 +190,23 @@ export function registerQuizTools(): ToolDefinition[] {
           time_limit_minutes: {
             type: "number",
             description: "Updated time limit in minutes",
+          },
+          timing_mode: {
+            type: "string",
+            enum: ["quiz", "question"],
+            description:
+              "Whether the time limit applies to the whole quiz or per question",
+          },
+          time_limit_seconds: {
+            type: "integer",
+            minimum: 1,
+            description: "Updated time limit in seconds",
+          },
+          passing_score: {
+            type: "number",
+            minimum: 0,
+            maximum: 100,
+            description: "Updated minimum passing score (0-100)",
           },
           questions: {
             type: "array",
@@ -292,6 +326,46 @@ export function registerQuizTools(): ToolDefinition[] {
         required: ["room_id", "quiz_id"],
       },
     },
+    {
+      name: "get-quiz-import-template",
+      description:
+        '[Quiz Management] Download the CSV template for bulk quiz import. Use when users say: "get quiz import template", "quiz CSV template", "how do I bulk import quizzes". Requires room_id. Returns the CSV template content.',
+      annotations: getToolAnnotations(
+        "get-quiz-import-template",
+        "Get Quiz Import Template",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+        },
+        required: ["room_id"],
+      },
+    },
+    {
+      name: "import-quizzes",
+      description:
+        '[Quiz Management] Import quizzes into a room from CSV content. Use when users say: "import quizzes", "bulk create quizzes from CSV", "upload quizzes". Requires room_id and csv_content (CSV text matching the import template; max 2MB).',
+      annotations: getToolAnnotations("import-quizzes", "Import Quizzes"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room to import quizzes into",
+          },
+          csv_content: {
+            type: "string",
+            description:
+              "CSV content matching the quiz import template (get-quiz-import-template)",
+          },
+        },
+        required: ["room_id", "csv_content"],
+      },
+    },
   ];
 }
 
@@ -323,6 +397,10 @@ export async function executeQuizTool(
       return handleDeleteRoomQuizzes(params, apiClient);
     case "delete-session-quizzes":
       return handleDeleteSessionQuizzes(params, apiClient);
+    case "get-quiz-import-template":
+      return handleGetQuizImportTemplate(params, apiClient);
+    case "import-quizzes":
+      return handleImportQuizzes(params, apiClient);
     case "get-quiz-results":
       return handleGetQuizResults(params, apiClient);
     default:
@@ -402,6 +480,9 @@ async function handleCreateQuiz(
     room_id: string;
     title: string;
     time_limit_minutes?: number;
+    timing_mode?: "quiz" | "question";
+    time_limit_seconds?: number;
+    passing_score?: number;
     questions: Array<{
       text: string;
       choices: Array<{ text: string; correct: boolean }>;
@@ -409,7 +490,15 @@ async function handleCreateQuiz(
   },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { room_id, title, time_limit_minutes, questions } = params;
+  const {
+    room_id,
+    title,
+    time_limit_minutes,
+    timing_mode,
+    time_limit_seconds,
+    passing_score,
+    questions,
+  } = params;
 
   if (!room_id || room_id.trim() === "") {
     return {
@@ -485,6 +574,9 @@ async function handleCreateQuiz(
     const quizData = {
       title,
       time_limit_minutes,
+      ...(timing_mode !== undefined && { timing_mode }),
+      ...(time_limit_seconds !== undefined && { time_limit_seconds }),
+      ...(passing_score !== undefined && { passing_score }),
       questions,
     };
 
@@ -607,6 +699,9 @@ async function handleUpdateQuiz(
     quiz_id: string;
     title?: string;
     time_limit_minutes?: number;
+    timing_mode?: "quiz" | "question";
+    time_limit_seconds?: number;
+    passing_score?: number;
     questions?: Array<{
       text: string;
       choices: Array<{ text: string; correct: boolean }>;
@@ -971,6 +1066,87 @@ async function handleGetQuizResults(
           text: displayMessage,
         },
       ],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle get quiz import template
+ */
+async function handleGetQuizImportTemplate(
+  params: { room_id: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Getting quiz import template", { room_id });
+
+  try {
+    const template = await apiClient.getQuizImportTemplate(room_id);
+    return {
+      content: [{ type: "text", text: template }],
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error("Error getting quiz import template", {
+      room_id,
+      error: message,
+    });
+    return {
+      content: [{ type: "text", text: `Error getting template: ${message}` }],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle import quizzes from CSV
+ */
+async function handleImportQuizzes(
+  params: { room_id: string; csv_content: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id, csv_content } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  if (!csv_content || csv_content.trim() === "") {
+    return {
+      content: [{ type: "text", text: "CSV content is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Importing quizzes from CSV", { room_id });
+
+  try {
+    await apiClient.importQuizzes(room_id, csv_content);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully imported quizzes into room ${room_id}`,
+        },
+      ],
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error("Error importing quizzes", { room_id, error: message });
+    return {
+      content: [{ type: "text", text: `Error importing quizzes: ${message}` }],
       isError: true,
     };
   }

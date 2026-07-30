@@ -284,7 +284,8 @@ export function createServer(config: ServerConfig = {}): Server {
         name === "list-rooms" ||
         name === "get-room-details" ||
         name === "list-live-rooms" ||
-        name === "list-live-participants"
+        name === "list-live-participants" ||
+        name === "delete-rooms-by-tag"
       ) {
         return await executeRoomTool(name, args || {}, request, { apiUrl });
       }
@@ -318,7 +319,8 @@ export function createServer(config: ServerConfig = {}): Server {
         return await executeSessionTool(name, args || {}, client, request);
       }
       // Export tools (check BEFORE recording tools - export-recording-metadata contains "recording")
-      else if (name.includes("export-")) {
+      // export-room-transcripts belongs to the communication module below
+      else if (name.includes("export-") && name !== "export-room-transcripts") {
         return await executeExportTool(name, args || {}, request, { apiUrl });
       }
       // Recording management tools
@@ -340,6 +342,8 @@ export function createServer(config: ServerConfig = {}): Server {
         name === "lower-participant-hand" ||
         name === "raise-phone-participant-hand" ||
         name === "lower-phone-participant-hand" ||
+        name === "mute-phone-participant" ||
+        name === "unmute-phone-participant" ||
         name === "connect-phone" ||
         name === "disconnect-phone" ||
         name === "start-restreamer" ||
@@ -352,11 +356,15 @@ export function createServer(config: ServerConfig = {}): Server {
         return await executeQuizTool(name, args || {}, client);
       }
       // Communication management tools
+      // (all Q&A interaction tools contain "question"; live-answer tools are
+      // named *-question-live-answer so they match too)
       else if (
         name.includes("-chats") ||
         name.includes("-qa") ||
         name.includes("-transcripts") ||
         name.includes("-summaries") ||
+        name.includes("question") ||
+        name === "send-chat-message" ||
         name === "delete-session-recordings" ||
         name === "delete-session-resources"
       ) {

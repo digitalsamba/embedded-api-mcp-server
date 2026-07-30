@@ -190,6 +190,75 @@ export function registerRoomTools(): Tool[] {
             type: "boolean",
             description: "Enable transcription functionality",
           },
+          transcription_store_enabled: {
+            type: "boolean",
+            description: "Store transcripts and summaries",
+          },
+          auto_pip_enabled: {
+            type: "boolean",
+            description:
+              "Open Picture-in-Picture automatically when participants switch away from the tab or app",
+          },
+          video_tile_layout_mode: {
+            type: "string",
+            enum: ["top", "bottom"],
+            description:
+              "Where participant name and status icons appear on each video tile",
+          },
+          room_reactions_enabled: {
+            type: "boolean",
+            description: "Allow participants to use emoji reactions",
+          },
+          connection_quality_indicator_enabled: {
+            type: "boolean",
+            description:
+              "Show participants their local connection quality indicator",
+          },
+          video_fit_mode_enabled: {
+            type: "boolean",
+            description: "Display video streams in full without cropping",
+          },
+          pin_panels_enabled: {
+            type: "boolean",
+            description:
+              "Allow roles with the permission to force pin content for everyone",
+          },
+          breakout_return_to_main_room_enabled: {
+            type: "boolean",
+            description:
+              "Allow users to return to the main room from breakout rooms",
+          },
+          chat_persistence_enabled: {
+            type: "boolean",
+            description: "Retain and reload public chat across sessions",
+          },
+          chat_reactions_enabled: {
+            type: "boolean",
+            description: "Allow reacting to chat messages with emojis",
+          },
+          chat_reactions_extended_enabled: {
+            type: "boolean",
+            description: "Enable the expanded emoji set for chat reactions",
+          },
+          virtual_backgrounds_v2_enabled: {
+            type: "boolean",
+            description: "Use the new virtual background engine",
+          },
+          invite_participants_advanced_enabled: {
+            type: "boolean",
+            description: "Show the 'Invite people' UI by default",
+          },
+          watermark_enabled: {
+            type: "boolean",
+            description: "Show a repeated text watermark across the screen",
+          },
+          watermark_text: {
+            type: "string",
+            minLength: 3,
+            maxLength: 150,
+            description:
+              "Watermark text (Latin characters, numbers and basic punctuation only)",
+          },
         },
         required: ["name"],
       },
@@ -357,6 +426,75 @@ export function registerRoomTools(): Tool[] {
             type: "boolean",
             description: "Enable transcription functionality",
           },
+          transcription_store_enabled: {
+            type: "boolean",
+            description: "Store transcripts and summaries",
+          },
+          auto_pip_enabled: {
+            type: "boolean",
+            description:
+              "Open Picture-in-Picture automatically when participants switch away from the tab or app",
+          },
+          video_tile_layout_mode: {
+            type: "string",
+            enum: ["top", "bottom"],
+            description:
+              "Where participant name and status icons appear on each video tile",
+          },
+          room_reactions_enabled: {
+            type: "boolean",
+            description: "Allow participants to use emoji reactions",
+          },
+          connection_quality_indicator_enabled: {
+            type: "boolean",
+            description:
+              "Show participants their local connection quality indicator",
+          },
+          video_fit_mode_enabled: {
+            type: "boolean",
+            description: "Display video streams in full without cropping",
+          },
+          pin_panels_enabled: {
+            type: "boolean",
+            description:
+              "Allow roles with the permission to force pin content for everyone",
+          },
+          breakout_return_to_main_room_enabled: {
+            type: "boolean",
+            description:
+              "Allow users to return to the main room from breakout rooms",
+          },
+          chat_persistence_enabled: {
+            type: "boolean",
+            description: "Retain and reload public chat across sessions",
+          },
+          chat_reactions_enabled: {
+            type: "boolean",
+            description: "Allow reacting to chat messages with emojis",
+          },
+          chat_reactions_extended_enabled: {
+            type: "boolean",
+            description: "Enable the expanded emoji set for chat reactions",
+          },
+          virtual_backgrounds_v2_enabled: {
+            type: "boolean",
+            description: "Use the new virtual background engine",
+          },
+          invite_participants_advanced_enabled: {
+            type: "boolean",
+            description: "Show the 'Invite people' UI by default",
+          },
+          watermark_enabled: {
+            type: "boolean",
+            description: "Show a repeated text watermark across the screen",
+          },
+          watermark_text: {
+            type: "string",
+            minLength: 3,
+            maxLength: 150,
+            description:
+              "Watermark text (Latin characters, numbers and basic punctuation only)",
+          },
         },
         required: ["room_id"],
       },
@@ -373,8 +511,60 @@ export function registerRoomTools(): Tool[] {
             type: "string",
             description: "Room ID (required)",
           },
+          delete_resources: {
+            type: "boolean",
+            description:
+              "Also delete all session content (chats, Q&A, transcripts, recordings) for the room. Defaults to false.",
+          },
+          delete_history: {
+            type: "boolean",
+            description:
+              "Also anonymise participant PII for all archived participants of the room. Defaults to false.",
+          },
+          delete_library: {
+            type: "boolean",
+            description:
+              "Also delete the room's content library. Defaults to false.",
+          },
         },
         required: ["room_id"],
+      },
+    },
+    {
+      name: "delete-rooms-by-tag",
+      description:
+        '[Room Management] Delete ALL rooms matching one or more tags. Use when users say: "delete rooms by tag", "bulk delete rooms", "remove all rooms tagged X". Requires tags (tag name or array of tag names that exist for the team). Optionally deletes session content, participant history, and content libraries. This action cannot be undone.',
+      annotations: getToolAnnotations(
+        "delete-rooms-by-tag",
+        "Delete Rooms by Tag",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          tags: {
+            type: "array",
+            items: { type: "string" },
+            minItems: 1,
+            description:
+              "Tag names to match. All rooms with these tags are deleted. Tags must exist for the team.",
+          },
+          delete_resources: {
+            type: "boolean",
+            description:
+              "Also delete all session content for matching rooms. Defaults to false.",
+          },
+          delete_history: {
+            type: "boolean",
+            description:
+              "Also anonymise participant PII for matching rooms. Defaults to false.",
+          },
+          delete_library: {
+            type: "boolean",
+            description:
+              "Also delete the content library for matching rooms. Defaults to false.",
+          },
+        },
+        required: ["tags"],
       },
     },
     {
@@ -485,6 +675,27 @@ export function registerRoomTools(): Tool[] {
               polls_enabled: { type: "boolean" },
               qa_enabled: { type: "boolean" },
               transcription_enabled: { type: "boolean" },
+              transcription_store_enabled: { type: "boolean" },
+              auto_pip_enabled: { type: "boolean" },
+              video_tile_layout_mode: {
+                type: "string",
+                enum: ["top", "bottom"],
+              },
+              room_reactions_enabled: { type: "boolean" },
+              connection_quality_indicator_enabled: { type: "boolean" },
+              video_fit_mode_enabled: { type: "boolean" },
+              pin_panels_enabled: { type: "boolean" },
+              chat_persistence_enabled: { type: "boolean" },
+              chat_reactions_enabled: { type: "boolean" },
+              chat_reactions_extended_enabled: { type: "boolean" },
+              virtual_backgrounds_v2_enabled: { type: "boolean" },
+              invite_participants_advanced_enabled: { type: "boolean" },
+              watermark_enabled: { type: "boolean" },
+              watermark_text: {
+                type: "string",
+                minLength: 3,
+                maxLength: 50,
+              },
               max_participants: { type: "number" },
               max_broadcasters: { type: "number" },
               default_role: { type: "string" },
@@ -739,7 +950,8 @@ export async function executeRoomTool(
     }
 
     case "delete-room": {
-      const { room_id } = args;
+      const { room_id, delete_resources, delete_history, delete_library } =
+        args;
 
       if (!room_id) {
         return {
@@ -751,8 +963,13 @@ export async function executeRoomTool(
       logger.info("Deleting room", { roomId: room_id });
 
       try {
-        // Delete room
-        await client.deleteRoom(room_id);
+        const options = normalizeBooleans({
+          delete_resources,
+          delete_history,
+          delete_library,
+        });
+        const hasOptions = Object.values(options).some((v) => v !== undefined);
+        await client.deleteRoom(room_id, hasOptions ? options : undefined);
         logger.info("Room deleted successfully", { roomId: room_id });
 
         return {
@@ -774,6 +991,53 @@ export async function executeRoomTool(
             {
               type: "text",
               text: `Error deleting room: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case "delete-rooms-by-tag": {
+      const { tags, delete_resources, delete_history, delete_library } = args;
+
+      if (!tags || (Array.isArray(tags) && tags.length === 0)) {
+        return {
+          content: [{ type: "text", text: "At least one tag is required." }],
+          isError: true,
+        };
+      }
+
+      logger.info("Deleting rooms by tag", { tags });
+
+      try {
+        const options = normalizeBooleans({
+          delete_resources,
+          delete_history,
+          delete_library,
+        });
+        await client.deleteRoomsByTag({ tags, ...options });
+        logger.info("Rooms deleted by tag successfully", { tags });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Successfully deleted rooms matching tag(s): ${Array.isArray(tags) ? tags.join(", ") : tags}`,
+            },
+          ],
+        };
+      } catch (error) {
+        logger.error("Error deleting rooms by tag", {
+          tags,
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error deleting rooms by tag: ${error instanceof Error ? error.message : String(error)}`,
             },
           ],
           isError: true,

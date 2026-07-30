@@ -232,6 +232,10 @@ export function registerLibraryTools(): ToolDefinition[] {
             type: "string",
             description: "Folder ID to place the file in",
           },
+          fileSize: {
+            type: "integer",
+            description: "The size of the file in bytes",
+          },
         },
         required: ["libraryId", "name"],
       },
@@ -1241,10 +1245,15 @@ async function handleDeleteLibraryFolder(
  * Handle create library file
  */
 async function handleCreateLibraryFile(
-  params: { libraryId: string; name: string; folderId?: string },
+  params: {
+    libraryId: string;
+    name: string;
+    folderId?: string;
+    fileSize?: number;
+  },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { libraryId, name, folderId } = params;
+  const { libraryId, name, folderId, fileSize } = params;
 
   if (!libraryId || libraryId.trim() === "") {
     return {
@@ -1275,6 +1284,7 @@ async function handleCreateLibraryFile(
   try {
     const fileData: any = { name };
     if (folderId !== undefined) fileData.folder_id = folderId;
+    if (fileSize !== undefined) fileData.file_size = fileSize;
 
     const result = await apiClient.createLibraryFile(libraryId, fileData);
 

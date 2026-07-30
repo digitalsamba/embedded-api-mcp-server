@@ -258,6 +258,52 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       },
     },
     {
+      name: "mute-phone-participant",
+      description:
+        '[Live Session Controls] Mute a phone participant in a live session. Use when users say: "mute phone participant", "mute dial-in user", "silence phone caller". Requires room_id and call_id. Only works for phone/dial-in participants.',
+      annotations: getToolAnnotations(
+        "mute-phone-participant",
+        "Mute Phone Participant",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+          call_id: {
+            type: "string",
+            description: "The call ID of the phone participant",
+          },
+        },
+        required: ["room_id", "call_id"],
+      },
+    },
+    {
+      name: "unmute-phone-participant",
+      description:
+        '[Live Session Controls] Unmute a phone participant in a live session. Use when users say: "unmute phone participant", "unmute dial-in user", "let phone caller speak". Requires room_id and call_id. Only works for phone/dial-in participants.',
+      annotations: getToolAnnotations(
+        "unmute-phone-participant",
+        "Unmute Phone Participant",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+          call_id: {
+            type: "string",
+            description: "The call ID of the phone participant",
+          },
+        },
+        required: ["room_id", "call_id"],
+      },
+    },
+    {
       name: "connect-phone",
       description:
         '[Live Session Controls] Connect to SIP phone bridge for a room. Use when users say: "connect phone", "enable phone bridge", "connect SIP", "start phone dial-in". Requires room_id. Enables phone/dial-in capability for the room.',
@@ -373,6 +419,10 @@ export async function executeLiveSessionTool(
       return handleRaisePhoneParticipantHand(params, _apiClient);
     case "lower-phone-participant-hand":
       return handleLowerPhoneParticipantHand(params, _apiClient);
+    case "mute-phone-participant":
+      return handlePhoneParticipantMute(params, _apiClient, "mute");
+    case "unmute-phone-participant":
+      return handlePhoneParticipantMute(params, _apiClient, "unmute");
     case "connect-phone":
       return handleConnectPhone(params, _apiClient);
     case "disconnect-phone":
@@ -887,6 +937,64 @@ async function handleLowerPhoneParticipantHand(
         {
           type: "text",
           text: `Error lowering hand: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle mute/unmute phone participant
+ */
+async function handlePhoneParticipantMute(
+  params: { room_id: string; call_id: string },
+  apiClient: DigitalSambaApiClient,
+  action: "mute" | "unmute",
+): Promise<any> {
+  const { room_id, call_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  if (!call_id || call_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Call ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info(`Phone participant ${action}`, { room_id, call_id });
+
+  try {
+    if (action === "mute") {
+      await apiClient.mutePhoneParticipant(room_id, call_id);
+    } else {
+      await apiClient.unmutePhoneParticipant(room_id, call_id);
+    }
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully ${action}d phone participant ${call_id} in room ${room_id}.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error(`Error on phone participant ${action}`, {
+      room_id,
+      call_id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error on ${action}: ${error instanceof Error ? error.message : String(error)}`,
         },
       ],
       isError: true,

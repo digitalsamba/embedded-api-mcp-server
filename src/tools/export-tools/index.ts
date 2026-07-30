@@ -99,14 +99,20 @@ export async function executeExportTool(
  */
 
 async function handleExportChatMessages(
-  params: { roomId: string; format?: string; sessionId?: string },
+  params: {
+    roomId: string;
+    format?: string;
+    sessionId?: string;
+    locale?: string;
+  },
   exportResources: ExportResources,
 ): Promise<any> {
   const uri = `digitalsamba://exports/communications/${params.roomId}/chat${
-    params.format || params.sessionId
+    params.format || params.sessionId || params.locale
       ? `?${new URLSearchParams({
           ...(params.format && { format: params.format }),
           ...(params.sessionId && { session_id: params.sessionId }),
+          ...(params.locale && { locale: params.locale }),
         }).toString()}`
       : ""
   }`;
@@ -116,14 +122,20 @@ async function handleExportChatMessages(
 }
 
 async function handleExportQA(
-  params: { roomId: string; format?: string; sessionId?: string },
+  params: {
+    roomId: string;
+    format?: string;
+    sessionId?: string;
+    locale?: string;
+  },
   exportResources: ExportResources,
 ): Promise<any> {
   const uri = `digitalsamba://exports/communications/${params.roomId}/qa${
-    params.format || params.sessionId
+    params.format || params.sessionId || params.locale
       ? `?${new URLSearchParams({
           ...(params.format && { format: params.format }),
           ...(params.sessionId && { session_id: params.sessionId }),
+          ...(params.locale && { locale: params.locale }),
         }).toString()}`
       : ""
   }`;
@@ -133,11 +145,16 @@ async function handleExportQA(
 }
 
 async function handleExportTranscripts(
-  params: { sessionId: string; format?: string },
+  params: { sessionId: string; format?: string; locale?: string },
   exportResources: ExportResources,
 ): Promise<any> {
   const uri = `digitalsamba://exports/communications/${params.sessionId}/transcripts${
-    params.format ? `?format=${params.format}` : ""
+    params.format || params.locale
+      ? `?${new URLSearchParams({
+          ...(params.format && { format: params.format }),
+          ...(params.locale && { locale: params.locale }),
+        }).toString()}`
+      : ""
   }`;
 
   const result = await exportResources.handleResourceRequest(uri);
@@ -145,14 +162,20 @@ async function handleExportTranscripts(
 }
 
 async function handleExportPolls(
-  params: { roomId: string; format?: string; sessionId?: string },
+  params: {
+    roomId: string;
+    format?: string;
+    sessionId?: string;
+    locale?: string;
+  },
   exportResources: ExportResources,
 ): Promise<any> {
   const uri = `digitalsamba://exports/polls/${params.roomId}${
-    params.format || params.sessionId
+    params.format || params.sessionId || params.locale
       ? `?${new URLSearchParams({
           ...(params.format && { format: params.format }),
           ...(params.sessionId && { session_id: params.sessionId }),
+          ...(params.locale && { locale: params.locale }),
         }).toString()}`
       : ""
   }`;
@@ -235,8 +258,14 @@ export function registerExportTools(): Tool[] {
           },
           format: {
             type: "string",
-            enum: ["txt", "json"],
-            description: "Export format (default: json)",
+            enum: ["txt", "json", "csv", "zip"],
+            description:
+              "Export format (default: json). zip is an archive with csv and txt.",
+          },
+          locale: {
+            type: "string",
+            enum: ["en", "it", "de", "es"],
+            description: "Export language (default: en)",
           },
           sessionId: {
             type: "string",
@@ -262,6 +291,11 @@ export function registerExportTools(): Tool[] {
             type: "string",
             enum: ["txt", "json"],
             description: "Export format (default: json)",
+          },
+          locale: {
+            type: "string",
+            enum: ["en", "it", "de", "es"],
+            description: "Export language (default: en)",
           },
           sessionId: {
             type: "string",
@@ -291,6 +325,11 @@ export function registerExportTools(): Tool[] {
             enum: ["txt", "json"],
             description: "Export format (default: json)",
           },
+          locale: {
+            type: "string",
+            enum: ["en", "it", "de", "es"],
+            description: "Export language (default: en)",
+          },
         },
         required: ["sessionId"],
       } as const,
@@ -314,6 +353,11 @@ export function registerExportTools(): Tool[] {
             type: "string",
             enum: ["txt", "json"],
             description: "Export format (default: json)",
+          },
+          locale: {
+            type: "string",
+            enum: ["en", "it", "de", "es"],
+            description: "Export language (default: en)",
           },
           sessionId: {
             type: "string",

@@ -242,6 +242,46 @@ export function registerPollTools(): ToolDefinition[] {
         required: ["room_id", "poll_id"],
       },
     },
+    {
+      name: "get-poll-import-template",
+      description:
+        '[Poll Management] Download the CSV template for bulk poll import. Use when users say: "get poll import template", "poll CSV template", "how do I bulk import polls". Requires room_id. Returns the CSV template content.',
+      annotations: getToolAnnotations(
+        "get-poll-import-template",
+        "Get Poll Import Template",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+        },
+        required: ["room_id"],
+      },
+    },
+    {
+      name: "import-polls",
+      description:
+        '[Poll Management] Import polls into a room from CSV content. Use when users say: "import polls", "bulk create polls from CSV", "upload polls". Requires room_id and csv_content (CSV text matching the import template; max 2MB).',
+      annotations: getToolAnnotations("import-polls", "Import Polls"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room to import polls into",
+          },
+          csv_content: {
+            type: "string",
+            description:
+              "CSV content matching the poll import template (get-poll-import-template)",
+          },
+        },
+        required: ["room_id", "csv_content"],
+      },
+    },
   ];
 }
 
@@ -271,6 +311,10 @@ export async function executePollTool(
       return handleDeleteRoomPolls(params, apiClient);
     case "publish-poll-results":
       return handlePublishPollResults(params, apiClient);
+    case "get-poll-import-template":
+      return handleGetPollImportTemplate(params, apiClient);
+    case "import-polls":
+      return handleImportPolls(params, apiClient);
     default:
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
   }
@@ -818,6 +862,87 @@ async function handlePublishPollResults(
           text: displayMessage,
         },
       ],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle get poll import template
+ */
+async function handleGetPollImportTemplate(
+  params: { room_id: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Getting poll import template", { room_id });
+
+  try {
+    const template = await apiClient.getPollImportTemplate(room_id);
+    return {
+      content: [{ type: "text", text: template }],
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error("Error getting poll import template", {
+      room_id,
+      error: message,
+    });
+    return {
+      content: [{ type: "text", text: `Error getting template: ${message}` }],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle import polls from CSV
+ */
+async function handleImportPolls(
+  params: { room_id: string; csv_content: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id, csv_content } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  if (!csv_content || csv_content.trim() === "") {
+    return {
+      content: [{ type: "text", text: "CSV content is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Importing polls from CSV", { room_id });
+
+  try {
+    await apiClient.importPolls(room_id, csv_content);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully imported polls into room ${room_id}`,
+        },
+      ],
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error("Error importing polls", { room_id, error: message });
+    return {
+      content: [{ type: "text", text: `Error importing polls: ${message}` }],
       isError: true,
     };
   }
