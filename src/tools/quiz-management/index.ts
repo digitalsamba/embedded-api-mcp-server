@@ -89,7 +89,8 @@ export function registerQuizTools(): ToolDefinition[] {
           },
           time_limit_minutes: {
             type: "number",
-            description: "Optional time limit in minutes for completing the quiz",
+            description:
+              "Optional time limit in minutes for completing the quiz",
           },
           questions: {
             type: "array",
@@ -233,7 +234,10 @@ export function registerQuizTools(): ToolDefinition[] {
       name: "delete-room-quizzes",
       description:
         '[Quiz Management] Delete ALL quizzes from a room. Use when users say: "delete all quizzes", "remove all quizzes from room", "clear room quizzes". Requires room_id. This action cannot be undone.',
-      annotations: getToolAnnotations("delete-room-quizzes", "Delete Room Quizzes"),
+      annotations: getToolAnnotations(
+        "delete-room-quizzes",
+        "Delete Room Quizzes",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -249,7 +253,10 @@ export function registerQuizTools(): ToolDefinition[] {
       name: "delete-session-quizzes",
       description:
         '[Quiz Management] Delete ALL quizzes from a specific session. Use when users say: "delete session quizzes", "remove quizzes from session", "clear session quiz data". Requires session_id.',
-      annotations: getToolAnnotations("delete-session-quizzes", "Delete Session Quizzes"),
+      annotations: getToolAnnotations(
+        "delete-session-quizzes",
+        "Delete Session Quizzes",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -500,7 +507,10 @@ async function handleCreateQuiz(
     const errorMessage = error instanceof Error ? error.message : String(error);
     let displayMessage = `Error creating quiz: ${errorMessage}`;
 
-    if (errorMessage.includes("Room not found") || errorMessage.includes("404")) {
+    if (
+      errorMessage.includes("Room not found") ||
+      errorMessage.includes("404")
+    ) {
       displayMessage = `Room with ID ${room_id} not found`;
     }
 
@@ -643,7 +653,10 @@ async function handleUpdateQuiz(
     };
   }
 
-  logger.info("Updating quiz", { quizId: quiz_id, updates: Object.keys(updateData) });
+  logger.info("Updating quiz", {
+    quizId: quiz_id,
+    updates: Object.keys(updateData),
+  });
 
   try {
     await apiClient.updateQuiz(room_id, quiz_id, updateData);
@@ -905,10 +918,18 @@ async function handleGetQuizResults(
     };
   }
 
-  logger.info("Getting quiz results", { roomId: room_id, quizId: quiz_id, sessionId: session_id });
+  logger.info("Getting quiz results", {
+    roomId: room_id,
+    quizId: quiz_id,
+    sessionId: session_id,
+  });
 
   try {
-    const results = await apiClient.getQuizResults(room_id, quiz_id, session_id);
+    const results = await apiClient.getQuizResults(
+      room_id,
+      quiz_id,
+      session_id,
+    );
 
     if (!results || results.length === 0) {
       return {

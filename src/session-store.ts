@@ -116,10 +116,14 @@ export function getStore(): Store {
   if (!store) {
     const redisUrl = process.env.REDIS_URL;
     if (redisUrl) {
-      logger.info(`Using Redis store: ${redisUrl.replace(/\/\/.*@/, "//***@")}`);
+      logger.info(
+        `Using Redis store: ${redisUrl.replace(/\/\/.*@/, "//***@")}`,
+      );
       store = new RedisStore(redisUrl);
     } else {
-      logger.warn("REDIS_URL not set - using in-memory store (sessions lost on restart)");
+      logger.warn(
+        "REDIS_URL not set - using in-memory store (sessions lost on restart)",
+      );
       store = new MemoryStore();
     }
   }

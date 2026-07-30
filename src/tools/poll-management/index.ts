@@ -184,7 +184,10 @@ export function registerPollTools(): ToolDefinition[] {
       name: "delete-session-polls",
       description:
         '[Poll Management] Delete ALL polls from a specific session. Use when users say: "delete all session polls", "remove all polls from session", "clear session polls", "delete all surveys from meeting". Requires session_id. Removes all poll data from that session.',
-      annotations: getToolAnnotations("delete-session-polls", "Delete Session Polls"),
+      annotations: getToolAnnotations(
+        "delete-session-polls",
+        "Delete Session Polls",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -216,7 +219,10 @@ export function registerPollTools(): ToolDefinition[] {
       name: "publish-poll-results",
       description:
         '[Poll Management] Publish/share poll results with participants. Use when users say: "show poll results", "publish poll results", "share voting results", "display poll outcome", "reveal survey results". Requires room_id, poll_id, and session_id. Makes results visible to all participants.',
-      annotations: getToolAnnotations("publish-poll-results", "Publish Poll Results"),
+      annotations: getToolAnnotations(
+        "publish-poll-results",
+        "Publish Poll Results",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -441,7 +447,10 @@ async function handleUpdatePoll(
     };
   }
 
-  logger.info("Updating poll", { pollId: poll_id, updates: Object.keys(updateData) });
+  logger.info("Updating poll", {
+    pollId: poll_id,
+    updates: Object.keys(updateData),
+  });
 
   try {
     // Transform and normalize update data for API
@@ -749,7 +758,11 @@ async function handlePublishPollResults(
     };
   }
 
-  logger.info("Publishing poll results", { roomId: room_id, pollId: poll_id, sessionId: session_id });
+  logger.info("Publishing poll results", {
+    roomId: room_id,
+    pollId: poll_id,
+    sessionId: session_id,
+  });
 
   try {
     // The API method expects session_id as a required parameter

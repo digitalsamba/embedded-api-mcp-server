@@ -128,7 +128,10 @@ export function registerRecordingTools(): Tool[] {
       name: "get-recording-download-link",
       description:
         '[Recording Management] Generate a temporary download link for a recording. Use when users say: "download recording", "get download link", "export recording", "download video", "get recording URL". Requires recording_id. Returns a time-limited download URL. Recording must be in READY status.',
-      annotations: getToolAnnotations("get-recording-download-link", "Get Recording Download Link"),
+      annotations: getToolAnnotations(
+        "get-recording-download-link",
+        "Get Recording Download Link",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -148,7 +151,10 @@ export function registerRecordingTools(): Tool[] {
       name: "unarchive-recording",
       description:
         '[Recording Management] Restore an archived recording back to active status. Use when users say: "unarchive recording", "restore recording", "unarchive video", "bring back from archive", "restore archived recording". Requires recording_id. Only works on archived recordings.',
-      annotations: getToolAnnotations("unarchive-recording", "Unarchive Recording"),
+      annotations: getToolAnnotations(
+        "unarchive-recording",
+        "Unarchive Recording",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -164,7 +170,10 @@ export function registerRecordingTools(): Tool[] {
       name: "get-recording-bookmarks",
       description:
         '[Recording Management] Get bookmarks for a recording. Use when users say: "get recording bookmarks", "show bookmarks", "list recording markers", "get recording highlights". Requires recording_id. Returns timestamps and labels of bookmarks added during recording.',
-      annotations: getToolAnnotations("get-recording-bookmarks", "Get Recording Bookmarks"),
+      annotations: getToolAnnotations(
+        "get-recording-bookmarks",
+        "Get Recording Bookmarks",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -278,7 +287,7 @@ export async function executeRecordingTool(
     case "get-recording-download-link": {
       const downloadLink = await client.getRecordingDownloadLink(
         args.recording_id,
-        args.valid_for_minutes
+        args.valid_for_minutes,
       );
       return {
         content: [

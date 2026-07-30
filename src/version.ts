@@ -35,7 +35,12 @@ try {
   const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
 
   // Try to read version.json (production builds)
-  let gitInfo = { commit: "dev", ref: "local", buildTime: "development", commitsAhead: 0 };
+  let gitInfo = {
+    commit: "dev",
+    ref: "local",
+    buildTime: "development",
+    commitsAhead: 0,
+  };
   try {
     const versionJsonPath = join(__dirname, "..", "..", "version.json");
     gitInfo = JSON.parse(readFileSync(versionJsonPath, "utf-8"));

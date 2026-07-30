@@ -77,7 +77,7 @@ export async function storePendingClientAuth(
   redirectUri: string,
   codeChallenge?: string,
   codeChallengeMethod?: string,
-  clientState?: string
+  clientState?: string,
 ): Promise<void> {
   const store = getStore();
   const data: PendingClientAuth = {
@@ -94,7 +94,9 @@ export async function storePendingClientAuth(
 /**
  * Get and remove pending client authorization
  */
-export async function getPendingClientAuth(ourState: string): Promise<PendingClientAuth | null> {
+export async function getPendingClientAuth(
+  ourState: string,
+): Promise<PendingClientAuth | null> {
   const store = getStore();
   const key = PREFIXES.PENDING_CLIENT + ourState;
   const pending = await store.get<PendingClientAuth>(key);
@@ -130,7 +132,9 @@ export async function registerClient(request: {
   };
 
   await store.set(PREFIXES.CLIENT + clientId, client, TTL.CLIENT);
-  logger.info(`DCR: Registered new client '${client.client_name}' (${clientId.substring(0, 8)}...)`);
+  logger.info(
+    `DCR: Registered new client '${client.client_name}' (${clientId.substring(0, 8)}...)`,
+  );
 
   return client;
 }
@@ -138,7 +142,9 @@ export async function registerClient(request: {
 /**
  * Get a registered client by ID
  */
-export async function getRegisteredClient(clientId: string): Promise<RegisteredClient | null> {
+export async function getRegisteredClient(
+  clientId: string,
+): Promise<RegisteredClient | null> {
   const store = getStore();
   return store.get<RegisteredClient>(PREFIXES.CLIENT + clientId);
 }
@@ -146,7 +152,10 @@ export async function getRegisteredClient(clientId: string): Promise<RegisteredC
 /**
  * Validate redirect URI for a client
  */
-export async function validateRedirectUri(clientId: string, redirectUri: string): Promise<boolean> {
+export async function validateRedirectUri(
+  clientId: string,
+  redirectUri: string,
+): Promise<boolean> {
   const client = await getRegisteredClient(clientId);
   if (!client) return false;
   return client.redirect_uris.includes(redirectUri);
@@ -161,7 +170,7 @@ export async function createAuthorizationCode(
   dsAccessToken: string,
   dsRefreshToken?: string,
   codeChallenge?: string,
-  codeChallengeMethod?: string
+  codeChallengeMethod?: string,
 ): Promise<string> {
   const store = getStore();
   const code = randomBytes(32).toString("hex");
@@ -187,8 +196,12 @@ export async function exchangeAuthorizationCode(
   code: string,
   clientId: string,
   redirectUri: string,
-  codeVerifier?: string
-): Promise<{ access_token: string; token_type: string; expires_in: number } | null> {
+  codeVerifier?: string,
+): Promise<{
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+} | null> {
   const store = getStore();
   const key = PREFIXES.AUTH_CODE + code;
   const pending = await store.get<PendingAuth>(key);
@@ -220,7 +233,9 @@ export async function exchangeAuthorizationCode(
       logger.warn("Token exchange: Missing code_verifier");
       return null;
     }
-    const expectedChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
+    const expectedChallenge = createHash("sha256")
+      .update(codeVerifier)
+      .digest("base64url");
     if (expectedChallenge !== pending.codeChallenge) {
       logger.warn("Token exchange: PKCE verification failed");
       return null;
@@ -239,7 +254,9 @@ export async function exchangeAuthorizationCode(
   };
   await store.set(PREFIXES.SESSION + sessionId, session, TTL.SESSION);
 
-  logger.info(`Token exchange successful, session: ${sessionId.substring(0, 8)}...`);
+  logger.info(
+    `Token exchange successful, session: ${sessionId.substring(0, 8)}...`,
+  );
 
   return {
     access_token: sessionId,
@@ -256,7 +273,9 @@ export function loadOAuthConfig(): OAuthConfig | null {
   const clientSecret = process.env.OAUTH_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    logger.warn("OAuth not configured (missing OAUTH_CLIENT_ID or OAUTH_CLIENT_SECRET)");
+    logger.warn(
+      "OAuth not configured (missing OAUTH_CLIENT_ID or OAUTH_CLIENT_SECRET)",
+    );
     return null;
   }
 
@@ -264,10 +283,13 @@ export function loadOAuthConfig(): OAuthConfig | null {
     clientId,
     clientSecret,
     authorizeUrl:
-      process.env.OAUTH_AUTHORIZE_URL || "https://api.digitalsamba.com/oauth/authorize",
-    tokenUrl: process.env.OAUTH_TOKEN_URL || "https://api.digitalsamba.com/oauth/token",
+      process.env.OAUTH_AUTHORIZE_URL ||
+      "https://api.digitalsamba.com/oauth/authorize",
+    tokenUrl:
+      process.env.OAUTH_TOKEN_URL || "https://api.digitalsamba.com/oauth/token",
     redirectUri:
-      process.env.OAUTH_REDIRECT_URI || "https://mcp.digitalsamba.com/oauth/callback",
+      process.env.OAUTH_REDIRECT_URI ||
+      "https://mcp.digitalsamba.com/oauth/callback",
     issuer: process.env.OAUTH_ISSUER || "https://mcp.digitalsamba.com",
   };
 }
@@ -291,12 +313,19 @@ export function generateState(): string {
 /**
  * Build authorization URL for OAuth flow
  */
-export async function buildAuthorizationUrl(config: OAuthConfig, state: string): Promise<string> {
+export async function buildAuthorizationUrl(
+  config: OAuthConfig,
+  state: string,
+): Promise<string> {
   const store = getStore();
   const pkce = generatePKCE();
 
   // Store code verifier for later token exchange
-  await store.set(PREFIXES.CODE_VERIFIER + state, pkce.verifier, TTL.CODE_VERIFIER);
+  await store.set(
+    PREFIXES.CODE_VERIFIER + state,
+    pkce.verifier,
+    TTL.CODE_VERIFIER,
+  );
 
   const params = new URLSearchParams({
     client_id: config.clientId,
@@ -317,7 +346,7 @@ export async function buildAuthorizationUrl(config: OAuthConfig, state: string):
 export async function exchangeCodeForTokens(
   config: OAuthConfig,
   code: string,
-  state: string
+  state: string,
 ): Promise<TokenResponse> {
   const store = getStore();
   const key = PREFIXES.CODE_VERIFIER + state;
@@ -361,7 +390,7 @@ export async function exchangeCodeForTokens(
 export async function completeOAuthFlow(
   config: OAuthConfig,
   code: string,
-  state: string
+  state: string,
 ): Promise<{ sessionId: string; session: OAuthSession }> {
   const store = getStore();
 
@@ -378,7 +407,9 @@ export async function completeOAuthFlow(
 
   await store.set(PREFIXES.SESSION + sessionId, session, TTL.SESSION);
 
-  logger.info(`OAuth session created (session: ${sessionId.substring(0, 8)}...)`);
+  logger.info(
+    `OAuth session created (session: ${sessionId.substring(0, 8)}...)`,
+  );
 
   return { sessionId, session };
 }
@@ -386,7 +417,9 @@ export async function completeOAuthFlow(
 /**
  * Get session by ID
  */
-export async function getSession(sessionId: string): Promise<OAuthSession | null> {
+export async function getSession(
+  sessionId: string,
+): Promise<OAuthSession | null> {
   const store = getStore();
   const session = await store.get<OAuthSession>(PREFIXES.SESSION + sessionId);
 
@@ -401,7 +434,9 @@ export async function getSession(sessionId: string): Promise<OAuthSession | null
 /**
  * Get access token from session (used for /oauth-api/v1/* calls)
  */
-export async function getAccessTokenFromSession(sessionId: string): Promise<string | null> {
+export async function getAccessTokenFromSession(
+  sessionId: string,
+): Promise<string | null> {
   const session = await getSession(sessionId);
   return session?.accessToken ?? null;
 }
@@ -427,7 +462,8 @@ export function getAuthorizationServerMetadata(config: OAuthConfig): object {
     grant_types_supported: ["authorization_code"],
     code_challenge_methods_supported: ["S256"],
     token_endpoint_auth_methods_supported: ["none"],
-    service_documentation: "https://github.com/digitalsamba/embedded-api-mcp-server",
+    service_documentation:
+      "https://github.com/digitalsamba/embedded-api-mcp-server",
   };
 }
 

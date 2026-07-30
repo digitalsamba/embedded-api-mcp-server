@@ -25,7 +25,10 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-participant-statistics",
       description:
         '[Analytics] Get detailed participant statistics and behavior analytics. Use when users say: "show participant stats", "participant analytics", "user activity report", "attendee statistics", "who attended meetings", "participant engagement metrics". Optional filters for date range, room, or specific participant. Returns attendance, duration, and activity data.',
-      annotations: getToolAnnotations("get-participant-statistics", "Get Participant Statistics"),
+      annotations: getToolAnnotations(
+        "get-participant-statistics",
+        "Get Participant Statistics",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -57,7 +60,10 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-room-analytics",
       description:
         '[Analytics] Get comprehensive room usage analytics and performance metrics. Use when users say: "room analytics", "room usage statistics", "meeting room performance", "room activity report", "how is the room being used", "room metrics". Optional roomId for specific room or all rooms. Returns usage patterns, participant counts, session data.',
-      annotations: getToolAnnotations("get-room-analytics", "Get Room Analytics"),
+      annotations: getToolAnnotations(
+        "get-room-analytics",
+        "Get Room Analytics",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -86,7 +92,10 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-usage-statistics",
       description:
         '[Analytics - TOOL] Get filtered platform usage statistics with specific date ranges and periods. Use when users need: "analytics for specific dates", "weekly/monthly analytics", "analytics for last week", "analytics between dates". For simple "show analytics" use digitalsamba://analytics/team resource instead. Returns sessions, participants, minutes filtered by your criteria.',
-      annotations: getToolAnnotations("get-usage-statistics", "Get Usage Statistics"),
+      annotations: getToolAnnotations(
+        "get-usage-statistics",
+        "Get Usage Statistics",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -112,7 +121,10 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-usage-analytics",
       description:
         '[Analytics - TOOL] Get platform usage statistics and growth trends. Use when users say: "usage trends", "platform growth", "total meeting minutes", "usage statistics", "growth metrics". This TOOL provides the same data as digitalsamba://analytics/usage resource. Supports date filters and period grouping. Returns total sessions, participants, minutes, and growth rates.',
-      annotations: getToolAnnotations("get-usage-analytics", "Get Usage Analytics"),
+      annotations: getToolAnnotations(
+        "get-usage-analytics",
+        "Get Usage Analytics",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -136,7 +148,10 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-live-analytics",
       description:
         '[Analytics - TOOL] Get real-time analytics for all active sessions. Use when users say: "live session data", "current activity", "real-time analytics", "active sessions", "live meeting stats". This TOOL provides the same data as digitalsamba://analytics/live resource. Returns current active sessions and participant counts.',
-      annotations: getToolAnnotations("get-live-analytics", "Get Live Analytics"),
+      annotations: getToolAnnotations(
+        "get-live-analytics",
+        "Get Live Analytics",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -151,7 +166,10 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-live-room-analytics",
       description:
         '[Analytics - TOOL] Get real-time analytics for a specific room. Use when users say: "live room analytics", "current room activity", "real-time room data", "active room session", "live room stats". Requires roomId. This TOOL provides the same data as digitalsamba://analytics/live/{roomId} resource. Returns current session status and participant activity for that room.',
-      annotations: getToolAnnotations("get-live-room-analytics", "Get Live Room Analytics"),
+      annotations: getToolAnnotations(
+        "get-live-room-analytics",
+        "Get Live Room Analytics",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -167,7 +185,10 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-session-analytics",
       description:
         '[Analytics - TOOL] Get detailed analytics for a specific session. Use when users say: "session analytics", "meeting analytics", "session performance data", "session metrics", "meeting statistics". Requires sessionId. This TOOL provides the same data as digitalsamba://analytics/sessions/{sessionId} resource. Returns comprehensive session analytics including participant engagement and activity patterns.',
-      annotations: getToolAnnotations("get-session-analytics", "Get Session Analytics"),
+      annotations: getToolAnnotations(
+        "get-session-analytics",
+        "Get Session Analytics",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -183,7 +204,10 @@ export function registerAnalyticsTools(): Tool[] {
       name: "get-participant-analytics",
       description:
         '[Analytics - TOOL] Get analytics for a specific participant across sessions. Use when users say: "user analytics", "participant history", "individual user stats", "participant metrics", "user engagement data". Requires participantId. This TOOL provides the same data as digitalsamba://analytics/participants/{participantId} resource. Returns participant activity across all sessions they joined.',
-      annotations: getToolAnnotations("get-participant-analytics", "Get Participant Analytics"),
+      annotations: getToolAnnotations(
+        "get-participant-analytics",
+        "Get Participant Analytics",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -214,178 +238,191 @@ export async function executeAnalyticsTool(
   try {
     const analytics = new AnalyticsResource(apiClient);
 
-  // Build filters from arguments and convert to snake_case
-  const filters: AnalyticsFilters = {
-    date_start: args.dateStart,
-    date_end: args.dateEnd,
-    room_id: args.roomId,
-    session_id: args.sessionId,
-    participant_id: args.participantId,
-    period: args.period,
-  };
+    // Build filters from arguments and convert to snake_case
+    const filters: AnalyticsFilters = {
+      date_start: args.dateStart,
+      date_end: args.dateEnd,
+      room_id: args.roomId,
+      session_id: args.sessionId,
+      participant_id: args.participantId,
+      period: args.period,
+    };
 
-  // Remove undefined and null values
-  Object.keys(filters).forEach((key) => {
-    if (filters[key as keyof AnalyticsFilters] === undefined || filters[key as keyof AnalyticsFilters] === null) {
-      delete filters[key as keyof AnalyticsFilters];
-    }
-  });
+    // Remove undefined and null values
+    Object.keys(filters).forEach((key) => {
+      if (
+        filters[key as keyof AnalyticsFilters] === undefined ||
+        filters[key as keyof AnalyticsFilters] === null
+      ) {
+        delete filters[key as keyof AnalyticsFilters];
+      }
+    });
 
-  switch (toolName) {
-    case "get-team-analytics": {
-      logger.info("Executing team analytics query", { args });
-      const teamResult = await analytics.getTeamAnalytics(filters);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(teamResult, null, 2),
-          },
-        ],
-      };
-    }
-
-    case "get-room-analytics": {
-      logger.info("Executing room analytics query", { args });
-      // If no roomId provided, get team-wide analytics instead
-      if (!args.roomId) {
+    switch (toolName) {
+      case "get-team-analytics": {
+        logger.info("Executing team analytics query", { args });
         const teamResult = await analytics.getTeamAnalytics(filters);
         return {
           content: [
             {
               type: "text",
-              text: `Team-wide room analytics (no specific room selected):\n\n${JSON.stringify(teamResult, null, 2)}`,
+              text: JSON.stringify(teamResult, null, 2),
             },
           ],
         };
       }
-      const roomResult = await analytics.getRoomAnalytics(
-        args.roomId,
-        filters,
-      );
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(roomResult, null, 2),
-          },
-        ],
-      };
-    }
 
-    case "get-session-analytics": {
-      logger.info("Executing session analytics query", { args });
-      const sessionResult = await analytics.getSessionAnalytics(
-        args.sessionId,
-        filters,
-      );
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(sessionResult, null, 2),
-          },
-        ],
-      };
-    }
+      case "get-room-analytics": {
+        logger.info("Executing room analytics query", { args });
+        // If no roomId provided, get team-wide analytics instead
+        if (!args.roomId) {
+          const teamResult = await analytics.getTeamAnalytics(filters);
+          return {
+            content: [
+              {
+                type: "text",
+                text: `Team-wide room analytics (no specific room selected):\n\n${JSON.stringify(teamResult, null, 2)}`,
+              },
+            ],
+          };
+        }
+        const roomResult = await analytics.getRoomAnalytics(
+          args.roomId,
+          filters,
+        );
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(roomResult, null, 2),
+            },
+          ],
+        };
+      }
 
-    case "get-participant-statistics": {
-      logger.info("Executing participant statistics query", { args });
-      // Use team analytics with participant filter
-      const participantResult = await analytics.getTeamAnalytics(filters);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(participantResult, null, 2),
-          },
-        ],
-      };
-    }
+      case "get-session-analytics": {
+        logger.info("Executing session analytics query", { args });
+        const sessionResult = await analytics.getSessionAnalytics(
+          args.sessionId,
+          filters,
+        );
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(sessionResult, null, 2),
+            },
+          ],
+        };
+      }
 
-    case "get-usage-statistics": {
-      logger.info("Executing usage statistics query", { args });
-      // Use team analytics for usage statistics
-      const usageResult = await analytics.getTeamAnalytics(filters);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(usageResult, null, 2),
-          },
-        ],
-      };
-    }
+      case "get-participant-statistics": {
+        logger.info("Executing participant statistics query", { args });
+        // Use team analytics with participant filter
+        const participantResult = await analytics.getTeamAnalytics(filters);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(participantResult, null, 2),
+            },
+          ],
+        };
+      }
 
-    // Reader tools for analytics resources (hybrid approach)
-    case "get-usage-analytics": {
-      logger.info("Executing usage analytics query", { args });
-      const usageAnalytics = await analytics.getTeamAnalytics(filters);
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(usageAnalytics, null, 2),
-          },
-        ],
-      };
-    }
+      case "get-usage-statistics": {
+        logger.info("Executing usage statistics query", { args });
+        // Use team analytics for usage statistics
+        const usageResult = await analytics.getTeamAnalytics(filters);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(usageResult, null, 2),
+            },
+          ],
+        };
+      }
 
-    case "get-live-analytics": {
-      logger.info("Executing live analytics query", { args });
-      // Get live session data - this would need a specific API endpoint
-      // For now, using team analytics as a placeholder
-      const liveData = await analytics.getTeamAnalytics({ ...filters, live: true });
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(liveData, null, 2),
-          },
-        ],
-      };
-    }
+      // Reader tools for analytics resources (hybrid approach)
+      case "get-usage-analytics": {
+        logger.info("Executing usage analytics query", { args });
+        const usageAnalytics = await analytics.getTeamAnalytics(filters);
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(usageAnalytics, null, 2),
+            },
+          ],
+        };
+      }
 
-    case "get-live-room-analytics": {
-      logger.info("Executing live room analytics query", { roomId: args.roomId });
-      const liveRoomData = await analytics.getRoomAnalytics(args.roomId, { ...filters, live: true });
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(liveRoomData, null, 2),
-          },
-        ],
-      };
-    }
+      case "get-live-analytics": {
+        logger.info("Executing live analytics query", { args });
+        // Get live session data - this would need a specific API endpoint
+        // For now, using team analytics as a placeholder
+        const liveData = await analytics.getTeamAnalytics({
+          ...filters,
+          live: true,
+        });
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(liveData, null, 2),
+            },
+          ],
+        };
+      }
 
-    case "get-participant-analytics": {
-      logger.info("Executing participant analytics query", { participantId: args.participantId });
-      // Get analytics for specific participant
-      const participantAnalytics = await analytics.getTeamAnalytics({
-        ...filters,
-        participantId: args.participantId,
-      });
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(participantAnalytics, null, 2),
-          },
-        ],
-      };
-    }
+      case "get-live-room-analytics": {
+        logger.info("Executing live room analytics query", {
+          roomId: args.roomId,
+        });
+        const liveRoomData = await analytics.getRoomAnalytics(args.roomId, {
+          ...filters,
+          live: true,
+        });
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(liveRoomData, null, 2),
+            },
+          ],
+        };
+      }
 
-    default:
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Unknown analytics tool: ${toolName}`,
-          },
-        ],
-        isError: true,
-      };
+      case "get-participant-analytics": {
+        logger.info("Executing participant analytics query", {
+          participantId: args.participantId,
+        });
+        // Get analytics for specific participant
+        const participantAnalytics = await analytics.getTeamAnalytics({
+          ...filters,
+          participantId: args.participantId,
+        });
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(participantAnalytics, null, 2),
+            },
+          ],
+        };
+      }
+
+      default:
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Unknown analytics tool: ${toolName}`,
+            },
+          ],
+          isError: true,
+        };
     }
   } catch (error) {
     logger.error("Error executing analytics tool", { toolName, args, error });

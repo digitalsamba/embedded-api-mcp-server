@@ -126,24 +126,24 @@ function getApiClient(apiKey: string, apiUrl: string): DigitalSambaApiClient {
  * Resource to tool mapping for helpful error messages
  */
 const resourceToToolMap: Record<string, string> = {
-  "rooms": "list-rooms",
-  "room": "get-room-details",
+  rooms: "list-rooms",
+  room: "get-room-details",
   "rooms-live": "list-live-rooms",
   "rooms-live-participants": "list-live-participants",
   "room-live": "list-live-rooms",
   "room-live-participants": "list-live-participants",
   "room-settings": "get-default-room-settings",
-  "sessions": "list-sessions",
-  "session": "get-session-details",
+  sessions: "list-sessions",
+  session: "get-session-details",
   "session-participants": "list-session-participants",
   "session-statistics": "get-session-statistics",
   "room-sessions": "list-room-sessions",
-  "recordings": "get-recordings",
-  "recording": "get-recording-details",
+  recordings: "get-recordings",
+  recording: "get-recording-details",
   "team-analytics": "get-usage-statistics",
   "room-analytics": "get-room-analytics",
   "session-analytics": "get-session-analytics",
-  "content": "list-libraries",
+  content: "list-libraries",
   "content-library": "get-library",
 };
 
@@ -171,7 +171,10 @@ export function createServer(config: ServerConfig = {}): Server {
     },
   );
 
-  const apiUrl = config.apiUrl || process.env.DIGITAL_SAMBA_API_URL || "https://api.digitalsamba.com/api/v1";
+  const apiUrl =
+    config.apiUrl ||
+    process.env.DIGITAL_SAMBA_API_URL ||
+    "https://api.digitalsamba.com/api/v1";
 
   // Helper to get API key from config or environment
   const getApiKey = (): string | undefined => {
@@ -227,7 +230,10 @@ export function createServer(config: ServerConfig = {}): Server {
       return handleContentResource(uri, client);
     }
 
-    throw new McpError(ErrorCode.InvalidRequest, `Unknown resource URI: ${uri}`);
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      `Unknown resource URI: ${uri}`,
+    );
   });
 
   // Register tool handlers
@@ -384,7 +390,7 @@ export function createServer(config: ServerConfig = {}): Server {
         const suggestedTool = resourceToToolMap[name];
         throw new McpError(
           ErrorCode.InvalidRequest,
-          `'${name}' is a resource, not a tool. Use the '${suggestedTool}' tool instead.`
+          `'${name}' is a resource, not a tool. Use the '${suggestedTool}' tool instead.`,
         );
       }
 

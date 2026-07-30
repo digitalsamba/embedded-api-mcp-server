@@ -23,27 +23,30 @@ export async function handleListLibraries(
       let currentOffset = 0;
       const pageSize = 100;
       let hasMore = true;
-      
+
       while (hasMore) {
-        const response = await apiClient.listLibraries({ 
-          limit: pageSize, 
-          offset: currentOffset 
+        const response = await apiClient.listLibraries({
+          limit: pageSize,
+          offset: currentOffset,
         });
-        
+
         allLibraries = allLibraries.concat(response.data);
         currentOffset += pageSize;
-        const totalCount = typeof response.total_count === 'string' 
-          ? parseInt(response.total_count, 10) 
-          : (response.total_count || 0);
-        hasMore = response.data.length === pageSize && currentOffset < totalCount;
+        const totalCount =
+          typeof response.total_count === "string"
+            ? parseInt(response.total_count, 10)
+            : response.total_count || 0;
+        hasMore =
+          response.data.length === pageSize && currentOffset < totalCount;
       }
-      
+
       // Filter by name (case insensitive)
-      const filtered = allLibraries.filter(lib => 
-        lib.name?.toLowerCase().includes(searchName.toLowerCase()) ||
-        lib.external_id?.toLowerCase().includes(searchName.toLowerCase())
+      const filtered = allLibraries.filter(
+        (lib) =>
+          lib.name?.toLowerCase().includes(searchName.toLowerCase()) ||
+          lib.external_id?.toLowerCase().includes(searchName.toLowerCase()),
       );
-      
+
       return {
         content: [
           {
@@ -63,12 +66,13 @@ export async function handleListLibraries(
         ],
       };
     }
-    
+
     // Normal pagination
     const response = await apiClient.listLibraries({ limit, offset });
-    const totalCount = typeof response.total_count === 'string' 
-      ? parseInt(response.total_count, 10) 
-      : (response.total_count || 0);
+    const totalCount =
+      typeof response.total_count === "string"
+        ? parseInt(response.total_count, 10)
+        : response.total_count || 0;
 
     return {
       content: [
@@ -413,7 +417,10 @@ export async function handleListLibraryFiles(
   logger.info("Listing library files", { libraryId, limit, offset });
 
   try {
-    const files = await apiClient.listLibraryFiles(libraryId, { limit, offset });
+    const files = await apiClient.listLibraryFiles(libraryId, {
+      limit,
+      offset,
+    });
 
     return {
       content: [

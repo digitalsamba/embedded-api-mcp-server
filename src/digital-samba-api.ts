@@ -76,7 +76,7 @@ import type {
 
   // Role types
   Role,
-  RoleCreateSettings
+  RoleCreateSettings,
 } from "./types/index.js";
 
 // Re-export all types for backward compatibility
@@ -127,7 +127,7 @@ export type {
 
   // Role types
   Role,
-  RoleCreateSettings
+  RoleCreateSettings,
 };
 
 export class DigitalSambaApiClient {
@@ -369,9 +369,9 @@ export class DigitalSambaApiClient {
 
       // Get response text first to check if it's empty
       const responseText = await response.text();
-      
+
       // Handle empty response bodies (some endpoints return 200 with empty body or {})
-      if (!responseText || responseText.trim() === '') {
+      if (!responseText || responseText.trim() === "") {
         logger.debug(`Empty response body for ${endpoint}`);
         return {} as T;
       }
@@ -383,7 +383,10 @@ export class DigitalSambaApiClient {
       } catch (parseError) {
         logger.error(`Failed to parse JSON response for ${endpoint}`, {
           responseText,
-          error: parseError instanceof Error ? parseError.message : String(parseError),
+          error:
+            parseError instanceof Error
+              ? parseError.message
+              : String(parseError),
         });
         throw new ApiResponseError(
           `Invalid JSON response from Digital Samba API: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
@@ -1028,9 +1031,7 @@ export class DigitalSambaApiClient {
   /**
    * Get bookmarks for a recording
    */
-  async getRecordingBookmarks(
-    recordingId: string,
-  ): Promise<
+  async getRecordingBookmarks(recordingId: string): Promise<
     Array<{
       id: string;
       timestamp: number;
@@ -1295,7 +1296,9 @@ export class DigitalSambaApiClient {
     }
 
     const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
-    return this.request<SessionStatistics>(`/sessions/${sessionId}/statistics${query}`);
+    return this.request<SessionStatistics>(
+      `/sessions/${sessionId}/statistics${query}`,
+    );
   }
 
   /**
@@ -2464,7 +2467,6 @@ export class DigitalSambaApiClient {
       method: "POST",
     });
   }
-
 
   // Communication Management Methods
 

@@ -9,7 +9,10 @@
 
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 // import { z } from 'zod'; // Removed: unused
-import { DigitalSambaApiClient, RoomCreateSettings } from "../../digital-samba-api.js";
+import {
+  DigitalSambaApiClient,
+  RoomCreateSettings,
+} from "../../digital-samba-api.js";
 // Removed enhanced client import - using standard client
 import { getApiKeyFromRequest } from "../../auth.js";
 import logger from "../../logger.js";
@@ -121,9 +124,20 @@ export function registerRoomTools(): Tool[] {
             type: "array",
             items: {
               type: "string",
-              enum: ["ar-SA", "en", "es-ES", "de-DE", "it-IT", "pt-PT", "ro-RO", "zh-CN", "zh-TW"]
+              enum: [
+                "ar-SA",
+                "en",
+                "es-ES",
+                "de-DE",
+                "it-IT",
+                "pt-PT",
+                "ro-RO",
+                "zh-CN",
+                "zh-TW",
+              ],
             },
-            description: "Available languages for participants to choose from. Valid values: ar-SA, en, es-ES, de-DE, it-IT, pt-PT, ro-RO, zh-CN, zh-TW",
+            description:
+              "Available languages for participants to choose from. Valid values: ar-SA, en, es-ES, de-DE, it-IT, pt-PT, ro-RO, zh-CN, zh-TW",
           },
           language_selection_enabled: {
             type: "boolean",
@@ -161,7 +175,8 @@ export function registerRoomTools(): Tool[] {
           },
           recording_autostart_enabled: {
             type: "boolean",
-            description: "Automatically start recording when the first participant joins",
+            description:
+              "Automatically start recording when the first participant joins",
           },
           polls_enabled: {
             type: "boolean",
@@ -276,9 +291,20 @@ export function registerRoomTools(): Tool[] {
             type: "array",
             items: {
               type: "string",
-              enum: ["ar-SA", "en", "es-ES", "de-DE", "it-IT", "pt-PT", "ro-RO", "zh-CN", "zh-TW"]
+              enum: [
+                "ar-SA",
+                "en",
+                "es-ES",
+                "de-DE",
+                "it-IT",
+                "pt-PT",
+                "ro-RO",
+                "zh-CN",
+                "zh-TW",
+              ],
             },
-            description: "Available languages for participants to choose from. Valid values: ar-SA, en, es-ES, de-DE, it-IT, pt-PT, ro-RO, zh-CN, zh-TW",
+            description:
+              "Available languages for participants to choose from. Valid values: ar-SA, en, es-ES, de-DE, it-IT, pt-PT, ro-RO, zh-CN, zh-TW",
           },
           language_selection_enabled: {
             type: "boolean",
@@ -316,7 +342,8 @@ export function registerRoomTools(): Tool[] {
           },
           recording_autostart_enabled: {
             type: "boolean",
-            description: "Automatically start recording when the first participant joins",
+            description:
+              "Automatically start recording when the first participant joins",
           },
           polls_enabled: {
             type: "boolean",
@@ -354,7 +381,10 @@ export function registerRoomTools(): Tool[] {
       name: "generate-token",
       description:
         '[Room Management] Generate an access token for users to join a room. Use when users say: "create a join link", "generate access token", "create invite link", "get room access", "invite someone to room", "create moderator link". Requires room_id. Returns a token with join URL. IMPORTANT: Always use unique external_id values for each user to support single-session enforcement if enabled on the account.',
-      annotations: getToolAnnotations("generate-token", "Generate Access Token"),
+      annotations: getToolAnnotations(
+        "generate-token",
+        "Generate Access Token",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -374,7 +404,8 @@ export function registerRoomTools(): Tool[] {
           },
           external_id: {
             type: "string",
-            description: "External user ID - Use this to enforce single session per user. When the account has 'single session per external ID' enabled, users with the same external ID will be disconnected from other sessions when joining",
+            description:
+              "External user ID - Use this to enforce single session per user. When the account has 'single session per external ID' enabled, users with the same external ID will be disconnected from other sessions when joining",
           },
           initials: {
             type: "string",
@@ -390,7 +421,8 @@ export function registerRoomTools(): Tool[] {
           },
           not_before: {
             type: "string",
-            description: "Token not valid before this date/time (ISO 8601 format)",
+            description:
+              "Token not valid before this date/time (ISO 8601 format)",
           },
           expiration: {
             type: "number",
@@ -404,7 +436,10 @@ export function registerRoomTools(): Tool[] {
       name: "get-default-room-settings",
       description:
         '[Room Management] Get the default settings that are automatically applied to all new rooms. Use when users say: "show default room settings", "what are the default settings", "get room defaults", "show room template settings". Returns all default configuration options.',
-      annotations: getToolAnnotations("get-default-room-settings", "Get Default Room Settings"),
+      annotations: getToolAnnotations(
+        "get-default-room-settings",
+        "Get Default Room Settings",
+      ),
       inputSchema: {
         type: "object",
         properties: {},
@@ -414,7 +449,10 @@ export function registerRoomTools(): Tool[] {
       name: "update-default-room-settings",
       description:
         '[Room Management] Update the default settings template for all future rooms. Use when users say: "change default room settings", "update room defaults", "modify default configuration", "set default language", "change default room template". Requires settings object. Affects only new rooms created after this change.',
-      annotations: getToolAnnotations("update-default-room-settings", "Update Default Room Settings"),
+      annotations: getToolAnnotations(
+        "update-default-room-settings",
+        "Update Default Room Settings",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -506,7 +544,10 @@ export function registerRoomTools(): Tool[] {
       name: "list-live-participants",
       description:
         '[Room Management - TOOL] List all rooms with detailed participant information. Use when users say: "show who is in meetings", "list participants in all rooms", "active participants", "who is in which room", "all attendees". This TOOL provides the same data as the digitalsamba://rooms/live/participants resource. Returns rooms with full participant details including names and join times.',
-      annotations: getToolAnnotations("list-live-participants", "List Live Participants"),
+      annotations: getToolAnnotations(
+        "list-live-participants",
+        "List Live Participants",
+      ),
       inputSchema: {
         type: "object",
         properties: {},
@@ -514,7 +555,6 @@ export function registerRoomTools(): Tool[] {
     },
   ];
 }
-
 
 /**
  * Execute a room management tool
@@ -616,7 +656,9 @@ export async function executeRoomTool(
         const normalizedSettings = normalizeBooleans(settings);
 
         // Create room with all provided settings (args already in snake_case)
-        const room = await client.createRoom(normalizedSettings as RoomCreateSettings);
+        const room = await client.createRoom(
+          normalizedSettings as RoomCreateSettings,
+        );
         logger.info("Room created successfully", { roomId: room.id });
 
         return {
@@ -664,7 +706,10 @@ export async function executeRoomTool(
         const normalizedSettings = normalizeBooleans(settings);
 
         // Update room with all provided settings (args already in snake_case)
-        const room = await client.updateRoom(room_id, normalizedSettings as Partial<RoomCreateSettings>);
+        const room = await client.updateRoom(
+          room_id,
+          normalizedSettings as Partial<RoomCreateSettings>,
+        );
         logger.info("Room updated successfully", { roomId: room.id });
 
         return {
@@ -737,7 +782,17 @@ export async function executeRoomTool(
     }
 
     case "generate-token": {
-      const { room_id, user_name, role, external_id, initials, avatar, breakout_id, not_before, expiration } = args;
+      const {
+        room_id,
+        user_name,
+        role,
+        external_id,
+        initials,
+        avatar,
+        breakout_id,
+        not_before,
+        expiration,
+      } = args;
 
       // Validate required fields
       if (!room_id) {
@@ -956,7 +1011,9 @@ export async function executeRoomTool(
 
       try {
         const liveRooms = await client.getLiveRooms();
-        logger.info("Fetched live rooms successfully", { count: liveRooms.data.length });
+        logger.info("Fetched live rooms successfully", {
+          count: liveRooms.data.length,
+        });
 
         return {
           content: [
@@ -988,7 +1045,9 @@ export async function executeRoomTool(
 
       try {
         const liveRooms = await client.getLiveRoomsWithParticipants();
-        logger.info("Fetched live participants successfully", { count: liveRooms.data.length });
+        logger.info("Fetched live participants successfully", {
+          count: liveRooms.data.length,
+        });
 
         return {
           content: [

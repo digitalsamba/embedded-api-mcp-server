@@ -37,7 +37,10 @@ export interface ToolAnnotations {
  * @param title - Optional human-readable title
  * @returns Tool annotations object
  */
-export function getToolAnnotations(toolName: string, title?: string): ToolAnnotations {
+export function getToolAnnotations(
+  toolName: string,
+  title?: string,
+): ToolAnnotations {
   const annotations: ToolAnnotations = {
     openWorldHint: true, // All tools interact with external Digital Samba API
   };
@@ -140,7 +143,9 @@ export function getToolAnnotations(toolName: string, title?: string): ToolAnnota
  * @param tool - Tool definition object with name property
  * @returns Tool definition with annotations added
  */
-export function withAnnotations<T extends { name: string }>(tool: T): T & { annotations: ToolAnnotations } {
+export function withAnnotations<T extends { name: string }>(
+  tool: T,
+): T & { annotations: ToolAnnotations } {
   return {
     ...tool,
     annotations: getToolAnnotations(tool.name),

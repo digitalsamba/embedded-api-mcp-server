@@ -57,7 +57,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-chats",
       description:
         '[Communication Management] Delete all chat messages for a session. Use when users say: "delete session chat", "remove chat messages", "clear session chat history", "delete chat from session", "wipe chat messages". Requires sessionId. This permanently removes all chat data.',
-      annotations: getToolAnnotations("delete-session-chats", "Delete Session Chats"),
+      annotations: getToolAnnotations(
+        "delete-session-chats",
+        "Delete Session Chats",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -91,7 +94,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-qa",
       description:
         '[Communication Management] Delete all Q&A (questions and answers) from a session. Use when users say: "delete session Q&A", "remove questions and answers", "clear Q&A history", "delete session questions", "wipe Q&A data". Requires sessionId. Removes all Q&A interactions.',
-      annotations: getToolAnnotations("delete-session-qa", "Delete Session Q&A"),
+      annotations: getToolAnnotations(
+        "delete-session-qa",
+        "Delete Session Q&A",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -125,7 +131,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "list-room-transcripts",
       description:
         '[Communication Management] Get closed captioning transcripts for a room. Use when users say: "get room transcripts", "show transcription", "list captions", "view closed captions", "get transcript history". Returns paginated list of transcript entries with participant info.',
-      annotations: getToolAnnotations("list-room-transcripts", "List Room Transcripts"),
+      annotations: getToolAnnotations(
+        "list-room-transcripts",
+        "List Room Transcripts",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -139,7 +148,8 @@ export function registerCommunicationTools(): ToolDefinition[] {
           },
           limit: {
             type: "number",
-            description: "Maximum number of transcripts to return (default 100)",
+            description:
+              "Maximum number of transcripts to return (default 100)",
           },
           offset: {
             type: "number",
@@ -153,7 +163,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "list-session-transcripts",
       description:
         '[Communication Management] Get closed captioning transcripts for a specific session. Use when users say: "get session transcript", "show meeting captions", "view session transcription". Returns paginated transcript entries for a single session.',
-      annotations: getToolAnnotations("list-session-transcripts", "List Session Transcripts"),
+      annotations: getToolAnnotations(
+        "list-session-transcripts",
+        "List Session Transcripts",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -163,7 +176,8 @@ export function registerCommunicationTools(): ToolDefinition[] {
           },
           limit: {
             type: "number",
-            description: "Maximum number of transcripts to return (default 100)",
+            description:
+              "Maximum number of transcripts to return (default 100)",
           },
           offset: {
             type: "number",
@@ -177,7 +191,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "export-room-transcripts",
       description:
         '[Communication Management] Export all room transcripts to a file format. Use when users say: "export room transcript", "download captions", "save transcript as text", "export closed captions". Supports txt or json format.',
-      annotations: getToolAnnotations("export-room-transcripts", "Export Room Transcripts"),
+      annotations: getToolAnnotations(
+        "export-room-transcripts",
+        "Export Room Transcripts",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -188,7 +205,8 @@ export function registerCommunicationTools(): ToolDefinition[] {
           format: {
             type: "string",
             enum: ["txt", "json"],
-            description: "Export format: txt (plain text) or json (default: txt)",
+            description:
+              "Export format: txt (plain text) or json (default: txt)",
           },
         },
         required: ["room_id"],
@@ -198,7 +216,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-transcripts",
       description:
         '[Communication Management] Delete all transcription data from a session. Use when users say: "delete session transcript", "remove transcription", "clear transcript", "delete meeting transcript", "wipe transcription data". Requires sessionId. Permanently removes transcript records.',
-      annotations: getToolAnnotations("delete-session-transcripts", "Delete Session Transcripts"),
+      annotations: getToolAnnotations(
+        "delete-session-transcripts",
+        "Delete Session Transcripts",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -214,7 +235,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-room-transcripts",
       description:
         '[Communication Management] Delete all transcripts from a room. Use when users say: "delete all room transcripts", "clear room transcription history", "remove all transcripts from room", "wipe room transcripts". Requires roomId. Permanently removes all transcript records.',
-      annotations: getToolAnnotations("delete-room-transcripts", "Delete Room Transcripts"),
+      annotations: getToolAnnotations(
+        "delete-room-transcripts",
+        "Delete Room Transcripts",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -232,7 +256,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-summaries",
       description:
         '[Communication Management] Delete AI-generated summaries from a session. Use when users say: "delete session summary", "remove AI summary", "clear meeting summary", "delete session notes", "wipe summary data". Requires sessionId. Removes all AI-generated session summaries.',
-      annotations: getToolAnnotations("delete-session-summaries", "Delete Session Summaries"),
+      annotations: getToolAnnotations(
+        "delete-session-summaries",
+        "Delete Session Summaries",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -248,7 +275,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-room-summaries",
       description:
         '[Communication Management] Delete all AI summaries from ALL sessions in a room. Use when users say: "delete all room summaries", "clear room AI summaries", "remove all summaries from room", "wipe room summary history". Requires roomId. Affects all sessions\' AI summaries.',
-      annotations: getToolAnnotations("delete-room-summaries", "Delete Room Summaries"),
+      annotations: getToolAnnotations(
+        "delete-room-summaries",
+        "Delete Room Summaries",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -266,7 +296,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-recordings",
       description:
         '[Communication Management] Delete all recordings from a session. Use when users say: "delete session recordings", "remove session videos", "clear session recordings". Requires session_id. Permanently removes all recording data for the session.',
-      annotations: getToolAnnotations("delete-session-recordings", "Delete Session Recordings"),
+      annotations: getToolAnnotations(
+        "delete-session-recordings",
+        "Delete Session Recordings",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -282,7 +315,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-resources",
       description:
         '[Communication Management] Delete all shared resources from a session. Use when users say: "delete session resources", "remove session files", "clear session shared content". Requires session_id. Permanently removes all shared files/content.',
-      annotations: getToolAnnotations("delete-session-resources", "Delete Session Resources"),
+      annotations: getToolAnnotations(
+        "delete-session-resources",
+        "Delete Session Resources",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -586,7 +622,12 @@ async function handleDeleteRoomQA(
  * Handle list room transcripts
  */
 async function handleListRoomTranscripts(
-  params: { room_id: string; session_id?: string; limit?: number; offset?: number },
+  params: {
+    room_id: string;
+    session_id?: string;
+    limit?: number;
+    offset?: number;
+  },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { room_id, session_id, limit, offset } = params;
@@ -717,7 +758,9 @@ async function handleExportRoomTranscripts(
   logger.info("Exporting room transcripts", { room_id, format });
 
   try {
-    const exportData = await apiClient.exportRoomTranscripts(room_id, { format });
+    const exportData = await apiClient.exportRoomTranscripts(room_id, {
+      format,
+    });
 
     return {
       content: [

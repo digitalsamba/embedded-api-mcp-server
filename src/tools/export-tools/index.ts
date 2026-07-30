@@ -1,9 +1,9 @@
 /**
  * Export Tools Module
- * 
+ *
  * Provides tool equivalents for export resources to ensure compatibility with AI assistants
  * that can only access tools, not resources.
- * 
+ *
  * @module tools/export-tools
  */
 
@@ -22,11 +22,15 @@ export async function executeExportTool(
   params: any,
   request: any,
   options: { apiUrl?: string },
-): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }> {
+): Promise<{
+  content: Array<{ type: string; text: string }>;
+  isError?: boolean;
+}> {
   try {
     logger.info(`Executing export tool: ${toolName}`, { params, toolName });
 
-    const apiKey = getApiKeyFromRequest(request) || process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
+    const apiKey =
+      getApiKeyFromRequest(request) || process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
     if (!apiKey) {
       return {
         content: [
@@ -63,13 +67,13 @@ export async function executeExportTool(
           toolName,
           validTools: [
             "export-chat-messages",
-            "export-qa-data", 
+            "export-qa-data",
             "export-session-transcripts",
             "export-poll-results",
             "export-recording-metadata",
             "export-session-summary",
-            "export-session-metadata"
-          ]
+            "export-session-metadata",
+          ],
         });
         throw new Error(`Unknown export tool: ${toolName}`);
     }
@@ -217,8 +221,11 @@ export function registerExportTools(): Tool[] {
     {
       name: "export-chat-messages",
       description:
-        "[Export Tools] Export chat messages from a room. Use when users say: \"export chat\", \"download chat messages\", \"export room chat\", \"get chat history\", \"save chat messages\". Mirrors digitalsamba://exports/communications/{roomId}/chat resource for AI assistant compatibility. Requires roomId. Supports format (txt/json) and optional sessionId for specific sessions.",
-      annotations: getToolAnnotations("export-chat-messages", "Export Chat Messages"),
+        '[Export Tools] Export chat messages from a room. Use when users say: "export chat", "download chat messages", "export room chat", "get chat history", "save chat messages". Mirrors digitalsamba://exports/communications/{roomId}/chat resource for AI assistant compatibility. Requires roomId. Supports format (txt/json) and optional sessionId for specific sessions.',
+      annotations: getToolAnnotations(
+        "export-chat-messages",
+        "Export Chat Messages",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -242,7 +249,7 @@ export function registerExportTools(): Tool[] {
     {
       name: "export-qa-data",
       description:
-        "[Export Tools] Export questions and answers from a room. Use when users say: \"export Q&A\", \"download questions\", \"export Q&A data\", \"get question history\", \"save Q&A session\". Mirrors digitalsamba://exports/communications/{roomId}/qa resource for AI assistant compatibility. Requires roomId. Supports format and optional sessionId.",
+        '[Export Tools] Export questions and answers from a room. Use when users say: "export Q&A", "download questions", "export Q&A data", "get question history", "save Q&A session". Mirrors digitalsamba://exports/communications/{roomId}/qa resource for AI assistant compatibility. Requires roomId. Supports format and optional sessionId.',
       annotations: getToolAnnotations("export-qa-data", "Export Q&A Data"),
       inputSchema: {
         type: "object",
@@ -267,8 +274,11 @@ export function registerExportTools(): Tool[] {
     {
       name: "export-session-transcripts",
       description:
-        "[Export Tools] Export transcription data from a session. Use when users say: \"export transcript\", \"download transcripts\", \"export transcription\", \"get transcript\", \"save meeting transcript\". Mirrors digitalsamba://exports/communications/{sessionId}/transcripts resource for AI assistant compatibility. Requires sessionId.",
-      annotations: getToolAnnotations("export-session-transcripts", "Export Session Transcripts"),
+        '[Export Tools] Export transcription data from a session. Use when users say: "export transcript", "download transcripts", "export transcription", "get transcript", "save meeting transcript". Mirrors digitalsamba://exports/communications/{sessionId}/transcripts resource for AI assistant compatibility. Requires sessionId.',
+      annotations: getToolAnnotations(
+        "export-session-transcripts",
+        "Export Session Transcripts",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -288,8 +298,11 @@ export function registerExportTools(): Tool[] {
     {
       name: "export-poll-results",
       description:
-        "[Export Tools] Export poll questions, options, and results from a room. Use when users say: \"export polls\", \"download poll results\", \"export poll data\", \"get poll results\", \"save poll information\". Mirrors digitalsamba://exports/polls/{roomId} resource for AI assistant compatibility. Requires roomId.",
-      annotations: getToolAnnotations("export-poll-results", "Export Poll Results"),
+        '[Export Tools] Export poll questions, options, and results from a room. Use when users say: "export polls", "download poll results", "export poll data", "get poll results", "save poll information". Mirrors digitalsamba://exports/polls/{roomId} resource for AI assistant compatibility. Requires roomId.',
+      annotations: getToolAnnotations(
+        "export-poll-results",
+        "Export Poll Results",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -313,8 +326,11 @@ export function registerExportTools(): Tool[] {
     {
       name: "export-recording-metadata",
       description:
-        "[Export Tools] Get recording metadata and download information. Use when users say: \"export recording info\", \"get recording metadata\", \"recording export details\", \"recording information\", \"download recording details\". Mirrors digitalsamba://exports/recordings/{recordingId} resource for AI assistant compatibility. Requires recordingId.",
-      annotations: getToolAnnotations("export-recording-metadata", "Export Recording Metadata"),
+        '[Export Tools] Get recording metadata and download information. Use when users say: "export recording info", "get recording metadata", "recording export details", "recording information", "download recording details". Mirrors digitalsamba://exports/recordings/{recordingId} resource for AI assistant compatibility. Requires recordingId.',
+      annotations: getToolAnnotations(
+        "export-recording-metadata",
+        "Export Recording Metadata",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -329,8 +345,11 @@ export function registerExportTools(): Tool[] {
     {
       name: "export-session-summary",
       description:
-        "[Export Tools] Export comprehensive session summary with key metrics. Use when users say: \"export session summary\", \"get meeting report\", \"session overview\", \"meeting summary\", \"export session report\". Mirrors digitalsamba://exports/sessions/{sessionId}/summary resource for AI assistant compatibility. Requires sessionId.",
-      annotations: getToolAnnotations("export-session-summary", "Export Session Summary"),
+        '[Export Tools] Export comprehensive session summary with key metrics. Use when users say: "export session summary", "get meeting report", "session overview", "meeting summary", "export session report". Mirrors digitalsamba://exports/sessions/{sessionId}/summary resource for AI assistant compatibility. Requires sessionId.',
+      annotations: getToolAnnotations(
+        "export-session-summary",
+        "Export Session Summary",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -345,8 +364,11 @@ export function registerExportTools(): Tool[] {
     {
       name: "export-session-metadata",
       description:
-        "[Export Tools] Export complete session metadata in JSON format. Use when users say: \"export session metadata\", \"get full session data\", \"complete session info\", \"session raw data\", \"export technical session data\". Mirrors digitalsamba://exports/sessions/{sessionId}/metadata resource for AI assistant compatibility. Requires sessionId.",
-      annotations: getToolAnnotations("export-session-metadata", "Export Session Metadata"),
+        '[Export Tools] Export complete session metadata in JSON format. Use when users say: "export session metadata", "get full session data", "complete session info", "session raw data", "export technical session data". Mirrors digitalsamba://exports/sessions/{sessionId}/metadata resource for AI assistant compatibility. Requires sessionId.',
+      annotations: getToolAnnotations(
+        "export-session-metadata",
+        "Export Session Metadata",
+      ),
       inputSchema: {
         type: "object",
         properties: {
