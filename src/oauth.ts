@@ -217,19 +217,33 @@ export async function exchangeAuthorizationCode(
     return null;
   }
 
+  // RFC 6749 4.1.2: a code presented with wrong credentials has likely
+  // leaked - revoke it immediately rather than leaving it redeemable
   if (pending.clientId !== clientId) {
+    await store.delete(key);
     logger.warn("Token exchange: Client ID mismatch");
     return null;
   }
 
   if (pending.redirectUri !== redirectUri) {
+    await store.delete(key);
     logger.warn("Token exchange: Redirect URI mismatch");
     return null;
   }
 
-  // Verify PKCE if code_challenge was provided
-  if (pending.codeChallenge && pending.codeChallengeMethod === "S256") {
+  // Verify PKCE if code_challenge was provided. Only S256 is supported
+  // (and advertised in server metadata); any other method is rejected
+  // rather than silently skipping verification.
+  if (pending.codeChallenge) {
+    if (pending.codeChallengeMethod !== "S256") {
+      await store.delete(key);
+      logger.warn(
+        `Token exchange: Unsupported code_challenge_method: ${pending.codeChallengeMethod}`,
+      );
+      return null;
+    }
     if (!codeVerifier) {
+      await store.delete(key);
       logger.warn("Token exchange: Missing code_verifier");
       return null;
     }
@@ -237,6 +251,7 @@ export async function exchangeAuthorizationCode(
       .update(codeVerifier)
       .digest("base64url");
     if (expectedChallenge !== pending.codeChallenge) {
+      await store.delete(key);
       logger.warn("Token exchange: PKCE verification failed");
       return null;
     }

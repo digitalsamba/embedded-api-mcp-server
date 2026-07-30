@@ -105,6 +105,9 @@ import {
 } from "./version.js";
 
 // API client instance cache - keyed by apiKey:apiUrl to support different URLs per session
+// Capped: in the hosted multi-tenant server every distinct OAuth token creates
+// an entry, so an unbounded map grows for the life of the process.
+const API_CLIENT_CACHE_MAX = 500;
 let apiClientCache: Map<string, DigitalSambaApiClient> = new Map();
 
 /**
@@ -113,13 +116,29 @@ let apiClientCache: Map<string, DigitalSambaApiClient> = new Map();
  * Uses composite cache key (apiKey:apiUrl) to ensure OAuth sessions
  * get clients with the correct /oauth-api/v1/* URL while direct API key
  * sessions get clients with /api/v1/* URL.
+ *
+ * LRU eviction: Map preserves insertion order, so re-inserting on access
+ * keeps the oldest-used entry first and evictable.
  */
 function getApiClient(apiKey: string, apiUrl: string): DigitalSambaApiClient {
   const cacheKey = `${apiKey}:${apiUrl}`;
-  if (!apiClientCache.has(cacheKey)) {
-    apiClientCache.set(cacheKey, new DigitalSambaApiClient(apiKey, apiUrl));
+  const cached = apiClientCache.get(cacheKey);
+  if (cached) {
+    apiClientCache.delete(cacheKey);
+    apiClientCache.set(cacheKey, cached);
+    return cached;
   }
-  return apiClientCache.get(cacheKey)!;
+
+  if (apiClientCache.size >= API_CLIENT_CACHE_MAX) {
+    const oldestKey = apiClientCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      apiClientCache.delete(oldestKey);
+    }
+  }
+
+  const client = new DigitalSambaApiClient(apiKey, apiUrl);
+  apiClientCache.set(cacheKey, client);
+  return client;
 }
 
 /**
