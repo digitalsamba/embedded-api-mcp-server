@@ -1,6 +1,7 @@
 {
   "name": "@digitalsamba/embedded-api-mcp-server",
   "version": "1.0.8",
+  "mcpName": "io.github.digitalsamba/embedded-api-mcp-server",
   "packageManager": "npm@10.2.0",
   "description": "Digital Samba Embedded API MCP Server - Model Context Protocol server for Digital Samba's Embedded API",
   "type": "module",
