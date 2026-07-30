@@ -147,9 +147,9 @@ Use the server URL `https://mcp.digitalsamba.com/mcp` with any MCP-compatible cl
 
 ## Available Tools
 
-The MCP server provides **113 tools** covering the complete Digital Samba API.
+The MCP server provides **123 tools** covering the complete Digital Samba API.
 
-### Room Management (11 tools)
+### Room Management (10 tools)
 | Tool | Description |
 |------|-------------|
 | `create-room` | Create a new room |
@@ -162,56 +162,58 @@ The MCP server provides **113 tools** covering the complete Digital Samba API.
 | `get-room-details` | Get room details |
 | `list-live-rooms` | List rooms with active sessions |
 | `list-live-participants` | List all live participants |
-| `get-room-live-info` | Get live session info for a room |
 
-### Session Management (12 tools)
+### Session Management (11 tools)
 | Tool | Description |
 |------|-------------|
 | `list-sessions` | List all sessions |
-| `get-session-summary` | Get session details |
+| `get-session-details` | Get session details |
+| `get-session-summary` | Get session summary |
 | `list-session-participants` | List session participants |
+| `get-session-statistics` | Session statistics |
 | `get-session-statistics-details` | Detailed session stats |
 | `list-room-sessions` | Sessions for a specific room |
+| `get-all-room-sessions` | All sessions for a room |
 | `end-session` | End a live session |
-| `delete-session-recordings` | Delete session recordings |
-| `delete-session-resources` | Delete session resources |
 | `hard-delete-session-resources` | Permanently delete data |
 | `bulk-delete-session-data` | Bulk delete operations |
-| `list-room-transcripts` | List room transcripts |
-| `list-session-transcripts` | List session transcripts |
 
 ### Recording Management (10 tools)
 | Tool | Description |
 |------|-------------|
 | `get-recordings` | List recordings with filters |
 | `get-recording` | Get recording details |
+| `update-recording` | Update recording metadata |
 | `delete-recording` | Delete a recording |
 | `get-recording-download-link` | Get download URL |
 | `archive-recording` | Archive a recording |
 | `unarchive-recording` | Restore archived recording |
-| `get-archived-recordings` | List archived recordings |
-| `get-room-recordings` | Recordings for a room |
 | `get-recording-bookmarks` | Get recording bookmarks |
-| `bulk-delete-recordings` | Delete multiple recordings |
-
-### Live Session Controls (8 tools)
-| Tool | Description |
-|------|-------------|
 | `start-recording` | Start recording a session |
 | `stop-recording` | Stop recording |
+
+### Live Session Controls (12 tools)
+| Tool | Description |
+|------|-------------|
 | `start-transcription` | Start live transcription |
 | `stop-transcription` | Stop transcription |
 | `raise-participant-hand` | Raise a participant's hand |
 | `lower-participant-hand` | Lower a participant's hand |
 | `raise-phone-participant-hand` | Raise phone participant hand |
 | `lower-phone-participant-hand` | Lower phone participant hand |
+| `phone-participants-joined` | Register joined phone participants |
+| `phone-participants-left` | Register left phone participants |
+| `connect-phone` | Connect a phone call to a room |
+| `disconnect-phone` | Disconnect a phone call |
+| `start-restreamer` | Start restreaming to external service |
+| `stop-restreamer` | Stop restreaming |
 
 ### Analytics Tools (8 tools)
 | Tool | Description |
 |------|-------------|
-| `get-team-statistics` | Team-wide metrics |
 | `get-room-analytics` | Room usage analytics |
 | `get-usage-statistics` | Overall usage stats |
+| `get-usage-analytics` | Usage analytics over time |
 | `get-participant-statistics` | Participant analytics |
 | `get-session-analytics` | Session analytics |
 | `get-live-analytics` | Live session metrics |
@@ -221,6 +223,9 @@ The MCP server provides **113 tools** covering the complete Digital Samba API.
 ### Communication Management (13 tools)
 | Tool | Description |
 |------|-------------|
+| `list-room-transcripts` | List room transcripts |
+| `list-session-transcripts` | List session transcripts |
+| `export-room-transcripts` | Export room transcripts |
 | `delete-session-chats` | Delete session chat |
 | `delete-room-chats` | Delete all room chats |
 | `delete-session-qa` | Delete session Q&A |
@@ -229,11 +234,8 @@ The MCP server provides **113 tools** covering the complete Digital Samba API.
 | `delete-room-transcripts` | Delete all room transcripts |
 | `delete-session-summaries` | Delete AI summaries |
 | `delete-room-summaries` | Delete all room summaries |
-| `export-room-transcripts` | Export room transcripts |
-| `export-chat-messages` | Export chat history |
-| `export-qa-data` | Export Q&A data |
-| `export-session-transcripts` | Export transcripts |
-| `export-poll-results` | Export poll results |
+| `delete-session-recordings` | Delete session recordings |
+| `delete-session-resources` | Delete session resources |
 
 ### Poll Management (6 tools)
 | Tool | Description |
@@ -245,10 +247,24 @@ The MCP server provides **113 tools** covering the complete Digital Samba API.
 | `delete-room-polls` | Delete all room polls |
 | `publish-poll-results` | Publish results |
 
+### Quiz Management (8 tools)
+| Tool | Description |
+|------|-------------|
+| `list-room-quizzes` | List quizzes for a room |
+| `create-quiz` | Create a new quiz |
+| `get-quiz` | Get quiz details |
+| `update-quiz` | Update quiz |
+| `delete-quiz` | Delete a quiz |
+| `delete-room-quizzes` | Delete all room quizzes |
+| `delete-session-quizzes` | Delete session quizzes |
+| `get-quiz-results` | Get quiz results |
+
 ### Content Library (26 tools)
 | Tool | Description |
 |------|-------------|
 | `list-libraries` | List all libraries |
+| `search-libraries` | Search libraries |
+| `verify-library-id` | Verify a library ID |
 | `get-library-details` | Get library details |
 | `create-library` | Create a library |
 | `update-library` | Update library |
