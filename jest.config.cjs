@@ -11,6 +11,7 @@ module.exports = {
   testMatch: ['**/*.test.ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   collectCoverage: true,
+  collectCoverageFrom: ['src/**/*.ts'],
   coverageDirectory: 'coverage',
   coveragePathIgnorePatterns: ['/node_modules/', '/tests/'],
   coverageReporters: ['text', 'lcov', 'json-summary'],
@@ -24,10 +25,9 @@ module.exports = {
   },
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
-    '^node-fetch$': '<rootDir>/tests/mocks/node-fetch.ts',
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(@modelcontextprotocol|node-fetch))'
+    'node_modules/(?!(@modelcontextprotocol))'
   ],
   testTimeout: 30000, // 30 seconds timeout per test
   // Global setup/teardown timeout

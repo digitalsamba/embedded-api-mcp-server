@@ -17,7 +17,7 @@ describe('MCP Server Integration', () => {
   let mockApiServer: Server;
   let serverProcess: ChildProcess;
   let client: Client;
-  const mockApiPort = 8080;
+  const mockApiPort = 8081; // Unique per suite: Jest runs suites in parallel workers
 
   beforeEach(async () => {
     // Start mock API server

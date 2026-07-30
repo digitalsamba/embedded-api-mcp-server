@@ -4,161 +4,121 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Overview
 
-Digital Samba Embedded API MCP Server - A lightweight Model Context Protocol server for Digital Samba's Embedded API. Provides 123 tools and 37 resources covering 100+ API endpoints for complete control over video conferencing features.
+Digital Samba Embedded API MCP Server - a Model Context Protocol server for Digital Samba's Embedded API, providing 144 tools and 37 resources for complete control over video conferencing features.
+
+**This is primarily a hosted remote MCP server** (production: https://mcp.digitalsamba.com, dev: https://mcp-dev.digitalsamba.com) that Digital Samba customers connect to from Claude Desktop or other MCP clients via OAuth. The npm package (`@digitalsamba/embedded-api-mcp-server`) is the legacy stdio distribution and is slated for deprecation.
 
 ## API Reference
 
 - Official OpenAPI Specification: https://developer.digitalsamba.com/rest-api/openapi.yaml
-- Note: Some endpoints documented locally may not exist in the official API
+- `openapi-stored.yaml` (repo root) is the committed snapshot; the `check-api-updates.yml` workflow diffs it weekly against the live spec and opens an issue on drift
 
 ## Development Commands
 
 ### Build & Development
-- `npm run build` - Build TypeScript to dist/
+- `npm run build` - Build TypeScript to dist/ (also injects version and copies bin/assets)
 - `npm run build:clean` - Clean build (removes dist/)
 - `npm start` - Run the built server
 - `npm run dev` - Development mode using tsx
-- `npm run dev -- --developer-key YOUR_KEY` - Run in development mode with key
+- `npm run dev -- --developer-key YOUR_KEY` - Development mode with key (stdio)
 
-### Testing  
+### Testing
 - `npm test` - Run all tests with Jest
 - `npm run test:coverage` - Tests with coverage report
 - `npm run test:unit` - Run only unit tests
 - `npm run test:integration` - Run integration tests
 - `npm run test:ci` - CI-specific test configuration (unit tests only with coverage)
+- Single test file: `npm test -- path/to/test.test.ts`
+- Pattern: `npm test -- --testNamePattern="should create room"`
 
 ### Code Quality
-- `npm run lint` - ESLint code linting
-- `npm run format` - Prettier code formatting
-- `npm run size-check` - Check build size (must be under 250KB)
-- `npm run coverage:analyze` - Analyze test coverage
+- `npm run lint` - ESLint (CI-enforced; errors fail the build)
+- `npm run format` - Prettier write
+- `npm run format:check` - Prettier check (CI-enforced)
+- `npm run size-check` - Check build size
 - `npm run release:check` - Pre-release checklist
 
-### Running the Server
-- `npx @digitalsamba/embedded-api-mcp-server --developer-key YOUR_KEY` - Run MCP server (stdio mode only)
-- `npm run dev -- --developer-key YOUR_KEY` - Run in development mode
-- Note: Server only supports stdio mode for MCP protocol communication
+## Transports
+
+`src/index.ts` selects the transport from `TRANSPORT` env var or `--transport` flag (default: stdio).
+
+- **stdio** (`src/transports/stdio.ts`) - local/legacy mode; reads `DIGITAL_SAMBA_DEVELOPER_KEY`
+- **HTTP** (`src/transports/http.ts`) - Express 5 app using `StreamableHTTPServerTransport`; per-session Server instances keyed by `mcp-session-id`; Bearer auth supporting both direct developer keys and OAuth session tokens
+
+### OAuth (HTTP mode)
+`src/oauth.ts` implements authorization-code + PKCE with Dynamic Client Registration, using Digital Samba (DS Passport) as the identity provider. OAuth sessions call the API via `/oauth-api/v1/*`; direct developer keys use `/api/v1/*`. Sessions/clients/codes persist in Redis (`src/session-store.ts`, `REDIS_URL`) with an in-memory fallback.
+
+### Key environment variables
+- `TRANSPORT` (stdio | http), `PORT`, `HOST`
+- `DIGITAL_SAMBA_DEVELOPER_KEY`, `DIGITAL_SAMBA_API_URL`, `OAUTH_API_URL`
+- `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `OAUTH_AUTHORIZE_URL`, `OAUTH_TOKEN_URL`, `OAUTH_REDIRECT_URI`, `OAUTH_ISSUER`
+- `REDIS_URL`
 
 ## Architecture
 
-### Simplified Structure (Post-Refactor)
 ```
 src/
-├── index.ts              # Main MCP server entry point
-├── digital-samba-api.ts  # Simple API client wrapper
-├── logger.ts            # Console logger (46 lines)
-├── auth.ts              # Environment-based auth
-├── cache.ts             # Simple memory cache
-├── errors.ts            # Error type definitions
-├── types/               # TypeScript type definitions
-├── resources/           # Read-only MCP resources
-│   ├── rooms/          # Room listings
-│   ├── sessions/       # Session data
-│   ├── analytics/      # Analytics data
-│   ├── recordings/     # Recording listings
-│   ├── content/        # Content resources
-│   └── exports/        # Export functionality
-└── tools/              # MCP tools (actions)
-    ├── room-management/      # Room CRUD operations
-    ├── session-management/   # Session control
-    ├── analytics-tools/      # Analytics queries
-    ├── recording-management/ # Recording tools
-    ├── live-session-controls/# Live session controls (transcription, phone, restreamer)
-    ├── communication-management/# Chat/Q&A/Transcripts
-    ├── poll-management/      # Poll tools
-    ├── quiz-management/      # Quiz tools
-    ├── library-management/   # Content library
-    ├── webhook-management/   # Webhook tools
-    ├── role-management/      # Role and permission management
-    └── export-tools/        # Data export tools
+├── index.ts              # Entry point; transport selection
+├── server.ts             # Transport-agnostic MCP server factory (createServer)
+├── digital-samba-api.ts  # API client wrapper
+├── oauth.ts              # OAuth 2.0 / PKCE / DCR implementation
+├── session-store.ts      # Redis-backed session store (memory fallback)
+├── auth.ts               # AsyncLocalStorage API-key context
+├── cache.ts              # Simple memory cache
+├── logger.ts             # Console logger (writes to stderr in stdio mode)
+├── errors.ts             # Error type definitions
+├── tool-annotations.ts   # readOnlyHint/destructiveHint annotations for all tools
+├── transports/
+│   ├── stdio.ts          # stdio transport
+│   └── http.ts           # Streamable HTTP transport + OAuth endpoints
+├── types/                # TypeScript type definitions
+├── resources/            # Read-only MCP resources (37)
+└── tools/                # MCP tools (144)
+    ├── room-management/       # 11 tools
+    ├── session-management/    # 11 tools
+    ├── recording-tools-adapter.ts  # 10 tools (the live implementation)
+    ├── analytics-tools/       # 8 tools
+    ├── live-session-controls/ # 14 tools (transcription, phone, restreamer)
+    ├── communication-management/ # 27 tools (chat/Q&A/transcripts/summaries)
+    ├── poll-management/       # 8 tools
+    ├── quiz-management/       # 10 tools
+    ├── library-management/    # 26 tools
+    ├── role-management/       # 6 tools
+    ├── webhook-management/    # 6 tools
+    └── export-tools/          # 7 tools
 ```
 
-### Key Design Principles
-1. **Lightweight** - No unnecessary dependencies or complexity
-2. **MCP-focused** - Built specifically for stdio-based MCP protocol
-3. **Simple auth** - Uses environment variables for developer keys
-4. **Direct API calls** - No complex abstractions over the API
-5. **Modular structure** - Clear separation of resources and tools
-
-### What Was Removed
-- All enterprise patterns (circuit breakers, rate limiting, metrics)
-- Complex API client layers (enhanced, resilient versions)
-- HTTP transport (MCP uses stdio only)
-- Winston logging (replaced with simple console logger)
-- Connection management and pooling
-- Token management complexity
-- Resource optimization
-- Graceful degradation patterns
+Implementation notes:
+- `src/server.ts` uses the low-level SDK `Server` API with `setRequestHandler`; tools are plain JSON Schema definitions (no zod in tool schemas). Tool dispatch in the CallTool handler matches on tool-name substrings — ordering matters (see the export-tools check placed before recording checks).
+- Recordings use `src/tools/recording-tools-adapter.ts` and `src/resources/recordings-adapter.ts` — these adapters ARE the live implementation.
+- Each HTTP session gets its own `Server` instance via `createServer()`; the per-key API client cache lives at module level in `server.ts`.
 
 ## MCP Implementation
 
-### Resources (Read-Only)
-- `digitalsamba://rooms` - List all rooms
-- `digitalsamba://rooms/{id}` - Room details
-- `digitalsamba://sessions` - List sessions
-- `digitalsamba://recordings` - List recordings
-- `digitalsamba://analytics/team` - Team analytics
-- `digitalsamba://analytics/rooms` - Room analytics
-- `digitalsamba://analytics/sessions` - Session analytics
-- `digitalsamba://content` - Content library
-- `digitalsamba://exports/*` - Various exports
-
-### Tools (Actions)
-- Room management (create, update, delete, generate tokens)
-- Session control (end session, get summary)
-- Recording management (delete recordings)
-- Live session controls (participants, chat, polls, transcripts)
-- Analytics queries (team, room, session analytics)
-- Content library management
+- 144 tools (actions) and 37 resources (read-only, `digitalsamba://` URIs)
+- Because many MCP clients don't expose resources, most resources have "reader tool" equivalents (`list-rooms`, `get-recordings`, etc.) — keep both in sync when adding functionality
+- All tools carry annotations (`readOnlyHint`, `destructiveHint`) via `src/tool-annotations.ts`
 
 ## Technical Stack
 
-### Core Dependencies (Only 3!)
-- `@modelcontextprotocol/sdk` (^1.12.1) - MCP protocol implementation
-- `dotenv` (^16.5.0) - Environment variable management  
-- `zod` (^3.22.4) - Runtime type validation
+- Dependencies: `@modelcontextprotocol/sdk`, `express` (HTTP transport), `ioredis` (session store), `dotenv`, `zod`
+- TypeScript, ES Modules, target ES2020 / NodeNext resolution
+- Jest 30 + ts-jest (ESM preset); ESLint 10 flat config; Prettier
+- Node.js >= 18 (deployment images use Node 20)
 
-### Development Stack
-- **TypeScript** (^5.8.3) - Type safety and modern JavaScript
-- **Jest** (^30.0.0) with ts-jest - Testing framework
-- **ESLint** (^9.28.0) - Code linting
-- **Prettier** (^3.2.5) - Code formatting
-- **tsx** (^4.7.0) - TypeScript execution for development
+## CI/CD & Deployment
 
-### Requirements
-- Node.js >=18.0.0
-- ES Modules (`"type": "module"` in package.json)
-- TypeScript target: ES2020 with NodeNext module resolution
-
-## Import Guidelines
-1. Node.js built-ins first
-2. External dependencies second  
-3. MCP SDK imports third
-4. Local modules last
-5. Use .js extensions for local imports
-
-## Testing Strategy
-- Unit tests for core functionality
-- Integration tests for API interactions
-- E2E tests for MCP protocol compliance
-- Mock API responses for testing
-
-### Running Specific Tests
-- Run a single test file: `npm test -- path/to/test.test.ts`
-- Run tests matching a pattern: `npm test -- --testNamePattern="should create room"`
-- Run tests in watch mode: `npm test -- --watch`
-- Debug tests: `node --inspect-brk node_modules/.bin/jest --runInBand`
-
-## Deployment
-- Beta versions deployed automatically from `develop` branch
-- Stable versions deployed from `main` branch
-- Package name: `@digitalsamba/embedded-api-mcp-server`
+- `ci.yml` - build + unit tests (Node 18/20 matrix), lint + format check (both enforced)
+- `deploy-dev.yml` - push to `develop` → Docker build → deploy to mcp-dev.digitalsamba.com
+- `deploy-prod.yml` - tag `v*` → deploy to mcp.digitalsamba.com, then syncs develop/main
+- `check-api-updates.yml` - weekly OpenAPI drift check (Mondays), opens issues labeled `api-update`
+- Docker: `deployment/` contains Dockerfile and docker-compose (includes redis:7 sidecar)
 
 ## Critical Constraints
-- Keep package size minimal (under 250KB packed)
-- Maintain backward compatibility
-- No breaking changes to existing functionality
+
+- Maintain backward compatibility; no breaking changes to existing tool names/schemas
 - Simple, maintainable code over complex patterns
+- Keep npm package size reasonable (size-check script)
 
 ## AI Collaboration Guidelines
 - No claude as co-author
@@ -166,60 +126,4 @@ src/
 ## Important Account Settings
 
 ### Single Session per External ID
-**Important**: Digital Samba accounts can have "single session per external ID" enabled in the dashboard. When this setting is active:
-- Each `externalId` can only have one active session at a time
-- If a user joins with an `externalId` that's already in use, the previous session will be disconnected
-- This is a dashboard-only setting that cannot be queried via API
-
-**Best Practice**: Always use unique `externalId` values when generating tokens, especially for moderators or when the user wants to prevent duplicate sessions. Ask the user if their account has this setting enabled when relevant.
-
-## Known Issues & Design Considerations
-
-### MCP Resources vs Tools in AI Assistants
-**Issue**: AI assistants (like Claude) can only access MCP tools, not resources, even though the MCP protocol supports both.
-
-**Context**: This MCP server correctly implements:
-- 32 Resources (read-only operations like listing rooms, viewing analytics)
-- 70+ Tools (actions that modify data like creating rooms, starting recordings)
-
-**The Problem**: 
-- The MCP protocol correctly separates read operations (resources) from write operations (tools)
-- Our server implementation follows this pattern correctly
-- However, AI assistants integrated with MCP (like Claude Desktop) only expose tools, not resources
-- This means half of the server's functionality (all read-only resources) is inaccessible to AI assistants
-
-**Current Workarounds**:
-1. Use tools that provide similar functionality (e.g., `get-recordings` tool instead of `digitalsamba://recordings` resource)
-2. Consider adding "reader tools" for commonly needed resources (though this creates redundancy)
-3. Wait for AI assistant MCP integrations to support resource reading
-
-**Ideal Solution**: The fix should be in AI assistant MCP client implementations (e.g., Claude Desktop) to expose a way to read resources, perhaps through a special tool or direct resource access.
-
-**Note**: This is not a bug in our MCP server - it's a limitation in how current AI assistants consume MCP servers.
-
-### Hybrid Approach Implementation
-
-To work around this limitation, we're implementing a **hybrid approach**:
-
-1. **Keep all existing resources** - For future compatibility when Claude Desktop adds resource selection
-2. **Create tool equivalents for all resources** - For immediate functionality in AI assistants
-3. **Clear naming convention** - Tools use verbs like `list-rooms`, `get-room-details` to distinguish from resources
-
-This ensures the MCP server works with current AI assistants while remaining compatible with future MCP client improvements.
-
-See `.ai_dev/mcp-resources-vs-tools-issue.md` for detailed analysis and `.ai_dev/resources-to-tools-conversion-plan.md` for implementation progress.
-
-## Pending Improvements
-
-### Automate GitHub Release Creation
-Currently, when tagging a release:
-- Tag push (`v*`) auto-triggers `deploy-prod.yml` → deploys to production server
-- GitHub Release must be created manually with `gh release create`
-
-**TODO**: Add auto-release step to `deploy-prod.yml`:
-```yaml
-- name: Create GitHub Release
-  run: gh release create ${{ github.ref_name }} --generate-notes
-```
-
-This would auto-generate release notes from commit messages when a tag is pushed.
+Digital Samba accounts can have "single session per external ID" enabled in the dashboard. When active, each `externalId` can only have one active session; joining with an in-use `externalId` disconnects the previous session. This is dashboard-only and cannot be queried via API. Use unique `externalId` values when generating tokens, especially for moderators.

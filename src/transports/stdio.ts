@@ -23,10 +23,13 @@ export interface StdioTransportConfig {
 /**
  * Start the stdio transport server
  */
-export async function startStdioServer(config: StdioTransportConfig = {}): Promise<void> {
+export async function startStdioServer(
+  config: StdioTransportConfig = {},
+): Promise<void> {
   const apiKey = config.apiKey || process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
   const apiUrl = config.apiUrl || process.env.DIGITAL_SAMBA_API_URL;
-  const showVersion = config.showVersion ?? process.env.DS_SHOW_VERSION_ON_START !== "false";
+  const showVersion =
+    config.showVersion ?? process.env.DS_SHOW_VERSION_ON_START !== "false";
 
   // Log API key status
   if (!apiKey) {

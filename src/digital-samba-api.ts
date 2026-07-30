@@ -64,6 +64,7 @@ import type {
   QuizCreateSettings,
   QuizResult,
   RestreamerOptions,
+  QAParticipant,
 
   // Content types
   Library,
@@ -76,7 +77,7 @@ import type {
 
   // Role types
   Role,
-  RoleCreateSettings
+  RoleCreateSettings,
 } from "./types/index.js";
 
 // Re-export all types for backward compatibility
@@ -115,6 +116,7 @@ export type {
   QuizCreateSettings,
   QuizResult,
   RestreamerOptions,
+  QAParticipant,
 
   // Content types
   Library,
@@ -127,7 +129,7 @@ export type {
 
   // Role types
   Role,
-  RoleCreateSettings
+  RoleCreateSettings,
 };
 
 export class DigitalSambaApiClient {
@@ -369,9 +371,9 @@ export class DigitalSambaApiClient {
 
       // Get response text first to check if it's empty
       const responseText = await response.text();
-      
+
       // Handle empty response bodies (some endpoints return 200 with empty body or {})
-      if (!responseText || responseText.trim() === '') {
+      if (!responseText || responseText.trim() === "") {
         logger.debug(`Empty response body for ${endpoint}`);
         return {} as T;
       }
@@ -383,7 +385,10 @@ export class DigitalSambaApiClient {
       } catch (parseError) {
         logger.error(`Failed to parse JSON response for ${endpoint}`, {
           responseText,
-          error: parseError instanceof Error ? parseError.message : String(parseError),
+          error:
+            parseError instanceof Error
+              ? parseError.message
+              : String(parseError),
         });
         throw new ApiResponseError(
           `Invalid JSON response from Digital Samba API: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
@@ -586,7 +591,11 @@ export class DigitalSambaApiClient {
    */
   async deleteRoom(
     roomId: string,
-    options?: { delete_resources?: boolean },
+    options?: {
+      delete_resources?: boolean;
+      delete_history?: boolean;
+      delete_library?: boolean;
+    },
   ): Promise<any> {
     // Invalidate cache when deleting resources
     if (this.cache) {
@@ -596,6 +605,25 @@ export class DigitalSambaApiClient {
     return this.request<any>(`/rooms/${roomId}`, {
       method: "DELETE",
       body: options ? JSON.stringify(options) : undefined,
+    });
+  }
+
+  /**
+   * Delete all rooms matching one or more tags
+   */
+  async deleteRoomsByTag(data: {
+    tags: string | string[];
+    delete_resources?: boolean;
+    delete_history?: boolean;
+    delete_library?: boolean;
+  }): Promise<any> {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+
+    return this.request<any>(`/rooms`, {
+      method: "DELETE",
+      body: JSON.stringify(data),
     });
   }
 
@@ -945,6 +973,26 @@ export class DigitalSambaApiClient {
     );
   }
 
+  /**
+   * Mute a phone participant
+   */
+  async mutePhoneParticipant(roomId: string, callId: string): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/phone-participants/${callId}/mute`,
+      { method: "POST" },
+    );
+  }
+
+  /**
+   * Unmute a phone participant
+   */
+  async unmutePhoneParticipant(roomId: string, callId: string): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/phone-participants/${callId}/unmute`,
+      { method: "POST" },
+    );
+  }
+
   // Recordings
 
   /**
@@ -1028,9 +1076,7 @@ export class DigitalSambaApiClient {
   /**
    * Get bookmarks for a recording
    */
-  async getRecordingBookmarks(
-    recordingId: string,
-  ): Promise<
+  async getRecordingBookmarks(recordingId: string): Promise<
     Array<{
       id: string;
       timestamp: number;
@@ -1295,7 +1341,9 @@ export class DigitalSambaApiClient {
     }
 
     const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
-    return this.request<SessionStatistics>(`/sessions/${sessionId}/statistics${query}`);
+    return this.request<SessionStatistics>(
+      `/sessions/${sessionId}/statistics${query}`,
+    );
   }
 
   /**
@@ -1459,6 +1507,234 @@ export class DigitalSambaApiClient {
     });
   }
 
+  /**
+   * Send a chat message to a room
+   */
+  async sendChatMessage(
+    roomId: string,
+    data: {
+      message: string;
+      participant?: QAParticipant;
+    },
+  ): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/chat`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Create a question in a room
+   */
+  async createQuestion(
+    roomId: string,
+    data: {
+      participant: QAParticipant;
+      question: string;
+      anonymous?: boolean;
+      breakout_id?: string;
+    },
+  ): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/questions`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Update a question
+   */
+  async updateQuestion(
+    roomId: string,
+    questionId: string,
+    data: {
+      participant: QAParticipant;
+      question: string;
+    },
+  ): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/questions/${questionId}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Delete a question
+   */
+  async deleteQuestion(
+    roomId: string,
+    questionId: string,
+    participant: QAParticipant,
+  ): Promise<void> {
+    await this.request<void>(`/rooms/${roomId}/questions/${questionId}`, {
+      method: "DELETE",
+      body: JSON.stringify({ participant }),
+    });
+  }
+
+  /**
+   * Perform a question action (dismiss, reopen, vote, live-answer control)
+   */
+  private async questionAction(
+    roomId: string,
+    questionId: string,
+    action: string,
+    participant: QAParticipant,
+    method: "POST" | "DELETE" = "POST",
+  ): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/questions/${questionId}${action}`,
+      {
+        method,
+        body: JSON.stringify({ participant }),
+      },
+    );
+  }
+
+  /** Dismiss a question */
+  async dismissQuestion(
+    roomId: string,
+    questionId: string,
+    participant: QAParticipant,
+  ): Promise<void> {
+    return this.questionAction(roomId, questionId, "/dismiss", participant);
+  }
+
+  /** Reopen a dismissed question */
+  async reopenQuestion(
+    roomId: string,
+    questionId: string,
+    participant: QAParticipant,
+  ): Promise<void> {
+    return this.questionAction(roomId, questionId, "/reopen", participant);
+  }
+
+  /** Upvote a question */
+  async upvoteQuestion(
+    roomId: string,
+    questionId: string,
+    participant: QAParticipant,
+  ): Promise<void> {
+    return this.questionAction(roomId, questionId, "/vote", participant);
+  }
+
+  /** Remove a vote from a question */
+  async removeQuestionVote(
+    roomId: string,
+    questionId: string,
+    participant: QAParticipant,
+  ): Promise<void> {
+    return this.questionAction(
+      roomId,
+      questionId,
+      "/vote",
+      participant,
+      "DELETE",
+    );
+  }
+
+  /**
+   * Answer a question
+   */
+  async answerQuestion(
+    roomId: string,
+    questionId: string,
+    data: {
+      participant: QAParticipant;
+      answer: string;
+      private?: boolean;
+    },
+  ): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/questions/${questionId}/answers`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    );
+  }
+
+  /**
+   * Update an answer
+   */
+  async updateAnswer(
+    roomId: string,
+    questionId: string,
+    answerId: string,
+    data: {
+      participant: QAParticipant;
+      answer: string;
+    },
+  ): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/questions/${questionId}/answers/${answerId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      },
+    );
+  }
+
+  /**
+   * Delete an answer
+   */
+  async deleteAnswer(
+    roomId: string,
+    questionId: string,
+    answerId: string,
+    participant: QAParticipant,
+  ): Promise<void> {
+    await this.request<void>(
+      `/rooms/${roomId}/questions/${questionId}/answers/${answerId}`,
+      {
+        method: "DELETE",
+        body: JSON.stringify({ participant }),
+      },
+    );
+  }
+
+  /** Start a live (verbal) answer to a question */
+  async startLiveAnswer(
+    roomId: string,
+    questionId: string,
+    participant: QAParticipant,
+  ): Promise<void> {
+    return this.questionAction(
+      roomId,
+      questionId,
+      "/live-answers/start",
+      participant,
+    );
+  }
+
+  /** Stop a live answer */
+  async stopLiveAnswer(
+    roomId: string,
+    questionId: string,
+    participant: QAParticipant,
+  ): Promise<void> {
+    return this.questionAction(
+      roomId,
+      questionId,
+      "/live-answers/stop",
+      participant,
+    );
+  }
+
+  /** Cancel a live answer */
+  async cancelLiveAnswer(
+    roomId: string,
+    questionId: string,
+    participant: QAParticipant,
+  ): Promise<void> {
+    return this.questionAction(
+      roomId,
+      questionId,
+      "/live-answers/cancel",
+      participant,
+    );
+  }
+
   // Transcripts
 
   /**
@@ -1553,6 +1829,7 @@ export class DigitalSambaApiClient {
     roomId: string,
     options?: {
       format?: "txt" | "json";
+      locale?: string;
     },
   ): Promise<string> {
     const queryParams = new URLSearchParams();
@@ -1649,6 +1926,96 @@ export class DigitalSambaApiClient {
   }
 
   /**
+   * Download a raw file (CSV template) from the API
+   */
+  private async downloadTemplate(endpoint: string): Promise<string> {
+    const apiKey = this.getApiKey();
+    const response = await fetch(`${this.apiBaseUrl}${endpoint}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Digital Samba API error (${response.status}): ${errorText}`,
+      );
+    }
+
+    return response.text();
+  }
+
+  /**
+   * Upload a CSV file via multipart form data
+   */
+  private async importCsv(
+    endpoint: string,
+    csvContent: string,
+    filename: string,
+  ): Promise<any> {
+    const apiKey = this.getApiKey();
+    const form = new FormData();
+    form.append("file", new Blob([csvContent], { type: "text/csv" }), filename);
+
+    // Do not set Content-Type: fetch adds the multipart boundary itself
+    const response = await fetch(`${this.apiBaseUrl}${endpoint}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: form,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Digital Samba API error (${response.status}): ${errorText}`,
+      );
+    }
+
+    const text = await response.text();
+    if (!text || text.trim() === "") return {};
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { result: text };
+    }
+  }
+
+  /**
+   * Download the poll CSV import template
+   */
+  async getPollImportTemplate(roomId: string): Promise<string> {
+    return this.downloadTemplate(`/rooms/${roomId}/polls/template`);
+  }
+
+  /**
+   * Import polls from CSV content
+   */
+  async importPolls(roomId: string, csvContent: string): Promise<any> {
+    return this.importCsv(
+      `/rooms/${roomId}/polls/import`,
+      csvContent,
+      "polls.csv",
+    );
+  }
+
+  /**
+   * Download the quiz CSV import template
+   */
+  async getQuizImportTemplate(roomId: string): Promise<string> {
+    return this.downloadTemplate(`/rooms/${roomId}/quizzes/template`);
+  }
+
+  /**
+   * Import quizzes from CSV content
+   */
+  async importQuizzes(roomId: string, csvContent: string): Promise<any> {
+    return this.importCsv(
+      `/rooms/${roomId}/quizzes/import`,
+      csvContent,
+      "quizzes.csv",
+    );
+  }
+
+  /**
    * Get poll results
    */
   async getPollResults(
@@ -1711,6 +2078,7 @@ export class DigitalSambaApiClient {
     options?: {
       session_id?: string;
       format?: "txt" | "json";
+      locale?: string;
     },
   ): Promise<string> {
     const queryParams = new URLSearchParams();
@@ -1752,6 +2120,7 @@ export class DigitalSambaApiClient {
     options?: {
       session_id?: string;
       format?: "txt" | "json";
+      locale?: string;
     },
   ): Promise<string> {
     const queryParams = new URLSearchParams();
@@ -1793,6 +2162,7 @@ export class DigitalSambaApiClient {
     options?: {
       session_id?: string;
       format?: "txt" | "json";
+      locale?: string;
     },
   ): Promise<string> {
     const queryParams = new URLSearchParams();
@@ -1833,6 +2203,7 @@ export class DigitalSambaApiClient {
     sessionId: string,
     options?: {
       format?: "txt" | "json";
+      locale?: string;
     },
   ): Promise<string> {
     const queryParams = new URLSearchParams();
@@ -2051,6 +2422,7 @@ export class DigitalSambaApiClient {
     settings: {
       name: string;
       folder_id?: string;
+      file_size?: number;
     },
   ): Promise<{
     file_id: string;
@@ -2465,7 +2837,6 @@ export class DigitalSambaApiClient {
     });
   }
 
-
   // Communication Management Methods
 
   /**
@@ -2700,6 +3071,7 @@ export class DigitalSambaApiClient {
     options?: {
       session_id?: string;
       format?: "txt" | "json";
+      locale?: string;
     },
   ): Promise<string> {
     const queryParams = new URLSearchParams();

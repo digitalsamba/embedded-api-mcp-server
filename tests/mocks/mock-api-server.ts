@@ -52,36 +52,38 @@ export function createMockApiServer(options: {
     }
   });
   
+  // Authentication middleware
+  // Runs BEFORE random-failure injection so invalid-key requests always 401
+  // deterministically (auth error tests must not flake into simulated 500s)
+  app.use((req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return sendError(res, 401, 'Unauthorized: Missing or invalid API key');
+    }
+
+    // Extract API key from header
+    const apiKey = authHeader.substring(7);
+    if (!apiKey || apiKey === 'invalid-key') {
+      return sendError(res, 401, 'Unauthorized: Invalid API key');
+    }
+
+    // Add API key to request for downstream use if needed
+    (req as any).apiKey = apiKey;
+    next();
+  });
+
   // Middleware to simulate random failures and not found errors
   app.use((req, res, next) => {
     // Random chance of failure
     if (failureRate > 0 && Math.random() * 100 < failureRate) {
       return sendError(res, 500, 'Internal Server Error (Simulated failure)');
     }
-    
+
     // Random chance of not found
     if (notFoundRate > 0 && Math.random() * 100 < notFoundRate) {
       return sendError(res, 404, 'Not Found (Simulated not found)');
     }
-    
-    next();
-  });
-  
-  // Authentication middleware
-  app.use((req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return sendError(res, 401, 'Unauthorized: Missing or invalid API key');
-    }
-    
-    // Extract API key from header
-    const apiKey = authHeader.substring(7);
-    if (!apiKey || apiKey === 'invalid-key') {
-      return sendError(res, 401, 'Unauthorized: Invalid API key');
-    }
-    
-    // Add API key to request for downstream use if needed
-    (req as any).apiKey = apiKey;
+
     next();
   });
   

@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.digitalsamba/embedded-api-mcp-server",
+  "description": "Manage Digital Samba video conferencing - rooms, sessions, recordings, analytics, polls, quizzes, Q&A, and more",
+  "repository": {
+    "url": "https://github.com/digitalsamba/embedded-api-mcp-server",
+    "source": "github"
+  },
+  "version": "1.0.8",
+  "websiteUrl": "https://mcp.digitalsamba.com",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.digitalsamba.com/mcp"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@digitalsamba/embedded-api-mcp-server",
+      "version": "1.0.8",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "DIGITAL_SAMBA_DEVELOPER_KEY",
+          "description": "Digital Samba developer key from the dashboard",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

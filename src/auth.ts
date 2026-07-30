@@ -26,25 +26,5 @@ export function getApiKeyFromRequest(_request: any): string | null {
   return process.env.DIGITAL_SAMBA_DEVELOPER_KEY || null;
 }
 
-/**
- * Extract developer key from various sources
- * For MCP stdio mode, this will always use environment variables
- */
-export function extractApiKey(_source?: any): string | null {
-  // Check environment variable first (primary method for MCP)
-  const envKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
-  if (envKey) {
-    return envKey;
-  }
-
-  // Check context (for backwards compatibility)
-  const contextKey = apiKeyContext.getStore();
-  if (contextKey) {
-    return contextKey;
-  }
-
-  return null;
-}
-
 // Export the context for backwards compatibility
 export default apiKeyContext;

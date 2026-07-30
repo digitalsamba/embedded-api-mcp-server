@@ -167,7 +167,10 @@ export function registerRoleTools(): ToolDefinition[] {
       name: "get-permissions",
       description:
         '[Role Management] List all available permissions in the system. Use when users say: "list permissions", "show all permissions", "what permissions are available", "get permission list", "available role permissions". Returns complete permission catalog with descriptions.',
-      annotations: getToolAnnotations("get-permissions", "List Available Permissions"),
+      annotations: getToolAnnotations(
+        "get-permissions",
+        "List Available Permissions",
+      ),
       inputSchema: {
         type: "object",
         properties: {},
@@ -333,7 +336,9 @@ async function handleUpdateRole(
     const normalizedUpdates = { ...updates };
     if (normalizedUpdates.permissions) {
       const normalizedPermissions: Record<string, boolean> = {};
-      for (const [key, value] of Object.entries(normalizedUpdates.permissions)) {
+      for (const [key, value] of Object.entries(
+        normalizedUpdates.permissions,
+      )) {
         const normalized = normalizeBoolean(value);
         if (normalized !== undefined) {
           normalizedPermissions[key] = normalized;

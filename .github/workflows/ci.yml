@@ -70,8 +70,6 @@ jobs:
 
     - name: Run ESLint
       run: npm run lint
-      continue-on-error: true
 
     - name: Check formatting
-      run: npm run format -- --check
-      continue-on-error: true
+      run: npm run format:check

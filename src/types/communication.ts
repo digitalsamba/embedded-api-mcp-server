@@ -50,6 +50,9 @@ export interface Quiz {
 }
 
 export interface QuizCreateSettings {
+  timing_mode?: "quiz" | "question" | null;
+  time_limit_seconds?: number;
+  passing_score?: number;
   title: string;
   time_limit_minutes?: number;
   questions: QuizQuestion[];
@@ -76,4 +79,14 @@ export interface RestreamerOptions {
   type?: "youtube" | "vimeo" | "cloudflare";
   server_url?: string;
   stream_key: string;
+}
+
+// Q&A participant identity: either an existing participant id, or name + external_id
+export interface QAParticipant {
+  /** UUID of an existing participant */
+  id?: string;
+  /** Display name (used with external_id when no participant id) */
+  name?: string;
+  /** External participant id (used with name) */
+  external_id?: string;
 }

@@ -36,7 +36,11 @@ function parseArgs(): {
   port?: number;
 } {
   const args = process.argv.slice(2);
-  const result: { transport: "stdio" | "http"; apiKey?: string; port?: number } = {
+  const result: {
+    transport: "stdio" | "http";
+    apiKey?: string;
+    port?: number;
+  } = {
     transport: (process.env.TRANSPORT as "stdio" | "http") || "stdio",
   };
 
