@@ -42,6 +42,7 @@
     "dev": "tsx src/index.ts",
     "lint": "eslint src",
     "format": "prettier --write \"src/**/*.ts\" \"bin/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"bin/**/*.js\"",
     "test": "jest --forceExit",
     "test:coverage": "jest --coverage --forceExit",
     "test:unit": "jest --testPathPatterns=tests/unit --forceExit",

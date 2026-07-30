@@ -991,7 +991,10 @@ async function handleDeleteRoomSummaries(
       content: [
         {
           type: "text",
-          text: `Successfully deleted summaries from ${deletedCount} sessions in room ${roomId}`,
+          text:
+            failedCount > 0
+              ? `Deleted summaries from ${deletedCount} sessions in room ${roomId} (${failedCount} failed)`
+              : `Successfully deleted summaries from ${deletedCount} sessions in room ${roomId}`,
         },
       ],
     };

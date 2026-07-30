@@ -41,7 +41,6 @@ import {
   exchangeAuthorizationCode,
   exchangeCodeForTokens,
   getRegisteredClientCount,
-  type OAuthConfig,
 } from "../oauth.js";
 
 export interface HttpTransportConfig {
@@ -655,7 +654,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
 
   // Also handle MCP on root path for Claude Desktop compatibility
   app.post("/", handleMcpPost);
-  app.get("/", (req, res, next) => {
+  app.get("/", (req, res, _next) => {
     // If Accept header includes event-stream, treat as MCP SSE request
     if (req.headers.accept?.includes("text/event-stream")) {
       return handleMcpGet(req, res);
