@@ -17,6 +17,7 @@ import {
   createServer,
   VERSION,
   VERSION_INFO,
+  GIT_COMMIT,
   COMMITS_AHEAD,
   getDisplayVersion,
   isDevBuild,
@@ -208,6 +209,7 @@ export async function startHttpServer(
     res.json({
       status: "ok",
       version: VERSION,
+      commit: GIT_COMMIT,
       transport: "http",
       activeSessions: transports.size,
       oauthSessions: await getActiveSessionCount(),

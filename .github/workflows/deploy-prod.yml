@@ -36,10 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20.x'
           cache: 'npm'
@@ -61,7 +61,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -113,17 +113,25 @@ jobs:
       - name: Wait for host to pull and redeploy
         run: |
           EXPECTED="${{ steps.version.outputs.version }}"
-          echo "Image pushed. Waiting for the prod host timer to pick it up (expecting version $EXPECTED, up to 10 min)..."
+          EXPECTED_COMMIT="${{ github.sha }}"
+          echo "Image pushed. Waiting for the prod host timer to pick it up (expecting commit $EXPECTED_COMMIT / version $EXPECTED, up to 10 min)..."
           UP=0
           for i in $(seq 1 30); do
             sleep 20
             BODY=$(curl -s --max-time 10 ${{ secrets.MCP_URL }}/health || echo "")
             STATUS=$(echo "$BODY" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
             VERSION=$(echo "$BODY" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
-            echo "attempt $i: status=${STATUS:-none} version=${VERSION:-none}"
+            COMMIT=$(echo "$BODY" | grep -o '"commit":"[^"]*"' | cut -d'"' -f4)
+            echo "attempt $i: status=${STATUS:-none} version=${VERSION:-none} commit=${COMMIT:-none}"
             [ "$STATUS" = "ok" ] && UP=1
-            if [ "$VERSION" = "$EXPECTED" ]; then
-              echo "Production is serving $VERSION"
+            if [ "$COMMIT" = "$EXPECTED_COMMIT" ]; then
+              echo "Production is serving commit $COMMIT (version $VERSION)"
+              exit 0
+            fi
+            # Fallback while the running image predates the commit field in /health:
+            # release versions are unique per tag, so a version match is trustworthy
+            if [ -z "$COMMIT" ] && [ "$VERSION" = "$EXPECTED" ]; then
+              echo "Production is serving $VERSION (no commit field yet)"
               exit 0
             fi
           done
