@@ -108,11 +108,20 @@ Implementation notes:
 
 ## CI/CD & Deployment
 
-- `ci.yml` - build + unit tests (Node 18/20 matrix), lint + format check (both enforced)
-- `deploy-dev.yml` - push to `develop` → Docker build → deploy to mcp-dev.digitalsamba.com
-- `deploy-prod.yml` - tag `v*` → deploy to mcp.digitalsamba.com, then syncs develop/main
+Deployment is **pull-based** (since 2026-07): CI builds and pushes images to the
+private Monza registry but never touches the hosts. Each host pulls its tag on a
+short timer (dev: `:latest`, ~2 min; prod: `:production`, ~5 min) and restarts
+itself when the digest changes. The final workflow step waits for the host's
+`/health` to report the expected git commit.
+
+- `ci.yml` - build + tests (Node 18/20 matrix), lint + format check (all enforced)
+- `deploy-dev.yml` - push to `develop` → image pushed → dev host self-deploys (mcp-dev.digitalsamba.com)
+- `deploy-prod.yml` - tag `v*` → image pushed → prod host self-deploys (mcp.digitalsamba.com), then syncs develop/main
 - `check-api-updates.yml` - weekly OpenAPI drift check (Mondays), opens issues labeled `api-update`
-- Docker: `deployment/` contains Dockerfile and docker-compose (includes redis:7 sidecar)
+- `deployment/docker-compose.yml` is a **reference copy only** - the live compose
+  and .env files are host-managed by ops; compose/env changes are an ops request,
+  not a commit
+- `:latest` is dev's tag exclusively; prod publishes `:production`, version, and sha tags
 
 ## Critical Constraints
 

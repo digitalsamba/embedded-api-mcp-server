@@ -36,10 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '20.x'
           cache: 'npm'
@@ -62,7 +62,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           fetch-tags: true
@@ -117,31 +117,36 @@ jobs:
       # restarts compose when the digest changes. CI has no path into the host.
       - name: Wait for host to pull and redeploy
         run: |
-          EXPECTED=$(node -p "require('./package.json').version")
-          echo "Image pushed. Waiting for the dev host timer to pick it up (expecting version $EXPECTED, up to 6 min)..."
+          EXPECTED_COMMIT="${{ github.sha }}"
+          echo "Image pushed. Waiting for the dev host timer to pick it up (expecting commit $EXPECTED_COMMIT, up to 6 min)..."
           UP=0
+          COMMIT=""
           for i in $(seq 1 18); do
             sleep 20
             BODY=$(curl -s --max-time 10 ${{ secrets.MCP_URL }}/health || echo "")
             STATUS=$(echo "$BODY" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
             VERSION=$(echo "$BODY" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
-            echo "attempt $i: status=${STATUS:-none} version=${VERSION:-none}"
+            COMMIT=$(echo "$BODY" | grep -o '"commit":"[^"]*"' | cut -d'"' -f4)
+            echo "attempt $i: status=${STATUS:-none} version=${VERSION:-none} commit=${COMMIT:-none}"
             [ "$STATUS" = "ok" ] && UP=1
-            if [ "$VERSION" = "$EXPECTED" ]; then
+            if [ "$COMMIT" = "$EXPECTED_COMMIT" ]; then
               echo "SERVED_VERSION=$VERSION" >> $GITHUB_ENV
-              echo "Host is serving $VERSION"
+              echo "Host is serving commit $COMMIT (version $VERSION)"
               exit 0
             fi
           done
-          # The health endpoint only reports package version, so a commit that does
-          # not bump the version is indistinguishable from a stale deploy. Treat a
-          # healthy-but-unchanged version as a warning, a dead endpoint as failure.
-          if [ "$UP" = "1" ]; then
-            echo "::warning::Host healthy but still serving ${VERSION:-unknown}, expected $EXPECTED. Check the deploy timer on the dev host."
+          if [ "$UP" != "1" ]; then
+            echo "Health endpoint never returned status=ok within 6 minutes"
+            curl -v ${{ secrets.MCP_URL }}/health || true
+            exit 1
+          fi
+          if [ -z "$COMMIT" ]; then
+            # Transitional: the running image predates the commit field in /health,
+            # so staleness cannot be proven. Should only happen once.
+            echo "::warning::Host healthy but /health has no commit field (pre-commit-field build still running?). Cannot verify the deploy; check the dev host timer."
             exit 0
           fi
-          echo "Health endpoint never returned status=ok within 6 minutes"
-          curl -v ${{ secrets.MCP_URL }}/health || true
+          echo "Host healthy but serving commit $COMMIT, expected $EXPECTED_COMMIT - the deploy did not land within 6 minutes"
           exit 1
 
       - name: Deployment summary
