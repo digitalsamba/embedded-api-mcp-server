@@ -1,20 +1,23 @@
 # Development MCP Server Deployment
 #
-# Deploys the remote MCP server to mcp-dev.digitalsamba.com
-# Triggers automatically on push to develop branch
+# Builds and publishes the dev image to the private registry.
+# Triggers automatically on push to develop branch.
+#
+# Deployment is PULL-BASED: this workflow does not connect to the deployment
+# host. The host pulls the :latest tag on a short timer and restarts itself
+# when the image digest changes. See the internal ops docs for that side.
 #
 # GitHub Secrets Required:
 #   Repository secrets:
-#     - DOCKER_REGISTRY: Registry hostname
-#     - REGISTRY_USERNAME: Docker registry username
-#     - REGISTRY_PASSWORD: Docker registry password
-#     - DEPLOYMENT_USER: SSH user for deployment
-#     - DEPLOYMENT_SSH_KEY: SSH private key
+#     - DOCKER_REGISTRY: registry hostname
+#     - REGISTRY_USERNAME: push account (scoped to this image)
+#     - REGISTRY_PASSWORD: push account password
 #
 #   Environment secrets (development):
-#     - DEPLOYMENT_SERVER: Target server hostname
-#     - DEPLOYMENT_PATH: Server path for deployment files
 #     - MCP_URL: Public URL for health checks
+#
+# The DEPLOYMENT_USER / DEPLOYMENT_SSH_KEY / DEPLOYMENT_SERVER / DEPLOYMENT_PATH
+# secrets are no longer used by this workflow.
 
 name: Deploy Dev MCP Server
 
@@ -110,62 +113,36 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Copy deployment files to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOYMENT_SERVER }}
-          username: ${{ secrets.DEPLOYMENT_USER }}
-          key: ${{ secrets.DEPLOYMENT_SSH_KEY }}
-          source: "deployment/docker-compose.yml"
-          target: ${{ secrets.DEPLOYMENT_PATH }}
-          strip_components: 1
-
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
-        with:
-          host: ${{ secrets.DEPLOYMENT_SERVER }}
-          username: ${{ secrets.DEPLOYMENT_USER }}
-          key: ${{ secrets.DEPLOYMENT_SSH_KEY }}
-          envs: REGISTRY,IMAGE_NAME
-          script: |
-            cd ${{ secrets.DEPLOYMENT_PATH }}
-
-            # Login to registry
-            echo "${{ secrets.REGISTRY_PASSWORD }}" | sudo docker login ${{ secrets.DOCKER_REGISTRY }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
-
-            # Pull latest image
-            sudo docker pull ${REGISTRY}/${IMAGE_NAME}:latest
-
-            # Stop and remove old container
-            sudo docker compose down --remove-orphans || true
-
-            # Start new container
-            sudo docker compose up -d
-
-            # Wait for service to be healthy
-            echo "Waiting for service to be healthy..."
-            sleep 10
-
-            # Cleanup old images
-            sudo docker image prune -f
-
-      - name: Verify deployment
+      # Deployment is pull-based: the host pulls :latest on a short timer and
+      # restarts compose when the digest changes. CI has no path into the host.
+      - name: Wait for host to pull and redeploy
         run: |
-          echo "Waiting for service startup..."
-          sleep 15
-
-          # Health check
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.MCP_URL }}/health || echo "000")
-
-          if [ "$HTTP_STATUS" = "200" ]; then
-            echo "✅ Health check passed (HTTP $HTTP_STATUS)"
-          else
-            echo "⚠️ Health check returned HTTP $HTTP_STATUS"
-            curl -v ${{ secrets.MCP_URL }}/health || true
+          EXPECTED=$(node -p "require('./package.json').version")
+          echo "Image pushed. Waiting for the dev host timer to pick it up (expecting version $EXPECTED, up to 6 min)..."
+          UP=0
+          for i in $(seq 1 18); do
+            sleep 20
+            BODY=$(curl -s --max-time 10 ${{ secrets.MCP_URL }}/health || echo "")
+            STATUS=$(echo "$BODY" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+            VERSION=$(echo "$BODY" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
+            echo "attempt $i: status=${STATUS:-none} version=${VERSION:-none}"
+            [ "$STATUS" = "ok" ] && UP=1
+            if [ "$VERSION" = "$EXPECTED" ]; then
+              echo "SERVED_VERSION=$VERSION" >> $GITHUB_ENV
+              echo "Host is serving $VERSION"
+              exit 0
+            fi
+          done
+          # The health endpoint only reports package version, so a commit that does
+          # not bump the version is indistinguishable from a stale deploy. Treat a
+          # healthy-but-unchanged version as a warning, a dead endpoint as failure.
+          if [ "$UP" = "1" ]; then
+            echo "::warning::Host healthy but still serving ${VERSION:-unknown}, expected $EXPECTED. Check the deploy timer on the dev host."
+            exit 0
           fi
+          echo "Health endpoint never returned status=ok within 6 minutes"
+          curl -v ${{ secrets.MCP_URL }}/health || true
+          exit 1
 
       - name: Deployment summary
         run: |

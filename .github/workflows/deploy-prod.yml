@@ -1,20 +1,23 @@
 # Production MCP Server Deployment
 #
-# Deploys the remote MCP server to mcp.digitalsamba.com
-# Triggers on push to main branch or manual dispatch
+# Builds and publishes the production image to the private registry.
+# Triggers on v* tags or manual dispatch.
+#
+# Deployment is PULL-BASED: this workflow does not connect to the deployment
+# host. The host pulls the :production tag on a short timer and restarts itself
+# when the image digest changes. See the internal ops docs for that side.
 #
 # GitHub Secrets Required:
 #   Repository secrets:
-#     - DOCKER_REGISTRY: Registry hostname
-#     - REGISTRY_USERNAME: Docker registry username
-#     - REGISTRY_PASSWORD: Docker registry password
-#     - DEPLOYMENT_USER: SSH user for deployment
-#     - DEPLOYMENT_SSH_KEY: SSH private key
+#     - DOCKER_REGISTRY: registry hostname
+#     - REGISTRY_USERNAME: push account (scoped to this image)
+#     - REGISTRY_PASSWORD: push account password
 #
 #   Environment secrets (production):
-#     - DEPLOYMENT_SERVER: Target server hostname
-#     - DEPLOYMENT_PATH: Server path for deployment files
 #     - MCP_URL: Public URL (https://mcp.digitalsamba.com)
+#
+# The DEPLOYMENT_USER / DEPLOYMENT_SSH_KEY / DEPLOYMENT_SERVER / DEPLOYMENT_PATH
+# secrets are no longer used by this workflow.
 
 name: Deploy Production MCP Server
 
@@ -95,7 +98,6 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
-            ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ secrets.DOCKER_REGISTRY }}/${{ env.IMAGE_NAME }}:production
           build-args: |
             GIT_COMMIT=${{ github.sha }}
@@ -104,73 +106,29 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Copy deployment files to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOYMENT_SERVER }}
-          username: ${{ secrets.DEPLOYMENT_USER }}
-          key: ${{ secrets.DEPLOYMENT_SSH_KEY }}
-          source: "deployment/docker-compose.yml"
-          target: ${{ secrets.DEPLOYMENT_PATH }}
-          strip_components: 1
-
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
-        with:
-          host: ${{ secrets.DEPLOYMENT_SERVER }}
-          username: ${{ secrets.DEPLOYMENT_USER }}
-          key: ${{ secrets.DEPLOYMENT_SSH_KEY }}
-          envs: REGISTRY,IMAGE_NAME
-          script: |
-            cd ${{ secrets.DEPLOYMENT_PATH }}
-
-            # Login to registry
-            echo "${{ secrets.REGISTRY_PASSWORD }}" | sudo docker login ${{ secrets.DOCKER_REGISTRY }} -u ${{ secrets.REGISTRY_USERNAME }} --password-stdin
-
-            # Pull production image
-            sudo docker pull ${REGISTRY}/${IMAGE_NAME}:production
-
-            # Update docker-compose to use production tag
-            sed -i 's/:latest/:production/g' docker-compose.yml
-
-            # Set production network name (apps3 uses deployment_proxy)
-            export PROXY_NETWORK=deployment_proxy
-
-            # Stop and remove old container
-            sudo PROXY_NETWORK=$PROXY_NETWORK docker compose down --remove-orphans || true
-
-            # Start new container
-            sudo PROXY_NETWORK=$PROXY_NETWORK docker compose up -d
-
-            # Wait for service to be healthy
-            echo "Waiting for service to be healthy..."
-            sleep 15
-
-            # Cleanup old images
-            sudo docker image prune -f
-
-      - name: Verify deployment
+      # Deployment is pull-based: the host pulls :production on a short timer and
+      # restarts compose when the digest changes. CI has no path into the host.
+      # The host's docker-compose.yml and .env are host-managed; they are no
+      # longer copied from this repo on deploy.
+      - name: Wait for host to pull and redeploy
         run: |
-          echo "Waiting for service startup..."
-          sleep 20
-
-          # Health check with retries
-          for i in 1 2 3; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.MCP_URL }}/health || echo "000")
-
-            if [ "$HTTP_STATUS" = "200" ]; then
-              echo "Health check passed (HTTP $HTTP_STATUS)"
+          EXPECTED="${{ steps.version.outputs.version }}"
+          echo "Image pushed. Waiting for the prod host timer to pick it up (expecting version $EXPECTED, up to 10 min)..."
+          UP=0
+          for i in $(seq 1 30); do
+            sleep 20
+            BODY=$(curl -s --max-time 10 ${{ secrets.MCP_URL }}/health || echo "")
+            STATUS=$(echo "$BODY" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+            VERSION=$(echo "$BODY" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
+            echo "attempt $i: status=${STATUS:-none} version=${VERSION:-none}"
+            [ "$STATUS" = "ok" ] && UP=1
+            if [ "$VERSION" = "$EXPECTED" ]; then
+              echo "Production is serving $VERSION"
               exit 0
             fi
-
-            echo "Attempt $i: HTTP $HTTP_STATUS, retrying in 10s..."
-            sleep 10
           done
-
-          echo "Health check failed after 3 attempts"
+          echo "Production did not report version $EXPECTED within 10 minutes (last: ${VERSION:-none}, healthy=$UP)"
+          echo "Check the deploy timer on the production host"
           curl -v ${{ secrets.MCP_URL }}/health || true
           exit 1
 

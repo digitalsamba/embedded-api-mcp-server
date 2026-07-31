@@ -86,3 +86,4 @@ out
 
 # Claude Code local commands (personal project management)
 .claude/commands/
+.ops/
