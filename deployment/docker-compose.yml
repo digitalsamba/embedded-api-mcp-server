@@ -3,6 +3,10 @@
 # This is the production-ready docker-compose for deployment.
 # Images are pulled from the private registry.
 #
+# NOTE: this file is a reference copy. CI no longer copies it to the deployment
+# hosts — deployment is pull-based, and the live compose file and .env on each
+# host are host-managed. Change them there, then mirror the change back here.
+#
 # Usage:
 #   docker compose up -d
 #
@@ -12,8 +16,7 @@
 #
 # Environment Variables:
 #   - PROXY_NETWORK: External network name (default: proxy)
-#     - Dev (apps4): proxy
-#     - Prod (apps3): deployment_proxy
+#     Set per host in .env; it differs between the dev and prod hosts.
 
 services:
   mcp-server:
