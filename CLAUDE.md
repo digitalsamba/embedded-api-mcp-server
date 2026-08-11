@@ -53,6 +53,7 @@ Digital Samba Embedded API MCP Server - a Model Context Protocol server for Digi
 - `DIGITAL_SAMBA_DEVELOPER_KEY`, `DIGITAL_SAMBA_API_URL`, `OAUTH_API_URL`
 - `OAUTH_CLIENT_ID`, `OAUTH_CLIENT_SECRET`, `OAUTH_AUTHORIZE_URL`, `OAUTH_TOKEN_URL`, `OAUTH_REDIRECT_URI`, `OAUTH_ISSUER`
 - `REDIS_URL`
+- `SESSION_IDLE_TIMEOUT_MS` (default 30min; 0 disables), `SESSION_SWEEP_INTERVAL_MS` (default 5min) — idle HTTP session eviction
 
 ## Architecture
 
@@ -64,6 +65,7 @@ src/
 ├── oauth.ts              # OAuth 2.0 / PKCE / DCR implementation
 ├── session-store.ts      # Redis-backed session store (memory fallback)
 ├── auth.ts               # AsyncLocalStorage API-key context
+├── session-registry.ts   # HTTP session tracking + idle sweep (clients rarely send DELETE)
 ├── cache.ts              # Simple memory cache
 ├── logger.ts             # Console logger (writes to stderr in stdio mode)
 ├── errors.ts             # Error type definitions

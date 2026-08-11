@@ -24,6 +24,7 @@ import {
 } from "../server.js";
 import logger from "../logger.js";
 import apiKeyContext from "../auth.js";
+import { SessionRegistry } from "../session-registry.js";
 import {
   loadOAuthConfig,
   generateState,
@@ -55,8 +56,18 @@ export interface HttpTransportConfig {
   requireAuth?: boolean;
 }
 
-// Active transport sessions
-const transports: Map<string, StreamableHTTPServerTransport> = new Map();
+// 0 disables the idle sweep entirely.
+const SESSION_IDLE_TIMEOUT_MS = Number(
+  process.env.SESSION_IDLE_TIMEOUT_MS ?? 30 * 60 * 1000,
+);
+const SESSION_SWEEP_INTERVAL_MS = Number(
+  process.env.SESSION_SWEEP_INTERVAL_MS ?? 5 * 60 * 1000,
+);
+
+// Active transport sessions, with idle tracking (see session-registry.ts).
+const transports = new SessionRegistry<StreamableHTTPServerTransport>({
+  idleTimeoutMs: SESSION_IDLE_TIMEOUT_MS,
+});
 
 /**
  * Authentication middleware
@@ -212,6 +223,8 @@ export async function startHttpServer(
       commit: GIT_COMMIT,
       transport: "http",
       activeSessions: transports.size,
+      streamingSessions: transports.streamingCount,
+      sweptSessions: transports.sweptCount,
       oauthSessions: await getActiveSessionCount(),
       registeredClients: await getRegisteredClientCount(),
     });
@@ -563,6 +576,7 @@ export async function startHttpServer(
       if (mcpSessionId && transports.has(mcpSessionId)) {
         // Reuse existing session
         transport = transports.get(mcpSessionId)!;
+        transports.touch(mcpSessionId);
         logger.debug(`Reusing session: ${mcpSessionId}`);
       } else if (!mcpSessionId && isInitializeRequest(req.body)) {
         // New session initialization
@@ -571,18 +585,18 @@ export async function startHttpServer(
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           onsessioninitialized: (id) => {
-            transports.set(id, transport);
+            transports.add(id, transport);
             logger.info(`Session initialized: ${id}`);
           },
           onsessionclosed: (id) => {
-            transports.delete(id);
+            transports.remove(id);
             logger.info(`Session closed: ${id}`);
           },
         });
 
         transport.onclose = () => {
           if (transport.sessionId) {
-            transports.delete(transport.sessionId);
+            transports.remove(transport.sessionId);
             logger.debug(
               `Transport closed, session cleaned up: ${transport.sessionId}`,
             );
@@ -667,6 +681,14 @@ export async function startHttpServer(
     }
 
     const transport = transports.get(sessionId)!;
+
+    // An SSE stream can stay open for hours with no other traffic. Count it as
+    // in-flight for the whole time it is open so the idle sweep can't evict a
+    // session that is actively streaming.
+    transports.openStream(sessionId);
+    // Start the idle clock from when the stream ends, not when it began.
+    res.on("close", () => transports.closeStream(sessionId));
+
     const apiKey = (req as any).apiKey;
     if (apiKey) {
       await apiKeyContext.run(apiKey, async () => {
@@ -694,6 +716,7 @@ export async function startHttpServer(
     }
 
     const transport = transports.get(sessionId)!;
+    transports.touch(sessionId);
     const apiKey = (req as any).apiKey;
     if (apiKey) {
       await apiKeyContext.run(apiKey, async () => {
@@ -1333,6 +1356,20 @@ export async function startHttpServer(
   });
   app.delete("/", handleMcpDelete);
 
+  // Evict sessions abandoned without a DELETE (most clients never send one).
+  const sweepTimer =
+    SESSION_IDLE_TIMEOUT_MS > 0
+      ? setInterval(() => {
+          transports
+            .sweep()
+            .catch((err) =>
+              logger.error(`Idle session sweep failed: ${err?.message}`),
+            );
+        }, SESSION_SWEEP_INTERVAL_MS)
+      : null;
+  // Don't hold the event loop open on account of the sweep.
+  sweepTimer?.unref();
+
   // Start listening
   app.listen(port, host, () => {
     logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -1342,13 +1379,21 @@ export async function startHttpServer(
     logger.info(`Listening: http://${host}:${port}`);
     logger.info(`MCP Endpoint: http://${host}:${port}/mcp`);
     logger.info(`Auth: ${requireAuth ? "Required" : "Optional"}`);
+    logger.info(
+      `Idle session sweep: ${
+        SESSION_IDLE_TIMEOUT_MS > 0
+          ? `every ${SESSION_SWEEP_INTERVAL_MS / 1000}s, timeout ${SESSION_IDLE_TIMEOUT_MS / 60000}min`
+          : "disabled"
+      }`,
+    );
     logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   });
 
   // Graceful shutdown
   process.on("SIGINT", async () => {
     logger.info("Shutting down HTTP server...");
-    for (const [id, transport] of transports) {
+    if (sweepTimer) clearInterval(sweepTimer);
+    for (const [id, transport] of transports.entries()) {
       logger.debug(`Closing session: ${id}`);
       await transport.close();
     }
@@ -1357,6 +1402,7 @@ export async function startHttpServer(
 
   process.on("SIGTERM", async () => {
     logger.info("Received SIGTERM, shutting down...");
+    if (sweepTimer) clearInterval(sweepTimer);
     for (const transport of transports.values()) {
       await transport.close();
     }
