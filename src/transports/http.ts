@@ -627,15 +627,28 @@ export async function startHttpServer(
 
         await server.connect(transport);
         logger.debug("Server connected to transport");
+      } else if (mcpSessionId) {
+        // Unknown or expired session. The spec requires 404 here: it is the
+        // client's cue to re-initialize with a fresh session. Returning 400
+        // wedges the client until a human reconnects it, which matters now
+        // that idle sessions are swept (see session-registry.ts).
+        res.status(404).json({
+          jsonrpc: "2.0",
+          error: {
+            code: -32001,
+            message: "Session not found. Session may have expired.",
+          },
+          id: null,
+        });
+        return;
       } else {
-        // Invalid request - no session ID and not an initialize request
+        // No session ID and not an initialize request
         res.status(400).json({
           jsonrpc: "2.0",
           error: {
             code: -32000,
-            message: mcpSessionId
-              ? "Session not found. Session may have expired."
-              : "Invalid request. First request must be an initialize request.",
+            message:
+              "Invalid request. First request must be an initialize request.",
           },
           id: null,
         });
@@ -668,12 +681,26 @@ export async function startHttpServer(
   const handleMcpGet = async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string;
 
-    if (!sessionId || !transports.has(sessionId)) {
+    if (!sessionId) {
       res.status(400).json({
         jsonrpc: "2.0",
         error: {
           code: -32000,
           message: "Invalid or missing session ID",
+        },
+        id: null,
+      });
+      return;
+    }
+
+    if (!transports.has(sessionId)) {
+      // 404 tells the client to re-initialize rather than treating this as a
+      // hard failure - see the POST handler for why this matters.
+      res.status(404).json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32001,
+          message: "Session not found. Session may have expired.",
         },
         id: null,
       });
@@ -703,12 +730,26 @@ export async function startHttpServer(
   const handleMcpDelete = async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string;
 
-    if (!sessionId || !transports.has(sessionId)) {
+    if (!sessionId) {
       res.status(400).json({
         jsonrpc: "2.0",
         error: {
           code: -32000,
           message: "Invalid or missing session ID",
+        },
+        id: null,
+      });
+      return;
+    }
+
+    if (!transports.has(sessionId)) {
+      // 404 tells the client to re-initialize rather than treating this as a
+      // hard failure - see the POST handler for why this matters.
+      res.status(404).json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32001,
+          message: "Session not found. Session may have expired.",
         },
         id: null,
       });
