@@ -105,6 +105,9 @@ import {
 } from "./version.js";
 
 // API client instance cache - keyed by apiKey:apiUrl to support different URLs per session
+// Capped: in the hosted multi-tenant server every distinct OAuth token creates
+// an entry, so an unbounded map grows for the life of the process.
+const API_CLIENT_CACHE_MAX = 500;
 let apiClientCache: Map<string, DigitalSambaApiClient> = new Map();
 
 /**
@@ -113,37 +116,53 @@ let apiClientCache: Map<string, DigitalSambaApiClient> = new Map();
  * Uses composite cache key (apiKey:apiUrl) to ensure OAuth sessions
  * get clients with the correct /oauth-api/v1/* URL while direct API key
  * sessions get clients with /api/v1/* URL.
+ *
+ * LRU eviction: Map preserves insertion order, so re-inserting on access
+ * keeps the oldest-used entry first and evictable.
  */
 function getApiClient(apiKey: string, apiUrl: string): DigitalSambaApiClient {
   const cacheKey = `${apiKey}:${apiUrl}`;
-  if (!apiClientCache.has(cacheKey)) {
-    apiClientCache.set(cacheKey, new DigitalSambaApiClient(apiKey, apiUrl));
+  const cached = apiClientCache.get(cacheKey);
+  if (cached) {
+    apiClientCache.delete(cacheKey);
+    apiClientCache.set(cacheKey, cached);
+    return cached;
   }
-  return apiClientCache.get(cacheKey)!;
+
+  if (apiClientCache.size >= API_CLIENT_CACHE_MAX) {
+    const oldestKey = apiClientCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      apiClientCache.delete(oldestKey);
+    }
+  }
+
+  const client = new DigitalSambaApiClient(apiKey, apiUrl);
+  apiClientCache.set(cacheKey, client);
+  return client;
 }
 
 /**
  * Resource to tool mapping for helpful error messages
  */
 const resourceToToolMap: Record<string, string> = {
-  "rooms": "list-rooms",
-  "room": "get-room-details",
+  rooms: "list-rooms",
+  room: "get-room-details",
   "rooms-live": "list-live-rooms",
   "rooms-live-participants": "list-live-participants",
   "room-live": "list-live-rooms",
   "room-live-participants": "list-live-participants",
   "room-settings": "get-default-room-settings",
-  "sessions": "list-sessions",
-  "session": "get-session-details",
+  sessions: "list-sessions",
+  session: "get-session-details",
   "session-participants": "list-session-participants",
   "session-statistics": "get-session-statistics",
   "room-sessions": "list-room-sessions",
-  "recordings": "get-recordings",
-  "recording": "get-recording-details",
+  recordings: "get-recordings",
+  recording: "get-recording-details",
   "team-analytics": "get-usage-statistics",
   "room-analytics": "get-room-analytics",
   "session-analytics": "get-session-analytics",
-  "content": "list-libraries",
+  content: "list-libraries",
   "content-library": "get-library",
 };
 
@@ -171,7 +190,10 @@ export function createServer(config: ServerConfig = {}): Server {
     },
   );
 
-  const apiUrl = config.apiUrl || process.env.DIGITAL_SAMBA_API_URL || "https://api.digitalsamba.com/api/v1";
+  const apiUrl =
+    config.apiUrl ||
+    process.env.DIGITAL_SAMBA_API_URL ||
+    "https://api.digitalsamba.com/api/v1";
 
   // Helper to get API key from config or environment
   const getApiKey = (): string | undefined => {
@@ -227,7 +249,10 @@ export function createServer(config: ServerConfig = {}): Server {
       return handleContentResource(uri, client);
     }
 
-    throw new McpError(ErrorCode.InvalidRequest, `Unknown resource URI: ${uri}`);
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      `Unknown resource URI: ${uri}`,
+    );
   });
 
   // Register tool handlers
@@ -278,7 +303,8 @@ export function createServer(config: ServerConfig = {}): Server {
         name === "list-rooms" ||
         name === "get-room-details" ||
         name === "list-live-rooms" ||
-        name === "list-live-participants"
+        name === "list-live-participants" ||
+        name === "delete-rooms-by-tag"
       ) {
         return await executeRoomTool(name, args || {}, request, { apiUrl });
       }
@@ -312,7 +338,8 @@ export function createServer(config: ServerConfig = {}): Server {
         return await executeSessionTool(name, args || {}, client, request);
       }
       // Export tools (check BEFORE recording tools - export-recording-metadata contains "recording")
-      else if (name.includes("export-")) {
+      // export-room-transcripts belongs to the communication module below
+      else if (name.includes("export-") && name !== "export-room-transcripts") {
         return await executeExportTool(name, args || {}, request, { apiUrl });
       }
       // Recording management tools
@@ -334,6 +361,8 @@ export function createServer(config: ServerConfig = {}): Server {
         name === "lower-participant-hand" ||
         name === "raise-phone-participant-hand" ||
         name === "lower-phone-participant-hand" ||
+        name === "mute-phone-participant" ||
+        name === "unmute-phone-participant" ||
         name === "connect-phone" ||
         name === "disconnect-phone" ||
         name === "start-restreamer" ||
@@ -346,11 +375,15 @@ export function createServer(config: ServerConfig = {}): Server {
         return await executeQuizTool(name, args || {}, client);
       }
       // Communication management tools
+      // (all Q&A interaction tools contain "question"; live-answer tools are
+      // named *-question-live-answer so they match too)
       else if (
         name.includes("-chats") ||
         name.includes("-qa") ||
         name.includes("-transcripts") ||
         name.includes("-summaries") ||
+        name.includes("question") ||
+        name === "send-chat-message" ||
         name === "delete-session-recordings" ||
         name === "delete-session-resources"
       ) {
@@ -384,7 +417,7 @@ export function createServer(config: ServerConfig = {}): Server {
         const suggestedTool = resourceToToolMap[name];
         throw new McpError(
           ErrorCode.InvalidRequest,
-          `'${name}' is a resource, not a tool. Use the '${suggestedTool}' tool instead.`
+          `'${name}' is a resource, not a tool. Use the '${suggestedTool}' tool instead.`,
         );
       }
 

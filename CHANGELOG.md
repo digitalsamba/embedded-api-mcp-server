@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-12
+
+First production release since the July 2026 revival. Production had been
+serving a January build; this brings it to the current tree.
+
+### Fixed
+- **HTTP session leak**: transport sessions were only removed on an explicit
+  `DELETE /mcp` or `transport.close()`. Most MCP clients send neither, so every
+  abandoned session stayed in memory along with its `Server` instance
+  (449 leaked on dev, none ever released). Added `SessionRegistry` with
+  last-seen tracking and a periodic idle sweep. Sessions holding an open SSE
+  stream are never swept, and entries are removed before `close()` so a
+  throwing close cannot re-leak them.
+- **Unknown session IDs now return 404, not 400**: the MCP Streamable HTTP spec
+  uses 404 as the client's cue to re-initialize. Returning 400 left clients
+  wedged after any server restart, unable to recover on their own.
+- **Expired OAuth sessions now return 401 instead of silently degrading**:
+  `authMiddleware` used to fall through to the legacy developer-key branch and
+  pass the dead session ID to the API as if it were a key, so the client saw
+  the API's `Unauthenticated` rather than a 401. It never learned to
+  re-authorise, and reconnecting did not help - the connector had to be removed
+  and re-added. Now returns 401 with `WWW-Authenticate`. Legacy developer keys
+  (UUIDs) are distinguished from session IDs (64 hex chars) and are unaffected.
+- **Session expiry no longer forces daily re-authentication**: sessions expired
+  after 24h even though the Digital Samba access token behind them is valid for
+  365 days, so our own TTL was what logged users out. `TTL.SESSION` is now
+  30 days and slides forward on each authenticated request, making it an
+  inactivity window rather than a hard cap.
+
+### Added
+- `/health` reports `streamingSessions` and cumulative `sweptSessions`
+- `SESSION_IDLE_TIMEOUT_MS` (default 30min, `0` disables) and
+  `SESSION_SWEEP_INTERVAL_MS` (default 5min)
+
+### Changed
+- `@modelcontextprotocol/sdk` upgraded from ^1.25.1 to ^1.30.0
+- Test suite grown from 431 to 553 tests; lint and format checks enforced in CI
+- Deploys are pull-based via the internal registry; `/health` exposes the git
+  commit so a deploy can be verified by exact commit
+
 ## [0.1.0] - 2025-06-13
 
 ### Added

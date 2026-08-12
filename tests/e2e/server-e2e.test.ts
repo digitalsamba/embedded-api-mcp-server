@@ -25,7 +25,7 @@ describe('End-to-End Tests', () => {
   let mockApiServer: Server;
   let serverProcess: ChildProcess;
   let client: Client;
-  const mockApiPort = 8080;
+  const mockApiPort = 8082; // Unique per suite: Jest runs suites in parallel workers
 
   beforeEach(async () => {
     // Set up clean test environment

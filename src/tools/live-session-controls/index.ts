@@ -60,7 +60,10 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "start-transcription",
       description:
         '[Live Session Controls] Start real-time transcription for an active room session. Use when users say: "start transcription", "enable transcription", "transcribe the meeting", "turn on transcription", "start live captions". Requires roomId with an active session. Transcripts can be exported later.',
-      annotations: getToolAnnotations("start-transcription", "Start Transcription"),
+      annotations: getToolAnnotations(
+        "start-transcription",
+        "Start Transcription",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -76,7 +79,10 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "stop-transcription",
       description:
         '[Live Session Controls] Stop ongoing transcription in a room. Use when users say: "stop transcription", "disable transcription", "turn off transcription", "stop live captions", "end transcription". Requires roomId. Only works if transcription is currently active.',
-      annotations: getToolAnnotations("stop-transcription", "Stop Transcription"),
+      annotations: getToolAnnotations(
+        "stop-transcription",
+        "Stop Transcription",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -92,7 +98,10 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "phone-participants-joined",
       description:
         '[Live Session Controls] Register phone/dial-in participants joining a room. Use when users say: "add phone participant", "someone dialed in", "phone user joined", "register dial-in participant". Requires roomId and participant details including callId. Used for tracking phone-based attendees.',
-      annotations: getToolAnnotations("phone-participants-joined", "Phone Participants Joined"),
+      annotations: getToolAnnotations(
+        "phone-participants-joined",
+        "Phone Participants Joined",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -134,7 +143,10 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "phone-participants-left",
       description:
         '[Live Session Controls] Register phone/dial-in participants leaving a room. Use when users say: "phone participant left", "dial-in user disconnected", "remove phone participant", "phone user hung up". Requires roomId and callIds array. Updates participant tracking.',
-      annotations: getToolAnnotations("phone-participants-left", "Phone Participants Left"),
+      annotations: getToolAnnotations(
+        "phone-participants-left",
+        "Phone Participants Left",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -157,7 +169,10 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "raise-participant-hand",
       description:
         '[Live Session Controls] Raise a participant\'s hand in a live session. Use when users say: "raise hand for participant", "participant wants to speak", "raise their hand". Requires roomId and participantId. Only works during active sessions.',
-      annotations: getToolAnnotations("raise-participant-hand", "Raise Participant Hand"),
+      annotations: getToolAnnotations(
+        "raise-participant-hand",
+        "Raise Participant Hand",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -177,7 +192,10 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "lower-participant-hand",
       description:
         '[Live Session Controls] Lower a participant\'s hand in a live session. Use when users say: "lower hand", "dismiss hand raise", "acknowledge participant". Requires roomId and participantId. Only works during active sessions.',
-      annotations: getToolAnnotations("lower-participant-hand", "Lower Participant Hand"),
+      annotations: getToolAnnotations(
+        "lower-participant-hand",
+        "Lower Participant Hand",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -197,7 +215,10 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "raise-phone-participant-hand",
       description:
         '[Live Session Controls] Raise a phone participant\'s hand in a live session. Use when users say: "raise hand for phone user", "phone participant wants to speak". Requires roomId and callId. Only works for phone/dial-in participants.',
-      annotations: getToolAnnotations("raise-phone-participant-hand", "Raise Phone Participant Hand"),
+      annotations: getToolAnnotations(
+        "raise-phone-participant-hand",
+        "Raise Phone Participant Hand",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -217,7 +238,56 @@ export function registerLiveSessionTools(): ToolDefinition[] {
       name: "lower-phone-participant-hand",
       description:
         '[Live Session Controls] Lower a phone participant\'s hand in a live session. Use when users say: "lower phone participant hand", "dismiss phone user hand raise". Requires roomId and callId. Only works for phone/dial-in participants.',
-      annotations: getToolAnnotations("lower-phone-participant-hand", "Lower Phone Participant Hand"),
+      annotations: getToolAnnotations(
+        "lower-phone-participant-hand",
+        "Lower Phone Participant Hand",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+          call_id: {
+            type: "string",
+            description: "The call ID of the phone participant",
+          },
+        },
+        required: ["room_id", "call_id"],
+      },
+    },
+    {
+      name: "mute-phone-participant",
+      description:
+        '[Live Session Controls] Mute a phone participant in a live session. Use when users say: "mute phone participant", "mute dial-in user", "silence phone caller". Requires room_id and call_id. Only works for phone/dial-in participants.',
+      annotations: getToolAnnotations(
+        "mute-phone-participant",
+        "Mute Phone Participant",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+          call_id: {
+            type: "string",
+            description: "The call ID of the phone participant",
+          },
+        },
+        required: ["room_id", "call_id"],
+      },
+    },
+    {
+      name: "unmute-phone-participant",
+      description:
+        '[Live Session Controls] Unmute a phone participant in a live session. Use when users say: "unmute phone participant", "unmute dial-in user", "let phone caller speak". Requires room_id and call_id. Only works for phone/dial-in participants.',
+      annotations: getToolAnnotations(
+        "unmute-phone-participant",
+        "Unmute Phone Participant",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -280,15 +350,18 @@ export function registerLiveSessionTools(): ToolDefinition[] {
           type: {
             type: "string",
             enum: ["youtube", "vimeo", "cloudflare"],
-            description: "The streaming provider type (optional if server_url is provided)",
+            description:
+              "The streaming provider type (optional if server_url is provided)",
           },
           server_url: {
             type: "string",
-            description: "Custom RTMP server URL (optional if type is provided)",
+            description:
+              "Custom RTMP server URL (optional if type is provided)",
           },
           stream_key: {
             type: "string",
-            description: "The stream key for authentication with the streaming provider (required)",
+            description:
+              "The stream key for authentication with the streaming provider (required)",
           },
         },
         required: ["room_id", "stream_key"],
@@ -346,6 +419,10 @@ export async function executeLiveSessionTool(
       return handleRaisePhoneParticipantHand(params, _apiClient);
     case "lower-phone-participant-hand":
       return handleLowerPhoneParticipantHand(params, _apiClient);
+    case "mute-phone-participant":
+      return handlePhoneParticipantMute(params, _apiClient, "mute");
+    case "unmute-phone-participant":
+      return handlePhoneParticipantMute(params, _apiClient, "unmute");
     case "connect-phone":
       return handleConnectPhone(params, _apiClient);
     case "disconnect-phone":
@@ -527,11 +604,11 @@ async function handlePhoneParticipantsJoined(
 
   try {
     // Convert camelCase to snake_case for API
-    const apiParticipants = participants.map(p => ({
+    const apiParticipants = participants.map((p) => ({
       call_id: p.callId,
       name: p.name,
       caller_number: p.callerNumber,
-      external_id: p.externalId
+      external_id: p.externalId,
     }));
     await _apiClient.phoneParticipantsJoined(roomId, apiParticipants);
 
@@ -868,6 +945,64 @@ async function handleLowerPhoneParticipantHand(
 }
 
 /**
+ * Handle mute/unmute phone participant
+ */
+async function handlePhoneParticipantMute(
+  params: { room_id: string; call_id: string },
+  apiClient: DigitalSambaApiClient,
+  action: "mute" | "unmute",
+): Promise<any> {
+  const { room_id, call_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  if (!call_id || call_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Call ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info(`Phone participant ${action}`, { room_id, call_id });
+
+  try {
+    if (action === "mute") {
+      await apiClient.mutePhoneParticipant(room_id, call_id);
+    } else {
+      await apiClient.unmutePhoneParticipant(room_id, call_id);
+    }
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Successfully ${action}d phone participant ${call_id} in room ${room_id}.`,
+        },
+      ],
+    };
+  } catch (error) {
+    logger.error(`Error on phone participant ${action}`, {
+      room_id,
+      call_id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Error on ${action}: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+}
+
+/**
  * Handle connect phone
  */
 async function handleConnectPhone(
@@ -1001,7 +1136,11 @@ async function handleStartRestreamer(
     };
   }
 
-  logger.info("Starting restreamer", { room_id, type, server_url: server_url ? "[provided]" : undefined });
+  logger.info("Starting restreamer", {
+    room_id,
+    type,
+    server_url: server_url ? "[provided]" : undefined,
+  });
 
   try {
     await apiClient.startRestreamer(room_id, { type, server_url, stream_key });
@@ -1026,7 +1165,10 @@ async function handleStartRestreamer(
 
     if (errorMessage.includes("not found") || errorMessage.includes("404")) {
       displayMessage = `Room with ID ${room_id} not found`;
-    } else if (errorMessage.includes("feature") || errorMessage.includes("enabled")) {
+    } else if (
+      errorMessage.includes("feature") ||
+      errorMessage.includes("enabled")
+    ) {
       displayMessage = `Restreaming feature may not be enabled for this account. ${errorMessage}`;
     }
 

@@ -49,7 +49,10 @@ export function registerWebhookTools(): ToolDefinition[] {
       name: "list-webhook-events",
       description:
         '[Webhook Management] List all available webhook event types. Use when users say: "list webhook events", "show available events", "what events can I subscribe to", "webhook event types", "available webhooks". Returns complete catalog of subscribable events like room.created, session.ended, etc.',
-      annotations: getToolAnnotations("list-webhook-events", "List Webhook Events"),
+      annotations: getToolAnnotations(
+        "list-webhook-events",
+        "List Webhook Events",
+      ),
       inputSchema: {
         type: "object",
         properties: {},

@@ -17,12 +17,14 @@ import {
   createServer,
   VERSION,
   VERSION_INFO,
+  GIT_COMMIT,
   COMMITS_AHEAD,
   getDisplayVersion,
   isDevBuild,
 } from "../server.js";
 import logger from "../logger.js";
 import apiKeyContext from "../auth.js";
+import { SessionRegistry } from "../session-registry.js";
 import {
   loadOAuthConfig,
   generateState,
@@ -41,7 +43,8 @@ import {
   exchangeAuthorizationCode,
   exchangeCodeForTokens,
   getRegisteredClientCount,
-  type OAuthConfig,
+  isOAuthSessionId,
+  touchSession,
 } from "../oauth.js";
 
 export interface HttpTransportConfig {
@@ -55,8 +58,18 @@ export interface HttpTransportConfig {
   requireAuth?: boolean;
 }
 
-// Active transport sessions
-const transports: Map<string, StreamableHTTPServerTransport> = new Map();
+// 0 disables the idle sweep entirely.
+const SESSION_IDLE_TIMEOUT_MS = Number(
+  process.env.SESSION_IDLE_TIMEOUT_MS ?? 30 * 60 * 1000,
+);
+const SESSION_SWEEP_INTERVAL_MS = Number(
+  process.env.SESSION_SWEEP_INTERVAL_MS ?? 5 * 60 * 1000,
+);
+
+// Active transport sessions, with idle tracking (see session-registry.ts).
+const transports = new SessionRegistry<StreamableHTTPServerTransport>({
+  idleTimeoutMs: SESSION_IDLE_TIMEOUT_MS,
+});
 
 /**
  * Authentication middleware
@@ -64,7 +77,11 @@ const transports: Map<string, StreamableHTTPServerTransport> = new Map();
  * Supports both direct API keys and OAuth session tokens
  */
 function authMiddleware(requireAuth: boolean) {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  return async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     // Skip auth for health check, server info (GET only), favicon, and OAuth endpoints
     // POST/DELETE to "/" is the MCP endpoint and requires auth
     if (
@@ -85,7 +102,7 @@ function authMiddleware(requireAuth: boolean) {
       // Include WWW-Authenticate header for OAuth discovery
       res.setHeader(
         "WWW-Authenticate",
-        'Bearer realm="mcp", resource_metadata="/.well-known/oauth-protected-resource"'
+        'Bearer realm="mcp", resource_metadata="/.well-known/oauth-protected-resource"',
       );
       res.status(401).json({
         jsonrpc: "2.0",
@@ -117,34 +134,51 @@ function authMiddleware(requireAuth: boolean) {
       let sessionId: string | null = null;
       if (token.startsWith("oauth:")) {
         sessionId = token.substring(6);
-      } else {
-        // Try to use token directly as session ID (Claude Desktop DCR flow)
-        const directSession = await getAccessTokenFromSession(token);
-        if (directSession) {
-          sessionId = token;
-        }
+      } else if (isOAuthSessionId(token)) {
+        // Shaped like a session ID we issued, so treat it as one even when the
+        // session is gone. Falling through to the developer-key branch here
+        // would send a dead session ID to the API as if it were a key: the
+        // client gets a confusing "Unauthenticated" from the API instead of a
+        // 401, never learns to re-authenticate, and can never recover.
+        sessionId = token;
       }
 
       if (sessionId) {
         const accessToken = await getAccessTokenFromSession(sessionId);
 
         if (!accessToken) {
+          // Point the client at the OAuth metadata so it can re-authorize
+          // itself rather than needing the connector removed and re-added.
+          res.setHeader(
+            "WWW-Authenticate",
+            'Bearer realm="mcp", error="invalid_token", error_description="The OAuth session has expired", resource_metadata="/.well-known/oauth-protected-resource"',
+          );
           res.status(401).json({
             jsonrpc: "2.0",
             error: {
               code: -32001,
-              message: "Invalid or expired OAuth session. Please re-authenticate.",
+              message:
+                "Invalid or expired OAuth session. Please re-authenticate.",
             },
             id: null,
           });
           return;
         }
 
+        // Slide the session's expiry forward so an actively used connection
+        // never has to re-authorise. Best-effort: a failed extension must not
+        // fail the request the user actually made.
+        void touchSession(sessionId).catch((err: any) =>
+          logger.warn(`Could not extend session expiry: ${err?.message}`),
+        );
+
         // Use the OAuth access token directly with /oauth-api/v1/* endpoints
         (req as any).apiKey = accessToken;
         (req as any).isOAuthSession = true; // Flag to use OAuth API URL
         (req as any).oauthSessionId = sessionId;
-        logger.debug(`OAuth session authenticated: ${sessionId.substring(0, 8)}...`);
+        logger.debug(
+          `OAuth session authenticated: ${sessionId.substring(0, 8)}...`,
+        );
       } else {
         // Direct API key (legacy mode) - uses /api/v1/*
         (req as any).apiKey = token;
@@ -162,7 +196,10 @@ function authMiddleware(requireAuth: boolean) {
 function corsMiddleware(req: Request, res: Response, next: NextFunction): void {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, mcp-session-id");
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, mcp-session-id",
+  );
 
   if (req.method === "OPTIONS") {
     res.sendStatus(204);
@@ -175,11 +212,14 @@ function corsMiddleware(req: Request, res: Response, next: NextFunction): void {
 /**
  * Start the HTTP transport server
  */
-export async function startHttpServer(config: HttpTransportConfig = {}): Promise<void> {
+export async function startHttpServer(
+  config: HttpTransportConfig = {},
+): Promise<void> {
   const port = config.port || parseInt(process.env.PORT || "3000", 10);
   const host = config.host || process.env.HOST || "0.0.0.0";
   const cors = config.cors ?? true;
-  const requireAuth = config.requireAuth ?? process.env.NODE_ENV === "production";
+  const requireAuth =
+    config.requireAuth ?? process.env.NODE_ENV === "production";
 
   const app = express();
 
@@ -196,8 +236,11 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     res.json({
       status: "ok",
       version: VERSION,
+      commit: GIT_COMMIT,
       transport: "http",
       activeSessions: transports.size,
+      streamingSessions: transports.streamingCount,
+      sweptSessions: transports.sweptCount,
       oauthSessions: await getActiveSessionCount(),
       registeredClients: await getRegisteredClientCount(),
     });
@@ -208,7 +251,10 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
   const __dirname = dirname(__filename);
   let faviconSvg: string;
   try {
-    faviconSvg = readFileSync(join(__dirname, "../assets/favicon.svg"), "utf-8");
+    faviconSvg = readFileSync(
+      join(__dirname, "../assets/favicon.svg"),
+      "utf-8",
+    );
   } catch {
     faviconSvg = ""; // Fallback if file not found
   }
@@ -254,13 +300,23 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     // Claude Desktop registers itself as an OAuth client
     // =========================================================================
     app.post("/oauth/register", async (req, res) => {
-      const { client_name, redirect_uris, grant_types, response_types, token_endpoint_auth_method } =
-        req.body;
+      const {
+        client_name,
+        redirect_uris,
+        grant_types,
+        response_types,
+        token_endpoint_auth_method,
+      } = req.body;
 
-      if (!redirect_uris || !Array.isArray(redirect_uris) || redirect_uris.length === 0) {
+      if (
+        !redirect_uris ||
+        !Array.isArray(redirect_uris) ||
+        redirect_uris.length === 0
+      ) {
         res.status(400).json({
           error: "invalid_client_metadata",
-          error_description: "redirect_uris is required and must be a non-empty array",
+          error_description:
+            "redirect_uris is required and must be a non-empty array",
         });
         return;
       }
@@ -313,7 +369,8 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       if (!client_id || !redirect_uri || response_type !== "code") {
         res.status(400).json({
           error: "invalid_request",
-          error_description: "Missing required parameters: client_id, redirect_uri, response_type=code",
+          error_description:
+            "Missing required parameters: client_id, redirect_uri, response_type=code",
         });
         return;
       }
@@ -323,13 +380,19 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       if (!client) {
         res.status(400).json({
           error: "invalid_client",
-          error_description: "Unknown client_id. Register via /oauth/register first.",
+          error_description:
+            "Unknown client_id. Register via /oauth/register first.",
         });
         return;
       }
 
       // Validate redirect_uri is registered for this client
-      if (!(await validateRedirectUri(client_id as string, redirect_uri as string))) {
+      if (
+        !(await validateRedirectUri(
+          client_id as string,
+          redirect_uri as string,
+        ))
+      ) {
         res.status(400).json({
           error: "invalid_request",
           error_description: "redirect_uri not registered for this client",
@@ -347,14 +410,14 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
         redirect_uri as string,
         code_challenge as string | undefined,
         code_challenge_method as string | undefined,
-        clientState as string | undefined
+        clientState as string | undefined,
       );
 
       // Redirect to DS Passport for actual authentication
       const authUrl = await buildAuthorizationUrl(oauthConfig, ourState);
 
       logger.info(
-        `OAuth: Client ${(client_id as string).substring(0, 8)}... -> DS Passport (state: ${ourState.substring(0, 8)}...)`
+        `OAuth: Client ${(client_id as string).substring(0, 8)}... -> DS Passport (state: ${ourState.substring(0, 8)}...)`,
       );
       res.redirect(authUrl);
     });
@@ -389,9 +452,15 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
         // No pending client auth - this might be a direct/legacy flow
         // Fall back to the old behavior for backwards compatibility
         try {
-          const { sessionId } = await completeOAuthFlow(oauthConfig, code as string, state as string);
+          const { sessionId } = await completeOAuthFlow(
+            oauthConfig,
+            code as string,
+            state as string,
+          );
 
-          logger.info(`OAuth (legacy): Session created (${sessionId.substring(0, 8)}...)`);
+          logger.info(
+            `OAuth (legacy): Session created (${sessionId.substring(0, 8)}...)`,
+          );
 
           res.json({
             success: true,
@@ -415,7 +484,11 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
 
       // Exchange DS code for DS tokens
       try {
-        const dsTokens = await exchangeCodeForTokens(oauthConfig, code as string, state as string);
+        const dsTokens = await exchangeCodeForTokens(
+          oauthConfig,
+          code as string,
+          state as string,
+        );
 
         // Create an authorization code for the client (Claude)
         const clientCode = await createAuthorizationCode(
@@ -424,7 +497,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
           dsTokens.access_token,
           dsTokens.refresh_token,
           pendingClient.codeChallenge,
-          pendingClient.codeChallengeMethod
+          pendingClient.codeChallengeMethod,
         );
 
         // Build redirect URL back to client (Claude)
@@ -435,7 +508,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
         }
 
         logger.info(
-          `OAuth: DS auth complete, redirecting to client (${pendingClient.clientId.substring(0, 8)}...)`
+          `OAuth: DS auth complete, redirecting to client (${pendingClient.clientId.substring(0, 8)}...)`,
         );
         res.redirect(redirectUrl.toString());
       } catch (err: any) {
@@ -457,7 +530,8 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     // Claude calls this after receiving the code at its callback
     // =========================================================================
     app.post("/oauth/token", async (req, res) => {
-      const { grant_type, code, client_id, redirect_uri, code_verifier } = req.body;
+      const { grant_type, code, client_id, redirect_uri, code_verifier } =
+        req.body;
 
       if (grant_type !== "authorization_code") {
         res.status(400).json({
@@ -470,7 +544,8 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       if (!code || !client_id || !redirect_uri) {
         res.status(400).json({
           error: "invalid_request",
-          error_description: "Missing required parameters: code, client_id, redirect_uri",
+          error_description:
+            "Missing required parameters: code, client_id, redirect_uri",
         });
         return;
       }
@@ -479,18 +554,21 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
         code as string,
         client_id as string,
         redirect_uri as string,
-        code_verifier as string | undefined
+        code_verifier as string | undefined,
       );
 
       if (!tokens) {
         res.status(400).json({
           error: "invalid_grant",
-          error_description: "Invalid, expired, or already-used authorization code",
+          error_description:
+            "Invalid, expired, or already-used authorization code",
         });
         return;
       }
 
-      logger.info(`OAuth: Token issued for client ${(client_id as string).substring(0, 8)}...`);
+      logger.info(
+        `OAuth: Token issued for client ${(client_id as string).substring(0, 8)}...`,
+      );
 
       // Return tokens per OAuth 2.0 spec
       res.json(tokens);
@@ -504,7 +582,9 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     const mcpSessionId = req.headers["mcp-session-id"] as string | undefined;
     const authHeader = req.headers.authorization;
 
-    logger.info(`MCP POST: path=${req.path}, mcp-session-id=${mcpSessionId?.substring(0, 8) || 'none'}, auth=${authHeader ? 'present' : 'missing'}`);
+    logger.info(
+      `MCP POST: path=${req.path}, mcp-session-id=${mcpSessionId?.substring(0, 8) || "none"}, auth=${authHeader ? "present" : "missing"}`,
+    );
 
     let transport: StreamableHTTPServerTransport;
 
@@ -512,6 +592,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       if (mcpSessionId && transports.has(mcpSessionId)) {
         // Reuse existing session
         transport = transports.get(mcpSessionId)!;
+        transports.touch(mcpSessionId);
         logger.debug(`Reusing session: ${mcpSessionId}`);
       } else if (!mcpSessionId && isInitializeRequest(req.body)) {
         // New session initialization
@@ -520,19 +601,21 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           onsessioninitialized: (id) => {
-            transports.set(id, transport);
+            transports.add(id, transport);
             logger.info(`Session initialized: ${id}`);
           },
           onsessionclosed: (id) => {
-            transports.delete(id);
+            transports.remove(id);
             logger.info(`Session closed: ${id}`);
           },
         });
 
         transport.onclose = () => {
           if (transport.sessionId) {
-            transports.delete(transport.sessionId);
-            logger.debug(`Transport closed, session cleaned up: ${transport.sessionId}`);
+            transports.remove(transport.sessionId);
+            logger.debug(
+              `Transport closed, session cleaned up: ${transport.sessionId}`,
+            );
           }
         };
 
@@ -542,12 +625,16 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
 
         // OAuth sessions use /oauth-api/v1/*, direct API keys use /api/v1/*
         const defaultApiUrl = "https://api.digitalsamba.com/api/v1";
-        const oauthApiUrl = process.env.OAUTH_API_URL || "https://api.digitalsamba.com/oauth-api/v1";
+        const oauthApiUrl =
+          process.env.OAUTH_API_URL ||
+          "https://api.digitalsamba.com/oauth-api/v1";
         const apiUrl = isOAuthSession
           ? oauthApiUrl
-          : (process.env.DIGITAL_SAMBA_API_URL || defaultApiUrl);
+          : process.env.DIGITAL_SAMBA_API_URL || defaultApiUrl;
 
-        logger.debug(`Creating server with API URL: ${apiUrl} (OAuth: ${isOAuthSession})`);
+        logger.debug(
+          `Creating server with API URL: ${apiUrl} (OAuth: ${isOAuthSession})`,
+        );
 
         const server = createServer({
           apiKey,
@@ -556,15 +643,28 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
 
         await server.connect(transport);
         logger.debug("Server connected to transport");
+      } else if (mcpSessionId) {
+        // Unknown or expired session. The spec requires 404 here: it is the
+        // client's cue to re-initialize with a fresh session. Returning 400
+        // wedges the client until a human reconnects it, which matters now
+        // that idle sessions are swept (see session-registry.ts).
+        res.status(404).json({
+          jsonrpc: "2.0",
+          error: {
+            code: -32001,
+            message: "Session not found. Session may have expired.",
+          },
+          id: null,
+        });
+        return;
       } else {
-        // Invalid request - no session ID and not an initialize request
+        // No session ID and not an initialize request
         res.status(400).json({
           jsonrpc: "2.0",
           error: {
             code: -32000,
-            message: mcpSessionId
-              ? "Session not found. Session may have expired."
-              : "Invalid request. First request must be an initialize request.",
+            message:
+              "Invalid request. First request must be an initialize request.",
           },
           id: null,
         });
@@ -597,7 +697,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
   const handleMcpGet = async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string;
 
-    if (!sessionId || !transports.has(sessionId)) {
+    if (!sessionId) {
       res.status(400).json({
         jsonrpc: "2.0",
         error: {
@@ -609,7 +709,29 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       return;
     }
 
+    if (!transports.has(sessionId)) {
+      // 404 tells the client to re-initialize rather than treating this as a
+      // hard failure - see the POST handler for why this matters.
+      res.status(404).json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32001,
+          message: "Session not found. Session may have expired.",
+        },
+        id: null,
+      });
+      return;
+    }
+
     const transport = transports.get(sessionId)!;
+
+    // An SSE stream can stay open for hours with no other traffic. Count it as
+    // in-flight for the whole time it is open so the idle sweep can't evict a
+    // session that is actively streaming.
+    transports.openStream(sessionId);
+    // Start the idle clock from when the stream ends, not when it began.
+    res.on("close", () => transports.closeStream(sessionId));
+
     const apiKey = (req as any).apiKey;
     if (apiKey) {
       await apiKeyContext.run(apiKey, async () => {
@@ -624,7 +746,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
   const handleMcpDelete = async (req: Request, res: Response) => {
     const sessionId = req.headers["mcp-session-id"] as string;
 
-    if (!sessionId || !transports.has(sessionId)) {
+    if (!sessionId) {
       res.status(400).json({
         jsonrpc: "2.0",
         error: {
@@ -636,7 +758,22 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
       return;
     }
 
+    if (!transports.has(sessionId)) {
+      // 404 tells the client to re-initialize rather than treating this as a
+      // hard failure - see the POST handler for why this matters.
+      res.status(404).json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32001,
+          message: "Session not found. Session may have expired.",
+        },
+        id: null,
+      });
+      return;
+    }
+
     const transport = transports.get(sessionId)!;
+    transports.touch(sessionId);
     const apiKey = (req as any).apiKey;
     if (apiKey) {
       await apiKeyContext.run(apiKey, async () => {
@@ -655,7 +792,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
 
   // Also handle MCP on root path for Claude Desktop compatibility
   app.post("/", handleMcpPost);
-  app.get("/", (req, res, next) => {
+  app.get("/", (req, res, _next) => {
     // If Accept header includes event-stream, treat as MCP SSE request
     if (req.headers.accept?.includes("text/event-stream")) {
       return handleMcpGet(req, res);
@@ -1276,6 +1413,20 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
   });
   app.delete("/", handleMcpDelete);
 
+  // Evict sessions abandoned without a DELETE (most clients never send one).
+  const sweepTimer =
+    SESSION_IDLE_TIMEOUT_MS > 0
+      ? setInterval(() => {
+          transports
+            .sweep()
+            .catch((err) =>
+              logger.error(`Idle session sweep failed: ${err?.message}`),
+            );
+        }, SESSION_SWEEP_INTERVAL_MS)
+      : null;
+  // Don't hold the event loop open on account of the sweep.
+  sweepTimer?.unref();
+
   // Start listening
   app.listen(port, host, () => {
     logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -1285,13 +1436,21 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
     logger.info(`Listening: http://${host}:${port}`);
     logger.info(`MCP Endpoint: http://${host}:${port}/mcp`);
     logger.info(`Auth: ${requireAuth ? "Required" : "Optional"}`);
+    logger.info(
+      `Idle session sweep: ${
+        SESSION_IDLE_TIMEOUT_MS > 0
+          ? `every ${SESSION_SWEEP_INTERVAL_MS / 1000}s, timeout ${SESSION_IDLE_TIMEOUT_MS / 60000}min`
+          : "disabled"
+      }`,
+    );
     logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   });
 
   // Graceful shutdown
   process.on("SIGINT", async () => {
     logger.info("Shutting down HTTP server...");
-    for (const [id, transport] of transports) {
+    if (sweepTimer) clearInterval(sweepTimer);
+    for (const [id, transport] of transports.entries()) {
       logger.debug(`Closing session: ${id}`);
       await transport.close();
     }
@@ -1300,6 +1459,7 @@ export async function startHttpServer(config: HttpTransportConfig = {}): Promise
 
   process.on("SIGTERM", async () => {
     logger.info("Received SIGTERM, shutting down...");
+    if (sweepTimer) clearInterval(sweepTimer);
     for (const transport of transports.values()) {
       await transport.close();
     }

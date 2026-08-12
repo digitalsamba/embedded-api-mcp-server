@@ -6,7 +6,7 @@
  * 
  * @module tests/unit/auth
  */
-import apiKeyContext, { extractApiKey, getApiKeyFromRequest } from '../../src/auth';
+import apiKeyContext, { getApiKeyFromRequest } from '../../src/auth';
 
 describe('Authentication Module Tests', () => {
   // Store original env value
@@ -50,54 +50,24 @@ describe('Authentication Module Tests', () => {
     });
   });
   
-  describe('extractApiKey', () => {
-    it('should extract API key from environment variable', () => {
+  describe('apiKeyContext', () => {
+    it('should prefer async local storage context over env var', async () => {
       process.env.DIGITAL_SAMBA_DEVELOPER_KEY = 'env-api-key';
-      
-      const apiKey = extractApiKey();
-      expect(apiKey).toBe('env-api-key');
-    });
-    
-    it('should return null when no API key is available', () => {
-      delete process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
-      
-      const apiKey = extractApiKey();
-      expect(apiKey).toBeNull();
-    });
-    
-    it('should handle various input parameters (for backwards compatibility)', () => {
-      process.env.DIGITAL_SAMBA_DEVELOPER_KEY = 'test-key';
-      
-      // Should ignore any parameters and use env variable
-      expect(extractApiKey({})).toBe('test-key');
-      expect(extractApiKey({ headers: { authorization: 'Bearer other-key' } })).toBe('test-key');
-      expect(extractApiKey('some-string')).toBe('test-key');
-      expect(extractApiKey(null)).toBe('test-key');
-      expect(extractApiKey(undefined)).toBe('test-key');
-    });
 
-    it('should check async local storage context when env var is not set', async () => {
-      delete process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
-      
-      // Test with context
       await apiKeyContext.run('context-api-key', () => {
-        const apiKey = extractApiKey();
-        expect(apiKey).toBe('context-api-key');
+        expect(getApiKeyFromRequest({})).toBe('context-api-key');
       });
-      
-      // Test without context
-      const apiKey = extractApiKey();
-      expect(apiKey).toBeNull();
+
+      expect(getApiKeyFromRequest({})).toBe('env-api-key');
     });
   });
-  
+
   describe('Environment Variable Handling', () => {
     it('should handle special characters in API key', () => {
       const specialKey = 'key-with_special.chars!@#$%^&*()';
       process.env.DIGITAL_SAMBA_DEVELOPER_KEY = specialKey;
       
       expect(getApiKeyFromRequest({})).toBe(specialKey);
-      expect(extractApiKey()).toBe(specialKey);
     });
     
     it('should handle very long API keys', () => {
@@ -105,7 +75,6 @@ describe('Authentication Module Tests', () => {
       process.env.DIGITAL_SAMBA_DEVELOPER_KEY = longKey;
       
       expect(getApiKeyFromRequest({})).toBe(longKey);
-      expect(extractApiKey()).toBe(longKey);
     });
   });
 });

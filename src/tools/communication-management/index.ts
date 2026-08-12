@@ -46,6 +46,29 @@ interface ToolDefinition {
 }
 
 /**
+ * Shared schema for the Q&A participant identity object
+ */
+const qaParticipantSchema = {
+  type: "object",
+  description:
+    'Acting participant: either { "id" } (UUID of an existing participant) or { "name", "external_id" }',
+  properties: {
+    id: {
+      type: "string",
+      description: "UUID of an existing participant",
+    },
+    name: {
+      type: "string",
+      description: "Participant display name (used with external_id)",
+    },
+    external_id: {
+      type: "string",
+      description: "External participant ID (used with name)",
+    },
+  },
+};
+
+/**
  * Register communication management tools with the MCP SDK
  *
  * @returns {ToolDefinition[]} Array of tool definitions
@@ -57,7 +80,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-chats",
       description:
         '[Communication Management] Delete all chat messages for a session. Use when users say: "delete session chat", "remove chat messages", "clear session chat history", "delete chat from session", "wipe chat messages". Requires sessionId. This permanently removes all chat data.',
-      annotations: getToolAnnotations("delete-session-chats", "Delete Session Chats"),
+      annotations: getToolAnnotations(
+        "delete-session-chats",
+        "Delete Session Chats",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -91,7 +117,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-qa",
       description:
         '[Communication Management] Delete all Q&A (questions and answers) from a session. Use when users say: "delete session Q&A", "remove questions and answers", "clear Q&A history", "delete session questions", "wipe Q&A data". Requires sessionId. Removes all Q&A interactions.',
-      annotations: getToolAnnotations("delete-session-qa", "Delete Session Q&A"),
+      annotations: getToolAnnotations(
+        "delete-session-qa",
+        "Delete Session Q&A",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -125,7 +154,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "list-room-transcripts",
       description:
         '[Communication Management] Get closed captioning transcripts for a room. Use when users say: "get room transcripts", "show transcription", "list captions", "view closed captions", "get transcript history". Returns paginated list of transcript entries with participant info.',
-      annotations: getToolAnnotations("list-room-transcripts", "List Room Transcripts"),
+      annotations: getToolAnnotations(
+        "list-room-transcripts",
+        "List Room Transcripts",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -139,7 +171,8 @@ export function registerCommunicationTools(): ToolDefinition[] {
           },
           limit: {
             type: "number",
-            description: "Maximum number of transcripts to return (default 100)",
+            description:
+              "Maximum number of transcripts to return (default 100)",
           },
           offset: {
             type: "number",
@@ -153,7 +186,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "list-session-transcripts",
       description:
         '[Communication Management] Get closed captioning transcripts for a specific session. Use when users say: "get session transcript", "show meeting captions", "view session transcription". Returns paginated transcript entries for a single session.',
-      annotations: getToolAnnotations("list-session-transcripts", "List Session Transcripts"),
+      annotations: getToolAnnotations(
+        "list-session-transcripts",
+        "List Session Transcripts",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -163,7 +199,8 @@ export function registerCommunicationTools(): ToolDefinition[] {
           },
           limit: {
             type: "number",
-            description: "Maximum number of transcripts to return (default 100)",
+            description:
+              "Maximum number of transcripts to return (default 100)",
           },
           offset: {
             type: "number",
@@ -177,7 +214,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "export-room-transcripts",
       description:
         '[Communication Management] Export all room transcripts to a file format. Use when users say: "export room transcript", "download captions", "save transcript as text", "export closed captions". Supports txt or json format.',
-      annotations: getToolAnnotations("export-room-transcripts", "Export Room Transcripts"),
+      annotations: getToolAnnotations(
+        "export-room-transcripts",
+        "Export Room Transcripts",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -188,7 +228,13 @@ export function registerCommunicationTools(): ToolDefinition[] {
           format: {
             type: "string",
             enum: ["txt", "json"],
-            description: "Export format: txt (plain text) or json (default: txt)",
+            description:
+              "Export format: txt (plain text) or json (default: txt)",
+          },
+          locale: {
+            type: "string",
+            enum: ["en", "it", "de", "es"],
+            description: "Export language (default: en)",
           },
         },
         required: ["room_id"],
@@ -198,7 +244,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-transcripts",
       description:
         '[Communication Management] Delete all transcription data from a session. Use when users say: "delete session transcript", "remove transcription", "clear transcript", "delete meeting transcript", "wipe transcription data". Requires sessionId. Permanently removes transcript records.',
-      annotations: getToolAnnotations("delete-session-transcripts", "Delete Session Transcripts"),
+      annotations: getToolAnnotations(
+        "delete-session-transcripts",
+        "Delete Session Transcripts",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -214,7 +263,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-room-transcripts",
       description:
         '[Communication Management] Delete all transcripts from a room. Use when users say: "delete all room transcripts", "clear room transcription history", "remove all transcripts from room", "wipe room transcripts". Requires roomId. Permanently removes all transcript records.',
-      annotations: getToolAnnotations("delete-room-transcripts", "Delete Room Transcripts"),
+      annotations: getToolAnnotations(
+        "delete-room-transcripts",
+        "Delete Room Transcripts",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -232,7 +284,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-summaries",
       description:
         '[Communication Management] Delete AI-generated summaries from a session. Use when users say: "delete session summary", "remove AI summary", "clear meeting summary", "delete session notes", "wipe summary data". Requires sessionId. Removes all AI-generated session summaries.',
-      annotations: getToolAnnotations("delete-session-summaries", "Delete Session Summaries"),
+      annotations: getToolAnnotations(
+        "delete-session-summaries",
+        "Delete Session Summaries",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -248,7 +303,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-room-summaries",
       description:
         '[Communication Management] Delete all AI summaries from ALL sessions in a room. Use when users say: "delete all room summaries", "clear room AI summaries", "remove all summaries from room", "wipe room summary history". Requires roomId. Affects all sessions\' AI summaries.',
-      annotations: getToolAnnotations("delete-room-summaries", "Delete Room Summaries"),
+      annotations: getToolAnnotations(
+        "delete-room-summaries",
+        "Delete Room Summaries",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -266,7 +324,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-recordings",
       description:
         '[Communication Management] Delete all recordings from a session. Use when users say: "delete session recordings", "remove session videos", "clear session recordings". Requires session_id. Permanently removes all recording data for the session.',
-      annotations: getToolAnnotations("delete-session-recordings", "Delete Session Recordings"),
+      annotations: getToolAnnotations(
+        "delete-session-recordings",
+        "Delete Session Recordings",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -282,7 +343,10 @@ export function registerCommunicationTools(): ToolDefinition[] {
       name: "delete-session-resources",
       description:
         '[Communication Management] Delete all shared resources from a session. Use when users say: "delete session resources", "remove session files", "clear session shared content". Requires session_id. Permanently removes all shared files/content.',
-      annotations: getToolAnnotations("delete-session-resources", "Delete Session Resources"),
+      annotations: getToolAnnotations(
+        "delete-session-resources",
+        "Delete Session Resources",
+      ),
       inputSchema: {
         type: "object",
         properties: {
@@ -292,6 +356,216 @@ export function registerCommunicationTools(): ToolDefinition[] {
           },
         },
         required: ["session_id"],
+      },
+    },
+
+    // Live Chat / Q&A Interaction
+    {
+      name: "send-chat-message",
+      description:
+        '[Communication Management] Send a chat message to a room. Use when users say: "send a message to the room", "post in chat", "send chat message". Requires roomId and message.',
+      annotations: getToolAnnotations("send-chat-message", "Send Chat Message"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: {
+            type: "string",
+            description: "The ID of the room to send the message to",
+          },
+          message: {
+            type: "string",
+            description: "The chat message text",
+          },
+          participant: qaParticipantSchema,
+        },
+        required: ["roomId", "message"],
+      },
+    },
+    {
+      name: "create-question",
+      description:
+        '[Q&A Management] Create a question in a room. Use when users say: "ask a question", "post a question", "add a question to the Q&A". Requires roomId, question text, and participant identity.',
+      annotations: getToolAnnotations("create-question", "Create Question"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: {
+            type: "string",
+            description: "The ID of the room",
+          },
+          question: {
+            type: "string",
+            description: "The question text",
+          },
+          participant: qaParticipantSchema,
+          anonymous: {
+            type: "boolean",
+            description: "Whether to show the question as anonymous",
+          },
+          breakoutId: {
+            type: "string",
+            description: "Optional UUID of a breakout room",
+          },
+        },
+        required: ["roomId", "question", "participant"],
+      },
+    },
+    {
+      name: "update-question",
+      description:
+        "[Q&A Management] Update the text of an existing question. Requires roomId, questionId, new question text, and participant identity.",
+      annotations: getToolAnnotations("update-question", "Update Question"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: { type: "string", description: "The ID of the room" },
+          questionId: {
+            type: "string",
+            description: "The ID of the question",
+          },
+          question: { type: "string", description: "The new question text" },
+          participant: qaParticipantSchema,
+        },
+        required: ["roomId", "questionId", "question", "participant"],
+      },
+    },
+    {
+      name: "delete-question",
+      description:
+        "[Q&A Management] Delete a single question from a room. Requires roomId, questionId, and participant identity. For deleting ALL Q&A use delete-room-qa.",
+      annotations: getToolAnnotations("delete-question", "Delete Question"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: { type: "string", description: "The ID of the room" },
+          questionId: {
+            type: "string",
+            description: "The ID of the question",
+          },
+          participant: qaParticipantSchema,
+        },
+        required: ["roomId", "questionId", "participant"],
+      },
+    },
+    ...[
+      {
+        name: "dismiss-question",
+        title: "Dismiss Question",
+        desc: "Dismiss a question so it no longer appears in the active list.",
+      },
+      {
+        name: "reopen-question",
+        title: "Reopen Question",
+        desc: "Reopen a previously dismissed question.",
+      },
+      {
+        name: "upvote-question",
+        title: "Upvote Question",
+        desc: "Upvote a question on behalf of a participant.",
+      },
+      {
+        name: "remove-question-vote",
+        title: "Remove Question Vote",
+        desc: "Remove a participant's vote from a question.",
+      },
+      {
+        name: "start-question-live-answer",
+        title: "Start Live Answer",
+        desc: "Start a live (verbal) answer to a question.",
+      },
+      {
+        name: "stop-question-live-answer",
+        title: "Stop Live Answer",
+        desc: "Stop a live answer, marking the question as answered.",
+      },
+      {
+        name: "cancel-question-live-answer",
+        title: "Cancel Live Answer",
+        desc: "Cancel a live answer without marking the question as answered.",
+      },
+    ].map((t) => ({
+      name: t.name,
+      description: `[Q&A Management] ${t.desc} Requires roomId, questionId, and participant identity.`,
+      annotations: getToolAnnotations(t.name, t.title),
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: { type: "string", description: "The ID of the room" },
+          questionId: {
+            type: "string",
+            description: "The ID of the question",
+          },
+          participant: qaParticipantSchema,
+        },
+        required: ["roomId", "questionId", "participant"],
+      },
+    })),
+    {
+      name: "answer-question",
+      description:
+        "[Q&A Management] Post a text answer to a question. Requires roomId, questionId, answer text, and participant identity. Set private to true for a private answer.",
+      annotations: getToolAnnotations("answer-question", "Answer Question"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: { type: "string", description: "The ID of the room" },
+          questionId: {
+            type: "string",
+            description: "The ID of the question",
+          },
+          answer: { type: "string", description: "The answer text" },
+          participant: qaParticipantSchema,
+          private: {
+            type: "boolean",
+            description: "Whether the answer is private",
+          },
+        },
+        required: ["roomId", "questionId", "answer", "participant"],
+      },
+    },
+    {
+      name: "update-question-answer",
+      description:
+        "[Q&A Management] Update the text of an existing answer. Requires roomId, questionId, answerId, new answer text, and participant identity.",
+      annotations: getToolAnnotations(
+        "update-question-answer",
+        "Update Answer",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: { type: "string", description: "The ID of the room" },
+          questionId: {
+            type: "string",
+            description: "The ID of the question",
+          },
+          answerId: { type: "string", description: "The ID of the answer" },
+          answer: { type: "string", description: "The new answer text" },
+          participant: qaParticipantSchema,
+        },
+        required: ["roomId", "questionId", "answerId", "answer", "participant"],
+      },
+    },
+    {
+      name: "delete-question-answer",
+      description:
+        "[Q&A Management] Delete an answer from a question. Requires roomId, questionId, answerId, and participant identity.",
+      annotations: getToolAnnotations(
+        "delete-question-answer",
+        "Delete Answer",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: { type: "string", description: "The ID of the room" },
+          questionId: {
+            type: "string",
+            description: "The ID of the question",
+          },
+          answerId: { type: "string", description: "The ID of the answer" },
+          participant: qaParticipantSchema,
+        },
+        required: ["roomId", "questionId", "answerId", "participant"],
       },
     },
   ];
@@ -346,6 +620,76 @@ export async function executeCommunicationTool(
       return handleDeleteSessionRecordings(params, apiClient);
     case "delete-session-resources":
       return handleDeleteSessionResources(params, apiClient);
+
+    // Live Chat / Q&A Interaction
+    case "send-chat-message":
+      return handleSendChatMessage(params, apiClient);
+    case "create-question":
+      return handleCreateQuestion(params, apiClient);
+    case "update-question":
+      return handleUpdateQuestion(params, apiClient);
+    case "delete-question":
+      return handleQuestionAction(
+        params,
+        apiClient,
+        (c, p) => c.deleteQuestion(p.roomId, p.questionId, p.participant),
+        "Deleted question",
+      );
+    case "dismiss-question":
+      return handleQuestionAction(
+        params,
+        apiClient,
+        (c, p) => c.dismissQuestion(p.roomId, p.questionId, p.participant),
+        "Dismissed question",
+      );
+    case "reopen-question":
+      return handleQuestionAction(
+        params,
+        apiClient,
+        (c, p) => c.reopenQuestion(p.roomId, p.questionId, p.participant),
+        "Reopened question",
+      );
+    case "upvote-question":
+      return handleQuestionAction(
+        params,
+        apiClient,
+        (c, p) => c.upvoteQuestion(p.roomId, p.questionId, p.participant),
+        "Upvoted question",
+      );
+    case "remove-question-vote":
+      return handleQuestionAction(
+        params,
+        apiClient,
+        (c, p) => c.removeQuestionVote(p.roomId, p.questionId, p.participant),
+        "Removed vote from question",
+      );
+    case "start-question-live-answer":
+      return handleQuestionAction(
+        params,
+        apiClient,
+        (c, p) => c.startLiveAnswer(p.roomId, p.questionId, p.participant),
+        "Started live answer for question",
+      );
+    case "stop-question-live-answer":
+      return handleQuestionAction(
+        params,
+        apiClient,
+        (c, p) => c.stopLiveAnswer(p.roomId, p.questionId, p.participant),
+        "Stopped live answer for question",
+      );
+    case "cancel-question-live-answer":
+      return handleQuestionAction(
+        params,
+        apiClient,
+        (c, p) => c.cancelLiveAnswer(p.roomId, p.questionId, p.participant),
+        "Cancelled live answer for question",
+      );
+    case "answer-question":
+      return handleAnswerQuestion(params, apiClient);
+    case "update-question-answer":
+      return handleUpdateAnswer(params, apiClient);
+    case "delete-question-answer":
+      return handleDeleteAnswer(params, apiClient);
 
     default:
       throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${toolName}`);
@@ -586,7 +930,12 @@ async function handleDeleteRoomQA(
  * Handle list room transcripts
  */
 async function handleListRoomTranscripts(
-  params: { room_id: string; session_id?: string; limit?: number; offset?: number },
+  params: {
+    room_id: string;
+    session_id?: string;
+    limit?: number;
+    offset?: number;
+  },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { room_id, session_id, limit, offset } = params;
@@ -697,10 +1046,10 @@ async function handleListSessionTranscripts(
  * Handle export room transcripts
  */
 async function handleExportRoomTranscripts(
-  params: { room_id: string; format?: "txt" | "json" },
+  params: { room_id: string; format?: "txt" | "json"; locale?: string },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { room_id, format } = params;
+  const { room_id, format, locale } = params;
 
   if (!room_id || room_id.trim() === "") {
     return {
@@ -717,7 +1066,10 @@ async function handleExportRoomTranscripts(
   logger.info("Exporting room transcripts", { room_id, format });
 
   try {
-    const exportData = await apiClient.exportRoomTranscripts(room_id, { format });
+    const exportData = await apiClient.exportRoomTranscripts(room_id, {
+      format,
+      locale,
+    });
 
     return {
       content: [
@@ -991,7 +1343,10 @@ async function handleDeleteRoomSummaries(
       content: [
         {
           type: "text",
-          text: `Successfully deleted summaries from ${deletedCount} sessions in room ${roomId}`,
+          text:
+            failedCount > 0
+              ? `Deleted summaries from ${deletedCount} sessions in room ${roomId} (${failedCount} failed)`
+              : `Successfully deleted summaries from ${deletedCount} sessions in room ${roomId}`,
         },
       ],
     };
@@ -1135,4 +1490,210 @@ async function handleDeleteSessionResources(
       isError: true,
     };
   }
+}
+
+/**
+ * Validation + error-handling wrapper shared by the Q&A interaction handlers
+ */
+async function runQaHandler(
+  requiredFields: Record<string, any>,
+  action: () => Promise<any>,
+  successText: string,
+): Promise<any> {
+  for (const [field, value] of Object.entries(requiredFields)) {
+    if (value === undefined || value === null || value === "") {
+      return {
+        content: [{ type: "text", text: `${field} is required.` }],
+        isError: true,
+      };
+    }
+  }
+
+  try {
+    await action();
+    return {
+      content: [{ type: "text", text: successText }],
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error("Q&A tool error", { error: message });
+    return {
+      content: [{ type: "text", text: message }],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle send chat message
+ */
+async function handleSendChatMessage(
+  params: { roomId: string; message: string; participant?: any },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { roomId, message, participant } = params;
+  return runQaHandler(
+    { roomId, message },
+    async () => {
+      logger.info("Sending chat message", { roomId });
+      await apiClient.sendChatMessage(roomId, { message, participant });
+    },
+    `Sent chat message to room ${roomId}`,
+  );
+}
+
+/**
+ * Handle create question
+ */
+async function handleCreateQuestion(
+  params: {
+    roomId: string;
+    question: string;
+    participant: any;
+    anonymous?: boolean;
+    breakoutId?: string;
+  },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { roomId, question, participant, anonymous, breakoutId } = params;
+  return runQaHandler(
+    { roomId, question, participant },
+    async () => {
+      logger.info("Creating question", { roomId });
+      await apiClient.createQuestion(roomId, {
+        participant,
+        question,
+        ...(anonymous !== undefined && { anonymous }),
+        ...(breakoutId !== undefined && { breakout_id: breakoutId }),
+      });
+    },
+    `Created question in room ${roomId}`,
+  );
+}
+
+/**
+ * Handle update question
+ */
+async function handleUpdateQuestion(
+  params: {
+    roomId: string;
+    questionId: string;
+    question: string;
+    participant: any;
+  },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { roomId, questionId, question, participant } = params;
+  return runQaHandler(
+    { roomId, questionId, question, participant },
+    async () => {
+      logger.info("Updating question", { roomId, questionId });
+      await apiClient.updateQuestion(roomId, questionId, {
+        participant,
+        question,
+      });
+    },
+    `Updated question ${questionId}`,
+  );
+}
+
+/**
+ * Handle the simple question actions (delete/dismiss/reopen/vote/live-answer)
+ */
+async function handleQuestionAction(
+  params: { roomId: string; questionId: string; participant: any },
+  apiClient: DigitalSambaApiClient,
+  action: (
+    client: DigitalSambaApiClient,
+    params: { roomId: string; questionId: string; participant: any },
+  ) => Promise<void>,
+  successPrefix: string,
+): Promise<any> {
+  const { roomId, questionId, participant } = params;
+  return runQaHandler(
+    { roomId, questionId, participant },
+    async () => {
+      logger.info(successPrefix, { roomId, questionId });
+      await action(apiClient, params);
+    },
+    `${successPrefix} ${questionId}`,
+  );
+}
+
+/**
+ * Handle answer question
+ */
+async function handleAnswerQuestion(
+  params: {
+    roomId: string;
+    questionId: string;
+    answer: string;
+    participant: any;
+    private?: boolean;
+  },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { roomId, questionId, answer, participant } = params;
+  return runQaHandler(
+    { roomId, questionId, answer, participant },
+    async () => {
+      logger.info("Answering question", { roomId, questionId });
+      await apiClient.answerQuestion(roomId, questionId, {
+        participant,
+        answer,
+        ...(params.private !== undefined && { private: params.private }),
+      });
+    },
+    `Answered question ${questionId}`,
+  );
+}
+
+/**
+ * Handle update answer
+ */
+async function handleUpdateAnswer(
+  params: {
+    roomId: string;
+    questionId: string;
+    answerId: string;
+    answer: string;
+    participant: any;
+  },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { roomId, questionId, answerId, answer, participant } = params;
+  return runQaHandler(
+    { roomId, questionId, answerId, answer, participant },
+    async () => {
+      logger.info("Updating answer", { roomId, questionId, answerId });
+      await apiClient.updateAnswer(roomId, questionId, answerId, {
+        participant,
+        answer,
+      });
+    },
+    `Updated answer ${answerId}`,
+  );
+}
+
+/**
+ * Handle delete answer
+ */
+async function handleDeleteAnswer(
+  params: {
+    roomId: string;
+    questionId: string;
+    answerId: string;
+    participant: any;
+  },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { roomId, questionId, answerId, participant } = params;
+  return runQaHandler(
+    { roomId, questionId, answerId, participant },
+    async () => {
+      logger.info("Deleting answer", { roomId, questionId, answerId });
+      await apiClient.deleteAnswer(roomId, questionId, answerId, participant);
+    },
+    `Deleted answer ${answerId}`,
+  );
 }

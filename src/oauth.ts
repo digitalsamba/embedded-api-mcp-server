@@ -10,6 +10,12 @@ import { randomBytes, createHash } from "node:crypto";
 import logger from "./logger.js";
 import { getStore, PREFIXES, TTL } from "./session-store.js";
 
+/**
+ * Only slide a session's expiry once it has drifted by this much, so a busy
+ * session writes to the store roughly once an hour rather than once a request.
+ */
+const SESSION_SLIDE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
+
 // OAuth Configuration - loaded from environment
 export interface OAuthConfig {
   clientId: string;
@@ -77,7 +83,7 @@ export async function storePendingClientAuth(
   redirectUri: string,
   codeChallenge?: string,
   codeChallengeMethod?: string,
-  clientState?: string
+  clientState?: string,
 ): Promise<void> {
   const store = getStore();
   const data: PendingClientAuth = {
@@ -94,7 +100,9 @@ export async function storePendingClientAuth(
 /**
  * Get and remove pending client authorization
  */
-export async function getPendingClientAuth(ourState: string): Promise<PendingClientAuth | null> {
+export async function getPendingClientAuth(
+  ourState: string,
+): Promise<PendingClientAuth | null> {
   const store = getStore();
   const key = PREFIXES.PENDING_CLIENT + ourState;
   const pending = await store.get<PendingClientAuth>(key);
@@ -130,7 +138,9 @@ export async function registerClient(request: {
   };
 
   await store.set(PREFIXES.CLIENT + clientId, client, TTL.CLIENT);
-  logger.info(`DCR: Registered new client '${client.client_name}' (${clientId.substring(0, 8)}...)`);
+  logger.info(
+    `DCR: Registered new client '${client.client_name}' (${clientId.substring(0, 8)}...)`,
+  );
 
   return client;
 }
@@ -138,7 +148,9 @@ export async function registerClient(request: {
 /**
  * Get a registered client by ID
  */
-export async function getRegisteredClient(clientId: string): Promise<RegisteredClient | null> {
+export async function getRegisteredClient(
+  clientId: string,
+): Promise<RegisteredClient | null> {
   const store = getStore();
   return store.get<RegisteredClient>(PREFIXES.CLIENT + clientId);
 }
@@ -146,7 +158,10 @@ export async function getRegisteredClient(clientId: string): Promise<RegisteredC
 /**
  * Validate redirect URI for a client
  */
-export async function validateRedirectUri(clientId: string, redirectUri: string): Promise<boolean> {
+export async function validateRedirectUri(
+  clientId: string,
+  redirectUri: string,
+): Promise<boolean> {
   const client = await getRegisteredClient(clientId);
   if (!client) return false;
   return client.redirect_uris.includes(redirectUri);
@@ -161,7 +176,7 @@ export async function createAuthorizationCode(
   dsAccessToken: string,
   dsRefreshToken?: string,
   codeChallenge?: string,
-  codeChallengeMethod?: string
+  codeChallengeMethod?: string,
 ): Promise<string> {
   const store = getStore();
   const code = randomBytes(32).toString("hex");
@@ -187,8 +202,12 @@ export async function exchangeAuthorizationCode(
   code: string,
   clientId: string,
   redirectUri: string,
-  codeVerifier?: string
-): Promise<{ access_token: string; token_type: string; expires_in: number } | null> {
+  codeVerifier?: string,
+): Promise<{
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+} | null> {
   const store = getStore();
   const key = PREFIXES.AUTH_CODE + code;
   const pending = await store.get<PendingAuth>(key);
@@ -204,24 +223,41 @@ export async function exchangeAuthorizationCode(
     return null;
   }
 
+  // RFC 6749 4.1.2: a code presented with wrong credentials has likely
+  // leaked - revoke it immediately rather than leaving it redeemable
   if (pending.clientId !== clientId) {
+    await store.delete(key);
     logger.warn("Token exchange: Client ID mismatch");
     return null;
   }
 
   if (pending.redirectUri !== redirectUri) {
+    await store.delete(key);
     logger.warn("Token exchange: Redirect URI mismatch");
     return null;
   }
 
-  // Verify PKCE if code_challenge was provided
-  if (pending.codeChallenge && pending.codeChallengeMethod === "S256") {
+  // Verify PKCE if code_challenge was provided. Only S256 is supported
+  // (and advertised in server metadata); any other method is rejected
+  // rather than silently skipping verification.
+  if (pending.codeChallenge) {
+    if (pending.codeChallengeMethod !== "S256") {
+      await store.delete(key);
+      logger.warn(
+        `Token exchange: Unsupported code_challenge_method: ${pending.codeChallengeMethod}`,
+      );
+      return null;
+    }
     if (!codeVerifier) {
+      await store.delete(key);
       logger.warn("Token exchange: Missing code_verifier");
       return null;
     }
-    const expectedChallenge = createHash("sha256").update(codeVerifier).digest("base64url");
+    const expectedChallenge = createHash("sha256")
+      .update(codeVerifier)
+      .digest("base64url");
     if (expectedChallenge !== pending.codeChallenge) {
+      await store.delete(key);
       logger.warn("Token exchange: PKCE verification failed");
       return null;
     }
@@ -239,7 +275,9 @@ export async function exchangeAuthorizationCode(
   };
   await store.set(PREFIXES.SESSION + sessionId, session, TTL.SESSION);
 
-  logger.info(`Token exchange successful, session: ${sessionId.substring(0, 8)}...`);
+  logger.info(
+    `Token exchange successful, session: ${sessionId.substring(0, 8)}...`,
+  );
 
   return {
     access_token: sessionId,
@@ -256,7 +294,9 @@ export function loadOAuthConfig(): OAuthConfig | null {
   const clientSecret = process.env.OAUTH_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    logger.warn("OAuth not configured (missing OAUTH_CLIENT_ID or OAUTH_CLIENT_SECRET)");
+    logger.warn(
+      "OAuth not configured (missing OAUTH_CLIENT_ID or OAUTH_CLIENT_SECRET)",
+    );
     return null;
   }
 
@@ -264,10 +304,13 @@ export function loadOAuthConfig(): OAuthConfig | null {
     clientId,
     clientSecret,
     authorizeUrl:
-      process.env.OAUTH_AUTHORIZE_URL || "https://api.digitalsamba.com/oauth/authorize",
-    tokenUrl: process.env.OAUTH_TOKEN_URL || "https://api.digitalsamba.com/oauth/token",
+      process.env.OAUTH_AUTHORIZE_URL ||
+      "https://api.digitalsamba.com/oauth/authorize",
+    tokenUrl:
+      process.env.OAUTH_TOKEN_URL || "https://api.digitalsamba.com/oauth/token",
     redirectUri:
-      process.env.OAUTH_REDIRECT_URI || "https://mcp.digitalsamba.com/oauth/callback",
+      process.env.OAUTH_REDIRECT_URI ||
+      "https://mcp.digitalsamba.com/oauth/callback",
     issuer: process.env.OAUTH_ISSUER || "https://mcp.digitalsamba.com",
   };
 }
@@ -291,12 +334,19 @@ export function generateState(): string {
 /**
  * Build authorization URL for OAuth flow
  */
-export async function buildAuthorizationUrl(config: OAuthConfig, state: string): Promise<string> {
+export async function buildAuthorizationUrl(
+  config: OAuthConfig,
+  state: string,
+): Promise<string> {
   const store = getStore();
   const pkce = generatePKCE();
 
   // Store code verifier for later token exchange
-  await store.set(PREFIXES.CODE_VERIFIER + state, pkce.verifier, TTL.CODE_VERIFIER);
+  await store.set(
+    PREFIXES.CODE_VERIFIER + state,
+    pkce.verifier,
+    TTL.CODE_VERIFIER,
+  );
 
   const params = new URLSearchParams({
     client_id: config.clientId,
@@ -317,7 +367,7 @@ export async function buildAuthorizationUrl(config: OAuthConfig, state: string):
 export async function exchangeCodeForTokens(
   config: OAuthConfig,
   code: string,
-  state: string
+  state: string,
 ): Promise<TokenResponse> {
   const store = getStore();
   const key = PREFIXES.CODE_VERIFIER + state;
@@ -361,7 +411,7 @@ export async function exchangeCodeForTokens(
 export async function completeOAuthFlow(
   config: OAuthConfig,
   code: string,
-  state: string
+  state: string,
 ): Promise<{ sessionId: string; session: OAuthSession }> {
   const store = getStore();
 
@@ -378,15 +428,35 @@ export async function completeOAuthFlow(
 
   await store.set(PREFIXES.SESSION + sessionId, session, TTL.SESSION);
 
-  logger.info(`OAuth session created (session: ${sessionId.substring(0, 8)}...)`);
+  logger.info(
+    `OAuth session created (session: ${sessionId.substring(0, 8)}...)`,
+  );
 
   return { sessionId, session };
 }
 
 /**
+ * Does this bearer token have the shape of a session ID we issued?
+ *
+ * Session IDs are `randomBytes(32).toString("hex")` - 64 lowercase hex chars,
+ * no dashes. Digital Samba developer keys are UUIDs, so the two never collide.
+ *
+ * The HTTP transport uses this to tell "expired OAuth session, tell the client
+ * to re-authenticate" apart from "legacy developer key, pass it through". Get
+ * it wrong and an expired session is sent to the API as if it were a key, so
+ * the client sees the API's "Unauthenticated" rather than a 401 and never
+ * learns to re-authorise.
+ */
+export function isOAuthSessionId(token: string): boolean {
+  return /^[0-9a-f]{64}$/.test(token);
+}
+
+/**
  * Get session by ID
  */
-export async function getSession(sessionId: string): Promise<OAuthSession | null> {
+export async function getSession(
+  sessionId: string,
+): Promise<OAuthSession | null> {
   const store = getStore();
   const session = await store.get<OAuthSession>(PREFIXES.SESSION + sessionId);
 
@@ -399,9 +469,36 @@ export async function getSession(sessionId: string): Promise<OAuthSession | null
 }
 
 /**
+ * Slide a session's expiry forward by a full TTL.
+ *
+ * Called on each authenticated request so an actively used session never
+ * expires out from under the user. Only writes when the expiry has moved by
+ * more than SESSION_SLIDE_THRESHOLD, so a busy session doesn't write to the
+ * store on every single request.
+ *
+ * @returns true if the session was extended
+ */
+export async function touchSession(sessionId: string): Promise<boolean> {
+  const store = getStore();
+  const key = PREFIXES.SESSION + sessionId;
+  const session = await store.get<OAuthSession>(key);
+  if (!session) return false;
+
+  const newExpiresAt = Date.now() + TTL.SESSION * 1000;
+  if (newExpiresAt - session.expiresAt < SESSION_SLIDE_THRESHOLD_MS) {
+    return false;
+  }
+
+  await store.set(key, { ...session, expiresAt: newExpiresAt }, TTL.SESSION);
+  return true;
+}
+
+/**
  * Get access token from session (used for /oauth-api/v1/* calls)
  */
-export async function getAccessTokenFromSession(sessionId: string): Promise<string | null> {
+export async function getAccessTokenFromSession(
+  sessionId: string,
+): Promise<string | null> {
   const session = await getSession(sessionId);
   return session?.accessToken ?? null;
 }
@@ -427,7 +524,8 @@ export function getAuthorizationServerMetadata(config: OAuthConfig): object {
     grant_types_supported: ["authorization_code"],
     code_challenge_methods_supported: ["S256"],
     token_endpoint_auth_methods_supported: ["none"],
-    service_documentation: "https://github.com/digitalsamba/embedded-api-mcp-server",
+    service_documentation:
+      "https://github.com/digitalsamba/embedded-api-mcp-server",
   };
 }
 

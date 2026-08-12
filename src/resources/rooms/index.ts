@@ -94,11 +94,17 @@ export async function handleRoomResource(
   const uriParts = uri.split("/");
   const isLiveRequest = uri.includes("/live");
   const isParticipantsRequest = uri.includes("/live/participants");
-  const isSpecificRoom = uriParts.length > 3 && uriParts[3] !== "" && uriParts[3] !== "live";
+  const isSpecificRoom =
+    uriParts.length > 3 && uriParts[3] !== "" && uriParts[3] !== "live";
 
   // Handle live rooms listing (all rooms with live sessions)
-  if (uri === "digitalsamba://rooms/live" || uri === "digitalsamba://rooms/live/participants") {
-    logger.info("Listing live rooms", { includeParticipants: isParticipantsRequest });
+  if (
+    uri === "digitalsamba://rooms/live" ||
+    uri === "digitalsamba://rooms/live/participants"
+  ) {
+    logger.info("Listing live rooms", {
+      includeParticipants: isParticipantsRequest,
+    });
 
     // Get API key
     let apiKey = options?.apiKey;
@@ -109,18 +115,22 @@ export async function handleRoomResource(
       apiKey = process.env.DIGITAL_SAMBA_DEVELOPER_KEY;
     }
     if (!apiKey) {
-      throw new Error("No API key found. Please include an Authorization header with a Bearer token.");
+      throw new Error(
+        "No API key found. Please include an Authorization header with a Bearer token.",
+      );
     }
 
     const client = new DigitalSambaApiClient(apiKey, apiUrl, apiCache);
 
     try {
       // Fetch live rooms from API
-      const liveRooms = isParticipantsRequest 
+      const liveRooms = isParticipantsRequest
         ? await client.getLiveRoomsWithParticipants()
         : await client.getLiveRooms();
 
-      logger.info("Fetched live rooms successfully", { count: liveRooms.data.length });
+      logger.info("Fetched live rooms successfully", {
+        count: liveRooms.data.length,
+      });
 
       // Format as resource contents
       const contents = liveRooms.data.map((room) => ({

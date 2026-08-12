@@ -124,7 +124,7 @@ export const BOOLEAN_FIELDS = new Set([
  * @returns A new object with normalized boolean values
  */
 export function normalizeBooleans<T extends Record<string, unknown>>(
-  obj: T
+  obj: T,
 ): T {
   const result = { ...obj } as Record<string, unknown>;
 
