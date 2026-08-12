@@ -43,6 +43,7 @@ import {
   exchangeAuthorizationCode,
   exchangeCodeForTokens,
   getRegisteredClientCount,
+  isOAuthSessionId,
 } from "../oauth.js";
 
 export interface HttpTransportConfig {
@@ -132,18 +133,25 @@ function authMiddleware(requireAuth: boolean) {
       let sessionId: string | null = null;
       if (token.startsWith("oauth:")) {
         sessionId = token.substring(6);
-      } else {
-        // Try to use token directly as session ID (Claude Desktop DCR flow)
-        const directSession = await getAccessTokenFromSession(token);
-        if (directSession) {
-          sessionId = token;
-        }
+      } else if (isOAuthSessionId(token)) {
+        // Shaped like a session ID we issued, so treat it as one even when the
+        // session is gone. Falling through to the developer-key branch here
+        // would send a dead session ID to the API as if it were a key: the
+        // client gets a confusing "Unauthenticated" from the API instead of a
+        // 401, never learns to re-authenticate, and can never recover.
+        sessionId = token;
       }
 
       if (sessionId) {
         const accessToken = await getAccessTokenFromSession(sessionId);
 
         if (!accessToken) {
+          // Point the client at the OAuth metadata so it can re-authorize
+          // itself rather than needing the connector removed and re-added.
+          res.setHeader(
+            "WWW-Authenticate",
+            'Bearer realm="mcp", error="invalid_token", error_description="The OAuth session has expired", resource_metadata="/.well-known/oauth-protected-resource"',
+          );
           res.status(401).json({
             jsonrpc: "2.0",
             error: {
