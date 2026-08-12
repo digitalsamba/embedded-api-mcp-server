@@ -12,8 +12,13 @@ const LOG_LEVELS = {
 
 type LogLevel = keyof typeof LOG_LEVELS;
 
+// DS_LOG_LEVEL is the documented name, but LOG_LEVEL is the conventional one
+// and gets set by mistake - production ran silently at "warn" for months
+// because the host set LOG_LEVEL=info and nothing read it. Accept both.
 const currentLogLevel =
-  LOG_LEVELS[process.env.DS_LOG_LEVEL as LogLevel] ?? LOG_LEVELS.warn;
+  LOG_LEVELS[process.env.DS_LOG_LEVEL as LogLevel] ??
+  LOG_LEVELS[process.env.LOG_LEVEL as LogLevel] ??
+  LOG_LEVELS.warn;
 
 const logger = {
   error: (message: string, ...args: unknown[]) => {
