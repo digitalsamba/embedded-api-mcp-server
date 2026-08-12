@@ -44,6 +44,7 @@ import {
   exchangeCodeForTokens,
   getRegisteredClientCount,
   isOAuthSessionId,
+  touchSession,
 } from "../oauth.js";
 
 export interface HttpTransportConfig {
@@ -163,6 +164,13 @@ function authMiddleware(requireAuth: boolean) {
           });
           return;
         }
+
+        // Slide the session's expiry forward so an actively used connection
+        // never has to re-authorise. Best-effort: a failed extension must not
+        // fail the request the user actually made.
+        void touchSession(sessionId).catch((err: any) =>
+          logger.warn(`Could not extend session expiry: ${err?.message}`),
+        );
 
         // Use the OAuth access token directly with /oauth-api/v1/* endpoints
         (req as any).apiKey = accessToken;

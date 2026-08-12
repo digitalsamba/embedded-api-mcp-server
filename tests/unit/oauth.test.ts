@@ -723,6 +723,65 @@ describe("oauth", () => {
       ).resolves.toBeNull();
     });
 
+    describe("sliding expiry (touchSession)", () => {
+      // The DS access token behind a session is valid for a year, so our TTL
+      // is what forces re-authentication. Sliding it on use means an active
+      // user never gets logged out; only genuine inactivity expires a session.
+
+      it("extends an active session beyond the original TTL", async () => {
+        jest.useFakeTimers();
+        const sessionId = await newSession();
+
+        // Use the session every 10 days for 50 days - five times the old 24h
+        // TTL and well past a static 30 day one.
+        for (let day = 10; day <= 50; day += 10) {
+          jest.advanceTimersByTime(10 * 24 * 60 * 60 * 1000);
+          await oauth.touchSession(sessionId);
+          await expect(
+            oauth.getAccessTokenFromSession(sessionId),
+          ).resolves.toBe("ds-access-token");
+        }
+      });
+
+      it("still expires a session that is never used", async () => {
+        jest.useFakeTimers();
+        const sessionId = await newSession();
+
+        jest.advanceTimersByTime((sessionStore.TTL.SESSION + 1) * 1000);
+
+        await expect(oauth.getSession(sessionId)).resolves.toBeNull();
+      });
+
+      it("reports whether it extended the session", async () => {
+        jest.useFakeTimers();
+        const sessionId = await newSession();
+
+        // Immediately after creation the expiry has barely moved, so the
+        // write is skipped rather than repeated on every request.
+        await expect(oauth.touchSession(sessionId)).resolves.toBe(false);
+
+        // Past the slide threshold it does extend.
+        jest.advanceTimersByTime(2 * 60 * 60 * 1000);
+        await expect(oauth.touchSession(sessionId)).resolves.toBe(true);
+      });
+
+      it("does not resurrect an expired session", async () => {
+        jest.useFakeTimers();
+        const sessionId = await newSession();
+
+        jest.advanceTimersByTime((sessionStore.TTL.SESSION + 1) * 1000);
+
+        await expect(oauth.touchSession(sessionId)).resolves.toBe(false);
+        await expect(oauth.getSession(sessionId)).resolves.toBeNull();
+      });
+
+      it("returns false for an unknown session", async () => {
+        await expect(oauth.touchSession("no-such-session")).resolves.toBe(
+          false,
+        );
+      });
+    });
+
     it("drops the session on logout", async () => {
       const sessionId = await newSession();
 

@@ -10,6 +10,12 @@ import { randomBytes, createHash } from "node:crypto";
 import logger from "./logger.js";
 import { getStore, PREFIXES, TTL } from "./session-store.js";
 
+/**
+ * Only slide a session's expiry once it has drifted by this much, so a busy
+ * session writes to the store roughly once an hour rather than once a request.
+ */
+const SESSION_SLIDE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
+
 // OAuth Configuration - loaded from environment
 export interface OAuthConfig {
   clientId: string;
@@ -460,6 +466,31 @@ export async function getSession(
     return null;
   }
   return session;
+}
+
+/**
+ * Slide a session's expiry forward by a full TTL.
+ *
+ * Called on each authenticated request so an actively used session never
+ * expires out from under the user. Only writes when the expiry has moved by
+ * more than SESSION_SLIDE_THRESHOLD, so a busy session doesn't write to the
+ * store on every single request.
+ *
+ * @returns true if the session was extended
+ */
+export async function touchSession(sessionId: string): Promise<boolean> {
+  const store = getStore();
+  const key = PREFIXES.SESSION + sessionId;
+  const session = await store.get<OAuthSession>(key);
+  if (!session) return false;
+
+  const newExpiresAt = Date.now() + TTL.SESSION * 1000;
+  if (newExpiresAt - session.expiresAt < SESSION_SLIDE_THRESHOLD_MS) {
+    return false;
+  }
+
+  await store.set(key, { ...session, expiresAt: newExpiresAt }, TTL.SESSION);
+  return true;
 }
 
 /**
