@@ -12,6 +12,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 First production release since the July 2026 revival. Production had been
 serving a January build; this brings it to the current tree.
 
+Tool count: **144** (was 123). No tool names, schemas or resource URIs changed.
+
+### Added
+
+- **Q&A management (13 tools)**: `create-question`, `update-question`,
+  `delete-question`, `answer-question`, `update-question-answer`,
+  `delete-question-answer`, `upvote-question`, `remove-question-vote`,
+  `dismiss-question`, `reopen-question`, `start-question-live-answer`,
+  `stop-question-live-answer`, `cancel-question-live-answer`
+- **Poll and quiz bulk import (4 tools)**: `get-poll-import-template`,
+  `import-polls`, `get-quiz-import-template`, `import-quizzes`
+- **Phone participant audio (2 tools)**: `mute-phone-participant`,
+  `unmute-phone-participant`
+- **Chat (1 tool)**: `send-chat-message`
+- **Room management (1 tool)**: `delete-rooms-by-tag`
+- `/health` reports `streamingSessions` and cumulative `sweptSessions`
+- `SESSION_IDLE_TIMEOUT_MS` (default 30min, `0` disables) and
+  `SESSION_SWEEP_INTERVAL_MS` (default 5min)
+- `LOG_LEVEL` accepted alongside `DS_LOG_LEVEL`
+
 ### Fixed
 - **HTTP session leak**: transport sessions were only removed on an explicit
   `DELETE /mcp` or `transport.close()`. Most MCP clients send neither, so every
@@ -36,14 +56,11 @@ serving a January build; this brings it to the current tree.
   30 days and slides forward on each authenticated request, making it an
   inactivity window rather than a hard cap.
 
-### Added
-- `/health` reports `streamingSessions` and cumulative `sweptSessions`
-- `SESSION_IDLE_TIMEOUT_MS` (default 30min, `0` disables) and
-  `SESSION_SWEEP_INTERVAL_MS` (default 5min)
-
 ### Changed
 - `@modelcontextprotocol/sdk` upgraded from ^1.25.1 to ^1.30.0
-- Test suite grown from 431 to 553 tests; lint and format checks enforced in CI
+- All runtime dependency advisories resolved; `npm audit --omit=dev` reports
+  no vulnerabilities
+- Test suite grown from 431 to 556 tests; lint and format checks enforced in CI
 - Deploys are pull-based via the internal registry; `/health` exposes the git
   commit so a deploy can be verified by exact commit
 
