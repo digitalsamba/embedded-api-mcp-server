@@ -142,7 +142,13 @@ export const PREFIXES = {
 
 // TTLs in seconds
 export const TTL = {
-  SESSION: 24 * 60 * 60, // 24 hours
+  // 30 days, slid forward on each authenticated request (see touchSession in
+  // oauth.ts), so an active user never has to re-authorise. The DS access
+  // token behind the session is valid for 365 days, so our TTL - not the DS
+  // token - is what forces re-authentication; at 24h that was every hosted
+  // customer, every day. Kept well below the DS token's life because a session
+  // ID is a bearer credential.
+  SESSION: 30 * 24 * 60 * 60, // 30 days
   CLIENT: 30 * 24 * 60 * 60, // 30 days
   CODE_VERIFIER: 10 * 60, // 10 minutes
   PENDING_AUTH: 10 * 60, // 10 minutes

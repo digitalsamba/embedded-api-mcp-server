@@ -123,11 +123,26 @@ describe("session-store", () => {
     it("exposes TTLs in seconds", () => {
       const { sessionStore } = freshModules();
 
-      expect(sessionStore.TTL.SESSION).toBe(24 * 60 * 60);
+      expect(sessionStore.TTL.SESSION).toBe(30 * 24 * 60 * 60);
       expect(sessionStore.TTL.CLIENT).toBe(30 * 24 * 60 * 60);
       expect(sessionStore.TTL.CODE_VERIFIER).toBe(10 * 60);
       expect(sessionStore.TTL.PENDING_AUTH).toBe(10 * 60);
       expect(sessionStore.TTL.AUTH_CODE).toBe(10 * 60);
+    });
+
+    it("keeps the session TTL long enough not to force daily re-auth", () => {
+      const { sessionStore } = freshModules();
+
+      // The DS access token behind a session is valid for a year, so this TTL
+      // - not the DS token - is what forces a user to re-authorise. At 24h
+      // that was every hosted customer, every day. It is slid forward on use
+      // (see touchSession in oauth.ts), so this is the *inactivity* window.
+      const ONE_DAY = 24 * 60 * 60;
+      expect(sessionStore.TTL.SESSION).toBeGreaterThan(7 * ONE_DAY);
+
+      // ...but a session ID is a bearer credential, so it must still expire
+      // well inside the DS token's 365 day life.
+      expect(sessionStore.TTL.SESSION).toBeLessThan(365 * ONE_DAY);
     });
   });
 
