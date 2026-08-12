@@ -430,6 +430,22 @@ export async function completeOAuthFlow(
 }
 
 /**
+ * Does this bearer token have the shape of a session ID we issued?
+ *
+ * Session IDs are `randomBytes(32).toString("hex")` - 64 lowercase hex chars,
+ * no dashes. Digital Samba developer keys are UUIDs, so the two never collide.
+ *
+ * The HTTP transport uses this to tell "expired OAuth session, tell the client
+ * to re-authenticate" apart from "legacy developer key, pass it through". Get
+ * it wrong and an expired session is sent to the API as if it were a key, so
+ * the client sees the API's "Unauthenticated" rather than a 401 and never
+ * learns to re-authorise.
+ */
+export function isOAuthSessionId(token: string): boolean {
+  return /^[0-9a-f]{64}$/.test(token);
+}
+
+/**
  * Get session by ID
  */
 export async function getSession(
