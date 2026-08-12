@@ -25,10 +25,9 @@ describe("logger", () => {
       const loggerWithErrorLevel = require("../../src/logger.js").default;
 
       loggerWithErrorLevel.error("test error", { extra: "data" });
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        "[ERROR] test error",
-        { extra: "data" }
-      );
+      expect(consoleErrorSpy).toHaveBeenCalledWith("[ERROR] test error", {
+        extra: "data",
+      });
     });
 
     it("should log warn messages when log level is warn", () => {
@@ -39,7 +38,7 @@ describe("logger", () => {
       loggerWithWarnLevel.warn("test warning", "extra");
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         "[WARN] test warning",
-        "extra"
+        "extra",
       );
     });
 
@@ -62,7 +61,7 @@ describe("logger", () => {
         "[DEBUG] test debug",
         1,
         2,
-        3
+        3,
       );
     });
   });
@@ -93,7 +92,7 @@ describe("logger", () => {
 
       loggerWithDefaultLevel.warn("should appear");
       loggerWithDefaultLevel.info("should not appear");
-      
+
       expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
       expect(consoleErrorSpy).toHaveBeenCalledWith("[WARN] should appear");
     });
@@ -106,8 +105,53 @@ describe("logger", () => {
       loggerWithInvalidLevel.error("should appear");
       loggerWithInvalidLevel.warn("should also appear");
       loggerWithInvalidLevel.info("should not appear");
-      
+
       expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("LOG_LEVEL fallback", () => {
+    // Production ran silently at "warn" for months because the host set
+    // LOG_LEVEL=info while only DS_LOG_LEVEL was read. Both are accepted now.
+    const originalLogLevel = process.env.LOG_LEVEL;
+
+    afterEach(() => {
+      if (originalLogLevel === undefined) {
+        delete process.env.LOG_LEVEL;
+      } else {
+        process.env.LOG_LEVEL = originalLogLevel;
+      }
+    });
+
+    it("honours LOG_LEVEL when DS_LOG_LEVEL is not set", () => {
+      delete process.env.DS_LOG_LEVEL;
+      process.env.LOG_LEVEL = "info";
+      jest.resetModules();
+      const log = require("../../src/logger.js").default;
+
+      log.info("should appear");
+      expect(consoleErrorSpy).toHaveBeenCalledWith("[INFO] should appear");
+    });
+
+    it("lets DS_LOG_LEVEL win when both are set", () => {
+      process.env.DS_LOG_LEVEL = "error";
+      process.env.LOG_LEVEL = "debug";
+      jest.resetModules();
+      const log = require("../../src/logger.js").default;
+
+      log.warn("should not appear");
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it("still defaults to warn when neither is set", () => {
+      delete process.env.DS_LOG_LEVEL;
+      delete process.env.LOG_LEVEL;
+      jest.resetModules();
+      const log = require("../../src/logger.js").default;
+
+      log.warn("should appear");
+      log.info("should not appear");
+      expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
     });
   });
 });
