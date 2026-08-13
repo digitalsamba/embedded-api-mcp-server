@@ -903,6 +903,42 @@ async function handlePhoneParticipantMute(
 }
 
 /**
+ * Explain why telephony is unavailable for a room, or undefined if it is
+ * available (or if we cannot tell).
+ *
+ * Only used to turn the API's misleading success into an honest refusal — if
+ * the room cannot be read, say nothing and let the call proceed rather than
+ * blocking on a check that is itself unreliable.
+ */
+async function telephonyUnavailableReason(
+  roomId: string,
+  apiClient: DigitalSambaApiClient,
+): Promise<string | undefined> {
+  let room;
+  try {
+    room = await apiClient.getRoom(roomId);
+  } catch (error) {
+    logger.warn("Could not check telephony availability", {
+      roomId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return undefined;
+  }
+
+  if (room?.telephony_enabled === false) {
+    return (
+      `Telephony is not enabled for room ${roomId}, so the phone bridge cannot ` +
+      `connect. Note the API returns success for this call regardless, which is ` +
+      `why this is checked here. Enable telephony for the room, or check that ` +
+      `the account's plan includes it (can_enable_telephony in ` +
+      `get-default-room-settings).`
+    );
+  }
+
+  return undefined;
+}
+
+/**
  * Handle connect phone
  */
 async function handleConnectPhone(
@@ -919,6 +955,17 @@ async function handleConnectPhone(
   }
 
   logger.info("Connecting phone bridge", { room_id });
+
+  // The connect endpoint returns 2xx even when the account has no telephony,
+  // and nothing connects — verified on an account with can_enable_telephony
+  // false. Since the API will not say no, check first and say it here.
+  const unavailable = await telephonyUnavailableReason(room_id, apiClient);
+  if (unavailable) {
+    return {
+      content: [{ type: "text", text: unavailable }],
+      isError: true,
+    };
+  }
 
   try {
     const result = await apiClient.connectPhone(room_id);

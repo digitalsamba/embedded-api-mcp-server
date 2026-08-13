@@ -237,10 +237,35 @@ export function registerPollTools(): ToolDefinition[] {
           },
           session_id: {
             type: "string",
-            description: "The ID of the specific session (optional)",
+            description:
+              "The ID of the session to publish results for. Required: the API rejects the request without it.",
           },
         },
-        required: ["room_id", "poll_id"],
+        required: ["room_id", "poll_id", "session_id"],
+      },
+    },
+    {
+      name: "list-polls",
+      description:
+        '[Poll Management - TOOL] List all polls in a room. Use when users say: "list polls", "show polls", "what polls exist", "get room polls", "show surveys". Requires room_id. Returns each poll with its ID, question, type and options.',
+      annotations: getToolAnnotations("list-polls", "List Polls"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room to list polls for",
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number of polls to return",
+          },
+          offset: {
+            type: "number",
+            description: "Number of polls to skip for pagination",
+          },
+        },
+        required: ["room_id"],
       },
     },
     {
@@ -312,6 +337,8 @@ export async function executePollTool(
       return handleDeleteRoomPolls(params, apiClient);
     case "publish-poll-results":
       return handlePublishPollResults(params, apiClient);
+    case "list-polls":
+      return handleListPolls(params, apiClient);
     case "get-poll-import-template":
       return handleGetPollImportTemplate(params, apiClient);
     case "import-polls":
@@ -899,6 +926,63 @@ async function handleGetPollImportTemplate(
     });
     return {
       content: [{ type: "text", text: `Error getting template: ${message}` }],
+      isError: true,
+    };
+  }
+}
+
+/**
+ * Handle list polls
+ *
+ * Added because there was no way to list a room's polls: the API exposes
+ * GET /rooms/{id}/polls and the client has getPolls, but no tool surfaced it,
+ * so callers had to pull the entire room object and read its polls array.
+ */
+async function handleListPolls(
+  params: { room_id: string; limit?: number; offset?: number },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id, limit, offset } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Listing polls", { room_id });
+
+  try {
+    const response = await apiClient.getPolls(room_id, {
+      ...(limit !== undefined && { limit }),
+      ...(offset !== undefined && { offset }),
+    });
+    const polls = Array.isArray(response)
+      ? response
+      : ((response as any)?.data ?? []);
+
+    if (polls.length === 0) {
+      return {
+        content: [{ type: "text", text: `No polls found in room ${room_id}.` }],
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: "text",
+          text:
+            `Found ${polls.length} poll(s) in room ${room_id}:\n\n` +
+            JSON.stringify(polls, null, 2),
+        },
+      ],
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error("Error listing polls", { room_id, error: message });
+    return {
+      content: [{ type: "text", text: `Error listing polls: ${message}` }],
       isError: true,
     };
   }

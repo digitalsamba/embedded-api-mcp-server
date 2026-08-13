@@ -30,7 +30,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const EXPECTED_TOOL_COUNT = 144;
+const EXPECTED_TOOL_COUNT = 145;
 
 // .env.local first (local dev secrets), then .env. Neither overrides a value
 // already exported in the environment.
@@ -246,7 +246,12 @@ const must = (condition, message) => {
 // The run
 // ---------------------------------------------------------------------------
 
-const created = { roomId: null, libraryId: null, roleId: null, webhookId: null };
+const created = {
+  roomId: null,
+  libraryId: null,
+  roleId: null,
+  webhookId: null,
+};
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 // Role names are capped at 30 characters by the API, so identifiers that go
 // into a name field use this compact form rather than the ISO stamp.
@@ -329,12 +334,12 @@ async function run() {
     });
     pollId = text.match(/Poll ID: ([0-9a-f-]+)/i)?.[1];
     must(pollId, "no poll id in output");
-    const room = parseJson(
-      await call("get-room-details", { room_id: created.roomId }),
+    const polls = parseJson(
+      await call("list-polls", { room_id: created.roomId }),
     );
     must(
-      room.polls?.some((p) => p.id === pollId),
-      "poll absent from room after create",
+      polls.some((p) => p.id === pollId),
+      "poll absent from list-polls after create",
     );
     return `poll ${pollId}`;
   });
@@ -345,10 +350,10 @@ async function run() {
       poll_id: pollId,
       question: "smoke control poll EDITED",
     });
-    const room = parseJson(
-      await call("get-room-details", { room_id: created.roomId }),
+    const polls = parseJson(
+      await call("list-polls", { room_id: created.roomId }),
     );
-    const poll = room.polls?.find((p) => p.id === pollId);
+    const poll = polls.find((p) => p.id === pollId);
     must(
       poll?.question === "smoke control poll EDITED",
       "question did not change",
@@ -360,9 +365,11 @@ async function run() {
     "import-polls creates polls",
     "API defect: /rooms/{id}/polls/import accepts and discards",
     async () => {
-      const before = parseJson(
-        await call("get-room-details", { room_id: created.roomId }),
-      ).polls?.length;
+      const countPolls = async () => {
+        const text = await call("list-polls", { room_id: created.roomId });
+        return text.startsWith("No polls") ? 0 : parseJson(text).length;
+      };
+      const before = await countPolls();
       const template = await call("get-poll-import-template", {
         room_id: created.roomId,
       });
@@ -370,9 +377,7 @@ async function run() {
         room_id: created.roomId,
         csv_content: template,
       });
-      const after = parseJson(
-        await call("get-room-details", { room_id: created.roomId }),
-      ).polls?.length;
+      const after = await countPolls();
       must(after > before, `poll count unchanged at ${after}`);
       return `${before} -> ${after}`;
     },
@@ -380,10 +385,8 @@ async function run() {
 
   await check("delete-poll removes it", async () => {
     await call("delete-poll", { room_id: created.roomId, poll_id: pollId });
-    const room = parseJson(
-      await call("get-room-details", { room_id: created.roomId }),
-    );
-    must(!room.polls?.some((p) => p.id === pollId), "poll still present");
+    const remaining = await call("list-polls", { room_id: created.roomId });
+    must(!remaining.includes(pollId), "poll still present");
     return "poll gone";
   });
 
@@ -471,7 +474,10 @@ async function run() {
       );
       const folder = tree.hierarchy?.folders?.find((f) => f.id === folderId);
       must(folder, "folder missing from hierarchy");
-      must(folder.name === "smoke folder RENAMED", "folder rename did not land");
+      must(
+        folder.name === "smoke folder RENAMED",
+        "folder rename did not land",
+      );
       return "folder created and renamed";
     });
 
@@ -511,7 +517,10 @@ async function run() {
       const tree = parseJson(
         await call("get-library-hierarchy", { libraryId: created.libraryId }),
       );
-      must(!tree.hierarchy?.files?.some((f) => f.id === fileId), "file remains");
+      must(
+        !tree.hierarchy?.files?.some((f) => f.id === fileId),
+        "file remains",
+      );
       must(
         !tree.hierarchy?.folders?.some((f) => f.id === folderId),
         "folder remains",
@@ -626,7 +635,9 @@ async function run() {
 
 async function cleanup() {
   if (KEEP) {
-    console.log(`\nLeaving resources in place (--keep): ${JSON.stringify(created)}`);
+    console.log(
+      `\nLeaving resources in place (--keep): ${JSON.stringify(created)}`,
+    );
     return;
   }
   group("cleanup");
@@ -669,9 +680,7 @@ async function cleanup() {
       record("PASS", `cleanup ${label}`, id);
     } catch (error) {
       record("FAIL", `cleanup ${label}`, `${id} left behind: ${error.message}`);
-      console.log(
-        `       MANUAL CLEANUP NEEDED: ${label} ${id}`,
-      );
+      console.log(`       MANUAL CLEANUP NEEDED: ${label} ${id}`);
     }
   }
 }
@@ -698,7 +707,8 @@ function summarise() {
 
   if (failed.length) {
     console.log(`\n  Failures:`);
-    for (const r of failed) console.log(`    - [${r.group}] ${r.name}: ${r.detail}`);
+    for (const r of failed)
+      console.log(`    - [${r.group}] ${r.name}: ${r.detail}`);
   }
 
   return failed.length === 0;

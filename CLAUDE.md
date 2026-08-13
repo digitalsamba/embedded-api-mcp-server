@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Overview
 
-Digital Samba Embedded API MCP Server - a Model Context Protocol server for Digital Samba's Embedded API, providing 144 tools and 37 resources for complete control over video conferencing features.
+Digital Samba Embedded API MCP Server - a Model Context Protocol server for Digital Samba's Embedded API, providing 145 tools and 37 resources for complete control over video conferencing features.
 
 **This is primarily a hosted remote MCP server** (production: https://mcp.digitalsamba.com, dev: https://mcp-dev.digitalsamba.com) that Digital Samba customers connect to from Claude Desktop or other MCP clients via OAuth. The npm package (`@digitalsamba/embedded-api-mcp-server`) is the legacy stdio distribution and is slated for deprecation.
 
@@ -75,7 +75,7 @@ src/
 │   └── http.ts           # Streamable HTTP transport + OAuth endpoints
 ├── types/                # TypeScript type definitions
 ├── resources/            # Read-only MCP resources (37)
-└── tools/                # MCP tools (144)
+└── tools/                # MCP tools (145)
     ├── room-management/       # 11 tools
     ├── session-management/    # 11 tools
     ├── recording-tools-adapter.ts  # 10 tools (the live implementation)
@@ -97,7 +97,7 @@ Implementation notes:
 
 ## MCP Implementation
 
-- 144 tools (actions) and 37 resources (read-only, `digitalsamba://` URIs)
+- 145 tools (actions) and 37 resources (read-only, `digitalsamba://` URIs)
 - Because many MCP clients don't expose resources, most resources have "reader tool" equivalents (`list-rooms`, `get-recordings`, etc.) — keep both in sync when adding functionality
 - All tools carry annotations (`readOnlyHint`, `destructiveHint`) via `src/tool-annotations.ts`
 

@@ -147,7 +147,7 @@ Use the server URL `https://mcp.digitalsamba.com/mcp` with any MCP-compatible cl
 
 ## Available Tools
 
-The MCP server provides **144 tools** covering the complete Digital Samba API.
+The MCP server provides **145 tools** covering the complete Digital Samba API.
 
 ### Room Management (11 tools)
 | Tool | Description |

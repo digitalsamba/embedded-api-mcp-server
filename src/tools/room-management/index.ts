@@ -61,6 +61,12 @@ export function registerRoomTools(): Tool[] {
             type: "string",
             description: "External identifier for the room",
           },
+          tags: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Room tags. These are the only way to make a room targetable by delete-rooms-by-tag; tags cannot be added later, as the update-room endpoint does not accept them.",
+          },
           max_participants: {
             type: "number",
             minimum: 2,
@@ -1017,13 +1023,22 @@ export async function executeRoomTool(
           delete_library,
         });
         await client.deleteRoomsByTag({ tags, ...options });
-        logger.info("Rooms deleted by tag successfully", { tags });
+        logger.info("Room deletion by tag accepted", { tags });
 
+        // The endpoint answers 202 with an empty body: the deletion is
+        // asynchronous and the API reports no count. Claiming rooms were
+        // deleted would be a guess, and an unmatched tag is indistinguishable
+        // from a matched one — which matters a great deal for a bulk delete.
+        const label = Array.isArray(tags) ? tags.join(", ") : tags;
         return {
           content: [
             {
               type: "text",
-              text: `Successfully deleted rooms matching tag(s): ${Array.isArray(tags) ? tags.join(", ") : tags}`,
+              text:
+                `The API accepted a request to delete all rooms tagged: ${label}. ` +
+                `Deletion is asynchronous and the API returns no count, so this ` +
+                `does not confirm that any room matched or was deleted. ` +
+                `Use list-rooms to check the result.`,
             },
           ],
         };

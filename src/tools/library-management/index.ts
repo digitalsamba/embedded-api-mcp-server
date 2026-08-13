@@ -348,7 +348,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     {
       name: "create-whiteboard",
       description:
-        '[Content Library] Create a collaborative whiteboard in library. Use when users say: "create whiteboard", "add whiteboard", "create drawing board", "make collaborative board". Requires libraryId and name. Optional folderId. For visual collaboration.',
+        '[Content Library] Create a collaborative whiteboard in library. Use when users say: "create whiteboard", "add whiteboard", "create drawing board", "make collaborative board". Requires libraryId. Optional folderId. Note: the API names whiteboards itself ("Whiteboard 1", "Whiteboard 2", ...) and ignores any name supplied. For visual collaboration.',
       annotations: getToolAnnotations("create-whiteboard", "Create Whiteboard"),
       inputSchema: {
         type: "object",
@@ -359,14 +359,15 @@ export function registerLibraryTools(): ToolDefinition[] {
           },
           name: {
             type: "string",
-            description: "Name of the whiteboard",
+            description:
+              "Ignored by the API, which assigns its own name (Whiteboard 1, Whiteboard 2, ...). Accepted for backward compatibility; the created whiteboard's actual name is reported back.",
           },
           folderId: {
             type: "string",
             description: "Folder ID to place the whiteboard in",
           },
         },
-        required: ["libraryId", "name"],
+        required: ["libraryId"],
       },
     },
 
@@ -1669,7 +1670,7 @@ async function handleCreateWebapp(
  * Handle create whiteboard
  */
 async function handleCreateWhiteboard(
-  params: { libraryId: string; name: string; folderId?: string },
+  params: { libraryId: string; name?: string; folderId?: string },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { libraryId, name, folderId } = params;
@@ -1686,22 +1687,14 @@ async function handleCreateWhiteboard(
     };
   }
 
-  if (!name || name.trim() === "") {
-    return {
-      content: [
-        {
-          type: "text",
-          text: "Whiteboard name is required.",
-        },
-      ],
-      isError: true,
-    };
-  }
-
-  logger.info("Creating whiteboard", { libraryId, name, folderId });
+  // No name check: the API names whiteboards itself and ignores whatever is
+  // sent, so demanding one only forced callers to invent a value that was
+  // then discarded. The created whiteboard's real name is reported below.
+  logger.info("Creating whiteboard", { libraryId, folderId });
 
   try {
-    const whiteboardData: any = { name };
+    const whiteboardData: any = {};
+    if (name !== undefined) whiteboardData.name = name;
     if (folderId !== undefined) whiteboardData.folder_id = folderId;
 
     const result = await apiClient.createWhiteboard(libraryId, whiteboardData);

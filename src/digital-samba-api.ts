@@ -2582,7 +2582,8 @@ export class DigitalSambaApiClient {
   async createWhiteboard(
     libraryId: string,
     settings: {
-      name: string;
+      /** Ignored by the API, which assigns its own "Whiteboard N" name. */
+      name?: string;
       folder_id?: string;
     },
   ): Promise<{

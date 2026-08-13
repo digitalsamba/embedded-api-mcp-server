@@ -110,7 +110,8 @@ export function registerAnalyticsTools(): Tool[] {
           period: {
             type: "string",
             enum: ["day", "week", "month", "year"],
-            description: "Analytics period",
+            description:
+              "Analytics period. Note: observed to have no effect on its own — passing period alone returns all-time figures. Use dateStart/dateEnd to bound the range.",
           },
         },
         required: [],
