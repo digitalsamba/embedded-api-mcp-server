@@ -281,13 +281,17 @@ describe('Recording Tools', () => {
     });
 
     describe('update-recording', () => {
-      it('should indicate update is not supported', async () => {
+      it('should report the unsupported update as an error, not a success', async () => {
+        // Previously this returned a plain message with no isError, so a
+        // client read the failed rename as a successful call.
         const result = await executeRecordingTool('update-recording', {
           recording_id: 'test-recording-id',
           name: 'New Recording Name'
         }, mockApiClient);
 
-        expect(result.content[0].text).toBe('Recording update not supported');
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('not supported');
+        expect(result.content[0].text).toContain('was not changed');
       });
     });
 
