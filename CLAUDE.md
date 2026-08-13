@@ -137,4 +137,4 @@ itself when the digest changes. The final workflow step waits for the host's
 ## Important Account Settings
 
 ### Single Session per External ID
-Digital Samba accounts can have "single session per external ID" enabled in the dashboard. When active, each `externalId` can only have one active session; joining with an in-use `externalId` disconnects the previous session. This is dashboard-only and cannot be queried via API. Use unique `externalId` values when generating tokens, especially for moderators.
+Digital Samba accounts can have "single session per external ID" enabled in the dashboard. When active, each `externalId` can only have one active session; joining with an in-use `externalId` disconnects the previous session. It can only be *changed* in the dashboard, but it **is** readable via the API — `get-default-room-settings` returns it as `single_session_by_external_id_enabled` (verified on dev 2026-08-13). Use unique `externalId` values when generating tokens, especially for moderators.
