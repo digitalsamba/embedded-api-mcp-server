@@ -49,6 +49,7 @@
     "test:unit": "jest --testPathPatterns=tests/unit --forceExit",
     "test:integration": "jest --testPathPatterns=tests/integration --forceExit",
     "test:ci": "jest --coverage --forceExit",
+    "smoke": "node scripts/smoke-test.mjs",
     "size-check": "node scripts/build-size-check.js",
     "coverage:analyze": "node scripts/analyze-coverage.js",
     "release:check": "node scripts/pre-release-checklist.js"
