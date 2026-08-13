@@ -26,6 +26,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
 import { getToolAnnotations } from "../../tool-annotations.js";
+import { countOf, verifiedWrite } from "../verified-write.js";
 
 /**
  * Tool definition interface
@@ -1132,22 +1133,46 @@ async function handleImportQuizzes(
 
   logger.info("Importing quizzes from CSV", { room_id });
 
+  // The import endpoint returns 2xx with an empty body whether or not it
+  // created anything, so the count delta is the only proof it did.
+  const before = await countQuizzes(room_id, apiClient);
+
+  return verifiedWrite({
+    describe: `quizzes into room ${room_id}`,
+    verb: "Imported",
+    errorLabel: "importing quizzes",
+    action: () => apiClient.importQuizzes(room_id, csv_content),
+    verify: async () => {
+      const after = await countQuizzes(room_id, apiClient);
+      if (before === undefined || after === undefined) {
+        throw new Error("could not list the room's quizzes");
+      }
+      const created = after - before;
+      return {
+        landed: created > 0,
+        evidence:
+          created > 0
+            ? `room now has ${after} quiz(zes), up from ${before}`
+            : `room still has ${after} quiz(zes); no quiz was created`,
+      };
+    },
+  });
+}
+
+/**
+ * Count the quizzes in a room, or undefined if they cannot be listed.
+ */
+async function countQuizzes(
+  roomId: string,
+  apiClient: DigitalSambaApiClient,
+): Promise<number | undefined> {
   try {
-    await apiClient.importQuizzes(room_id, csv_content);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Successfully imported quizzes into room ${room_id}`,
-        },
-      ],
-    };
+    return countOf(await apiClient.listQuizzes(roomId));
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logger.error("Error importing quizzes", { room_id, error: message });
-    return {
-      content: [{ type: "text", text: `Error importing quizzes: ${message}` }],
-      isError: true,
-    };
+    logger.warn("Could not count quizzes for import verification", {
+      roomId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return undefined;
   }
 }

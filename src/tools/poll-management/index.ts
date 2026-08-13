@@ -30,6 +30,7 @@ import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
 import { normalizeBoolean } from "../../utils.js";
 import { getToolAnnotations } from "../../tool-annotations.js";
+import { countOf, verifiedWrite } from "../verified-write.js";
 
 /**
  * Tool definition interface
@@ -928,22 +929,46 @@ async function handleImportPolls(
 
   logger.info("Importing polls from CSV", { room_id });
 
+  // Count first: the import endpoint returns 2xx with an empty body whether or
+  // not it created anything, so the delta is the only proof it did.
+  const before = await countPolls(room_id, apiClient);
+
+  return verifiedWrite({
+    describe: `polls into room ${room_id}`,
+    verb: "Imported",
+    errorLabel: "importing polls",
+    action: () => apiClient.importPolls(room_id, csv_content),
+    verify: async () => {
+      const after = await countPolls(room_id, apiClient);
+      if (before === undefined || after === undefined) {
+        throw new Error("could not list the room's polls");
+      }
+      const created = after - before;
+      return {
+        landed: created > 0,
+        evidence:
+          created > 0
+            ? `room now has ${after} poll(s), up from ${before}`
+            : `room still has ${after} poll(s); no poll was created`,
+      };
+    },
+  });
+}
+
+/**
+ * Count the polls in a room, or undefined if they cannot be listed.
+ */
+async function countPolls(
+  roomId: string,
+  apiClient: DigitalSambaApiClient,
+): Promise<number | undefined> {
   try {
-    await apiClient.importPolls(room_id, csv_content);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Successfully imported polls into room ${room_id}`,
-        },
-      ],
-    };
+    return countOf(await apiClient.getPolls(roomId));
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logger.error("Error importing polls", { room_id, error: message });
-    return {
-      content: [{ type: "text", text: `Error importing polls: ${message}` }],
-      isError: true,
-    };
+    logger.warn("Could not count polls for import verification", {
+      roomId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return undefined;
   }
 }

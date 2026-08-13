@@ -132,6 +132,17 @@ export type {
   RoleCreateSettings,
 };
 
+/**
+ * Body returned by a write endpoint.
+ *
+ * Several Digital Samba write endpoints are undocumented in the OpenAPI spec or
+ * document an empty success body, and the client normalises 204s and empty
+ * bodies to `{}`. Callers must therefore treat an empty object as "the API
+ * accepted the request but told us nothing" — never as proof the write landed.
+ * Use a read-back to confirm writes that matter.
+ */
+export type WriteResult = Record<string, unknown>;
+
 export class DigitalSambaApiClient {
   protected apiBaseUrl: string;
   protected cache?: MemoryCache;
@@ -219,6 +230,18 @@ export class DigitalSambaApiClient {
    * // Example internal usage
    * const rooms = await this.request<ApiResponse<Room>>('/rooms');
    */
+  /**
+   * Drop cached GET responses.
+   *
+   * Called after writes that a read-back verifies, so the confirming read
+   * cannot be served the pre-write state from cache.
+   */
+  protected invalidateApiCache(): void {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+  }
+
   protected async request<T>(
     endpoint: string,
     options: RequestInit = {},
@@ -927,8 +950,8 @@ export class DigitalSambaApiClient {
   async raiseParticipantHand(
     roomId: string,
     participantId: string,
-  ): Promise<void> {
-    await this.request<void>(
+  ): Promise<WriteResult> {
+    return this.request<WriteResult>(
       `/rooms/${roomId}/participants/${participantId}/raise-hand`,
       { method: "POST" },
     );
@@ -940,8 +963,8 @@ export class DigitalSambaApiClient {
   async lowerParticipantHand(
     roomId: string,
     participantId: string,
-  ): Promise<void> {
-    await this.request<void>(
+  ): Promise<WriteResult> {
+    return this.request<WriteResult>(
       `/rooms/${roomId}/participants/${participantId}/lower-hand`,
       { method: "POST" },
     );
@@ -953,8 +976,8 @@ export class DigitalSambaApiClient {
   async raisePhoneParticipantHand(
     roomId: string,
     callId: string,
-  ): Promise<void> {
-    await this.request<void>(
+  ): Promise<WriteResult> {
+    return this.request<WriteResult>(
       `/rooms/${roomId}/phone-participants/${callId}/raise-hand`,
       { method: "POST" },
     );
@@ -966,8 +989,8 @@ export class DigitalSambaApiClient {
   async lowerPhoneParticipantHand(
     roomId: string,
     callId: string,
-  ): Promise<void> {
-    await this.request<void>(
+  ): Promise<WriteResult> {
+    return this.request<WriteResult>(
       `/rooms/${roomId}/phone-participants/${callId}/lower-hand`,
       { method: "POST" },
     );
@@ -976,8 +999,11 @@ export class DigitalSambaApiClient {
   /**
    * Mute a phone participant
    */
-  async mutePhoneParticipant(roomId: string, callId: string): Promise<void> {
-    await this.request<void>(
+  async mutePhoneParticipant(
+    roomId: string,
+    callId: string,
+  ): Promise<WriteResult> {
+    return this.request<WriteResult>(
       `/rooms/${roomId}/phone-participants/${callId}/mute`,
       { method: "POST" },
     );
@@ -986,8 +1012,11 @@ export class DigitalSambaApiClient {
   /**
    * Unmute a phone participant
    */
-  async unmutePhoneParticipant(roomId: string, callId: string): Promise<void> {
-    await this.request<void>(
+  async unmutePhoneParticipant(
+    roomId: string,
+    callId: string,
+  ): Promise<WriteResult> {
+    return this.request<WriteResult>(
       `/rooms/${roomId}/phone-participants/${callId}/unmute`,
       { method: "POST" },
     );
@@ -1516,8 +1545,9 @@ export class DigitalSambaApiClient {
       message: string;
       participant?: QAParticipant;
     },
-  ): Promise<void> {
-    await this.request<void>(`/rooms/${roomId}/chat`, {
+  ): Promise<WriteResult> {
+    this.invalidateApiCache();
+    return this.request<WriteResult>(`/rooms/${roomId}/chat`, {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -1534,8 +1564,9 @@ export class DigitalSambaApiClient {
       anonymous?: boolean;
       breakout_id?: string;
     },
-  ): Promise<void> {
-    await this.request<void>(`/rooms/${roomId}/questions`, {
+  ): Promise<WriteResult> {
+    this.invalidateApiCache();
+    return this.request<WriteResult>(`/rooms/${roomId}/questions`, {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -1551,11 +1582,14 @@ export class DigitalSambaApiClient {
       participant: QAParticipant;
       question: string;
     },
-  ): Promise<void> {
-    await this.request<void>(`/rooms/${roomId}/questions/${questionId}`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    });
+  ): Promise<WriteResult> {
+    return this.request<WriteResult>(
+      `/rooms/${roomId}/questions/${questionId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      },
+    );
   }
 
   /**
@@ -1644,8 +1678,9 @@ export class DigitalSambaApiClient {
       answer: string;
       private?: boolean;
     },
-  ): Promise<void> {
-    await this.request<void>(
+  ): Promise<WriteResult> {
+    this.invalidateApiCache();
+    return this.request<WriteResult>(
       `/rooms/${roomId}/questions/${questionId}/answers`,
       {
         method: "POST",
@@ -1665,8 +1700,8 @@ export class DigitalSambaApiClient {
       participant: QAParticipant;
       answer: string;
     },
-  ): Promise<void> {
-    await this.request<void>(
+  ): Promise<WriteResult> {
+    return this.request<WriteResult>(
       `/rooms/${roomId}/questions/${questionId}/answers/${answerId}`,
       {
         method: "PATCH",
@@ -1969,6 +2004,8 @@ export class DigitalSambaApiClient {
         `Digital Samba API error (${response.status}): ${errorText}`,
       );
     }
+
+    this.invalidateApiCache();
 
     const text = await response.text();
     if (!text || text.trim() === "") return {};
@@ -2938,8 +2975,8 @@ export class DigitalSambaApiClient {
   /**
    * Connect to SIP phone bridge
    */
-  async connectPhone(roomId: string): Promise<void> {
-    await this.request<void>(`/rooms/${roomId}/phone/connect`, {
+  async connectPhone(roomId: string): Promise<WriteResult> {
+    return this.request<WriteResult>(`/rooms/${roomId}/phone/connect`, {
       method: "POST",
     });
   }
@@ -2947,8 +2984,8 @@ export class DigitalSambaApiClient {
   /**
    * Disconnect from SIP phone bridge
    */
-  async disconnectPhone(roomId: string): Promise<void> {
-    await this.request<void>(`/rooms/${roomId}/phone/disconnect`, {
+  async disconnectPhone(roomId: string): Promise<WriteResult> {
+    return this.request<WriteResult>(`/rooms/${roomId}/phone/disconnect`, {
       method: "POST",
     });
   }
@@ -3113,8 +3150,8 @@ export class DigitalSambaApiClient {
   async startRestreamer(
     roomId: string,
     options: RestreamerOptions,
-  ): Promise<void> {
-    await this.request<void>(`/rooms/${roomId}/restreamers/start`, {
+  ): Promise<WriteResult> {
+    return this.request<WriteResult>(`/rooms/${roomId}/restreamers/start`, {
       method: "POST",
       body: JSON.stringify(options),
     });
@@ -3123,8 +3160,8 @@ export class DigitalSambaApiClient {
   /**
    * Stop live streaming
    */
-  async stopRestreamer(roomId: string): Promise<void> {
-    await this.request<void>(`/rooms/${roomId}/restreamers/stop`, {
+  async stopRestreamer(roomId: string): Promise<WriteResult> {
+    return this.request<WriteResult>(`/rooms/${roomId}/restreamers/stop`, {
       method: "POST",
     });
   }
