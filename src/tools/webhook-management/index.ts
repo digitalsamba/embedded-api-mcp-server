@@ -478,15 +478,26 @@ async function handleUpdateWebhook(
   logger.info("Updating webhook", { webhookId, updates: Object.keys(updates) });
 
   try {
-    const webhook = await apiClient.updateWebhook(webhookId, updates);
+    // The API takes authorization_header; passing the tool's camelCase
+    // authorizationHeader through unmapped made it silently ignore the change
+    // while still returning 200. create-webhook has always mapped it.
+    const { authorizationHeader, ...rest } = updates;
+    const payload: Record<string, unknown> = {
+      ...rest,
+      ...(authorizationHeader !== undefined && {
+        authorization_header: authorizationHeader,
+      }),
+    };
 
-    const updatedFields = Object.keys(updates).join(", ");
+    const webhook = await apiClient.updateWebhook(webhookId, payload);
+
+    const updatedFields = Object.keys(payload).join(", ");
 
     return {
       content: [
         {
           type: "text",
-          text: `Successfully updated webhook "${webhook.name || "Unnamed"}". Updated fields: ${updatedFields}`,
+          text: `Updated webhook "${webhook.name || "Unnamed"}" (${webhookId}). Fields: ${updatedFields}`,
         },
       ],
     };
