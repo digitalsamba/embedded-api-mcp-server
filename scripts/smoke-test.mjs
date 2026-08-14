@@ -363,7 +363,7 @@ async function run() {
 
   await knownIssue(
     "import-polls creates polls",
-    "API defect: /rooms/{id}/polls/import accepts and discards",
+    "API defect: PollsController@import hardcodes preview mode, never saves",
     async () => {
       const countPolls = async () => {
         const text = await call("list-polls", { room_id: created.roomId });
@@ -382,6 +382,19 @@ async function run() {
       return `${before} -> ${after}`;
     },
   );
+
+  await check("publish-poll-results refuses (no such endpoint)", async () => {
+    const error = await callExpectingError("publish-poll-results", {
+      room_id: created.roomId,
+      poll_id: pollId,
+      session_id: "00000000-0000-0000-0000-000000000000",
+    });
+    must(
+      /not supported/i.test(error),
+      `expected an unsupported-endpoint refusal, got: ${error.slice(0, 120)}`,
+    );
+    return "refused, as it must";
+  });
 
   await check("delete-poll removes it", async () => {
     await call("delete-poll", { room_id: created.roomId, poll_id: pollId });

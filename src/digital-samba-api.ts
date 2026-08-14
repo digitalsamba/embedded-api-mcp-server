@@ -2935,6 +2935,10 @@ export class DigitalSambaApiClient {
 
   /**
    * Publish poll results
+   *
+   * @deprecated The API does not route this path — no `publish` action exists in
+   * the backend. Kept only so the dead path stays visible; publish-poll-results
+   * refuses without calling it.
    */
   async publishPollResults(pollId: string, sessionId: string): Promise<void> {
     await this.request<void>(

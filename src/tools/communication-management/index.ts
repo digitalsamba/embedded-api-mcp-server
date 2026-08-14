@@ -49,6 +49,36 @@ interface ToolDefinition {
 /**
  * Shared schema for the Q&A participant identity object
  */
+/**
+ * Chat's own participant schema.
+ *
+ * `POST /rooms/{room}/chat` validates `message` and nothing else, so this object
+ * is dropped by the API before it reaches the signalling server. It is the right
+ * shape — the Q&A endpoints take exactly this and resolve it to a real
+ * participant — chat just never wired it up, which is the leading explanation
+ * for why chat sends deliver nothing at all. Kept so callers can already pass a
+ * sender, and described so nobody believes it works today.
+ */
+const chatParticipantSchema = {
+  type: "object",
+  description:
+    "Intended sender: either { id } or { name, external_id }. NOT HONOURED TODAY — the chat endpoint validates only the message text and drops this, which is why messages currently go nowhere. Accepted so callers are ready when the API resolves senders the way the Q&A endpoints already do.",
+  properties: {
+    id: {
+      type: "string",
+      description: "UUID of an existing participant (not honoured today)",
+    },
+    name: {
+      type: "string",
+      description: "Participant display name (not honoured today)",
+    },
+    external_id: {
+      type: "string",
+      description: "External participant ID (not honoured today)",
+    },
+  },
+};
+
 const qaParticipantSchema = {
   type: "object",
   description:
@@ -377,7 +407,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
             type: "string",
             description: "The chat message text",
           },
-          participant: qaParticipantSchema,
+          participant: chatParticipantSchema,
         },
         required: ["roomId", "message"],
       },

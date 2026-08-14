@@ -10,7 +10,8 @@
  * - delete-poll: Delete a specific poll
  * - delete-session-polls: Delete all polls for a session
  * - delete-room-polls: Delete all polls for all sessions in a room
- * - publish-poll-results: Publish poll results to participants
+ * - publish-poll-results: unsupported; the API has no publish-results endpoint,
+ *   so this reports failure rather than silently doing nothing
  *
  * @module tools/poll-management
  * @author Digital Samba Team
@@ -219,7 +220,7 @@ export function registerPollTools(): ToolDefinition[] {
     {
       name: "publish-poll-results",
       description:
-        '[Poll Management] Publish/share poll results with participants. Use when users say: "show poll results", "publish poll results", "share voting results", "display poll outcome", "reveal survey results". Requires room_id, poll_id, and session_id. Makes results visible to all participants.',
+        "[Poll Management] NOT SUPPORTED — the Digital Samba API has no publish-results endpoint, so this tool always reports failure and changes nothing. Retained so that callers get an explicit error rather than a silent no-op. To read poll results, use export-poll-results.",
       annotations: getToolAnnotations(
         "publish-poll-results",
         "Publish Poll Results",
@@ -238,7 +239,7 @@ export function registerPollTools(): ToolDefinition[] {
           session_id: {
             type: "string",
             description:
-              "The ID of the session to publish results for. Required: the API rejects the request without it.",
+              "The ID of the session. Unused — there is no endpoint to send it to.",
           },
         },
         required: ["room_id", "poll_id", "session_id"],
@@ -336,7 +337,7 @@ export async function executePollTool(
     case "delete-room-polls":
       return handleDeleteRoomPolls(params, apiClient);
     case "publish-poll-results":
-      return handlePublishPollResults(params, apiClient);
+      return handlePublishPollResults(params);
     case "list-polls":
       return handleListPolls(params, apiClient);
     case "get-poll-import-template":
@@ -800,10 +801,11 @@ async function handleDeleteRoomPolls(
 /**
  * Handle publish poll results
  */
-async function handlePublishPollResults(
-  params: { room_id: string; poll_id: string; session_id?: string },
-  apiClient: DigitalSambaApiClient,
-): Promise<any> {
+async function handlePublishPollResults(params: {
+  room_id: string;
+  poll_id: string;
+  session_id?: string;
+}): Promise<any> {
   const { room_id, poll_id, session_id } = params;
 
   if (!room_id || room_id.trim() === "") {
@@ -830,69 +832,31 @@ async function handlePublishPollResults(
     };
   }
 
-  logger.info("Publishing poll results", {
+  // There is no publish-results endpoint. The client posts to
+  // /sessions/{session}/polls/{poll}/publish-results, which is not routed by the
+  // API at all — confirmed against the backend source, where neither routes/ nor
+  // any controller defines a `publish` action. The call can only ever 404, and
+  // the previous "Session ID is required" refusal was this server's own guard,
+  // never the API's, so the tool never reached the point of finding that out.
+  logger.info("Refusing publish-poll-results: no such API endpoint", {
     roomId: room_id,
     pollId: poll_id,
     sessionId: session_id,
   });
 
-  try {
-    // The API method expects session_id as a required parameter
-    // If not provided, we'll need to get the current session or return an error
-    if (!session_id) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "Session ID is required to publish poll results. Please provide the session ID.",
-          },
-        ],
-        isError: true,
-      };
-    }
-
-    await apiClient.publishPollResults(poll_id, session_id);
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Successfully published results for poll ${poll_id} in room ${room_id} (session ${session_id})`,
-        },
-      ],
-    };
-  } catch (error) {
-    logger.error("Error publishing poll results", {
-      roomId: room_id,
-      pollId: poll_id,
-      sessionId: session_id,
-      error: error instanceof Error ? error.message : String(error),
-    });
-
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    let displayMessage = `Error publishing poll results: ${errorMessage}`;
-
-    if (
-      errorMessage.includes("Poll not found") ||
-      errorMessage.includes("404")
-    ) {
-      displayMessage = `Poll with ID ${poll_id} not found`;
-    } else if (errorMessage.includes("Session not found")) {
-      displayMessage = `Session with ID ${session_id} not found`;
-    } else if (errorMessage.includes("Room not found")) {
-      displayMessage = `Room with ID ${room_id} not found`;
-    }
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: displayMessage,
-        },
-      ],
-      isError: true,
-    };
-  }
+  return {
+    content: [
+      {
+        type: "text",
+        text:
+          `Publishing poll results is not supported: the Digital Samba API has no ` +
+          `publish-results endpoint. Poll ${poll_id} in room ${room_id} was not ` +
+          `changed and participants were not shown anything. Results can still be ` +
+          `read with export-poll-results.`,
+      },
+    ],
+    isError: true,
+  };
 }
 
 /**

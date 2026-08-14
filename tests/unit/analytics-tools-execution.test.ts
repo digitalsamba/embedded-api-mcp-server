@@ -108,9 +108,15 @@ describe('Analytics Tools Execution', () => {
           mockApiClient
         );
         
+        // `period` is never forwarded: the API has no such parameter. It is
+        // translated into the date range the API does accept.
         expect(mockAnalyticsResource.getRoomAnalytics).toHaveBeenCalledWith(
           'room-123',
-          { room_id: 'room-123', period: 'month' }
+          {
+            room_id: 'room-123',
+            date_start: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+            date_end: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+          }
         );
         
         expect(result.content[0].text).toContain('room-123');
@@ -203,9 +209,10 @@ describe('Analytics Tools Execution', () => {
         );
         
         expect(mockAnalyticsResource.getTeamAnalytics).toHaveBeenCalledWith({
-          period: 'week'
+          date_start: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+          date_end: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
         });
-        
+
         expect(result.content[0].text).toContain('usage');
       });
     });
@@ -225,10 +232,40 @@ describe('Analytics Tools Execution', () => {
           mockApiClient
         );
         
+        // An explicit date wins: `period` does not fill in, and is not sent.
         expect(mockAnalyticsResource.getTeamAnalytics).toHaveBeenCalledWith({
-          date_start: '2025-01-01',
-          period: 'month'
+          date_start: '2025-01-01'
         });
+      });
+
+      it('should translate period into a date range of the right span', async () => {
+        mockAnalyticsResource.getTeamAnalytics.mockResolvedValueOnce({});
+
+        await executeAnalyticsTool(
+          'get-team-analytics',
+          { period: 'week' },
+          mockApiClient
+        );
+
+        const filters = mockAnalyticsResource.getTeamAnalytics.mock.calls[0][0];
+        const spanDays =
+          (Date.parse(filters.date_end) - Date.parse(filters.date_start)) /
+          86_400_000;
+
+        expect(spanDays).toBe(7);
+        expect(filters.period).toBeUndefined();
+      });
+
+      it('should leave the range unbounded for an unrecognised period', async () => {
+        mockAnalyticsResource.getTeamAnalytics.mockResolvedValueOnce({});
+
+        await executeAnalyticsTool(
+          'get-team-analytics',
+          { period: 'fortnight' },
+          mockApiClient
+        );
+
+        expect(mockAnalyticsResource.getTeamAnalytics).toHaveBeenCalledWith({});
       });
     });
 

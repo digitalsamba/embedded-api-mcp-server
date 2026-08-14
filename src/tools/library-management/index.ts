@@ -497,7 +497,7 @@ export function registerLibraryTools(): ToolDefinition[] {
     {
       name: "copy-library-content",
       description:
-        '[Content Library] Copy files or folders within/between libraries. Use when users say: "copy file", "duplicate folder", "copy to another library", "clone content", "duplicate files". Requires source/target library IDs, content type and ID. Can rename during copy.',
+        '[Content Library] Copy content within/between libraries. Use when users say: "copy file", "duplicate folder", "copy to another library", "clone content". LIMITED: the API has no copy endpoint, so only webapps can be truly duplicated (by recreating them from their URL). Stored files are refused — their contents cannot be duplicated server-side. Folders are created empty, without their contents. Requires source/target library IDs, content type and ID. Can rename during copy.',
       annotations: getToolAnnotations(
         "copy-library-content",
         "Copy Library Content",
@@ -2082,26 +2082,51 @@ async function handleCopyLibraryContent(
         contentId,
       );
 
-      // Create new file in target library
-      const fileData: any = {
-        name: newName || sourceFile.name,
-        size: sourceFile.size,
-        mime_type: sourceFile.type || "application/octet-stream",
-      };
-      if (targetFolderId) fileData.folder_id = targetFolderId;
+      // A webapp is fully described by its URL, so it can genuinely be
+      // duplicated — recreate it rather than leaving a typeless placeholder.
+      if (sourceFile.url) {
+        const webappData: { url: string; name?: string; folder_id?: string } = {
+          url: sourceFile.url,
+          name: newName || sourceFile.name,
+        };
+        if (targetFolderId) webappData.folder_id = targetFolderId;
 
-      const newFile = await apiClient.createLibraryFile(
-        targetLibraryId,
-        fileData,
-      );
+        const newWebapp = await apiClient.createWebapp(
+          targetLibraryId,
+          webappData,
+        );
 
+        return {
+          content: [
+            {
+              type: "text",
+              text:
+                `Copied webapp "${sourceFile.name}" to library ${targetLibraryId} ` +
+                `as "${newWebapp.name}" (id ${newWebapp.id}, type ${newWebapp.type}, ` +
+                `url ${newWebapp.url}).`,
+            },
+          ],
+        };
+      }
+
+      // Anything else is a stored file, and the API exposes no copy endpoint for
+      // one — the only public library writes are create + upload. This used to
+      // call createLibraryFile with the source's name and size, which produced
+      // an empty placeholder stuck at status `uploading` and reported it as
+      // "Successfully copied file". Nothing was ever copied, for any file type.
       return {
         content: [
           {
             type: "text",
-            text: `Successfully copied file "${sourceFile.name}" to library ${targetLibraryId}. New file ID: ${newFile.file_id}. Upload URL: ${newFile.external_storage_url}`,
+            text:
+              `Copying stored files is not supported: the Digital Samba API has no ` +
+              `copy endpoint, and file contents cannot be duplicated server-side. ` +
+              `"${sourceFile.name}" was not copied and nothing was created in ` +
+              `library ${targetLibraryId}. To place a new file there, use ` +
+              `create-library-file and upload the content to the URL it returns.`,
           },
         ],
+        isError: true,
       };
     } else {
       // For folders, we need to recursively copy
@@ -2127,7 +2152,10 @@ async function handleCopyLibraryContent(
         content: [
           {
             type: "text",
-            text: `Successfully copied folder to library ${targetLibraryId}. New folder ID: ${newFolder.id}. Note: Folder contents were not copied - this would require recursive copying.`,
+            text:
+              `Created an empty folder "${newFolder.name ?? folderData.name}" (id ${newFolder.id}) in ` +
+              `library ${targetLibraryId}. Its contents were NOT copied: the API has ` +
+              `no copy endpoint, so only the folder itself could be created.`,
           },
         ],
       };
