@@ -633,7 +633,10 @@ async function run() {
   group("session-dependent");
 
   const liveOnly = [
-    ["send-chat-message", "API defect: delivers nothing (verified 2026-08-13)"],
+    [
+      "send-chat-message",
+      "signalling server has no chat endpoint; backend fix scheduled (proven 2026-08-14)",
+    ],
     ["create-question", "needs an active session"],
     ["raise-participant-hand", "needs a live participant"],
     ["start-transcription", "needs an active session"],

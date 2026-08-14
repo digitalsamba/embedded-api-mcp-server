@@ -1558,10 +1558,58 @@ async function handleSendChatMessage(
   const { roomId, message, participant } = params;
 
   // The chat export is the only read-back available, and it only contains
-  // anything when the room persists chat. Without persistence an empty export
-  // proves nothing, so don't verify against it — claiming the message failed
-  // would be as wrong as claiming it was delivered.
+  // anything when the room persists chat. Where the room does persist, the
+  // export decides the outcome; where it does not, an empty export would prove
+  // nothing on its own — but we no longer need it to.
+  //
+  // Delivery is impossible on every account: the API forwards the message to
+  // `{signalling}/rooms/{uuid}/chatMessages`, which no released build of the
+  // signalling server routes, and then reports 200 regardless. Verified on
+  // 2026-08-14 by raw curl in a live session — two API sends returned 200 and
+  // reached neither the room nor any read endpoint, while a message typed in the
+  // browser the same minute persisted and exported correctly. So when there is
+  // no read-back to run, report the known failure rather than "accepted,
+  // unverified", which reassures the caller about something that cannot happen.
+  //
+  // A fix is scheduled backend-side. Once it lands, rooms that persist chat
+  // start passing on their own; delete this branch to restore the honest
+  // unverified wording for the rest.
   const persists = await roomPersistsChat(roomId, apiClient);
+
+  if (!persists) {
+    // Still issue the request. It costs nothing, and once the backend fix lands
+    // it is the difference between a delivered message and a lost one.
+    try {
+      logger.info("Sending chat message (unverifiable room)", { roomId });
+      await apiClient.sendChatMessage(roomId, { message, participant });
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error sending chat message: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: "text",
+          text:
+            `Chat message NOT delivered to room ${roomId}. The API accepted the ` +
+            `request and returned success, but the platform cannot deliver it: the ` +
+            `signalling server has no chat endpoint, so nothing reaches the room. ` +
+            `No read-back is available for this room either, so this cannot be ` +
+            `confirmed from here. A backend fix is scheduled; until it ships, treat ` +
+            `every send as failed.`,
+        },
+      ],
+      isError: true,
+    };
+  }
 
   return verifiedWrite({
     required: { roomId, message },
@@ -1572,20 +1620,18 @@ async function handleSendChatMessage(
       logger.info("Sending chat message", { roomId });
       return apiClient.sendChatMessage(roomId, { message, participant });
     },
-    verify: persists
-      ? async () => {
-          const exported = await apiClient.exportChatMessages(roomId, {
-            format: "json",
-          });
-          const found = exportContains(exported, message);
-          return {
-            landed: found,
-            evidence: found
-              ? "the message appears in the room's chat export"
-              : "the message is absent from the room's chat export",
-          };
-        }
-      : undefined,
+    verify: async () => {
+      const exported = await apiClient.exportChatMessages(roomId, {
+        format: "json",
+      });
+      const found = exportContains(exported, message);
+      return {
+        landed: found,
+        evidence: found
+          ? "the message appears in the room's chat export"
+          : "the message is absent from the room's chat export",
+      };
+    },
   });
 }
 

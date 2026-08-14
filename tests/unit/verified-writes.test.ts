@@ -286,9 +286,11 @@ describe("send-chat-message", () => {
     expect(textOf(result)).toContain("confirmed by read-back");
   });
 
-  it("does not verify against the export when the room does not persist chat", async () => {
-    // Without persistence an empty export proves nothing, so claiming failure
-    // would be as wrong as claiming delivery.
+  it("reports failure when the room offers no read-back, rather than 'unverified'", async () => {
+    // Without persistence there is no export to check. That used to mean the
+    // tool said "accepted, effect not verified" — a reassurance that cannot be
+    // true, since the platform delivers no chat at all (the signalling server
+    // has no chat endpoint; proven live 2026-08-14). Report the known failure.
     const apiClient: any = {
       getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: false }),
       sendChatMessage: jest.fn().mockResolvedValue({}),
@@ -301,9 +303,45 @@ describe("send-chat-message", () => {
       apiClient,
     );
 
-    expect(result.isError).toBeUndefined();
-    expect(textOf(result)).toContain("not verified");
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain("NOT delivered");
     expect(apiClient.exportChatMessages).not.toHaveBeenCalled();
+  });
+
+  it("still issues the request when it cannot verify", async () => {
+    // So the message lands the day the backend fix ships, rather than being
+    // dropped by us on the way out.
+    const apiClient: any = {
+      getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: false }),
+      sendChatMessage: jest.fn().mockResolvedValue({}),
+    };
+
+    await executeCommunicationTool(
+      "send-chat-message",
+      { roomId: "r1", message: "hello" },
+      apiClient,
+    );
+
+    expect(apiClient.sendChatMessage).toHaveBeenCalledWith("r1", {
+      message: "hello",
+      participant: undefined,
+    });
+  });
+
+  it("reports a transport error distinctly from an undeliverable message", async () => {
+    const apiClient: any = {
+      getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: false }),
+      sendChatMessage: jest.fn().mockRejectedValue(new Error("boom")),
+    };
+
+    const result = await executeCommunicationTool(
+      "send-chat-message",
+      { roomId: "r1", message: "hello" },
+      apiClient,
+    );
+
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain("boom");
   });
 });
 
