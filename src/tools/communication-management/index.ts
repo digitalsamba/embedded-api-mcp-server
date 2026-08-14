@@ -52,29 +52,31 @@ interface ToolDefinition {
 /**
  * Chat's own participant schema.
  *
- * `POST /rooms/{room}/chat` validates `message` and nothing else, so this object
- * is dropped by the API before it reaches the signalling server. It is the right
- * shape — the Q&A endpoints take exactly this and resolve it to a real
- * participant — chat just never wired it up, which is the leading explanation
- * for why chat sends deliver nothing at all. Kept so callers can already pass a
- * sender, and described so nobody believes it works today.
+ * Dropped twice over. `SendMessageRequest` validates `message` alone, so this
+ * object never leaves Laravel; and it would not matter if it did, because the
+ * signalling server has no chat endpoint on `master` at all — sending chat is a
+ * WebSocket-only operation there, while Q&A was deliberately given an external
+ * HTTP surface. So chat sends 404 internally and are reported as 200.
+ *
+ * Kept in the schema because it is the shape Q&A uses and the shape a real
+ * implementation would want, but described so nobody expects it to do anything.
  */
 const chatParticipantSchema = {
   type: "object",
   description:
-    "Intended sender: either { id } or { name, external_id }. NOT HONOURED TODAY — the chat endpoint validates only the message text and drops this, which is why messages currently go nowhere. Accepted so callers are ready when the API resolves senders the way the Q&A endpoints already do.",
+    "Intended sender: either { id } or { name, external_id }. HAS NO EFFECT — the chat endpoint validates only the message text and drops this. Note that chat sending does not work at all on any account (see the tool description), so this is not the reason a message fails to arrive.",
   properties: {
     id: {
       type: "string",
-      description: "UUID of an existing participant (not honoured today)",
+      description: "UUID of an existing participant (no effect)",
     },
     name: {
       type: "string",
-      description: "Participant display name (not honoured today)",
+      description: "Participant display name (no effect)",
     },
     external_id: {
       type: "string",
-      description: "External participant ID (not honoured today)",
+      description: "External participant ID (no effect)",
     },
   },
 };
@@ -394,7 +396,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     {
       name: "send-chat-message",
       description:
-        '[Communication Management] Send a chat message to a room. Use when users say: "send a message to the room", "post in chat", "send chat message". Requires roomId and message.',
+        '[Communication Management] Send a chat message to a room. Use when users say: "send a message to the room", "post in chat", "send chat message". Requires roomId and message. KNOWN BROKEN: the platform cannot deliver these — the signalling server has no chat endpoint, so the API accepts the message, drops it, and returns success. This tool reads the chat back and reports the failure instead of repeating that claim. Not fixable from here.',
       annotations: getToolAnnotations("send-chat-message", "Send Chat Message"),
       inputSchema: {
         type: "object",
