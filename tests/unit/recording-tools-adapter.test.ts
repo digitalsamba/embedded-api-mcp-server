@@ -73,7 +73,11 @@ describe("Recording Tools Adapter", () => {
         mockClient
       );
 
-      expect(result.content[0].text).toBe("Recording update not supported");
+      // Must be an error: the rename did not happen, so a plain message
+      // would read to the client as a successful update.
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("not supported");
+      expect(result.content[0].text).toContain("rec123");
     });
 
     it("should get recordings", async () => {

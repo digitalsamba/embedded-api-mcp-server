@@ -206,14 +206,19 @@ export async function executeRecordingTool(
       };
 
     case "update-recording":
-      // Update recording not supported in base API
+      // The API has no recording-update endpoint. This has always returned a
+      // plain message, which a client reads as a successful call — so a rename
+      // looked like it worked. Mark it as the failure it is.
       return {
         content: [
           {
             type: "text",
-            text: `Recording update not supported`,
+            text:
+              `Renaming recordings is not supported: the Digital Samba API has no ` +
+              `recording-update endpoint. Recording ${args.recording_id} was not changed.`,
           },
         ],
+        isError: true,
       };
 
     case "get-recordings": {

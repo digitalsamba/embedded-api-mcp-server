@@ -82,7 +82,8 @@ export function registerAnalyticsTools(): Tool[] {
           period: {
             type: "string",
             enum: ["day", "week", "month", "year"],
-            description: "Analytics period",
+            description:
+              "Shorthand for a date range ending today (day = last 24h, week = last 7 days, month, year). Translated by this server into dateStart/dateEnd, which the API takes instead; ignored if you supply either date yourself.",
           },
         },
         required: [],
@@ -110,7 +111,8 @@ export function registerAnalyticsTools(): Tool[] {
           period: {
             type: "string",
             enum: ["day", "week", "month", "year"],
-            description: "Analytics period",
+            description:
+              "Shorthand for a date range ending today (day = last 24h, week = last 7 days, month, year). Translated by this server into dateStart/dateEnd, which the API takes instead; ignored if you supply either date yourself.",
           },
         },
         required: [],
@@ -139,7 +141,8 @@ export function registerAnalyticsTools(): Tool[] {
           period: {
             type: "string",
             enum: ["day", "week", "month", "year"],
-            description: "Analytics period for grouping",
+            description:
+              "Shorthand for a date range ending today (day = last 24h, week = last 7 days, month, year). Translated by this server into dateStart/dateEnd, which the API takes instead; ignored if you supply either date yourself.",
           },
         },
       },
@@ -223,6 +226,46 @@ export function registerAnalyticsTools(): Tool[] {
 }
 
 /**
+ * Translate the `period` shorthand into the date range the API actually accepts.
+ *
+ * The statistics endpoints take `date_start` and `date_end` only — there is no
+ * `period` parameter on any of them, so sending one had no effect and callers
+ * asking for "last week" silently received all-time figures. Deriving an
+ * explicit range here makes the parameter mean what the tools advertise.
+ *
+ * Returns undefined for an unknown period, so an unrecognised value falls back
+ * to the unbounded query rather than inventing a range.
+ */
+function periodToDateRange(
+  period?: string,
+): { date_start: string; date_end: string } | undefined {
+  if (!period) return undefined;
+
+  const end = new Date();
+  const start = new Date(end);
+
+  switch (period) {
+    case "day":
+      start.setUTCDate(start.getUTCDate() - 1);
+      break;
+    case "week":
+      start.setUTCDate(start.getUTCDate() - 7);
+      break;
+    case "month":
+      start.setUTCMonth(start.getUTCMonth() - 1);
+      break;
+    case "year":
+      start.setUTCFullYear(start.getUTCFullYear() - 1);
+      break;
+    default:
+      return undefined;
+  }
+
+  const asDate = (d: Date) => d.toISOString().slice(0, 10);
+  return { date_start: asDate(start), date_end: asDate(end) };
+}
+
+/**
  * Handle analytics tool execution
  *
  * @param toolName - The name of the tool being executed
@@ -238,14 +281,21 @@ export async function executeAnalyticsTool(
   try {
     const analytics = new AnalyticsResource(apiClient);
 
+    // An explicit range always wins; `period` only fills in when neither bound
+    // was given. `period` itself is never forwarded — the API has no such
+    // parameter and ignores it.
+    const derivedRange =
+      args.dateStart || args.dateEnd
+        ? undefined
+        : periodToDateRange(args.period);
+
     // Build filters from arguments and convert to snake_case
     const filters: AnalyticsFilters = {
-      date_start: args.dateStart,
-      date_end: args.dateEnd,
+      date_start: args.dateStart ?? derivedRange?.date_start,
+      date_end: args.dateEnd ?? derivedRange?.date_end,
       room_id: args.roomId,
       session_id: args.sessionId,
       participant_id: args.participantId,
-      period: args.period,
     };
 
     // Remove undefined and null values

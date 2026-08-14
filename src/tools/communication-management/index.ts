@@ -31,6 +31,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
 import { getToolAnnotations } from "../../tool-annotations.js";
+import { verifiedWrite } from "../verified-write.js";
 
 /**
  * Tool definition interface
@@ -48,6 +49,38 @@ interface ToolDefinition {
 /**
  * Shared schema for the Q&A participant identity object
  */
+/**
+ * Chat's own participant schema.
+ *
+ * Dropped twice over. `SendMessageRequest` validates `message` alone, so this
+ * object never leaves Laravel; and it would not matter if it did, because the
+ * signalling server has no chat endpoint on `master` at all — sending chat is a
+ * WebSocket-only operation there, while Q&A was deliberately given an external
+ * HTTP surface. So chat sends 404 internally and are reported as 200.
+ *
+ * Kept in the schema because it is the shape Q&A uses and the shape a real
+ * implementation would want, but described so nobody expects it to do anything.
+ */
+const chatParticipantSchema = {
+  type: "object",
+  description:
+    "Intended sender: either { id } or { name, external_id }. HAS NO EFFECT — the chat endpoint validates only the message text and drops this. Note that chat sending does not work at all on any account (see the tool description), so this is not the reason a message fails to arrive.",
+  properties: {
+    id: {
+      type: "string",
+      description: "UUID of an existing participant (no effect)",
+    },
+    name: {
+      type: "string",
+      description: "Participant display name (no effect)",
+    },
+    external_id: {
+      type: "string",
+      description: "External participant ID (no effect)",
+    },
+  },
+};
+
 const qaParticipantSchema = {
   type: "object",
   description:
@@ -363,7 +396,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     {
       name: "send-chat-message",
       description:
-        '[Communication Management] Send a chat message to a room. Use when users say: "send a message to the room", "post in chat", "send chat message". Requires roomId and message.',
+        '[Communication Management] Send a chat message to a room. Use when users say: "send a message to the room", "post in chat", "send chat message". Requires roomId and message. KNOWN BROKEN: the platform cannot deliver these — the signalling server has no chat endpoint, so the API accepts the message, drops it, and returns success. This tool reads the chat back and reports the failure instead of repeating that claim. Not fixable from here.',
       annotations: getToolAnnotations("send-chat-message", "Send Chat Message"),
       inputSchema: {
         type: "object",
@@ -376,7 +409,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
             type: "string",
             description: "The chat message text",
           },
-          participant: qaParticipantSchema,
+          participant: chatParticipantSchema,
         },
         required: ["roomId", "message"],
       },
@@ -640,49 +673,49 @@ export async function executeCommunicationTool(
         params,
         apiClient,
         (c, p) => c.dismissQuestion(p.roomId, p.questionId, p.participant),
-        "Dismissed question",
+        "Dismissed",
       );
     case "reopen-question":
       return handleQuestionAction(
         params,
         apiClient,
         (c, p) => c.reopenQuestion(p.roomId, p.questionId, p.participant),
-        "Reopened question",
+        "Reopened",
       );
     case "upvote-question":
       return handleQuestionAction(
         params,
         apiClient,
         (c, p) => c.upvoteQuestion(p.roomId, p.questionId, p.participant),
-        "Upvoted question",
+        "Upvoted",
       );
     case "remove-question-vote":
       return handleQuestionAction(
         params,
         apiClient,
         (c, p) => c.removeQuestionVote(p.roomId, p.questionId, p.participant),
-        "Removed vote from question",
+        "Removed vote from",
       );
     case "start-question-live-answer":
       return handleQuestionAction(
         params,
         apiClient,
         (c, p) => c.startLiveAnswer(p.roomId, p.questionId, p.participant),
-        "Started live answer for question",
+        "Started live answer for",
       );
     case "stop-question-live-answer":
       return handleQuestionAction(
         params,
         apiClient,
         (c, p) => c.stopLiveAnswer(p.roomId, p.questionId, p.participant),
-        "Stopped live answer for question",
+        "Stopped live answer for",
       );
     case "cancel-question-live-answer":
       return handleQuestionAction(
         params,
         apiClient,
         (c, p) => c.cancelLiveAnswer(p.roomId, p.questionId, p.participant),
-        "Cancelled live answer for question",
+        "Cancelled live answer for",
       );
     case "answer-question":
       return handleAnswerQuestion(params, apiClient);
@@ -1498,30 +1531,21 @@ async function handleDeleteSessionResources(
 async function runQaHandler(
   requiredFields: Record<string, any>,
   action: () => Promise<any>,
-  successText: string,
+  verb: string,
+  describe: string,
 ): Promise<any> {
-  for (const [field, value] of Object.entries(requiredFields)) {
-    if (value === undefined || value === null || value === "") {
-      return {
-        content: [{ type: "text", text: `${field} is required.` }],
-        isError: true,
-      };
-    }
-  }
-
-  try {
-    await action();
-    return {
-      content: [{ type: "text", text: successText }],
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logger.error("Q&A tool error", { error: message });
-    return {
-      content: [{ type: "text", text: message }],
-      isError: true,
-    };
-  }
+  // No read-back for these: the Q&A action endpoints have no matching read that
+  // would distinguish "applied" from "accepted and ignored" without pulling the
+  // whole Q&A export per call. verifiedWrite reports the response body's
+  // evidence when there is any, and says plainly that it is unverified when
+  // there is not.
+  return verifiedWrite({
+    required: requiredFields,
+    describe,
+    verb,
+    errorLabel: `on ${describe}`,
+    action,
+  });
 }
 
 /**
@@ -1532,14 +1556,157 @@ async function handleSendChatMessage(
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { roomId, message, participant } = params;
-  return runQaHandler(
-    { roomId, message },
-    async () => {
-      logger.info("Sending chat message", { roomId });
+
+  // The chat export is the only read-back available, and it only contains
+  // anything when the room persists chat. Where the room does persist, the
+  // export decides the outcome; where it does not, an empty export would prove
+  // nothing on its own — but we no longer need it to.
+  //
+  // Delivery is impossible on every account: the API forwards the message to
+  // `{signalling}/rooms/{uuid}/chatMessages`, which no released build of the
+  // signalling server routes, and then reports 200 regardless. Verified on
+  // 2026-08-14 by raw curl in a live session — two API sends returned 200 and
+  // reached neither the room nor any read endpoint, while a message typed in the
+  // browser the same minute persisted and exported correctly. So when there is
+  // no read-back to run, report the known failure rather than "accepted,
+  // unverified", which reassures the caller about something that cannot happen.
+  //
+  // A fix is scheduled backend-side. Once it lands, rooms that persist chat
+  // start passing on their own; delete this branch to restore the honest
+  // unverified wording for the rest.
+  const persists = await roomPersistsChat(roomId, apiClient);
+
+  if (!persists) {
+    // Still issue the request. It costs nothing, and once the backend fix lands
+    // it is the difference between a delivered message and a lost one.
+    try {
+      logger.info("Sending chat message (unverifiable room)", { roomId });
       await apiClient.sendChatMessage(roomId, { message, participant });
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Error sending chat message: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: "text",
+          text:
+            `Chat message NOT delivered to room ${roomId}. The API accepted the ` +
+            `request and returned success, but the platform cannot deliver it: the ` +
+            `signalling server has no chat endpoint, so nothing reaches the room. ` +
+            `No read-back is available for this room either, so this cannot be ` +
+            `confirmed from here. A backend fix is scheduled; until it ships, treat ` +
+            `every send as failed.`,
+        },
+      ],
+      isError: true,
+    };
+  }
+
+  return verifiedWrite({
+    required: { roomId, message },
+    describe: `a chat message to room ${roomId}`,
+    verb: "Sent",
+    errorLabel: "sending chat message",
+    action: () => {
+      logger.info("Sending chat message", { roomId });
+      return apiClient.sendChatMessage(roomId, { message, participant });
     },
-    `Sent chat message to room ${roomId}`,
-  );
+    verify: async () => {
+      const exported = await apiClient.exportChatMessages(roomId, {
+        format: "json",
+      });
+      const found = exportContains(exported, message);
+      return {
+        landed: found,
+        evidence: found
+          ? "the message appears in the room's chat export"
+          : "the message is absent from the room's chat export",
+      };
+    },
+  });
+}
+
+/**
+ * Whether a room persists chat, i.e. whether the chat export can serve as a
+ * read-back. Returns false if the room cannot be read.
+ */
+async function roomPersistsChat(
+  roomId: string,
+  apiClient: DigitalSambaApiClient,
+): Promise<boolean> {
+  try {
+    const room = await apiClient.getRoom(roomId);
+    return room?.chat_persistence_enabled === true;
+  } catch (error) {
+    logger.warn("Could not read room settings to verify chat delivery", {
+      roomId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return false;
+  }
+}
+
+/**
+ * Whether an export payload contains the given text.
+ *
+ * Exports come back as an opaque string whose JSON shape is undocumented, so
+ * match on the text itself rather than on a field path that may not hold.
+ */
+function exportContains(exported: string, needle: string): boolean {
+  if (!exported) return false;
+  if (exported.includes(needle)) return true;
+  // JSON-encoded payloads escape quotes and other characters in the text.
+  return exported.includes(JSON.stringify(needle).slice(1, -1));
+}
+
+/**
+ * Recover the id of the record carrying the given text from an export payload.
+ *
+ * The create endpoints return no id and there is no list-questions tool, so
+ * this is the only way to hand the caller something it can act on. Walks the
+ * payload rather than assuming a field path, since the export shape is
+ * undocumented.
+ *
+ * @returns the id, or undefined if the payload is not JSON or has no match
+ */
+function findIdForText(exported: string, text: string): string | undefined {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(exported);
+  } catch {
+    return undefined;
+  }
+
+  const stack: unknown[] = [parsed];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (Array.isArray(node)) {
+      stack.push(...node);
+      continue;
+    }
+    if (!node || typeof node !== "object") continue;
+
+    const record = node as Record<string, unknown>;
+    const matches = Object.entries(record).some(
+      ([key, value]) => key !== "id" && value === text,
+    );
+    if (matches) {
+      const id = record.id;
+      if (typeof id === "string" || typeof id === "number") return String(id);
+    }
+    stack.push(...Object.values(record));
+  }
+
+  return undefined;
 }
 
 /**
@@ -1556,19 +1723,40 @@ async function handleCreateQuestion(
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { roomId, question, participant, anonymous, breakoutId } = params;
-  return runQaHandler(
-    { roomId, question, participant },
-    async () => {
+
+  return verifiedWrite({
+    required: { roomId, question, participant },
+    describe: `a question in room ${roomId}`,
+    verb: "Created",
+    errorLabel: "creating question",
+    action: () => {
       logger.info("Creating question", { roomId });
-      await apiClient.createQuestion(roomId, {
+      return apiClient.createQuestion(roomId, {
         participant,
         question,
         ...(anonymous !== undefined && { anonymous }),
         ...(breakoutId !== undefined && { breakout_id: breakoutId }),
       });
     },
-    `Created question in room ${roomId}`,
-  );
+    // The create endpoint returns no id, so read the Q&A back both to confirm
+    // the question exists and to recover the id the caller needs to act on it.
+    verify: async () => {
+      const exported = await apiClient.exportQA(roomId, { format: "json" });
+      if (!exportContains(exported, question)) {
+        return {
+          landed: false,
+          evidence: "the question is absent from the room's Q&A export",
+        };
+      }
+      const id = findIdForText(exported, question);
+      return {
+        landed: true,
+        evidence: id
+          ? `question id ${id}`
+          : "the question appears in the room's Q&A export",
+      };
+    },
+  });
 }
 
 /**
@@ -1588,12 +1776,13 @@ async function handleUpdateQuestion(
     { roomId, questionId, question, participant },
     async () => {
       logger.info("Updating question", { roomId, questionId });
-      await apiClient.updateQuestion(roomId, questionId, {
+      return apiClient.updateQuestion(roomId, questionId, {
         participant,
         question,
       });
     },
-    `Updated question ${questionId}`,
+    "Updated",
+    `question ${questionId}`,
   );
 }
 
@@ -1606,17 +1795,18 @@ async function handleQuestionAction(
   action: (
     client: DigitalSambaApiClient,
     params: { roomId: string; questionId: string; participant: any },
-  ) => Promise<void>,
-  successPrefix: string,
+  ) => Promise<unknown>,
+  verb: string,
 ): Promise<any> {
   const { roomId, questionId, participant } = params;
   return runQaHandler(
     { roomId, questionId, participant },
     async () => {
-      logger.info(successPrefix, { roomId, questionId });
-      await action(apiClient, params);
+      logger.info(`${verb} question`, { roomId, questionId });
+      return action(apiClient, params);
     },
-    `${successPrefix} ${questionId}`,
+    verb,
+    `question ${questionId}`,
   );
 }
 
@@ -1634,18 +1824,34 @@ async function handleAnswerQuestion(
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
   const { roomId, questionId, answer, participant } = params;
-  return runQaHandler(
-    { roomId, questionId, answer, participant },
-    async () => {
+
+  return verifiedWrite({
+    required: { roomId, questionId, answer, participant },
+    describe: `question ${questionId}`,
+    verb: "Answered",
+    errorLabel: "answering question",
+    action: () => {
       logger.info("Answering question", { roomId, questionId });
-      await apiClient.answerQuestion(roomId, questionId, {
+      return apiClient.answerQuestion(roomId, questionId, {
         participant,
         answer,
         ...(params.private !== undefined && { private: params.private }),
       });
     },
-    `Answered question ${questionId}`,
-  );
+    verify: async () => {
+      const exported = await apiClient.exportQA(roomId, { format: "json" });
+      const found = exportContains(exported, answer);
+      const id = found ? findIdForText(exported, answer) : undefined;
+      return {
+        landed: found,
+        evidence: found
+          ? id
+            ? `answer id ${id}`
+            : "the answer appears in the room's Q&A export"
+          : "the answer is absent from the room's Q&A export",
+      };
+    },
+  });
 }
 
 /**
@@ -1666,12 +1872,13 @@ async function handleUpdateAnswer(
     { roomId, questionId, answerId, answer, participant },
     async () => {
       logger.info("Updating answer", { roomId, questionId, answerId });
-      await apiClient.updateAnswer(roomId, questionId, answerId, {
+      return apiClient.updateAnswer(roomId, questionId, answerId, {
         participant,
         answer,
       });
     },
-    `Updated answer ${answerId}`,
+    "Updated",
+    `answer ${answerId}`,
   );
 }
 
@@ -1692,8 +1899,9 @@ async function handleDeleteAnswer(
     { roomId, questionId, answerId, participant },
     async () => {
       logger.info("Deleting answer", { roomId, questionId, answerId });
-      await apiClient.deleteAnswer(roomId, questionId, answerId, participant);
+      return apiClient.deleteAnswer(roomId, questionId, answerId, participant);
     },
-    `Deleted answer ${answerId}`,
+    "Deleted",
+    `answer ${answerId}`,
   );
 }

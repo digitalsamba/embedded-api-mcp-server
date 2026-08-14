@@ -10,7 +10,8 @@
  * - delete-poll: Delete a specific poll
  * - delete-session-polls: Delete all polls for a session
  * - delete-room-polls: Delete all polls for all sessions in a room
- * - publish-poll-results: Publish poll results to participants
+ * - publish-poll-results: unsupported; the API has no publish-results endpoint,
+ *   so this reports failure rather than silently doing nothing
  *
  * @module tools/poll-management
  * @author Digital Samba Team
@@ -30,6 +31,7 @@ import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
 import { normalizeBoolean } from "../../utils.js";
 import { getToolAnnotations } from "../../tool-annotations.js";
+import { countOf, verifiedWrite } from "../verified-write.js";
 
 /**
  * Tool definition interface
@@ -218,7 +220,7 @@ export function registerPollTools(): ToolDefinition[] {
     {
       name: "publish-poll-results",
       description:
-        '[Poll Management] Publish/share poll results with participants. Use when users say: "show poll results", "publish poll results", "share voting results", "display poll outcome", "reveal survey results". Requires room_id, poll_id, and session_id. Makes results visible to all participants.',
+        "[Poll Management] NOT SUPPORTED — the Digital Samba API has no publish-results endpoint, so this tool always reports failure and changes nothing. Retained so that callers get an explicit error rather than a silent no-op. To read poll results, use export-poll-results.",
       annotations: getToolAnnotations(
         "publish-poll-results",
         "Publish Poll Results",
@@ -236,10 +238,35 @@ export function registerPollTools(): ToolDefinition[] {
           },
           session_id: {
             type: "string",
-            description: "The ID of the specific session (optional)",
+            description:
+              "The ID of the session. Unused — there is no endpoint to send it to.",
           },
         },
-        required: ["room_id", "poll_id"],
+        required: ["room_id", "poll_id", "session_id"],
+      },
+    },
+    {
+      name: "list-polls",
+      description:
+        '[Poll Management - TOOL] List all polls in a room. Use when users say: "list polls", "show polls", "what polls exist", "get room polls", "show surveys". Requires room_id. Returns each poll with its ID, question, type and options.',
+      annotations: getToolAnnotations("list-polls", "List Polls"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room to list polls for",
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number of polls to return",
+          },
+          offset: {
+            type: "number",
+            description: "Number of polls to skip for pagination",
+          },
+        },
+        required: ["room_id"],
       },
     },
     {
@@ -310,7 +337,9 @@ export async function executePollTool(
     case "delete-room-polls":
       return handleDeleteRoomPolls(params, apiClient);
     case "publish-poll-results":
-      return handlePublishPollResults(params, apiClient);
+      return handlePublishPollResults(params);
+    case "list-polls":
+      return handleListPolls(params, apiClient);
     case "get-poll-import-template":
       return handleGetPollImportTemplate(params, apiClient);
     case "import-polls":
@@ -772,10 +801,11 @@ async function handleDeleteRoomPolls(
 /**
  * Handle publish poll results
  */
-async function handlePublishPollResults(
-  params: { room_id: string; poll_id: string; session_id?: string },
-  apiClient: DigitalSambaApiClient,
-): Promise<any> {
+async function handlePublishPollResults(params: {
+  room_id: string;
+  poll_id: string;
+  session_id?: string;
+}): Promise<any> {
   const { room_id, poll_id, session_id } = params;
 
   if (!room_id || room_id.trim() === "") {
@@ -802,69 +832,31 @@ async function handlePublishPollResults(
     };
   }
 
-  logger.info("Publishing poll results", {
+  // There is no publish-results endpoint. The client posts to
+  // /sessions/{session}/polls/{poll}/publish-results, which is not routed by the
+  // API at all — confirmed against the backend source, where neither routes/ nor
+  // any controller defines a `publish` action. The call can only ever 404, and
+  // the previous "Session ID is required" refusal was this server's own guard,
+  // never the API's, so the tool never reached the point of finding that out.
+  logger.info("Refusing publish-poll-results: no such API endpoint", {
     roomId: room_id,
     pollId: poll_id,
     sessionId: session_id,
   });
 
-  try {
-    // The API method expects session_id as a required parameter
-    // If not provided, we'll need to get the current session or return an error
-    if (!session_id) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: "Session ID is required to publish poll results. Please provide the session ID.",
-          },
-        ],
-        isError: true,
-      };
-    }
-
-    await apiClient.publishPollResults(poll_id, session_id);
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Successfully published results for poll ${poll_id} in room ${room_id} (session ${session_id})`,
-        },
-      ],
-    };
-  } catch (error) {
-    logger.error("Error publishing poll results", {
-      roomId: room_id,
-      pollId: poll_id,
-      sessionId: session_id,
-      error: error instanceof Error ? error.message : String(error),
-    });
-
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    let displayMessage = `Error publishing poll results: ${errorMessage}`;
-
-    if (
-      errorMessage.includes("Poll not found") ||
-      errorMessage.includes("404")
-    ) {
-      displayMessage = `Poll with ID ${poll_id} not found`;
-    } else if (errorMessage.includes("Session not found")) {
-      displayMessage = `Session with ID ${session_id} not found`;
-    } else if (errorMessage.includes("Room not found")) {
-      displayMessage = `Room with ID ${room_id} not found`;
-    }
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: displayMessage,
-        },
-      ],
-      isError: true,
-    };
-  }
+  return {
+    content: [
+      {
+        type: "text",
+        text:
+          `Publishing poll results is not supported: the Digital Samba API has no ` +
+          `publish-results endpoint. Poll ${poll_id} in room ${room_id} was not ` +
+          `changed and participants were not shown anything. Results can still be ` +
+          `read with export-poll-results.`,
+      },
+    ],
+    isError: true,
+  };
 }
 
 /**
@@ -904,6 +896,63 @@ async function handleGetPollImportTemplate(
 }
 
 /**
+ * Handle list polls
+ *
+ * Added because there was no way to list a room's polls: the API exposes
+ * GET /rooms/{id}/polls and the client has getPolls, but no tool surfaced it,
+ * so callers had to pull the entire room object and read its polls array.
+ */
+async function handleListPolls(
+  params: { room_id: string; limit?: number; offset?: number },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id, limit, offset } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Listing polls", { room_id });
+
+  try {
+    const response = await apiClient.getPolls(room_id, {
+      ...(limit !== undefined && { limit }),
+      ...(offset !== undefined && { offset }),
+    });
+    const polls = Array.isArray(response)
+      ? response
+      : ((response as any)?.data ?? []);
+
+    if (polls.length === 0) {
+      return {
+        content: [{ type: "text", text: `No polls found in room ${room_id}.` }],
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: "text",
+          text:
+            `Found ${polls.length} poll(s) in room ${room_id}:\n\n` +
+            JSON.stringify(polls, null, 2),
+        },
+      ],
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error("Error listing polls", { room_id, error: message });
+    return {
+      content: [{ type: "text", text: `Error listing polls: ${message}` }],
+      isError: true,
+    };
+  }
+}
+
+/**
  * Handle import polls from CSV
  */
 async function handleImportPolls(
@@ -928,22 +977,46 @@ async function handleImportPolls(
 
   logger.info("Importing polls from CSV", { room_id });
 
+  // Count first: the import endpoint returns 2xx with an empty body whether or
+  // not it created anything, so the delta is the only proof it did.
+  const before = await countPolls(room_id, apiClient);
+
+  return verifiedWrite({
+    describe: `polls into room ${room_id}`,
+    verb: "Imported",
+    errorLabel: "importing polls",
+    action: () => apiClient.importPolls(room_id, csv_content),
+    verify: async () => {
+      const after = await countPolls(room_id, apiClient);
+      if (before === undefined || after === undefined) {
+        throw new Error("could not list the room's polls");
+      }
+      const created = after - before;
+      return {
+        landed: created > 0,
+        evidence:
+          created > 0
+            ? `room now has ${after} poll(s), up from ${before}`
+            : `room still has ${after} poll(s); no poll was created`,
+      };
+    },
+  });
+}
+
+/**
+ * Count the polls in a room, or undefined if they cannot be listed.
+ */
+async function countPolls(
+  roomId: string,
+  apiClient: DigitalSambaApiClient,
+): Promise<number | undefined> {
   try {
-    await apiClient.importPolls(room_id, csv_content);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Successfully imported polls into room ${room_id}`,
-        },
-      ],
-    };
+    return countOf(await apiClient.getPolls(roomId));
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    logger.error("Error importing polls", { room_id, error: message });
-    return {
-      content: [{ type: "text", text: `Error importing polls: ${message}` }],
-      isError: true,
-    };
+    logger.warn("Could not count polls for import verification", {
+      roomId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return undefined;
   }
 }

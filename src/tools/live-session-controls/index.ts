@@ -31,6 +31,7 @@ import { getApiKeyFromRequest } from "../../auth.js";
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
 import { getToolAnnotations } from "../../tool-annotations.js";
+import { describeWriteResult, verifiedWrite } from "../verified-write.js";
 
 /**
  * Tool definition interface
@@ -757,32 +758,12 @@ async function handleRaiseParticipantHand(
 
   logger.info("Raising participant hand", { room_id, participant_id });
 
-  try {
-    await apiClient.raiseParticipantHand(room_id, participant_id);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Successfully raised hand for participant ${participant_id} in room ${room_id}.`,
-        },
-      ],
-    };
-  } catch (error) {
-    logger.error("Error raising participant hand", {
-      room_id,
-      participant_id,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error raising hand: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-      isError: true,
-    };
-  }
+  return verifiedWrite({
+    verb: "Raised hand for",
+    describe: `participant ${participant_id} in room ${room_id}`,
+    errorLabel: "raising hand",
+    action: () => apiClient.raiseParticipantHand(room_id, participant_id),
+  });
 }
 
 /**
@@ -810,32 +791,12 @@ async function handleLowerParticipantHand(
 
   logger.info("Lowering participant hand", { room_id, participant_id });
 
-  try {
-    await apiClient.lowerParticipantHand(room_id, participant_id);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Successfully lowered hand for participant ${participant_id} in room ${room_id}.`,
-        },
-      ],
-    };
-  } catch (error) {
-    logger.error("Error lowering participant hand", {
-      room_id,
-      participant_id,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error lowering hand: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-      isError: true,
-    };
-  }
+  return verifiedWrite({
+    verb: "Lowered hand for",
+    describe: `participant ${participant_id} in room ${room_id}`,
+    errorLabel: "lowering hand",
+    action: () => apiClient.lowerParticipantHand(room_id, participant_id),
+  });
 }
 
 /**
@@ -863,32 +824,12 @@ async function handleRaisePhoneParticipantHand(
 
   logger.info("Raising phone participant hand", { room_id, call_id });
 
-  try {
-    await apiClient.raisePhoneParticipantHand(room_id, call_id);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Successfully raised hand for phone participant ${call_id} in room ${room_id}.`,
-        },
-      ],
-    };
-  } catch (error) {
-    logger.error("Error raising phone participant hand", {
-      room_id,
-      call_id,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error raising hand: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-      isError: true,
-    };
-  }
+  return verifiedWrite({
+    verb: "Raised hand for",
+    describe: `phone participant ${call_id} in room ${room_id}`,
+    errorLabel: "raising hand",
+    action: () => apiClient.raisePhoneParticipantHand(room_id, call_id),
+  });
 }
 
 /**
@@ -916,32 +857,12 @@ async function handleLowerPhoneParticipantHand(
 
   logger.info("Lowering phone participant hand", { room_id, call_id });
 
-  try {
-    await apiClient.lowerPhoneParticipantHand(room_id, call_id);
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Successfully lowered hand for phone participant ${call_id} in room ${room_id}.`,
-        },
-      ],
-    };
-  } catch (error) {
-    logger.error("Error lowering phone participant hand", {
-      room_id,
-      call_id,
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error lowering hand: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-      isError: true,
-    };
-  }
+  return verifiedWrite({
+    verb: "Lowered hand for",
+    describe: `phone participant ${call_id} in room ${room_id}`,
+    errorLabel: "lowering hand",
+    action: () => apiClient.lowerPhoneParticipantHand(room_id, call_id),
+  });
 }
 
 /**
@@ -970,36 +891,51 @@ async function handlePhoneParticipantMute(
 
   logger.info(`Phone participant ${action}`, { room_id, call_id });
 
+  return verifiedWrite({
+    verb: action === "mute" ? "Muted" : "Unmuted",
+    describe: `phone participant ${call_id} in room ${room_id}`,
+    errorLabel: `on ${action}`,
+    action: () =>
+      action === "mute"
+        ? apiClient.mutePhoneParticipant(room_id, call_id)
+        : apiClient.unmutePhoneParticipant(room_id, call_id),
+  });
+}
+
+/**
+ * Explain why telephony is unavailable for a room, or undefined if it is
+ * available (or if we cannot tell).
+ *
+ * Only used to turn the API's misleading success into an honest refusal — if
+ * the room cannot be read, say nothing and let the call proceed rather than
+ * blocking on a check that is itself unreliable.
+ */
+async function telephonyUnavailableReason(
+  roomId: string,
+  apiClient: DigitalSambaApiClient,
+): Promise<string | undefined> {
+  let room;
   try {
-    if (action === "mute") {
-      await apiClient.mutePhoneParticipant(room_id, call_id);
-    } else {
-      await apiClient.unmutePhoneParticipant(room_id, call_id);
-    }
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Successfully ${action}d phone participant ${call_id} in room ${room_id}.`,
-        },
-      ],
-    };
+    room = await apiClient.getRoom(roomId);
   } catch (error) {
-    logger.error(`Error on phone participant ${action}`, {
-      room_id,
-      call_id,
+    logger.warn("Could not check telephony availability", {
+      roomId,
       error: error instanceof Error ? error.message : String(error),
     });
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error on ${action}: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-      isError: true,
-    };
+    return undefined;
   }
+
+  if (room?.telephony_enabled === false) {
+    return (
+      `Telephony is not enabled for room ${roomId}, so the phone bridge cannot ` +
+      `connect. Note the API returns success for this call regardless, which is ` +
+      `why this is checked here. Enable telephony for the room, or check that ` +
+      `the account's plan includes it (can_enable_telephony in ` +
+      `get-default-room-settings).`
+    );
+  }
+
+  return undefined;
 }
 
 /**
@@ -1020,13 +956,28 @@ async function handleConnectPhone(
 
   logger.info("Connecting phone bridge", { room_id });
 
+  // The connect endpoint returns 2xx even when the account has no telephony,
+  // and nothing connects — verified on an account with can_enable_telephony
+  // false. Since the API will not say no, check first and say it here.
+  const unavailable = await telephonyUnavailableReason(room_id, apiClient);
+  if (unavailable) {
+    return {
+      content: [{ type: "text", text: unavailable }],
+      isError: true,
+    };
+  }
+
   try {
-    await apiClient.connectPhone(room_id);
+    const result = await apiClient.connectPhone(room_id);
     return {
       content: [
         {
           type: "text",
-          text: `Successfully connected phone bridge for room ${room_id}.`,
+          text: describeWriteResult(
+            result,
+            "Connected the phone bridge for",
+            `room ${room_id}`,
+          ),
         },
       ],
     };
@@ -1069,12 +1020,16 @@ async function handleDisconnectPhone(
   logger.info("Disconnecting phone bridge", { room_id });
 
   try {
-    await apiClient.disconnectPhone(room_id);
+    const result = await apiClient.disconnectPhone(room_id);
     return {
       content: [
         {
           type: "text",
-          text: `Successfully disconnected phone bridge for room ${room_id}.`,
+          text: describeWriteResult(
+            result,
+            "Disconnected the phone bridge for",
+            `room ${room_id}`,
+          ),
         },
       ],
     };
@@ -1143,14 +1098,22 @@ async function handleStartRestreamer(
   });
 
   try {
-    await apiClient.startRestreamer(room_id, { type, server_url, stream_key });
+    const result = await apiClient.startRestreamer(room_id, {
+      type,
+      server_url,
+      stream_key,
+    });
 
     const destination = type || server_url;
     return {
       content: [
         {
           type: "text",
-          text: `Successfully started live streaming from room ${room_id} to ${destination}.`,
+          text: describeWriteResult(
+            result,
+            "Started live streaming from",
+            `room ${room_id} to ${destination}`,
+          ),
         },
       ],
     };
@@ -1198,12 +1161,16 @@ async function handleStopRestreamer(
   logger.info("Stopping restreamer", { room_id });
 
   try {
-    await apiClient.stopRestreamer(room_id);
+    const result = await apiClient.stopRestreamer(room_id);
     return {
       content: [
         {
           type: "text",
-          text: `Successfully stopped live streaming for room ${room_id}.`,
+          text: describeWriteResult(
+            result,
+            "Stopped live streaming for",
+            `room ${room_id}`,
+          ),
         },
       ],
     };

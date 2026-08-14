@@ -332,12 +332,20 @@ async function handleUpdateRole(
   logger.info("Updating role", { roleId, updates });
 
   try {
-    // Normalize boolean values in permissions (Claude sometimes sends 0/1)
-    const normalizedUpdates = { ...updates };
+    // The API takes display_name; sending the tool's camelCase displayName
+    // through unmapped made it silently ignore the rename while still
+    // returning 200, so the tool reported a change that never happened.
+    // create-role has always mapped it — update-role did not.
+    const { displayName, ...rest } = updates;
+    const normalizedUpdates: Record<string, unknown> = {
+      ...rest,
+      ...(displayName !== undefined && { display_name: displayName }),
+    };
+
     if (normalizedUpdates.permissions) {
       const normalizedPermissions: Record<string, boolean> = {};
       for (const [key, value] of Object.entries(
-        normalizedUpdates.permissions,
+        normalizedUpdates.permissions as Record<string, unknown>,
       )) {
         const normalized = normalizeBoolean(value);
         if (normalized !== undefined) {
@@ -349,13 +357,23 @@ async function handleUpdateRole(
 
     const role = await apiClient.updateRole(roleId, normalizedUpdates);
 
-    const updatedFields = Object.keys(updates).join(", ");
+    // Report what the API says the role now is, not what we asked it to be.
+    const applied: string[] = [];
+    if (displayName !== undefined) {
+      applied.push(
+        role.display_name === displayName
+          ? "displayName"
+          : `displayName (NOT applied — still "${role.display_name}")`,
+      );
+    }
+    if (rest.description !== undefined) applied.push("description");
+    if (rest.permissions !== undefined) applied.push("permissions");
 
     return {
       content: [
         {
           type: "text",
-          text: `Successfully updated role "${role.display_name}". Updated fields: ${updatedFields}`,
+          text: `Updated role "${role.display_name}" (${roleId}). Fields: ${applied.join(", ")}`,
         },
       ],
     };
