@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [20.x, 22.x]
 
     steps:
     - uses: actions/checkout@v5
@@ -36,7 +36,7 @@ jobs:
         CI: true
 
     - name: Update coverage gist
-      if: matrix.node-version == '20.x' && github.ref == 'refs/heads/main'
+      if: matrix.node-version == '22.x' && github.ref == 'refs/heads/main'
       run: |
         COVERAGE=$(node -p "Math.round(require('./coverage/coverage-summary.json').total.lines.pct)")
         
@@ -62,7 +62,7 @@ jobs:
     - name: Use Node.js
       uses: actions/setup-node@v5
       with:
-        node-version: '20.x'
+        node-version: '22.x'
         cache: 'npm'
 
     - name: Install dependencies
