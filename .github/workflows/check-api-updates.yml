@@ -18,6 +18,12 @@ name: Check for API Updates
 on:
   schedule:
     - cron: '0 9 * * 1'  # Every Monday at 9am UTC
+  # GitHub disables schedules after 60 days without repository activity (it
+  # did, 2026-03-30 to 2026-10-26). Running on every push to develop as well
+  # means the check never depends on the scheduler alone; repeats are
+  # deduplicated by the spec-sha256 marker.
+  push:
+    branches: [develop]
   workflow_dispatch:  # Allow manual trigger
 
 permissions:

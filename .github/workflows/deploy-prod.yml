@@ -44,6 +44,33 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # v1.2.1 was tagged with package.json at 1.2.0, so its image reported
+      # the wrong version; and nothing stopped releasing a commit that was
+      # never on main.
+      - name: Release guards
+        run: |
+          set -euo pipefail
+          PKG=$(node -p "require('./package.json').version")
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.ref }}" != "refs/heads/main" ]; then
+            echo "::error::Manual production deploys must run from main (got ${{ github.ref }})"
+            exit 1
+          fi
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/v}"
+            if [ "$TAG" != "$PKG" ]; then
+              echo "::error::Tag v$TAG does not match package.json version $PKG. Bump package.json before tagging."
+              exit 1
+            fi
+          fi
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Commit $GITHUB_SHA is not on main. Merge it to main before releasing."
+            exit 1
+          fi
+          echo "Release guards passed: version $PKG, commit on main"
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -146,6 +173,11 @@ jobs:
           echo "Check the deploy timer on the production host"
           curl -v ${{ secrets.MCP_URL }}/health || true
           exit 1
+
+      # A matching commit only proves the image booted. Check it serves MCP
+      # and OAuth discovery the way clients need.
+      - name: Verify the deployed server
+        run: scripts/verify-deploy.sh "${{ secrets.MCP_URL }}"
 
       - name: Deployment summary
         run: |
