@@ -607,6 +607,69 @@ async function run() {
     return "created and updated";
   });
 
+  // -- analytics: each tool answers its own question ------------------------
+  // Four tools used to return team-wide totals (GET /statistics) whatever was
+  // asked. Compare against those totals so a regression shows up here.
+  group("analytics");
+
+  const teamTotals = await call("get-usage-statistics", {}).catch(() => null);
+
+  await check("get-live-analytics is live rooms, not team totals", async () => {
+    const text = await call("get-live-analytics", {});
+    must(text !== teamTotals, "identical to get-usage-statistics output");
+    const body = parseJson(text);
+    must(
+      Array.isArray(body) || Array.isArray(body?.data),
+      `not a room list: ${text.slice(0, 120)}`,
+    );
+    return `${(Array.isArray(body) ? body : body.data).length} live room(s)`;
+  });
+
+  await check("get-live-room-analytics is the room's live state", async () => {
+    const text = await call("get-live-room-analytics", {
+      roomId: created.roomId,
+    });
+    must(text !== teamTotals, "identical to get-usage-statistics output");
+    const history = await call("get-room-analytics", {
+      roomId: created.roomId,
+    });
+    must(text !== history, "identical to the room's historical statistics");
+    return "differs from team and room history";
+  });
+
+  await check(
+    "get-participant-statistics by room is that room's participants",
+    async () => {
+      const text = await call("get-participant-statistics", {
+        roomId: created.roomId,
+      });
+      must(text !== teamTotals, "identical to get-usage-statistics output");
+      const body = parseJson(text);
+      must(
+        Array.isArray(body?.data),
+        `not a participant list: ${text.slice(0, 120)}`,
+      );
+      // A room created minutes ago has had nobody in it.
+      must(
+        body.data.length === 0,
+        `expected no participants, got ${body.data.length}`,
+      );
+      return "empty list for a new room";
+    },
+  );
+
+  await check(
+    "get-participant-statistics refuses filters it cannot apply",
+    async () => {
+      const message = await callExpectingError("get-participant-statistics", {
+        roomId: created.roomId,
+        dateStart: "2026-01-01",
+      });
+      must(/dateStart/.test(message), `unexpected message: ${message}`);
+      return "dateStart refused";
+    },
+  );
+
   // -- honest failures -----------------------------------------------------
   group("must-fail-honestly");
 
