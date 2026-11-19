@@ -31,6 +31,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 // Local modules
 // import { getApiKeyFromRequest } from '../../auth.js'; // Removed: unused
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
+import type { LibraryFileUploadTicket } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
 import {
   handleListLibraries,
@@ -234,7 +235,13 @@ export function registerLibraryTools(): ToolDefinition[] {
           },
           fileSize: {
             type: "integer",
-            description: "The size of the file in bytes",
+            description:
+              "The size of the file in bytes. Large files on presigned storage are split into a multipart upload based on it.",
+          },
+          contentType: {
+            type: "string",
+            description:
+              "MIME type of the file, e.g. video/mp4 (default application/octet-stream). On presigned storage the API prepares the upload for this type; send the same Content-Type when uploading.",
           },
         },
         required: ["libraryId", "name"],
@@ -1243,6 +1250,57 @@ async function handleDeleteLibraryFolder(
 }
 
 /**
+ * Explain how to finish an upload from the API's response.
+ *
+ * Default storage returns an upload `token`. Presigned (scaleway) storage
+ * returns no token: the bytes go to a presigned URL prepared for a Content-Type, and
+ * the file stays "uploading" until POST callback_url is made. Large files get
+ * multipart `parts`. The old output printed "Upload Token: undefined" for
+ * the presigned case and dropped everything needed to complete it.
+ */
+export function describeUploadTicket(
+  ticket: LibraryFileUploadTicket,
+  contentType: string | undefined,
+): string {
+  const expires = ticket.expiration_timestamp
+    ? new Date(ticket.expiration_timestamp * 1000).toISOString()
+    : "unknown";
+  const lines = [`File ID: ${ticket.file_id}`];
+
+  if (ticket.token !== undefined || !ticket.callback_url) {
+    lines.push(
+      `Upload URL: ${ticket.external_storage_url}`,
+      `Upload Token: ${ticket.token ?? "(none returned)"}`,
+      `Expires: ${expires}`,
+    );
+    return lines.join("\n");
+  }
+
+  const type = contentType || "application/octet-stream";
+  if (ticket.upload_id && Array.isArray(ticket.parts) && ticket.parts.length) {
+    lines.push(
+      `Storage: presigned, multipart (${ticket.parts.length} part(s) of ${ticket.part_size} bytes; the last may be smaller)`,
+      `1. PUT each part of the file to its URL and keep the ETag response header of each:`,
+      ...ticket.parts.map((p) => `   part ${p.part_number}: ${p.url}`),
+      `2. Then POST ${ticket.callback_url} (a Digital Samba API call, same credentials) with JSON {"upload_id": "${ticket.upload_id}", "parts": [{"part_number": 1, "etag": "..."}, ...], "size": <total bytes>}.`,
+    );
+  } else {
+    lines.push(
+      `Storage: presigned`,
+      `1. PUT the file bytes to: ${ticket.external_storage_url}`,
+      `   with header Content-Type: ${type} (the type the upload was prepared for).`,
+      `2. Then POST ${ticket.callback_url} (a Digital Samba API call, same credentials) with JSON {"size": <bytes>}.`,
+    );
+  }
+  lines.push(
+    `Until step 2 the file stays in status "uploading".`,
+    `Callback token (as returned by the API): ${ticket.callback_token ?? "(none)"}`,
+    `Upload URLs expire: ${expires}`,
+  );
+  return lines.join("\n");
+}
+
+/**
  * Handle create library file
  */
 async function handleCreateLibraryFile(
@@ -1251,10 +1309,11 @@ async function handleCreateLibraryFile(
     name: string;
     folderId?: string;
     fileSize?: number;
+    contentType?: string;
   },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { libraryId, name, folderId, fileSize } = params;
+  const { libraryId, name, folderId, fileSize, contentType } = params;
 
   if (!libraryId || libraryId.trim() === "") {
     return {
@@ -1286,6 +1345,7 @@ async function handleCreateLibraryFile(
     const fileData: any = { name };
     if (folderId !== undefined) fileData.folder_id = folderId;
     if (fileSize !== undefined) fileData.file_size = fileSize;
+    if (contentType !== undefined) fileData.content_type = contentType;
 
     const result = await apiClient.createLibraryFile(libraryId, fileData);
 
@@ -1294,11 +1354,8 @@ async function handleCreateLibraryFile(
         {
           type: "text",
           text:
-            `Successfully created file "${name}" in library ${libraryId}.\n` +
-            `File ID: ${result.file_id}\n` +
-            `Upload URL: ${result.external_storage_url}\n` +
-            `Upload Token: ${result.token}\n` +
-            `Token expires at: ${new Date(result.expiration_timestamp * 1000).toISOString()}`,
+            `Created file entry "${name}" in library ${libraryId}. The file is not uploaded yet.\n` +
+            describeUploadTicket(result, contentType),
         },
       ],
     };
@@ -1534,15 +1591,29 @@ async function handleGetFileLinks(
   try {
     const result = await apiClient.getFileLinks(libraryId, fileId);
 
+    // Documents have pages; every other type has a single url (and
+    // possibly a whiteboard_url). Reporting "No pages" for those hid the
+    // link the caller asked for.
     let message = `File links for ${fileId}:\n`;
     if (result.pages && result.pages.length > 0) {
       result.pages.forEach((page, index) => {
         message += `\nPage ${index + 1}:\n`;
         message += `  View URL: ${page.url}\n`;
-        message += `  Thumbnail URL: ${page.thumbnail_url}`;
+        if (page.thumbnail_url) {
+          message += `  Thumbnail URL: ${page.thumbnail_url}\n`;
+        }
+        if (page.whiteboard_url) {
+          message += `  Whiteboard URL: ${page.whiteboard_url}\n`;
+        }
       });
+    } else if (result.url) {
+      message += `\nURL: ${result.url}`;
+      if (result.whiteboard_url) {
+        message += `\nWhiteboard URL: ${result.whiteboard_url}`;
+      }
     } else {
-      message += "No pages available for this file.";
+      message +=
+        "The API returned no link for this file (it may still be uploading or converting).";
     }
 
     return {
@@ -1966,7 +2037,7 @@ async function handleBulkUploadLibraryFiles(
   logger.info("Getting bulk upload URLs", { libraryId, count: files.length });
 
   const results = {
-    succeeded: [] as { file: any; uploadUrl: string; id: string }[],
+    succeeded: [] as { file: any; ticket: LibraryFileUploadTicket }[],
     failed: [] as { file: any; error: string }[],
   };
 
@@ -1976,18 +2047,20 @@ async function handleBulkUploadLibraryFiles(
     const batch = files.slice(i, i + batchSize);
     const promises = batch.map(async (file) => {
       try {
+        // The API reads file_size and content_type; size / mime_type were
+        // ignored, so no file was ever split for multipart or prepared for
+        // its type.
         const fileData: any = {
           name: file.name,
-          size: file.size,
-          mime_type: file.mimeType,
+          file_size: file.size,
+          content_type: file.mimeType,
         };
         if (file.folderId) fileData.folder_id = file.folderId;
 
         const result = await apiClient.createLibraryFile(libraryId, fileData);
         results.succeeded.push({
           file,
-          uploadUrl: result.external_storage_url,
-          id: result.file_id,
+          ticket: result,
         });
       } catch (error) {
         results.failed.push({
@@ -2006,9 +2079,8 @@ async function handleBulkUploadLibraryFiles(
   }
 
   if (results.succeeded.length > 0) {
-    message += "\n\nUpload URLs:";
     results.succeeded.forEach((r) => {
-      message += `\n- ${r.file.name} (ID: ${r.id}): ${r.uploadUrl}`;
+      message += `\n\n${r.file.name}\n${describeUploadTicket(r.ticket, r.file.mimeType)}`;
     });
   }
 

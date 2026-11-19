@@ -185,6 +185,35 @@ export function assertSafeApiPath(endpoint: string): void {
   }
 }
 
+/** POST /libraries/{library}/files response (see createLibraryFile). */
+export interface LibraryFileUploadTicket {
+  file_id: string;
+  file_name: string;
+  storage?: "default" | "scaleway" | string;
+  external_storage_url: string;
+  expiration_timestamp: number;
+  /** default storage */
+  token?: string;
+  /** presigned (scaleway) storage */
+  callback_url?: string;
+  callback_token?: string;
+  /** presigned multipart, for large files */
+  upload_id?: string;
+  part_size?: number;
+  parts?: { part_number: number; url: string }[];
+}
+
+/** GET /libraries/{library}/files/{file}/links response. */
+export interface LibraryFileLinks {
+  pages?: {
+    url: string;
+    thumbnail_url?: string;
+    whiteboard_url?: string;
+  }[];
+  url?: string;
+  whiteboard_url?: string;
+}
+
 export class DigitalSambaApiClient {
   protected apiBaseUrl: string;
   protected cache?: MemoryCache;
@@ -2502,6 +2531,12 @@ export class DigitalSambaApiClient {
 
   /**
    * Create a new library file (get upload URL and token)
+   *
+   * The response depends on the storage behind the library: `storage:
+   * "default"` carries an upload `token`; `storage: "scaleway"` carries a
+   * presigned URL (prepared for `content_type`) plus `callback_url` /
+   * `callback_token`, and for files of at least the part size, multipart
+   * `upload_id` / `part_size` / `parts`.
    */
   async createLibraryFile(
     libraryId: string,
@@ -2509,24 +2544,16 @@ export class DigitalSambaApiClient {
       name: string;
       folder_id?: string;
       file_size?: number;
+      content_type?: string;
     },
-  ): Promise<{
-    file_id: string;
-    file_name: string;
-    external_storage_url: string;
-    token: string;
-    expiration_timestamp: number;
-  }> {
-    return this.request<{
-      file_id: string;
-      file_name: string;
-      external_storage_url: string;
-      token: string;
-      expiration_timestamp: number;
-    }>(`/libraries/${libraryId}/files`, {
-      method: "POST",
-      body: JSON.stringify(settings),
-    });
+  ): Promise<LibraryFileUploadTicket> {
+    return this.request<LibraryFileUploadTicket>(
+      `/libraries/${libraryId}/files`,
+      {
+        method: "POST",
+        body: JSON.stringify(settings),
+      },
+    );
   }
 
   /**
@@ -2571,21 +2598,17 @@ export class DigitalSambaApiClient {
   /**
    * Get file links
    */
+  /**
+   * Get file links. Documents (convertible files) have `pages`; every other
+   * type (video, audio, image, webapp, whiteboard) has a single `url`.
+   */
   async getFileLinks(
     libraryId: string,
     fileId: string,
-  ): Promise<{
-    pages: {
-      url: string;
-      thumbnail_url: string;
-    }[];
-  }> {
-    return this.request<{
-      pages: {
-        url: string;
-        thumbnail_url: string;
-      }[];
-    }>(`/libraries/${libraryId}/files/${fileId}/links`);
+  ): Promise<LibraryFileLinks> {
+    return this.request<LibraryFileLinks>(
+      `/libraries/${libraryId}/files/${fileId}/links`,
+    );
   }
 
   // Webapps
