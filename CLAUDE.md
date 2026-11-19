@@ -11,7 +11,10 @@ Digital Samba Embedded API MCP Server - a Model Context Protocol server for Digi
 ## API Reference
 
 - Official OpenAPI Specification: https://developer.digitalsamba.com/rest-api/openapi.yaml
-- `openapi-stored.yaml` (repo root) is the committed snapshot; the `check-api-updates.yml` workflow diffs it weekly against the live spec and opens an issue on drift
+- `openapi-stored.yaml` (repo root) is the committed snapshot of the spec this server was last reviewed against
+- `api-coverage.json` (repo root) gives every operation in that snapshot one disposition, keyed by `METHOD /path`: `tools`/`resources` (whose handler really calls it), `excluded` (with a reason) or `pending` (with what is needed and an issue number). `tests/unit/api-coverage.test.ts` fails the build if the spec and the manifest disagree, if a named tool is not registered, or if a registered tool is unaccounted for — so **updating the stored spec means triaging every new operation in the same PR**
+- The spec can be wrong and the API source wins: check a new or changed operation against the Laravel form request before trusting it. A renamed operationId on an unchanged path usually means the contract changed
+- Local drift report: `scripts/api-drift-report.sh openapi-stored.yaml <live.yaml>`
 
 ## Development Commands
 
@@ -119,7 +122,7 @@ itself when the digest changes. The final workflow step waits for the host's
 - `ci.yml` - build + tests (Node 18/20 matrix), lint + format check (all enforced)
 - `deploy-dev.yml` - push to `develop` → image pushed → dev host self-deploys (mcp-dev.digitalsamba.com)
 - `deploy-prod.yml` - tag `v*` → image pushed → prod host self-deploys (mcp.digitalsamba.com), then syncs develop/main
-- `check-api-updates.yml` - weekly OpenAPI drift check (Mondays), opens issues labeled `api-update`
+- `check-api-updates.yml` - weekly drift alarm (Mondays): diffs operations (new/removed/renamed/changed) and boolean properties against `openapi-stored.yaml`, cross-checks the endpoint list with digital-samba-skill's `api-reference.md`, and compares the published `@digitalsamba/embedded-sdk` with `.github/embedded-sdk-version` (flag only). It never skips because an issue is open: a new state is commented onto the open `api-update` / `sdk-update` issue, deduplicated by a `spec-sha256:` / `sdk-version:` marker; otherwise a new issue is opened. Close the issue from the PR that updates the stored spec
 - `deployment/docker-compose.yml` is a **reference copy only** - the live compose
   and .env files are host-managed by ops; compose/env changes are an ops request,
   not a commit
