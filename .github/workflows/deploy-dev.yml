@@ -136,15 +136,19 @@ jobs:
             VERSION=$(echo "$BODY" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
             COMMIT=$(echo "$BODY" | grep -o '"commit":"[^"]*"' | cut -d'"' -f4)
             echo "attempt $i: status=${STATUS:-none} version=${VERSION:-none} commit=${COMMIT:-none}"
-            [ "$STATUS" = "ok" ] && UP=1
+            # "degraded" is up but misconfigured (see /health "problems")
+            [ -n "$STATUS" ] && UP=1
             if [ "$COMMIT" = "$EXPECTED_COMMIT" ]; then
+              if [ "$STATUS" = "degraded" ]; then
+                echo "::warning::Host reports status=degraded: $(echo "$BODY" | grep -o '"problems":\[[^]]*\]')"
+              fi
               echo "SERVED_VERSION=$VERSION" >> $GITHUB_ENV
               echo "Host is serving commit $COMMIT (version $VERSION)"
               exit 0
             fi
           done
           if [ "$UP" != "1" ]; then
-            echo "Health endpoint never returned status=ok within 6 minutes"
+            echo "Health endpoint never responded within 6 minutes"
             curl -v ${{ secrets.MCP_URL }}/health || true
             exit 1
           fi

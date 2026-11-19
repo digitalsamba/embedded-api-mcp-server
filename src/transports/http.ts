@@ -29,6 +29,8 @@ import { registerAuthorizeRoutes } from "./oauth-routes.js";
 import { rateLimit } from "../rate-limit.js";
 import { isPublicRequest } from "./public-paths.js";
 import { resolveApiUrls, apiHost } from "../api-urls.js";
+import { getStoreStatus } from "../session-store.js";
+import { healthProblems } from "../health.js";
 import {
   loadOAuthConfig,
   getAuthorizationServerMetadata,
@@ -224,6 +226,9 @@ export async function startHttpServer(
     logger.warn(`API URL configuration: ${warning}`);
   }
 
+  // Loaded before the routes so /health can report whether it is configured.
+  const oauthConfig = loadOAuthConfig();
+
   const app = express();
 
   // Behind nginx-proxy, which appends the peer address to X-Forwarded-For.
@@ -248,6 +253,7 @@ export async function startHttpServer(
     registeredClients: number;
   } | null = null;
   let storeCountsPending: Promise<void> | null = null;
+  let storeCountsFailed = false;
 
   async function refreshStoreCounts(): Promise<void> {
     const [oauthSessions, registeredClients] = await Promise.all([
@@ -255,6 +261,7 @@ export async function startHttpServer(
       getRegisteredClientCount(),
     ]);
     storeCounts = { at: Date.now(), oauthSessions, registeredClients };
+    storeCountsFailed = false;
   }
 
   // Health check endpoint
@@ -267,11 +274,20 @@ export async function startHttpServer(
       try {
         await storeCountsPending;
       } catch (err: any) {
+        storeCountsFailed = true;
         logger.warn(`Health: store counts unavailable: ${err?.message}`);
       }
     }
+    const store = getStoreStatus();
+    const problems = healthProblems({
+      oauthConfigured: !!oauthConfig,
+      store,
+      storeCountsFailed,
+      apiUrlWarnings: apiUrls.warnings,
+    });
     res.json({
-      status: "ok",
+      status: problems.length > 0 ? "degraded" : "ok",
+      problems,
       version: VERSION,
       commit: GIT_COMMIT,
       transport: "http",
@@ -283,6 +299,14 @@ export async function startHttpServer(
       evictedSessions: transports.evictedCount,
       oauthSessions: storeCounts?.oauthSessions ?? null,
       registeredClients: storeCounts?.registeredClients ?? null,
+      // Non-secret configuration, so a misconfigured host is visible from
+      // outside without shell access.
+      config: {
+        oauth: !!oauthConfig,
+        sessionStore: store.backend,
+        sessionStoreConnected: store.connected,
+        apiKeySource: apiUrls.keySource,
+      },
     });
   });
 
@@ -316,9 +340,6 @@ export async function startHttpServer(
   app.get("/.well-known/openai-apps-challenge", (_req, res) => {
     res.type("text/plain").send("hevvpZcBGrNfzsXv4xcA9B84z9RLpRUs2JHpXzXsiWw");
   });
-
-  // Load OAuth configuration
-  const oauthConfig = loadOAuthConfig();
 
   // OAuth endpoints (only if configured)
   if (oauthConfig) {
