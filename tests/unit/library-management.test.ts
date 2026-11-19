@@ -270,7 +270,7 @@ describe('Library Management Tools', () => {
           name: 'test.pdf',
           folder_id: 'folder-1'
         });
-        expect(result.content[0].text).toContain('Successfully created file');
+        expect(result.content[0].text).toContain('Created file entry');
         expect(result.content[0].text).toContain('file-123');
         expect(result.content[0].text).toContain('https://upload.example.com/file-123');
       });
