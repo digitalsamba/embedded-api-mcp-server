@@ -28,6 +28,7 @@ import { SessionRegistry } from "../session-registry.js";
 import { registerAuthorizeRoutes } from "./oauth-routes.js";
 import { rateLimit } from "../rate-limit.js";
 import { isPublicRequest } from "./public-paths.js";
+import { resolveApiUrls, apiHost } from "../api-urls.js";
 import {
   loadOAuthConfig,
   getAuthorizationServerMetadata,
@@ -214,6 +215,15 @@ export async function startHttpServer(
   const requireAuth =
     config.requireAuth ?? process.env.NODE_ENV === "production";
 
+  // Resolved once at startup, logged, and shown in /health (see api-urls.ts).
+  const apiUrls = resolveApiUrls();
+  logger.info(
+    `API: developer keys -> ${apiUrls.keyApiUrl} (${apiUrls.keySource}); OAuth -> ${apiUrls.oauthApiUrl}`,
+  );
+  for (const warning of apiUrls.warnings) {
+    logger.warn(`API URL configuration: ${warning}`);
+  }
+
   const app = express();
 
   // Behind nginx-proxy, which appends the peer address to X-Forwarded-For.
@@ -265,6 +275,8 @@ export async function startHttpServer(
       version: VERSION,
       commit: GIT_COMMIT,
       transport: "http",
+      apiHost: apiHost(apiUrls.keyApiUrl),
+      oauthApiHost: apiHost(apiUrls.oauthApiUrl),
       activeSessions: transports.size,
       streamingSessions: transports.streamingCount,
       sweptSessions: transports.sweptCount,
@@ -515,13 +527,7 @@ export async function startHttpServer(
         const isOAuthSession = (req as any).isOAuthSession;
 
         // OAuth sessions use /oauth-api/v1/*, direct API keys use /api/v1/*
-        const defaultApiUrl = "https://api.digitalsamba.com/api/v1";
-        const oauthApiUrl =
-          process.env.OAUTH_API_URL ||
-          "https://api.digitalsamba.com/oauth-api/v1";
-        const apiUrl = isOAuthSession
-          ? oauthApiUrl
-          : process.env.DIGITAL_SAMBA_API_URL || defaultApiUrl;
+        const apiUrl = isOAuthSession ? apiUrls.oauthApiUrl : apiUrls.keyApiUrl;
 
         logger.debug(
           `Creating server with API URL: ${apiUrl} (OAuth: ${isOAuthSession})`,
