@@ -101,9 +101,25 @@ class RedisStore implements Store {
     return this.client.keys(pattern);
   }
 
+  /**
+   * Count keys with a prefix using SCAN, not KEYS: KEYS blocks Redis for the
+   * whole keyspace walk, and this backs a public endpoint.
+   */
   async size(prefix: string): Promise<number> {
-    const keys = await this.keys(prefix + "*");
-    return keys.length;
+    let cursor = "0";
+    let count = 0;
+    do {
+      const [next, batch] = await this.client.scan(
+        cursor,
+        "MATCH",
+        prefix + "*",
+        "COUNT",
+        1000,
+      );
+      cursor = next;
+      count += batch.length;
+    } while (cursor !== "0");
+    return count;
   }
 }
 
