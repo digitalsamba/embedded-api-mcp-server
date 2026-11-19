@@ -157,8 +157,12 @@ jobs:
             VERSION=$(echo "$BODY" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
             COMMIT=$(echo "$BODY" | grep -o '"commit":"[^"]*"' | cut -d'"' -f4)
             echo "attempt $i: status=${STATUS:-none} version=${VERSION:-none} commit=${COMMIT:-none}"
-            [ "$STATUS" = "ok" ] && UP=1
+            # "degraded" is up but misconfigured (see /health "problems")
+            [ -n "$STATUS" ] && UP=1
             if [ "$COMMIT" = "$EXPECTED_COMMIT" ]; then
+              if [ "$STATUS" = "degraded" ]; then
+                echo "::warning::Host reports status=degraded: $(echo "$BODY" | grep -o '"problems":\[[^]]*\]')"
+              fi
               echo "Production is serving commit $COMMIT (version $VERSION)"
               exit 0
             fi

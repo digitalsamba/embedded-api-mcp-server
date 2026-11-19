@@ -101,6 +101,11 @@ class RedisStore implements Store {
     return this.client.keys(pattern);
   }
 
+  /** True once the connection is up and commands are being accepted. */
+  get connected(): boolean {
+    return this.client.status === "ready";
+  }
+
   /**
    * Count keys with a prefix using SCAN, not KEYS: KEYS blocks Redis for the
    * whole keyspace walk, and this backs a public endpoint.
@@ -146,6 +151,21 @@ export function getStore(): Store {
     }
   }
   return store;
+}
+
+export interface StoreStatus {
+  backend: "redis" | "memory";
+  /** Always true for the memory store. */
+  connected: boolean;
+}
+
+/** Which store is in use and whether it is reachable, for /health. */
+export function getStoreStatus(): StoreStatus {
+  const current = getStore();
+  if (current instanceof RedisStore) {
+    return { backend: "redis", connected: current.connected };
+  }
+  return { backend: "memory", connected: true };
 }
 
 // Key prefixes for different data types
