@@ -2920,6 +2920,37 @@ export class DigitalSambaApiClient {
   }
 
   /**
+   * Delete every poll in a room (DELETE /rooms/{room}/polls).
+   *
+   * This is not the same as deleting per session: the session-level endpoint
+   * removes only polls created by that session's participants, so polls
+   * created through the API or dashboard survive it.
+   */
+  async deleteRoomPolls(roomId: string): Promise<void> {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+
+    await this.request<void>(`/rooms/${roomId}/polls`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Delete the AI summaries of every session in a room
+   * (DELETE /rooms/{room}/summaries).
+   */
+  async deleteRoomSummaries(roomId: string): Promise<void> {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+
+    await this.request<void>(`/rooms/${roomId}/summaries`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
    * Delete session polls
    */
   async deleteSessionPolls(sessionId: string): Promise<void> {
