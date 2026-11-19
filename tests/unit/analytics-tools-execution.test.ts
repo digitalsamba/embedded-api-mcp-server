@@ -168,27 +168,19 @@ describe('Analytics Tools Execution', () => {
     });
 
     describe('get-participant-statistics', () => {
-      it('should execute participant statistics query using team analytics', async () => {
-        const mockData = {
-          participants: [
-            { id: 'user-1', sessions: 10 },
-            { id: 'user-2', sessions: 5 }
-          ]
-        };
-        
-        mockAnalyticsResource.getTeamAnalytics.mockResolvedValueOnce(mockData);
-        
-        const result = await executeAnalyticsTool(
+      // Request paths for every analytics tool are asserted against the real
+      // client in analytics-endpoints.test.ts; this only checks the routing.
+      it('never answers a participant question with team totals', async () => {
+        mockApiClient.getParticipantStatistics = jest.fn().mockResolvedValue({ id: 'user-1' }) as any;
+
+        await executeAnalyticsTool(
           'get-participant-statistics',
           { participantId: 'user-1' },
           mockApiClient
         );
-        
-        expect(mockAnalyticsResource.getTeamAnalytics).toHaveBeenCalledWith({
-          participant_id: 'user-1'
-        });
-        
-        expect(result.content[0].text).toBeDefined();
+
+        expect(mockApiClient.getParticipantStatistics).toHaveBeenCalledWith('user-1');
+        expect(mockAnalyticsResource.getTeamAnalytics).not.toHaveBeenCalled();
       });
     });
 

@@ -24,7 +24,7 @@ export function registerAnalyticsTools(): Tool[] {
     {
       name: "get-participant-statistics",
       description:
-        '[Analytics] Get detailed participant statistics and behavior analytics. Use when users say: "show participant stats", "participant analytics", "user activity report", "attendee statistics", "who attended meetings", "participant engagement metrics". Optional filters for date range, room, or specific participant. Returns attendance, duration, and activity data.',
+        '[Analytics] Get participant statistics. Use when users say: "show participant stats", "participant analytics", "user activity report", "attendee statistics", "who attended meetings", "participant engagement metrics". With participantId: that participant\'s statistics across sessions. Without it: the list of participants, optionally narrowed to one room (roomId) or session (sessionId). Date filters are not supported by these endpoints; for date-range totals use get-usage-statistics.',
       annotations: getToolAnnotations(
         "get-participant-statistics",
         "Get Participant Statistics",
@@ -265,6 +265,32 @@ function periodToDateRange(
   return { date_start: asDate(start), date_end: asDate(end) };
 }
 
+/** An error result naming arguments the endpoint behind a tool cannot honour. */
+function unsupported(
+  toolName: string,
+  args: any,
+  names: string[],
+  hint: string,
+) {
+  const given = names.filter((n) => args[n] !== undefined && args[n] !== null);
+  if (given.length === 0) return null;
+  return {
+    content: [
+      {
+        type: "text",
+        text: `${toolName}: ${given.join(", ")} ${given.length === 1 ? "is" : "are"} not supported here. ${hint}`,
+      },
+    ],
+    isError: true,
+  };
+}
+
+function asText(result: unknown) {
+  return {
+    content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+  };
+}
+
 /**
  * Handle analytics tool execution
  *
@@ -369,16 +395,34 @@ export async function executeAnalyticsTool(
 
       case "get-participant-statistics": {
         logger.info("Executing participant statistics query", { args });
-        // Use team analytics with participant filter
-        const participantResult = await analytics.getTeamAnalytics(filters);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(participantResult, null, 2),
-            },
-          ],
-        };
+        // This used to call GET /statistics with the filters as query
+        // parameters. That endpoint reads only date_start/date_end, so every
+        // call returned the whole team's totals as if they were the answer.
+        if (args.participantId) {
+          const rejected = unsupported(
+            toolName,
+            args,
+            ["dateStart", "dateEnd", "roomId", "sessionId"],
+            "Participant statistics cover all of that participant's sessions; call without those filters.",
+          );
+          if (rejected) return rejected;
+          return asText(
+            await apiClient.getParticipantStatistics(args.participantId),
+          );
+        }
+        const rejected = unsupported(
+          toolName,
+          args,
+          ["dateStart", "dateEnd"],
+          "The participant list cannot be filtered by date; use get-usage-statistics for date-range totals.",
+        );
+        if (rejected) return rejected;
+        return asText(
+          await apiClient.listParticipants({
+            room_id: args.roomId,
+            session_id: args.sessionId,
+          }),
+        );
       }
 
       case "get-usage-statistics": {
@@ -411,57 +455,37 @@ export async function executeAnalyticsTool(
 
       case "get-live-analytics": {
         logger.info("Executing live analytics query", { args });
-        // Get live session data - this would need a specific API endpoint
-        // For now, using team analytics as a placeholder
-        const liveData = await analytics.getTeamAnalytics({
-          ...filters,
-          live: true,
-        });
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(liveData, null, 2),
-            },
-          ],
-        };
+        // Rooms with people in them right now (GET /rooms/live, or
+        // /rooms/live/participants), as the digitalsamba://analytics/live
+        // resource returns. This used to return the team's historical totals.
+        return asText(
+          await analytics.getLiveAnalytics(
+            undefined,
+            args.includeParticipants === true,
+          ),
+        );
       }
 
       case "get-live-room-analytics": {
         logger.info("Executing live room analytics query", {
           roomId: args.roomId,
         });
-        const liveRoomData = await analytics.getRoomAnalytics(args.roomId, {
-          ...filters,
-          live: true,
-        });
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(liveRoomData, null, 2),
-            },
-          ],
-        };
+        // GET /rooms/{room}/live, as the digitalsamba://analytics/live/{roomId}
+        // resource returns. This used to return the room's historical
+        // statistics with an ignored live=true.
+        return asText(await analytics.getLiveAnalytics(args.roomId, false));
       }
 
       case "get-participant-analytics": {
         logger.info("Executing participant analytics query", {
           participantId: args.participantId,
         });
-        // Get analytics for specific participant
-        const participantAnalytics = await analytics.getTeamAnalytics({
-          ...filters,
-          participantId: args.participantId,
-        });
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(participantAnalytics, null, 2),
-            },
-          ],
-        };
+        // GET /participants/{id}, as the
+        // digitalsamba://analytics/participants/{participantId} resource
+        // returns. This used to return the team's totals.
+        return asText(
+          await analytics.getParticipantAnalytics(args.participantId),
+        );
       }
 
       default:
