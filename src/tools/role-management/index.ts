@@ -211,6 +211,30 @@ export async function executeRoleTool(
 }
 
 /**
+ * Permission names the API skipped. RoleService::savePermissions ignores names
+ * it does not know, with a 2xx, and the role response lists every permission
+ * name the API has, so a requested name missing from it was not applied.
+ */
+function unknownPermissions(
+  requested: Record<string, unknown> | undefined,
+  role: any,
+): string[] | null {
+  if (!requested) return [];
+  const known = role?.permissions;
+  if (!known || typeof known !== "object") return null; // cannot tell
+  return Object.keys(requested).filter((name) => !(name in known));
+}
+
+function permissionsNote(unknown: string[] | null): string {
+  if (unknown === null) {
+    return "\nPermissions were sent, but the response did not list them, so they could not be verified.";
+  }
+  return unknown.length
+    ? `\nNOT applied, unknown permission name(s): ${unknown.join(", ")}`
+    : "";
+}
+
+/**
  * Handle create role tool
  */
 async function handleCreateRole(
@@ -254,14 +278,18 @@ async function handleCreateRole(
       description,
       permissions: normalizedPermissions,
     });
+    const unknown = unknownPermissions(normalizedPermissions, role);
 
     return {
       content: [
         {
           type: "text",
-          text: `Successfully created role "${displayName}" with ID: ${role.id}`,
+          text:
+            `Successfully created role "${displayName}" with ID: ${role.id}` +
+            permissionsNote(unknown),
         },
       ],
+      ...(unknown?.length ? { isError: true } : {}),
     };
   } catch (error) {
     logger.error("Error creating role", {
@@ -368,14 +396,21 @@ async function handleUpdateRole(
     }
     if (rest.description !== undefined) applied.push("description");
     if (rest.permissions !== undefined) applied.push("permissions");
+    const unknown = unknownPermissions(
+      normalizedUpdates.permissions as Record<string, unknown> | undefined,
+      role,
+    );
 
     return {
       content: [
         {
           type: "text",
-          text: `Updated role "${role.display_name}" (${roleId}). Fields: ${applied.join(", ")}`,
+          text:
+            `Updated role "${role.display_name}" (${roleId}). Fields: ${applied.join(", ")}` +
+            permissionsNote(unknown),
         },
       ],
+      ...(unknown?.length ? { isError: true } : {}),
     };
   } catch (error) {
     logger.error("Error updating role", {

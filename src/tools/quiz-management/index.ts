@@ -91,7 +91,7 @@ export function registerQuizTools(): ToolDefinition[] {
           time_limit_minutes: {
             type: "number",
             description:
-              "Optional time limit in minutes for completing the quiz",
+              "Optional time limit in minutes; converted to time_limit_seconds, which is what the API stores. Do not send both with different values.",
           },
           timing_mode: {
             type: "string",
@@ -190,7 +190,8 @@ export function registerQuizTools(): ToolDefinition[] {
           },
           time_limit_minutes: {
             type: "number",
-            description: "Updated time limit in minutes",
+            description:
+              "Updated time limit in minutes; converted to time_limit_seconds, which is what the API stores. Do not send both with different values.",
           },
           timing_mode: {
             type: "string",
@@ -474,6 +475,50 @@ async function handleListRoomQuizzes(
 }
 
 /**
+ * The API stores only time_limit_seconds (1 to 86399; Quizzes/
+ * CreateUpdateRequest). time_limit_minutes used to be sent as-is and dropped,
+ * so the quiz silently got the 3600 s default. Minutes are converted here.
+ */
+function resolveTimeLimit(
+  minutes: unknown,
+  seconds: unknown,
+): { seconds?: number; error?: string } {
+  const fromMinutes =
+    minutes === undefined || minutes === null
+      ? undefined
+      : Math.round(Number(minutes) * 60);
+  const given =
+    seconds === undefined || seconds === null ? undefined : Number(seconds);
+
+  if (fromMinutes !== undefined && Number.isNaN(fromMinutes)) {
+    return { error: "time_limit_minutes must be a number" };
+  }
+  if (
+    given !== undefined &&
+    fromMinutes !== undefined &&
+    given !== fromMinutes
+  ) {
+    return {
+      error: `time_limit_minutes (${minutes} = ${fromMinutes} s) and time_limit_seconds (${given}) disagree; send one of them`,
+    };
+  }
+  const result = given ?? fromMinutes;
+  if (result === undefined) return {};
+  if (!Number.isInteger(result) || result < 1 || result >= 86400) {
+    return {
+      error: `The time limit must be between 1 second and 23 h 59 min 59 s (got ${result} s)`,
+    };
+  }
+  return { seconds: result };
+}
+
+function describeTimeLimit(seconds: unknown): string {
+  const n = Number(seconds);
+  if (!Number.isFinite(n)) return "";
+  return n % 60 === 0 ? `${n / 60} min (${n} s)` : `${n} s`;
+}
+
+/**
  * Handle create quiz
  */
 async function handleCreateQuiz(
@@ -565,6 +610,14 @@ async function handleCreateQuiz(
     }
   }
 
+  const timeLimit = resolveTimeLimit(time_limit_minutes, time_limit_seconds);
+  if (timeLimit.error) {
+    return {
+      content: [{ type: "text", text: timeLimit.error }],
+      isError: true,
+    };
+  }
+
   logger.info("Creating quiz", {
     roomId: room_id,
     title,
@@ -574,9 +627,10 @@ async function handleCreateQuiz(
   try {
     const quizData = {
       title,
-      time_limit_minutes,
       ...(timing_mode !== undefined && { timing_mode }),
-      ...(time_limit_seconds !== undefined && { time_limit_seconds }),
+      ...(timeLimit.seconds !== undefined && {
+        time_limit_seconds: timeLimit.seconds,
+      }),
       ...(passing_score !== undefined && { passing_score }),
       questions,
     };
@@ -587,7 +641,11 @@ async function handleCreateQuiz(
       content: [
         {
           type: "text",
-          text: `Successfully created quiz "${title}" with ${questions.length} question(s) in room ${room_id}. Quiz ID: ${result.id}`,
+          text:
+            `Successfully created quiz "${title}" with ${questions.length} question(s) in room ${room_id}. Quiz ID: ${result.id}` +
+            ((result as any)?.time_limit_seconds !== undefined
+              ? `\nTime limit (as stored): ${describeTimeLimit((result as any).time_limit_seconds)}`
+              : ""),
         },
       ],
     };
@@ -710,7 +768,20 @@ async function handleUpdateQuiz(
   },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { room_id, quiz_id, ...updateData } = params;
+  const { room_id, quiz_id, time_limit_minutes, time_limit_seconds, ...rest } =
+    params;
+  const timeLimit = resolveTimeLimit(time_limit_minutes, time_limit_seconds);
+  const updateData: Record<string, unknown> = { ...rest };
+  if (timeLimit.seconds !== undefined) {
+    updateData.time_limit_seconds = timeLimit.seconds;
+  }
+
+  if (timeLimit.error) {
+    return {
+      content: [{ type: "text", text: timeLimit.error }],
+      isError: true,
+    };
+  }
 
   if (!room_id || room_id.trim() === "") {
     return {
@@ -755,15 +826,24 @@ async function handleUpdateQuiz(
   });
 
   try {
-    await apiClient.updateQuiz(room_id, quiz_id, updateData);
+    const updated: any = await apiClient.updateQuiz(
+      room_id,
+      quiz_id,
+      updateData as any,
+    );
 
     const updateSummary = Object.keys(updateData).join(", ");
+    const storedLimit =
+      timeLimit.seconds !== undefined &&
+      updated?.time_limit_seconds !== undefined
+        ? `\nTime limit (as stored): ${describeTimeLimit(updated.time_limit_seconds)}`
+        : "";
 
     return {
       content: [
         {
           type: "text",
-          text: `Successfully updated quiz ${quiz_id}. Updated fields: ${updateSummary}`,
+          text: `Successfully updated quiz ${quiz_id}. Updated fields: ${updateSummary}${storedLimit}`,
         },
       ],
     };

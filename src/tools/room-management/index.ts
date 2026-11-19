@@ -16,6 +16,7 @@ import {
 // Removed enhanced client import - using standard client
 import { getApiKeyFromRequest } from "../../auth.js";
 import logger from "../../logger.js";
+import { compareApplied } from "../verified-write.js";
 import { normalizeBooleans } from "../../utils.js";
 import { getToolAnnotations } from "../../tool-annotations.js";
 
@@ -1184,13 +1185,38 @@ export async function executeRoomTool(
         const updatedSettings =
           await client.updateDefaultRoomSettings(normalizedSettings);
 
+        // The endpoint validates only the team settings it knows and drops
+        // the rest (max_participants and max_broadcasters, for example, are
+        // room-level only) while returning 200. The response is the full
+        // settings object, so check each requested key against it.
+        const { applied, ignored, differs } = compareApplied(
+          normalizedSettings,
+          updatedSettings,
+        );
+        const lines = [
+          applied.length
+            ? `Applied: ${applied.join(", ")}`
+            : "Nothing was applied.",
+        ];
+        if (ignored.length) {
+          lines.push(
+            `NOT applied, not a team default setting: ${ignored.join(", ")}`,
+          );
+        }
+        for (const d of differs) {
+          lines.push(
+            `Stored value differs for ${d.key}: requested ${JSON.stringify(d.requested)}, now ${JSON.stringify(d.stored)}`,
+          );
+        }
+
         return {
           content: [
             {
               type: "text",
-              text: `Default room settings updated successfully. Updated settings:\n\n${JSON.stringify(updatedSettings, null, 2)}`,
+              text: `${lines.join("\n")}\n\nDefault room settings now:\n\n${JSON.stringify(updatedSettings, null, 2)}`,
             },
           ],
+          ...(ignored.length ? { isError: true } : {}),
         };
       } catch (error) {
         logger.error("Error updating default room settings", {

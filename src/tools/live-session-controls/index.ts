@@ -621,7 +621,13 @@ async function handlePhoneParticipantsJoined(
       content: [
         {
           type: "text",
-          text: `Successfully registered ${participants.length} phone participant(s) joining room ${roomId}: ${participantNames}`,
+          // The API discards the signalling result for this call, so a 2xx
+          // proves only that the request was accepted.
+          text: describeWriteResult(
+            undefined,
+            "Registered",
+            `${participants.length} phone participant(s) joining room ${roomId}: ${participantNames}`,
+          ),
         },
       ],
     };
@@ -701,7 +707,11 @@ async function handlePhoneParticipantsLeft(
       content: [
         {
           type: "text",
-          text: `Successfully registered ${callIds.length} phone participant(s) leaving room ${roomId}`,
+          text: describeWriteResult(
+            undefined,
+            "Registered",
+            `${callIds.length} phone participant(s) leaving room ${roomId}`,
+          ),
         },
       ],
     };
