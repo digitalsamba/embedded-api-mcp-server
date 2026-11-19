@@ -28,6 +28,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 // Local modules
 // import { getApiKeyFromRequest } from '../../auth.js'; // Removed: unused
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
+import type { PollCreateSettings } from "../../types/communication.js";
 import logger from "../../logger.js";
 import { normalizeBoolean } from "../../utils.js";
 import { getToolAnnotations } from "../../tool-annotations.js";
@@ -87,13 +88,14 @@ export function registerPollTools(): ToolDefinition[] {
               },
               required: ["text"],
             },
-            minItems: 2,
-            description: "Array of poll options (minimum 2)",
+            description:
+              "Array of poll options (minimum 2; not used for type free)",
           },
           type: {
             type: "string",
-            enum: ["single", "multiple"],
-            description: "Poll type: single choice or multiple choice",
+            enum: ["single", "multiple", "free"],
+            description:
+              "Poll type: single choice, multiple choice, or free (free-text answers; options are not used)",
           },
           anonymous: {
             type: "boolean",
@@ -101,10 +103,11 @@ export function registerPollTools(): ToolDefinition[] {
           },
           show_results: {
             type: "boolean",
-            description: "Whether to show results to participants",
+            description:
+              "Has no effect: Digital Samba polls have no such setting, so it is not sent. Kept for compatibility.",
           },
         },
-        required: ["room_id", "question", "options"],
+        required: ["room_id", "question"],
       },
     },
     {
@@ -147,7 +150,7 @@ export function registerPollTools(): ToolDefinition[] {
           },
           type: {
             type: "string",
-            enum: ["single", "multiple"],
+            enum: ["single", "multiple", "free"],
             description: "Updated poll type",
           },
           anonymous: {
@@ -156,7 +159,8 @@ export function registerPollTools(): ToolDefinition[] {
           },
           show_results: {
             type: "boolean",
-            description: "Updated show results setting",
+            description:
+              "Has no effect: Digital Samba polls have no such setting, so it is not sent. Kept for compatibility.",
           },
         },
         required: ["room_id", "poll_id"],
@@ -357,7 +361,7 @@ async function handleCreatePoll(
     room_id: string;
     question: string;
     options: Array<{ text: string; id?: string }>;
-    type?: "single" | "multiple";
+    type?: "single" | "multiple" | "free";
     anonymous?: boolean;
     show_results?: boolean;
   },
@@ -369,7 +373,6 @@ async function handleCreatePoll(
     options,
     type = "single",
     anonymous = false,
-    show_results = true,
   } = params;
 
   if (!room_id || room_id.trim() === "") {
@@ -396,7 +399,7 @@ async function handleCreatePoll(
     };
   }
 
-  if (!options || options.length < 2) {
+  if (type !== "free" && (!options || options.length < 2)) {
     return {
       content: [
         {
@@ -411,21 +414,21 @@ async function handleCreatePoll(
   logger.info("Creating poll", {
     roomId: room_id,
     question,
-    optionCount: options.length,
+    optionCount: options?.length ?? 0,
   });
 
   try {
     // Normalize boolean values (Claude sometimes sends 0/1 instead of true/false)
     const normalizedAnonymous = normalizeBoolean(anonymous) ?? false;
-    const normalizedShowResults = normalizeBoolean(show_results) ?? true;
 
-    const pollData = {
+    // show_results is not an API field (Polls/CreateUpdateRequest has no such
+    // rule): it was sent and silently dropped. It is accepted and ignored.
+    const pollData: PollCreateSettings = {
       question,
-      options,
       type,
       anonymous: normalizedAnonymous,
-      show_results: normalizedShowResults,
     };
+    if (type !== "free") pollData.options = options;
 
     const result = await apiClient.createPoll(room_id, pollData);
 
@@ -433,7 +436,13 @@ async function handleCreatePoll(
       content: [
         {
           type: "text",
-          text: `Successfully created poll "${question}" with ${options.length} options in room ${room_id}. Poll ID: ${result.id}`,
+          text:
+            (type === "free"
+              ? `Successfully created free-text poll "${question}" in room ${room_id}. Poll ID: ${result.id}`
+              : `Successfully created poll "${question}" with ${options.length} options in room ${room_id}. Poll ID: ${result.id}`) +
+            ("show_results" in params
+              ? "\nNote: show_results has no effect (Digital Samba polls have no such setting) and was not sent."
+              : ""),
         },
       ],
     };
@@ -474,13 +483,16 @@ async function handleUpdatePoll(
     poll_id: string;
     question?: string;
     options?: Array<{ text: string; id?: string }>;
-    type?: "single" | "multiple";
+    type?: "single" | "multiple" | "free";
     anonymous?: boolean;
     show_results?: boolean;
   },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { room_id, poll_id, ...updateData } = params;
+  // show_results is not an API field; it is accepted for compatibility but
+  // never sent, and never reported as updated.
+  const { room_id, poll_id, show_results, ...updateData } = params;
+  const ignoredShowResults = show_results !== undefined;
 
   if (!room_id || room_id.trim() === "") {
     return {
@@ -513,7 +525,9 @@ async function handleUpdatePoll(
       content: [
         {
           type: "text",
-          text: "No updates provided for the poll.",
+          text: ignoredShowResults
+            ? "Nothing to update: show_results has no effect (Digital Samba polls have no such setting)."
+            : "No updates provided for the poll.",
         },
       ],
       isError: true,
@@ -536,12 +550,6 @@ async function handleUpdatePoll(
         apiUpdateData.anonymous = normalized;
       }
     }
-    if ("show_results" in apiUpdateData) {
-      const normalized = normalizeBoolean(apiUpdateData.show_results);
-      if (normalized !== undefined) {
-        apiUpdateData.show_results = normalized;
-      }
-    }
 
     await apiClient.updatePoll(room_id, poll_id, apiUpdateData);
 
@@ -551,7 +559,11 @@ async function handleUpdatePoll(
       content: [
         {
           type: "text",
-          text: `Successfully updated poll ${poll_id}. Updated fields: ${updateSummary}`,
+          text:
+            `Successfully updated poll ${poll_id}. Updated fields: ${updateSummary}` +
+            (ignoredShowResults
+              ? "\nNote: show_results has no effect (Digital Samba polls have no such setting) and was not sent."
+              : ""),
         },
       ],
     };

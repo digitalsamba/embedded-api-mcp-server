@@ -217,3 +217,69 @@ export async function verifiedWrite<T>(
     ],
   };
 }
+
+/**
+ * Compare the keys a write asked for with the object the API returned.
+ *
+ * Several Digital Samba update endpoints validate only the fields they know
+ * and drop the rest with a 2xx, so "the API returned 200" says nothing about
+ * an individual key. When the response echoes the full resource, this tells
+ * the two cases apart:
+ *
+ * - `ignored`: the key is absent from the response, so it is not a field of
+ *   this resource and was dropped;
+ * - `differs`: the key exists but holds a different value than requested.
+ *
+ * Arrays are compared as sets (the API may reorder them) and numeric strings
+ * as numbers, so a normalised echo is not reported as a difference.
+ */
+export function compareApplied(
+  requested: Record<string, unknown>,
+  returned: unknown,
+): {
+  applied: string[];
+  ignored: string[];
+  differs: Array<{ key: string; requested: unknown; stored: unknown }>;
+} {
+  const body =
+    returned && typeof returned === "object"
+      ? (returned as Record<string, unknown>)
+      : {};
+  const applied: string[] = [];
+  const ignored: string[] = [];
+  const differs: Array<{ key: string; requested: unknown; stored: unknown }> =
+    [];
+
+  for (const [key, want] of Object.entries(requested)) {
+    if (!(key in body)) {
+      ignored.push(key);
+    } else if (sameValue(want, body[key])) {
+      applied.push(key);
+    } else {
+      differs.push({ key, requested: want, stored: body[key] });
+    }
+  }
+  return { applied, ignored, differs };
+}
+
+function sameValue(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    const norm = (xs: unknown[]) => xs.map((x) => JSON.stringify(x)).sort();
+    return JSON.stringify(norm(a)) === JSON.stringify(norm(b));
+  }
+  if (
+    (typeof a === "number" || typeof b === "number") &&
+    a !== null &&
+    b !== null &&
+    a !== "" &&
+    b !== "" &&
+    !Number.isNaN(Number(a)) &&
+    !Number.isNaN(Number(b))
+  ) {
+    return Number(a) === Number(b);
+  }
+  if (typeof a === "string" && typeof b === "string") {
+    return a.toLowerCase() === b.toLowerCase();
+  }
+  return JSON.stringify(a) === JSON.stringify(b);
+}

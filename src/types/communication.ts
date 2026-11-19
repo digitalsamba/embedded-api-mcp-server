@@ -23,9 +23,11 @@ export interface PollOption {
 
 export interface PollCreateSettings {
   question: string;
+  type?: "single" | "multiple" | "free";
   multiple?: boolean;
   anonymous?: boolean;
-  options: { text: string }[];
+  /** Not used, and excluded by the API, for type "free". */
+  options?: { text: string; id?: string }[];
 }
 
 // Quiz related interfaces
