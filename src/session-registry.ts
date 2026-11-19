@@ -22,6 +22,13 @@ export interface ClosableTransport {
 export interface SessionRegistryOptions {
   /** Evict sessions idle for longer than this. 0 disables sweeping. */
   idleTimeoutMs?: number;
+  /**
+   * Most sessions held at once. Each one keeps a full MCP Server instance in
+   * memory, and opening one needs no valid credential (a developer key is
+   * only checked when a tool calls the API), so this must be bounded.
+   * 0 disables the cap.
+   */
+  maxSessions?: number;
 }
 
 export class SessionRegistry<T extends ClosableTransport> {
@@ -30,12 +37,17 @@ export class SessionRegistry<T extends ClosableTransport> {
   private readonly openStreams = new Map<string, number>();
 
   readonly idleTimeoutMs: number;
+  readonly maxSessions: number;
 
   /** Cumulative count of swept sessions, surfaced via /health. */
   sweptCount = 0;
 
+  /** Cumulative count of sessions evicted to make room, surfaced via /health. */
+  evictedCount = 0;
+
   constructor(options: SessionRegistryOptions = {}) {
     this.idleTimeoutMs = options.idleTimeoutMs ?? 30 * 60 * 1000;
+    this.maxSessions = options.maxSessions ?? 1000;
   }
 
   get size(): number {
@@ -97,6 +109,53 @@ export class SessionRegistry<T extends ClosableTransport> {
       this.openStreams.delete(sessionId);
     }
     this.touch(sessionId, now);
+  }
+
+  /**
+   * Make room for one more session.
+   *
+   * Below the cap this does nothing. At the cap it closes the least recently
+   * active session without an open stream; its client gets a 404 on its next
+   * request, which is its cue to re-initialize. If every session is
+   * streaming, nothing is evicted and the caller must refuse the new session.
+   *
+   * @returns whether a new session may be added
+   */
+  async makeRoom(): Promise<boolean> {
+    if (this.maxSessions <= 0 || this.transports.size < this.maxSessions) {
+      return true;
+    }
+
+    let victim: string | undefined;
+    let oldest = Infinity;
+    for (const id of this.transports.keys()) {
+      if ((this.openStreams.get(id) ?? 0) > 0) continue;
+      const seen = this.lastActivity.get(id) ?? 0;
+      if (seen < oldest) {
+        oldest = seen;
+        victim = id;
+      }
+    }
+    if (victim === undefined) {
+      logger.warn(
+        `Session cap (${this.maxSessions}) reached and every session is streaming; refusing a new one`,
+      );
+      return false;
+    }
+
+    const transport = this.transports.get(victim)!;
+    // Remove first, as in sweep(): a throwing close() must not leave it behind.
+    this.remove(victim);
+    try {
+      await transport.close();
+    } catch (err: any) {
+      logger.warn(`Error closing evicted session ${victim}: ${err?.message}`);
+    }
+    this.evictedCount++;
+    logger.warn(
+      `Session cap (${this.maxSessions}) reached; evicted least recently used session ${victim}`,
+    );
+    return true;
   }
 
   /**

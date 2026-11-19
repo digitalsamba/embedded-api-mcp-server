@@ -233,4 +233,73 @@ describe("SessionRegistry", () => {
       expect(registry.sweptCount).toBe(449);
     });
   });
+
+  describe("session cap (makeRoom)", () => {
+    it("does nothing below the cap", async () => {
+      const registry = new SessionRegistry({ maxSessions: 2 });
+      const a = makeTransport();
+      registry.add("a", a, 0);
+
+      await expect(registry.makeRoom()).resolves.toBe(true);
+      expect(registry.size).toBe(1);
+      expect(a.closed()).toBe(false);
+    });
+
+    it("at the cap, closes the least recently active session", async () => {
+      const registry = new SessionRegistry({ maxSessions: 3 });
+      const old = makeTransport();
+      const mid = makeTransport();
+      const fresh = makeTransport();
+      registry.add("old", old, 1 * MINUTE);
+      registry.add("mid", mid, 2 * MINUTE);
+      registry.add("fresh", fresh, 3 * MINUTE);
+      registry.touch("old", 4 * MINUTE); // now the most recent
+
+      await expect(registry.makeRoom()).resolves.toBe(true);
+      expect(registry.has("mid")).toBe(false);
+      expect(mid.closed()).toBe(true);
+      expect(registry.has("old")).toBe(true);
+      expect(registry.has("fresh")).toBe(true);
+      expect(registry.evictedCount).toBe(1);
+    });
+
+    it("never evicts a session with an open stream", async () => {
+      const registry = new SessionRegistry({ maxSessions: 2 });
+      registry.add("streaming", makeTransport(), 0);
+      registry.openStream("streaming", 0);
+      const idle = makeTransport();
+      registry.add("idle", idle, 5 * MINUTE);
+
+      await expect(registry.makeRoom()).resolves.toBe(true);
+      expect(registry.has("streaming")).toBe(true);
+      expect(idle.closed()).toBe(true);
+    });
+
+    it("refuses when every session is streaming", async () => {
+      const registry = new SessionRegistry({ maxSessions: 1 });
+      const s = makeTransport();
+      registry.add("s", s, 0);
+      registry.openStream("s", 0);
+
+      await expect(registry.makeRoom()).resolves.toBe(false);
+      expect(registry.has("s")).toBe(true);
+      expect(s.closed()).toBe(false);
+    });
+
+    it("still frees the slot when close() throws", async () => {
+      const registry = new SessionRegistry({ maxSessions: 1 });
+      const bad = { close: jest.fn().mockRejectedValue(new Error("boom")) };
+      registry.add("bad", bad, 0);
+
+      await expect(registry.makeRoom()).resolves.toBe(true);
+      expect(registry.size).toBe(0);
+    });
+
+    it("0 disables the cap", async () => {
+      const registry = new SessionRegistry({ maxSessions: 0 });
+      for (let i = 0; i < 5; i++) registry.add(`s${i}`, makeTransport(), i);
+      await expect(registry.makeRoom()).resolves.toBe(true);
+      expect(registry.size).toBe(5);
+    });
+  });
 });

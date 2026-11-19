@@ -29,6 +29,7 @@ jest.mock("ioredis", () => {
     setex = jest.fn();
     del = jest.fn();
     keys = jest.fn();
+    scan = jest.fn();
 
     constructor(url: string, options?: Record<string, unknown>) {
       this.url = url;
@@ -70,6 +71,7 @@ interface MockRedisInstance {
   setex: jest.Mock;
   del: jest.Mock;
   keys: jest.Mock;
+  scan: jest.Mock;
 }
 
 interface LoggerMock {
@@ -413,11 +415,30 @@ describe("session-store", () => {
       expect(client.keys).toHaveBeenCalledWith("mcp:client:*");
     });
 
-    it("counts keys under a prefix with size()", async () => {
-      client.keys.mockResolvedValue(["mcp:client:a", "mcp:client:b"]);
+    it("counts keys under a prefix with SCAN, never KEYS, across every page", async () => {
+      client.scan
+        .mockResolvedValueOnce(["17", ["mcp:client:a", "mcp:client:b"]])
+        .mockResolvedValueOnce(["0", ["mcp:client:c"]]);
 
-      await expect(store.size("mcp:client:")).resolves.toBe(2);
-      expect(client.keys).toHaveBeenCalledWith("mcp:client:*");
+      await expect(store.size("mcp:client:")).resolves.toBe(3);
+      expect(client.scan).toHaveBeenNthCalledWith(
+        1,
+        "0",
+        "MATCH",
+        "mcp:client:*",
+        "COUNT",
+        1000,
+      );
+      expect(client.scan).toHaveBeenNthCalledWith(
+        2,
+        "17",
+        "MATCH",
+        "mcp:client:*",
+        "COUNT",
+        1000,
+      );
+      // KEYS blocks Redis for the whole keyspace walk.
+      expect(client.keys).not.toHaveBeenCalled();
     });
   });
 });

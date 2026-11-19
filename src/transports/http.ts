@@ -27,6 +27,7 @@ import apiKeyContext from "../auth.js";
 import { SessionRegistry } from "../session-registry.js";
 import { registerAuthorizeRoutes } from "./oauth-routes.js";
 import { rateLimit } from "../rate-limit.js";
+import { isPublicRequest } from "./public-paths.js";
 import {
   loadOAuthConfig,
   getAuthorizationServerMetadata,
@@ -61,9 +62,13 @@ const SESSION_SWEEP_INTERVAL_MS = Number(
   process.env.SESSION_SWEEP_INTERVAL_MS ?? 5 * 60 * 1000,
 );
 
+// 0 disables the cap.
+const MAX_HTTP_SESSIONS = Number(process.env.MAX_HTTP_SESSIONS ?? 1000);
+
 // Active transport sessions, with idle tracking (see session-registry.ts).
 const transports = new SessionRegistry<StreamableHTTPServerTransport>({
   idleTimeoutMs: SESSION_IDLE_TIMEOUT_MS,
+  maxSessions: MAX_HTTP_SESSIONS,
 });
 
 /**
@@ -79,14 +84,7 @@ function authMiddleware(requireAuth: boolean) {
   ): Promise<void> => {
     // Skip auth for health check, server info (GET only), favicon, and OAuth endpoints
     // POST/DELETE to "/" is the MCP endpoint and requires auth
-    if (
-      req.path === "/health" ||
-      req.path === "/favicon.svg" ||
-      req.path === "/favicon.ico" ||
-      (req.path === "/" && req.method === "GET") ||
-      req.path.startsWith("/.well-known/") ||
-      req.path.startsWith("/oauth/")
-    ) {
+    if (isPublicRequest(req.path, req.method, req.headers.accept)) {
       next();
       return;
     }
@@ -231,8 +229,37 @@ export async function startHttpServer(
   }
   app.use(authMiddleware(requireAuth));
 
+  // The two store counts scan Redis, and /health is public and polled by
+  // the deploy workflows, so they are cached rather than run per request.
+  const STORE_COUNTS_TTL_MS = 60 * 1000;
+  let storeCounts: {
+    at: number;
+    oauthSessions: number;
+    registeredClients: number;
+  } | null = null;
+  let storeCountsPending: Promise<void> | null = null;
+
+  async function refreshStoreCounts(): Promise<void> {
+    const [oauthSessions, registeredClients] = await Promise.all([
+      getActiveSessionCount(),
+      getRegisteredClientCount(),
+    ]);
+    storeCounts = { at: Date.now(), oauthSessions, registeredClients };
+  }
+
   // Health check endpoint
   app.get("/health", async (_req, res) => {
+    if (!storeCounts || Date.now() - storeCounts.at > STORE_COUNTS_TTL_MS) {
+      // One refresh at a time, however many requests arrive together.
+      storeCountsPending ??= refreshStoreCounts().finally(() => {
+        storeCountsPending = null;
+      });
+      try {
+        await storeCountsPending;
+      } catch (err: any) {
+        logger.warn(`Health: store counts unavailable: ${err?.message}`);
+      }
+    }
     res.json({
       status: "ok",
       version: VERSION,
@@ -241,8 +268,9 @@ export async function startHttpServer(
       activeSessions: transports.size,
       streamingSessions: transports.streamingCount,
       sweptSessions: transports.sweptCount,
-      oauthSessions: await getActiveSessionCount(),
-      registeredClients: await getRegisteredClientCount(),
+      evictedSessions: transports.evictedCount,
+      oauthSessions: storeCounts?.oauthSessions ?? null,
+      registeredClients: storeCounts?.registeredClients ?? null,
     });
   });
 
@@ -447,6 +475,19 @@ export async function startHttpServer(
       } else if (!mcpSessionId && isInitializeRequest(req.body)) {
         // New session initialization
         logger.info("Initializing new MCP session");
+
+        if (!(await transports.makeRoom())) {
+          res.setHeader("Retry-After", "30");
+          res.status(503).json({
+            jsonrpc: "2.0",
+            error: {
+              code: -32000,
+              message: "Server is at capacity. Try again shortly.",
+            },
+            id: null,
+          });
+          return;
+        }
 
         transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
