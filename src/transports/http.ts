@@ -26,6 +26,7 @@ import logger from "../logger.js";
 import apiKeyContext from "../auth.js";
 import { SessionRegistry } from "../session-registry.js";
 import { registerAuthorizeRoutes } from "./oauth-routes.js";
+import { rateLimit } from "../rate-limit.js";
 import {
   loadOAuthConfig,
   getAuthorizationServerMetadata,
@@ -33,6 +34,8 @@ import {
   getActiveSessionCount,
   // DCR functions
   registerClient,
+  validateClientMetadata,
+  revokeToken,
   exchangeAuthorizationCode,
   getRegisteredClientCount,
   isOAuthSessionId,
@@ -215,6 +218,11 @@ export async function startHttpServer(
 
   const app = express();
 
+  // Behind nginx-proxy, which appends the peer address to X-Forwarded-For.
+  // Trusting only private and loopback hops makes req.ip the real client
+  // address there, while a client connecting directly cannot spoof it.
+  app.set("trust proxy", "loopback, linklocal, uniquelocal");
+
   // Middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true })); // For OAuth token endpoint (form data)
@@ -291,27 +299,35 @@ export async function startHttpServer(
     // Dynamic Client Registration (DCR) - RFC 7591
     // Claude Desktop registers itself as an OAuth client
     // =========================================================================
-    app.post("/oauth/register", async (req, res) => {
+    // Server-to-server: claude.ai registers from a few shared IPs, so this
+    // only stops floods. Each registration is stored for 30 days.
+    const registerLimit = rateLimit({
+      name: "oauth-register",
+      windowMs: 10 * 60 * 1000,
+      max: 100,
+    });
+    const tokenLimit = rateLimit({
+      name: "oauth-token",
+      windowMs: 10 * 60 * 1000,
+      max: 300,
+    });
+
+    app.post("/oauth/register", registerLimit, async (req, res) => {
+      const metadata = validateClientMetadata(req.body);
+      if (metadata.ok === false) {
+        res.status(400).json({
+          error: metadata.error,
+          error_description: metadata.description,
+        });
+        return;
+      }
       const {
         client_name,
         redirect_uris,
         grant_types,
         response_types,
         token_endpoint_auth_method,
-      } = req.body;
-
-      if (
-        !redirect_uris ||
-        !Array.isArray(redirect_uris) ||
-        redirect_uris.length === 0
-      ) {
-        res.status(400).json({
-          error: "invalid_client_metadata",
-          error_description:
-            "redirect_uris is required and must be a non-empty array",
-        });
-        return;
-      }
+      } = metadata.value;
 
       try {
         const client = await registerClient({
@@ -350,7 +366,7 @@ export async function startHttpServer(
     // OAuth token endpoint - Exchange authorization code for access token
     // Claude calls this after receiving the code at its callback
     // =========================================================================
-    app.post("/oauth/token", async (req, res) => {
+    app.post("/oauth/token", tokenLimit, async (req, res) => {
       const { grant_type, code, client_id, redirect_uri, code_verifier } =
         req.body;
 
@@ -393,6 +409,19 @@ export async function startHttpServer(
 
       // Return tokens per OAuth 2.0 spec
       res.json(tokens);
+    });
+
+    // RFC 7009 token revocation. Ends the MCP session; always 200, so it
+    // cannot be used to probe whether a token exists.
+    app.post("/oauth/revoke", tokenLimit, async (req, res) => {
+      try {
+        await revokeToken(req.body?.token);
+      } catch (err: any) {
+        logger.error(`OAuth revoke error: ${err?.message}`);
+        res.status(503).json({ error: "temporarily_unavailable" });
+        return;
+      }
+      res.status(200).end();
     });
 
     logger.info("OAuth endpoints enabled (with DCR and consent)");
