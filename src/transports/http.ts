@@ -25,23 +25,15 @@ import {
 import logger from "../logger.js";
 import apiKeyContext from "../auth.js";
 import { SessionRegistry } from "../session-registry.js";
+import { registerAuthorizeRoutes } from "./oauth-routes.js";
 import {
   loadOAuthConfig,
-  generateState,
-  buildAuthorizationUrl,
-  completeOAuthFlow,
   getAuthorizationServerMetadata,
   getAccessTokenFromSession,
   getActiveSessionCount,
   // DCR functions
   registerClient,
-  getRegisteredClient,
-  validateRedirectUri,
-  storePendingClientAuth,
-  getPendingClientAuth,
-  createAuthorizationCode,
   exchangeAuthorizationCode,
-  exchangeCodeForTokens,
   getRegisteredClientCount,
   isOAuthSessionId,
   touchSession,
@@ -351,179 +343,8 @@ export async function startHttpServer(
       }
     });
 
-    // =========================================================================
-    // OAuth authorize - Accept client request, redirect to DS Passport
-    // Claude calls this with its client_id and redirect_uri
-    // =========================================================================
-    app.get("/oauth/authorize", async (req, res) => {
-      const {
-        client_id,
-        redirect_uri,
-        response_type,
-        state: clientState,
-        code_challenge,
-        code_challenge_method,
-      } = req.query;
-
-      // Validate required parameters
-      if (!client_id || !redirect_uri || response_type !== "code") {
-        res.status(400).json({
-          error: "invalid_request",
-          error_description:
-            "Missing required parameters: client_id, redirect_uri, response_type=code",
-        });
-        return;
-      }
-
-      // Validate the client exists
-      const client = await getRegisteredClient(client_id as string);
-      if (!client) {
-        res.status(400).json({
-          error: "invalid_client",
-          error_description:
-            "Unknown client_id. Register via /oauth/register first.",
-        });
-        return;
-      }
-
-      // Validate redirect_uri is registered for this client
-      if (
-        !(await validateRedirectUri(
-          client_id as string,
-          redirect_uri as string,
-        ))
-      ) {
-        res.status(400).json({
-          error: "invalid_request",
-          error_description: "redirect_uri not registered for this client",
-        });
-        return;
-      }
-
-      // Generate our state for DS Passport flow
-      const ourState = generateState();
-
-      // Store the client's request so we can redirect back after DS auth
-      await storePendingClientAuth(
-        ourState,
-        client_id as string,
-        redirect_uri as string,
-        code_challenge as string | undefined,
-        code_challenge_method as string | undefined,
-        clientState as string | undefined,
-      );
-
-      // Redirect to DS Passport for actual authentication
-      const authUrl = await buildAuthorizationUrl(oauthConfig, ourState);
-
-      logger.info(
-        `OAuth: Client ${(client_id as string).substring(0, 8)}... -> DS Passport (state: ${ourState.substring(0, 8)}...)`,
-      );
-      res.redirect(authUrl);
-    });
-
-    // =========================================================================
-    // OAuth callback - Handle DS Passport return, redirect to client (Claude)
-    // =========================================================================
-    app.get("/oauth/callback", async (req, res) => {
-      const { code, state, error, error_description } = req.query;
-
-      if (error) {
-        logger.error(`OAuth DS error: ${error} - ${error_description}`);
-        res.status(400).json({
-          error: error as string,
-          error_description: error_description as string,
-        });
-        return;
-      }
-
-      if (!code || !state) {
-        res.status(400).json({
-          error: "invalid_request",
-          error_description: "Missing code or state parameter from DS Passport",
-        });
-        return;
-      }
-
-      // Get the pending client authorization
-      const pendingClient = await getPendingClientAuth(state as string);
-
-      if (!pendingClient) {
-        // No pending client auth - this might be a direct/legacy flow
-        // Fall back to the old behavior for backwards compatibility
-        try {
-          const { sessionId } = await completeOAuthFlow(
-            oauthConfig,
-            code as string,
-            state as string,
-          );
-
-          logger.info(
-            `OAuth (legacy): Session created (${sessionId.substring(0, 8)}...)`,
-          );
-
-          res.json({
-            success: true,
-            message: "Authentication successful",
-            session_id: sessionId,
-            usage: {
-              header: "Authorization",
-              format: `Bearer oauth:${sessionId}`,
-              example: `curl -H "Authorization: Bearer oauth:${sessionId}" ${oauthConfig.issuer}/mcp`,
-            },
-          });
-        } catch (err: any) {
-          logger.error(`OAuth callback error: ${err.message}`);
-          res.status(400).json({
-            error: "oauth_error",
-            error_description: err.message,
-          });
-        }
-        return;
-      }
-
-      // Exchange DS code for DS tokens
-      try {
-        const dsTokens = await exchangeCodeForTokens(
-          oauthConfig,
-          code as string,
-          state as string,
-        );
-
-        // Create an authorization code for the client (Claude)
-        const clientCode = await createAuthorizationCode(
-          pendingClient.clientId,
-          pendingClient.redirectUri,
-          dsTokens.access_token,
-          dsTokens.refresh_token,
-          pendingClient.codeChallenge,
-          pendingClient.codeChallengeMethod,
-        );
-
-        // Build redirect URL back to client (Claude)
-        const redirectUrl = new URL(pendingClient.redirectUri);
-        redirectUrl.searchParams.set("code", clientCode);
-        if (pendingClient.state) {
-          redirectUrl.searchParams.set("state", pendingClient.state);
-        }
-
-        logger.info(
-          `OAuth: DS auth complete, redirecting to client (${pendingClient.clientId.substring(0, 8)}...)`,
-        );
-        res.redirect(redirectUrl.toString());
-      } catch (err: any) {
-        logger.error(`OAuth callback error: ${err.message}`);
-
-        // Redirect to client with error
-        const redirectUrl = new URL(pendingClient.redirectUri);
-        redirectUrl.searchParams.set("error", "server_error");
-        redirectUrl.searchParams.set("error_description", err.message);
-        if (pendingClient.state) {
-          redirectUrl.searchParams.set("state", pendingClient.state);
-        }
-        res.redirect(redirectUrl.toString());
-      }
-    });
+    // Authorize (with consent) and callback: see oauth-routes.ts
+    registerAuthorizeRoutes(app, oauthConfig);
 
     // =========================================================================
     // OAuth token endpoint - Exchange authorization code for access token
@@ -574,7 +395,7 @@ export async function startHttpServer(
       res.json(tokens);
     });
 
-    logger.info("OAuth endpoints enabled (with DCR support)");
+    logger.info("OAuth endpoints enabled (with DCR and consent)");
   }
 
   // MCP handler function (shared between /mcp and / routes)
