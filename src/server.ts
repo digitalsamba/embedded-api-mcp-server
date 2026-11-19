@@ -174,6 +174,29 @@ export interface ServerConfig {
 }
 
 /**
+ * Convert a handler result to a valid ReadResource result.
+ *
+ * The export and library resource handlers return tool-style content
+ * (`{ content | contents: [{ type: "text", text }] }`) because the matching
+ * reader tools reuse them. A resource read must return
+ * `{ contents: [{ uri, text, mimeType }] }`; clients reject anything else.
+ */
+function asResourceContents(
+  uri: string,
+  mimeType: string,
+  result: { content?: unknown; contents?: unknown },
+): { contents: { uri: string; mimeType: string; text: string }[] } {
+  const items = result.contents ?? result.content;
+  return {
+    contents: (Array.isArray(items) ? items : []).map((item) => ({
+      uri: typeof item?.uri === "string" ? item.uri : uri,
+      mimeType: typeof item?.mimeType === "string" ? item.mimeType : mimeType,
+      text: typeof item?.text === "string" ? item.text : "",
+    })),
+  };
+}
+
+/**
  * Creates and configures the MCP server with all handlers
  */
 export function createServer(config: ServerConfig = {}): Server {
@@ -234,7 +257,14 @@ export function createServer(config: ServerConfig = {}): Server {
 
     logger.debug(`Reading resource: ${uri}`);
 
-    if (uri.startsWith("digitalsamba://rooms")) {
+    // Room-scoped collections are owned by the session and recording modules.
+    // They must be matched before the generic rooms prefix, which would
+    // otherwise answer them with the room object itself.
+    if (/^digitalsamba:\/\/rooms\/[^/]+\/sessions$/.test(uri)) {
+      return handleSessionResource(uri, {}, request, { apiUrl });
+    } else if (/^digitalsamba:\/\/rooms\/[^/]+\/recordings$/.test(uri)) {
+      return handleRecordingResource(uri, client);
+    } else if (uri.startsWith("digitalsamba://rooms")) {
       return handleRoomResource(uri, {}, request, { apiUrl });
     } else if (uri.startsWith("digitalsamba://sessions")) {
       return handleSessionResource(uri, {}, request, { apiUrl });
@@ -244,9 +274,23 @@ export function createServer(config: ServerConfig = {}): Server {
       return handleAnalyticsResource(uri, client);
     } else if (uri.startsWith("digitalsamba://exports")) {
       const exportResources = new ExportResources(client);
-      return exportResources.handleResourceRequest(uri);
-    } else if (uri.startsWith("digitalsamba://content")) {
-      return handleContentResource(uri, client);
+      return asResourceContents(
+        uri,
+        "text/plain",
+        await exportResources.handleResourceRequest(uri),
+      );
+    } else if (
+      // The library resources are advertised as digitalsamba://libraries...;
+      // "content" was the only prefix routed, so none of them could be read.
+      // It stays as an alias.
+      uri.startsWith("digitalsamba://libraries") ||
+      uri.startsWith("digitalsamba://content")
+    ) {
+      return asResourceContents(
+        uri,
+        "application/json",
+        await handleContentResource(uri, client),
+      );
     }
 
     throw new McpError(
@@ -343,8 +387,10 @@ export function createServer(config: ServerConfig = {}): Server {
         return await executeExportTool(name, args || {}, request, { apiUrl });
       }
       // Recording management tools
+      // delete-session-recordings contains "recording" but belongs to the
+      // communication module below; routed here it could never run.
       else if (
-        name.includes("recording") ||
+        (name.includes("recording") && name !== "delete-session-recordings") ||
         name === "get-recordings" ||
         name === "archive-recording" ||
         name === "unarchive-recording"
