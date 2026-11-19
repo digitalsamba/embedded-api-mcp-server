@@ -73,3 +73,22 @@ jobs:
 
     - name: Check formatting
       run: npm run format:check
+  # Non-blocking: reports, never fails the build. Production dependencies
+  # only; v1.3.0 shipped after a pass found 1 critical and 4 high here.
+  audit:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - name: npm audit (production dependencies)
+        run: |
+          npm audit --omit=dev --audit-level=high | tee audit.txt || {
+            echo "::warning::npm audit found high or critical issues in production dependencies"
+            { echo "## npm audit (production)"; echo '```'; cat audit.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          }
