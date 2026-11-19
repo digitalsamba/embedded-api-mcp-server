@@ -57,10 +57,12 @@ class RedisStore implements Store {
   constructor(url: string) {
     this.client = new Redis(url, {
       maxRetriesPerRequest: 3,
-      retryStrategy: (times) => {
-        if (times > 3) return null; // Stop retrying after 3 attempts
-        return Math.min(times * 100, 3000);
-      },
+      // Never give up. Returning null here ends the connection for good, and
+      // nothing recreates this client: one Redis restart longer than ~0.6s
+      // left every OAuth request and /health failing with "Connection is
+      // closed" until the container was restarted by hand. Individual
+      // commands still fail fast via maxRetriesPerRequest while Redis is down.
+      retryStrategy: (times) => Math.min(times * 100, 5000),
     });
 
     this.client.on("error", (err) => {

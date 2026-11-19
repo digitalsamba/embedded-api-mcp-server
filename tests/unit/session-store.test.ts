@@ -198,7 +198,7 @@ describe("session-store", () => {
       expect(Redis.instances).toHaveLength(0);
     });
 
-    it("backs off then gives up after three retries", () => {
+    it("backs off but never stops reconnecting (a null would end the client for good)", () => {
       process.env.REDIS_URL = "redis://localhost:6379";
       const { sessionStore, Redis } = freshModules();
 
@@ -209,7 +209,13 @@ describe("session-store", () => {
 
       expect(retryStrategy(1)).toBe(100);
       expect(retryStrategy(3)).toBe(300);
-      expect(retryStrategy(4)).toBeNull();
+      expect(retryStrategy(4)).toBe(400);
+      // Capped, and still a delay however long Redis has been away.
+      expect(retryStrategy(50)).toBe(5000);
+      expect(retryStrategy(100000)).toBe(5000);
+      for (const times of [1, 4, 10, 1000]) {
+        expect(typeof retryStrategy(times)).toBe("number");
+      }
     });
 
     it("registers error and connect handlers on the Redis client", () => {
