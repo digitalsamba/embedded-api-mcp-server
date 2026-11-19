@@ -118,7 +118,9 @@ export function registerLiveSessionTools(): ToolDefinition[] {
               properties: {
                 callId: {
                   type: "string",
-                  description: "Unique identifier for the phone call",
+                  maxLength: 50,
+                  description:
+                    "Unique identifier for the phone call. Use a UUID: phone-participants-left only accepts UUIDs, so a participant joined with any other ID can never be removed.",
                 },
                 name: {
                   type: "string",
@@ -157,7 +159,8 @@ export function registerLiveSessionTools(): ToolDefinition[] {
           },
           callIds: {
             type: "array",
-            description: "Array of call IDs for participants leaving",
+            description:
+              "Array of call IDs (UUIDs, as used when they joined) for participants leaving",
             items: {
               type: "string",
             },

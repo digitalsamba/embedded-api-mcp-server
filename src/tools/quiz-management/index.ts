@@ -119,6 +119,11 @@ export function registerQuizTools(): ToolDefinition[] {
                   type: "string",
                   description: "The question text",
                 },
+                multiple: {
+                  type: "boolean",
+                  description:
+                    "Whether several choices can be correct (default false: exactly one correct choice)",
+                },
                 choices: {
                   type: "array",
                   items: {
@@ -218,6 +223,11 @@ export function registerQuizTools(): ToolDefinition[] {
                 text: {
                   type: "string",
                   description: "The question text",
+                },
+                multiple: {
+                  type: "boolean",
+                  description:
+                    "Whether several choices can be correct (default false: exactly one correct choice)",
                 },
                 choices: {
                   type: "array",

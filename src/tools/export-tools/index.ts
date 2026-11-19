@@ -104,15 +104,17 @@ async function handleExportChatMessages(
     format?: string;
     sessionId?: string;
     locale?: string;
+    timezone?: string;
   },
   exportResources: ExportResources,
 ): Promise<any> {
   const uri = `digitalsamba://exports/communications/${params.roomId}/chat${
-    params.format || params.sessionId || params.locale
+    params.format || params.sessionId || params.locale || params.timezone
       ? `?${new URLSearchParams({
           ...(params.format && { format: params.format }),
           ...(params.sessionId && { session_id: params.sessionId }),
           ...(params.locale && { locale: params.locale }),
+          ...(params.timezone && { timezone: params.timezone }),
         }).toString()}`
       : ""
   }`;
@@ -127,15 +129,17 @@ async function handleExportQA(
     format?: string;
     sessionId?: string;
     locale?: string;
+    timezone?: string;
   },
   exportResources: ExportResources,
 ): Promise<any> {
   const uri = `digitalsamba://exports/communications/${params.roomId}/qa${
-    params.format || params.sessionId || params.locale
+    params.format || params.sessionId || params.locale || params.timezone
       ? `?${new URLSearchParams({
           ...(params.format && { format: params.format }),
           ...(params.sessionId && { session_id: params.sessionId }),
           ...(params.locale && { locale: params.locale }),
+          ...(params.timezone && { timezone: params.timezone }),
         }).toString()}`
       : ""
   }`;
@@ -145,14 +149,20 @@ async function handleExportQA(
 }
 
 async function handleExportTranscripts(
-  params: { sessionId: string; format?: string; locale?: string },
+  params: {
+    sessionId: string;
+    format?: string;
+    locale?: string;
+    timezone?: string;
+  },
   exportResources: ExportResources,
 ): Promise<any> {
   const uri = `digitalsamba://exports/communications/${params.sessionId}/transcripts${
-    params.format || params.locale
+    params.format || params.locale || params.timezone
       ? `?${new URLSearchParams({
           ...(params.format && { format: params.format }),
           ...(params.locale && { locale: params.locale }),
+          ...(params.timezone && { timezone: params.timezone }),
         }).toString()}`
       : ""
   }`;
@@ -167,15 +177,17 @@ async function handleExportPolls(
     format?: string;
     sessionId?: string;
     locale?: string;
+    timezone?: string;
   },
   exportResources: ExportResources,
 ): Promise<any> {
   const uri = `digitalsamba://exports/polls/${params.roomId}${
-    params.format || params.sessionId || params.locale
+    params.format || params.sessionId || params.locale || params.timezone
       ? `?${new URLSearchParams({
           ...(params.format && { format: params.format }),
           ...(params.sessionId && { session_id: params.sessionId }),
           ...(params.locale && { locale: params.locale }),
+          ...(params.timezone && { timezone: params.timezone }),
         }).toString()}`
       : ""
   }`;
@@ -267,6 +279,11 @@ export function registerExportTools(): Tool[] {
             enum: ["en", "it", "de", "es"],
             description: "Export language (default: en)",
           },
+          timezone: {
+            type: "string",
+            description:
+              "IANA time zone for timestamps in the export, e.g. Europe/London (default: UTC)",
+          },
           sessionId: {
             type: "string",
             description: "Optional session ID to filter messages",
@@ -296,6 +313,11 @@ export function registerExportTools(): Tool[] {
             type: "string",
             enum: ["en", "it", "de", "es"],
             description: "Export language (default: en)",
+          },
+          timezone: {
+            type: "string",
+            description:
+              "IANA time zone for timestamps in the export, e.g. Europe/London (default: UTC)",
           },
           sessionId: {
             type: "string",
@@ -330,6 +352,11 @@ export function registerExportTools(): Tool[] {
             enum: ["en", "it", "de", "es"],
             description: "Export language (default: en)",
           },
+          timezone: {
+            type: "string",
+            description:
+              "IANA time zone for timestamps in the export, e.g. Europe/London (default: UTC)",
+          },
         },
         required: ["sessionId"],
       } as const,
@@ -358,6 +385,11 @@ export function registerExportTools(): Tool[] {
             type: "string",
             enum: ["en", "it", "de", "es"],
             description: "Export language (default: en)",
+          },
+          timezone: {
+            type: "string",
+            description:
+              "IANA time zone for timestamps in the export, e.g. Europe/London (default: UTC)",
           },
           sessionId: {
             type: "string",

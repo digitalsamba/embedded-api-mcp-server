@@ -243,6 +243,7 @@
     "DELETE /api/v1/sessions/{session}/quizzes": {
       "operationId": "deleteQuizzesBySession",
       "tools": [
+        "bulk-delete-session-data",
         "delete-session-quizzes"
       ]
     },
@@ -584,7 +585,6 @@
     "PATCH /api/v1/libraries/{library}/folders/{libraryFolder}": {
       "operationId": "updateTheSpecifiedFolder",
       "tools": [
-        "move-library-folder",
         "update-library-folder"
       ],
       "note": "move-library-folder moves via parent_id here; the dedicated move endpoint is pending."
@@ -597,8 +597,9 @@
     },
     "POST /api/v1/libraries/{library}/folders/{libraryFolder}/move": {
       "operationId": "moveTheSpecifiedFolderToAnotherFolder",
-      "pending": "Switch move-library-folder from PATCH parent_id to this endpoint (validates same library and no move into own subtree).",
-      "issue": 26
+      "tools": [
+        "move-library-folder"
+      ]
     },
     "GET /api/v1/libraries/{library}/files": {
       "operationId": "getAvailableLibraryFiles",
@@ -622,7 +623,6 @@
     "PATCH /api/v1/libraries/{library}/files/{libraryFile}": {
       "operationId": "updateTheSpecifiedFile",
       "tools": [
-        "move-library-file",
         "update-library-file"
       ],
       "note": "move-library-file moves via folder_id here; the dedicated move endpoint is pending."
@@ -655,8 +655,9 @@
     },
     "POST /api/v1/libraries/{library}/files/{libraryFile}/move": {
       "operationId": "moveTheSpecifiedFileToAnotherFolder",
-      "pending": "Switch move-library-file from PATCH folder_id to this endpoint (validates the target is in the same library).",
-      "issue": 26
+      "tools": [
+        "move-library-file"
+      ]
     },
     "GET /api/v1/rooms/{room}/polls/export": {
       "operationId": "exportPolls",

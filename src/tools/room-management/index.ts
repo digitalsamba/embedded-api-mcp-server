@@ -133,18 +133,27 @@ export function registerRoomTools(): Tool[] {
               type: "string",
               enum: [
                 "ar-SA",
+                "bg-BG",
+                "ca-ES",
+                "da-DK",
+                "de-DE",
                 "en",
                 "es-ES",
-                "de-DE",
+                "fi-FI",
+                "fr-FR",
                 "it-IT",
+                "nb-NO",
+                "nl-NL",
                 "pt-PT",
                 "ro-RO",
+                "sv-SE",
+                "tr-TR",
                 "zh-CN",
                 "zh-TW",
               ],
             },
             description:
-              "Available languages for participants to choose from. Valid values: ar-SA, en, es-ES, de-DE, it-IT, pt-PT, ro-RO, zh-CN, zh-TW",
+              "Available languages for participants to choose from. Valid values: ar-SA, bg-BG, ca-ES, da-DK, de-DE, en, es-ES, fi-FI, fr-FR, it-IT, nb-NO, nl-NL, pt-PT, ro-RO, sv-SE, tr-TR, zh-CN, zh-TW",
           },
           language_selection_enabled: {
             type: "boolean",
@@ -262,9 +271,59 @@ export function registerRoomTools(): Tool[] {
           watermark_text: {
             type: "string",
             minLength: 3,
-            maxLength: 150,
+            maxLength: 50,
             description:
-              "Watermark text (Latin characters, numbers and basic punctuation only)",
+              "Watermark text, 3-50 characters (letters, numbers, spaces, dashes and underscores)",
+          },
+          local_mute_enabled: {
+            type: "boolean",
+            description:
+              "Allow participants to mute other participants locally (on their own device only)",
+          },
+          global_lock_enabled: {
+            type: "boolean",
+            description: "Enable the room lock control",
+          },
+          toolbar_lock_icon_enabled: {
+            type: "boolean",
+            description: "Show the lock icon in the toolbar",
+          },
+          hide_tiles_in_recordings_enabled: {
+            type: "boolean",
+            description:
+              "Hide the video tiles of some roles in recordings (see hide_tiles_in_recordings_roles)",
+          },
+          hide_tiles_in_recordings_roles: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Role names whose video tiles are hidden in recordings (used with hide_tiles_in_recordings_enabled)",
+          },
+          telephony_enabled: {
+            type: "boolean",
+            description:
+              "Enable phone dial-in for the room (requires telephony on the account's plan)",
+          },
+          e2ee_enabled: {
+            type: "boolean",
+            description:
+              "Enable end-to-end encryption (depends on the account's plan)",
+          },
+          breakout_rooms_enabled: {
+            type: "boolean",
+            description: "Enable breakout rooms",
+          },
+          session_length: {
+            type: "integer",
+            minimum: 1,
+            maximum: 1440,
+            description:
+              "Maximum session length in minutes (1-1440); null for no limit",
+          },
+          expires_at: {
+            type: "string",
+            description:
+              "When the room expires, as an ISO 8601 date-time in the future; null for never",
           },
         },
         required: ["name"],
@@ -281,6 +340,10 @@ export function registerRoomTools(): Tool[] {
           room_id: {
             type: "string",
             description: "Room ID (required)",
+          },
+          external_id: {
+            type: "string",
+            description: "External identifier for the room",
           },
           name: {
             type: "string",
@@ -369,18 +432,27 @@ export function registerRoomTools(): Tool[] {
               type: "string",
               enum: [
                 "ar-SA",
+                "bg-BG",
+                "ca-ES",
+                "da-DK",
+                "de-DE",
                 "en",
                 "es-ES",
-                "de-DE",
+                "fi-FI",
+                "fr-FR",
                 "it-IT",
+                "nb-NO",
+                "nl-NL",
                 "pt-PT",
                 "ro-RO",
+                "sv-SE",
+                "tr-TR",
                 "zh-CN",
                 "zh-TW",
               ],
             },
             description:
-              "Available languages for participants to choose from. Valid values: ar-SA, en, es-ES, de-DE, it-IT, pt-PT, ro-RO, zh-CN, zh-TW",
+              "Available languages for participants to choose from. Valid values: ar-SA, bg-BG, ca-ES, da-DK, de-DE, en, es-ES, fi-FI, fr-FR, it-IT, nb-NO, nl-NL, pt-PT, ro-RO, sv-SE, tr-TR, zh-CN, zh-TW",
           },
           language_selection_enabled: {
             type: "boolean",
@@ -498,9 +570,59 @@ export function registerRoomTools(): Tool[] {
           watermark_text: {
             type: "string",
             minLength: 3,
-            maxLength: 150,
+            maxLength: 50,
             description:
-              "Watermark text (Latin characters, numbers and basic punctuation only)",
+              "Watermark text, 3-50 characters (letters, numbers, spaces, dashes and underscores)",
+          },
+          local_mute_enabled: {
+            type: "boolean",
+            description:
+              "Allow participants to mute other participants locally (on their own device only)",
+          },
+          global_lock_enabled: {
+            type: "boolean",
+            description: "Enable the room lock control",
+          },
+          toolbar_lock_icon_enabled: {
+            type: "boolean",
+            description: "Show the lock icon in the toolbar",
+          },
+          hide_tiles_in_recordings_enabled: {
+            type: "boolean",
+            description:
+              "Hide the video tiles of some roles in recordings (see hide_tiles_in_recordings_roles)",
+          },
+          hide_tiles_in_recordings_roles: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Role names whose video tiles are hidden in recordings (used with hide_tiles_in_recordings_enabled)",
+          },
+          telephony_enabled: {
+            type: "boolean",
+            description:
+              "Enable phone dial-in for the room (requires telephony on the account's plan)",
+          },
+          e2ee_enabled: {
+            type: "boolean",
+            description:
+              "Enable end-to-end encryption (depends on the account's plan)",
+          },
+          breakout_rooms_enabled: {
+            type: "boolean",
+            description: "Enable breakout rooms",
+          },
+          session_length: {
+            type: "integer",
+            minimum: 1,
+            maximum: 1440,
+            description:
+              "Maximum session length in minutes (1-1440); null for no limit",
+          },
+          expires_at: {
+            type: "string",
+            description:
+              "When the room expires, as an ISO 8601 date-time in the future; null for never",
           },
         },
         required: ["room_id"],
@@ -703,8 +825,16 @@ export function registerRoomTools(): Tool[] {
                 minLength: 3,
                 maxLength: 50,
               },
-              max_participants: { type: "number" },
-              max_broadcasters: { type: "number" },
+              max_participants: {
+                type: "number",
+                description:
+                  "Has no effect: not a team default setting (set it per room with create-room / update-room)",
+              },
+              max_broadcasters: {
+                type: "number",
+                description:
+                  "Has no effect: not a team default setting (set it per room with create-room / update-room)",
+              },
               default_role: { type: "string" },
             },
           },
