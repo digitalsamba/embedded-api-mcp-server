@@ -1,5 +1,20 @@
 name: Check for API Updates
 
+# Weekly drift alarm. Compares the live Digital Samba OpenAPI spec with
+# openapi-stored.yaml and the published embedded SDK with the version we last
+# looked at, and reports every NEW state exactly once:
+#
+#   - no open issue           -> opens one
+#   - open issue, new change  -> comments the new cumulative delta on it
+#   - open issue, same state  -> stays quiet
+#
+# It never exits early because an issue is open. That is what muted this check
+# from 2026-10-26 until 2026-11-19.
+#
+# Resolving an api-update issue means updating openapi-stored.yaml, which the
+# coverage gate (tests/unit/api-coverage.test.ts + api-coverage.json) will not
+# let through until every new operation has a disposition.
+
 on:
   schedule:
     - cron: '0 9 * * 1'  # Every Monday at 9am UTC
@@ -9,6 +24,16 @@ permissions:
   contents: read
   issues: write
 
+concurrency:
+  group: check-api-updates
+  cancel-in-progress: false
+
+env:
+  SPEC_URL: https://developer.digitalsamba.com/rest-api/openapi.yaml
+  SKILL_REFERENCE_URL: https://raw.githubusercontent.com/digitalsamba/digital-samba-skill/main/api-reference.md
+  SDK_PACKAGE: '@digitalsamba/embedded-sdk'
+  SDK_VERSION_FILE: .github/embedded-sdk-version
+
 jobs:
   check-updates:
     runs-on: ubuntu-latest
@@ -16,76 +41,128 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Check OpenAPI spec for changes
-        id: api-check
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.x'
+
+      - name: Fetch live OpenAPI spec
         run: |
-          curl -s https://developer.digitalsamba.com/rest-api/openapi.yaml -o openapi-new.yaml
+          set -euo pipefail
+          curl -fsS --retry 3 --retry-delay 10 --max-time 120 "$SPEC_URL" -o "$RUNNER_TEMP/openapi-live.yaml"
 
-          if ! diff -q openapi-stored.yaml openapi-new.yaml > /dev/null 2>&1; then
-            echo "api_changed=true" >> $GITHUB_OUTPUT
-            echo "API spec has changed"
-
-            # Generate a summary of changes
-            echo "## Changes detected:" > /tmp/diff-summary.md
-            diff openapi-stored.yaml openapi-new.yaml | head -100 >> /tmp/diff-summary.md || true
-          else
-            echo "api_changed=false" >> $GITHUB_OUTPUT
-            echo "API spec unchanged"
+          # A truncated download or an error page must fail this run, not be
+          # diffed as if the API had lost its endpoints.
+          if ! grep -q '^openapi:' "$RUNNER_TEMP/openapi-live.yaml"; then
+            echo "::error::Downloaded spec does not look like an OpenAPI document"
+            exit 1
+          fi
+          OPS=$(grep -c '^ *operationId:' "$RUNNER_TEMP/openapi-live.yaml" || true)
+          if [ "$OPS" -lt 50 ]; then
+            echo "::error::Downloaded spec has only ${OPS} operations; refusing to compare"
+            exit 1
           fi
 
-      - name: Create issue for API changes
-        if: steps.api-check.outputs.api_changed == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Compare with stored spec
+        id: api
         run: |
-          EXISTING=$(gh issue list --label "api-update" --state open --json number --jq 'length')
-          if [ "$EXISTING" -gt 0 ]; then
-            echo "API update issue already exists"
+          set -euo pipefail
+          LIVE="$RUNNER_TEMP/openapi-live.yaml"
+
+          if cmp -s openapi-stored.yaml "$LIVE"; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "API spec unchanged" | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
-          DATE=$(date +%Y-%m-%d)
-          cat << 'ISSUE_BODY' > /tmp/issue-body.md
-          The Digital Samba OpenAPI specification has changed. The MCP server tools may need updating.
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "sha=$(sha256sum "$LIVE" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
 
-          ## What to Check
+          # Second opinion: the skill's hand-curated endpoint list. Optional -
+          # if it cannot be fetched the report says so and carries on.
+          curl -fsS --retry 2 --max-time 60 "$SKILL_REFERENCE_URL" -o "$RUNNER_TEMP/skill-api-reference.md" \
+            || : > "$RUNNER_TEMP/skill-api-reference.md"
 
-          1. **New endpoints** - May need new MCP tools
-          2. **Changed parameters** - Update existing tool schemas
-          3. **Removed endpoints** - Deprecate/remove affected tools
-          4. **Response changes** - Update type definitions
+          {
+            echo "The live Digital Samba OpenAPI spec differs from \`openapi-stored.yaml\`."
+            echo
+            echo "## Changes detected"
+            echo
+            scripts/api-drift-report.sh openapi-stored.yaml "$LIVE" "$RUNNER_TEMP/skill-api-reference.md"
+            echo "## What to do"
+            echo
+            echo "1. Read the API source for each new, renamed or changed operation (routes, form request, resource) - the spec can be wrong."
+            echo "2. Add or update tools in \`src/tools/*\` and client methods in \`src/digital-samba-api.ts\`."
+            echo "3. Replace \`openapi-stored.yaml\` with the live spec and give every new operation a disposition in \`api-coverage.json\` (\`tools\`, \`excluded\` or \`pending\` + issue). \`npm test\` fails until you do."
+            echo "4. Close this issue from the PR that updates the stored spec (\`fixes #N\`)."
+            echo
+            echo "Reproduce locally: \`curl -fsS $SPEC_URL -o /tmp/live.yaml && scripts/api-drift-report.sh openapi-stored.yaml /tmp/live.yaml\`"
+          } > "$RUNNER_TEMP/api-report.md"
 
-          ## Next Steps
+          cat "$RUNNER_TEMP/api-report.md" >> "$GITHUB_STEP_SUMMARY"
 
-          1. Start a Claude Code session in this repo
-          2. Run `/project-start`
-          3. Ask Claude to analyze the API changes:
+      - name: Report API drift
+        if: steps.api.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SPEC_SHA: ${{ steps.api.outputs.sha }}
+        run: |
+          set -euo pipefail
+          scripts/report-drift-issue.sh \
+            api-update \
+            "spec-sha256: ${SPEC_SHA}" \
+            "API Update Detected - Review MCP Tools" \
+            "$RUNNER_TEMP/api-report.md"
 
-          ```
-          Compare openapi-stored.yaml with the current spec at https://developer.digitalsamba.com/rest-api/openapi.yaml
+      # The SDK is iframe-side and this server never loads it, so a new version
+      # is a prompt to look, not a defect: it only matters where the REST API
+      # mirrors an SDK feature (recording bookmarks, for example). Flagged in
+      # its own issue; never fails the run.
+      - name: Check embedded SDK version
+        id: sdk
+        if: always()
+        run: |
+          set -uo pipefail
+          STORED=$(tr -d '[:space:]' < "$SDK_VERSION_FILE" || true)
+          LATEST=$(npm view "$SDK_PACKAGE" version 2>/dev/null | tr -d '[:space:]' || true)
 
-          Identify:
-          - New endpoints that need MCP tools
-          - Changed parameters in existing endpoints
-          - Removed endpoints (flag tools for removal)
-          - Response type changes
+          SEMVER='^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$'
+          if ! [[ "$STORED" =~ $SEMVER ]] || ! [[ "$LATEST" =~ $SEMVER ]]; then
+            echo "::warning::Could not compare SDK versions (stored='${STORED}', latest='${LATEST}')"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
-          Update the MCP server accordingly and replace openapi-stored.yaml with the new spec.
-          ```
+          echo "Stored: $STORED / latest: $LATEST"
+          if [ "$STORED" = "$LATEST" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
-          ## Files to Update
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
+          {
+            echo "\`${SDK_PACKAGE}\` has a new release."
+            echo
+            echo "- **Last reviewed here**: ${STORED}"
+            echo "- **Latest on npm**: ${LATEST}"
+            echo
+            echo "This server does not depend on the SDK. Check whether the release adds a feature the REST API mirrors (a new endpoint or room setting usually arrives in the same window - see any open \`api-update\` issue), then set \`${SDK_VERSION_FILE}\` to \`${LATEST}\` to acknowledge it."
+            echo
+            echo "- [npm](https://www.npmjs.com/package/@digitalsamba/embedded-sdk?activeTab=versions)"
+            echo "- [digital-samba-skill changelog](https://github.com/digitalsamba/digital-samba-skill/blob/main/CHANGELOG.md) (tracks SDK changes in detail)"
+          } > "$RUNNER_TEMP/sdk-report.md"
+          cat "$RUNNER_TEMP/sdk-report.md" >> "$GITHUB_STEP_SUMMARY"
 
-          - `src/digital-samba-api.ts` - API client methods
-          - `src/tools/*/index.ts` - Tool schemas and handlers
-          - `src/types/*.ts` - Type definitions
-          - `openapi-stored.yaml` - Replace with new spec after updates
-          ISSUE_BODY
-          echo "" >> /tmp/issue-body.md
-          echo "---" >> /tmp/issue-body.md
-          echo "*Detected by automated check on ${DATE}*" >> /tmp/issue-body.md
-
-          gh issue create \
-            --title "API Update Detected - Review MCP Tools" \
-            --label "api-update" \
-            --label "needs-review" \
-            --body-file /tmp/issue-body.md
+      - name: Report SDK update
+        if: always() && steps.sdk.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SDK_LATEST: ${{ steps.sdk.outputs.latest }}
+        run: |
+          set -euo pipefail
+          scripts/report-drift-issue.sh \
+            sdk-update \
+            "sdk-version: ${SDK_LATEST}" \
+            "Embedded SDK ${SDK_LATEST} released - check for mirrored API changes" \
+            "$RUNNER_TEMP/sdk-report.md"
