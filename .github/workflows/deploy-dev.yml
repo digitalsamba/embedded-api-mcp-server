@@ -27,6 +27,14 @@ on:
       - develop
   workflow_dispatch:
 
+# One deploy at a time, newest wins. Every run pushes :latest, so parallel
+# runs race and the last push to finish wins, not the last commit: merging
+# #27-#34 in a burst on 2026-11-19 left dev serving the 6th of 8 merges.
+# A superseded run has nothing left to deliver, so it is cancelled.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
 env:
   IMAGE_NAME: digitalsamba-mcp-server
 

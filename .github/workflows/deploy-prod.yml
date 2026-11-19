@@ -27,6 +27,13 @@ on:
       - 'v*'  # Triggers on v1.0.0, v1.0.1, etc.
   workflow_dispatch:  # Manual trigger as backup
 
+# One deploy at a time. Every run pushes :production, so parallel runs race
+# and the last push to finish wins, not the last tag. Never cancel a running
+# prod deploy; a newer tag waits for it.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 env:
   IMAGE_NAME: digitalsamba-mcp-server
 
