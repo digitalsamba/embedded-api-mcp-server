@@ -115,6 +115,7 @@ export function registerSessionTools(): Tool[] {
                 "polls",
                 "recordings",
                 "resources",
+                "quizzes",
               ],
             },
             minItems: 1,

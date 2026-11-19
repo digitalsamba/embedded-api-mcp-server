@@ -269,6 +269,16 @@ export function registerCommunicationTools(): ToolDefinition[] {
             enum: ["en", "it", "de", "es"],
             description: "Export language (default: en)",
           },
+          session_id: {
+            type: "string",
+            description:
+              "Only export the transcripts of this session of the room",
+          },
+          timezone: {
+            type: "string",
+            description:
+              "IANA time zone for timestamps in the export, e.g. Europe/London (default: UTC)",
+          },
         },
         required: ["room_id"],
       },
@@ -1080,10 +1090,16 @@ async function handleListSessionTranscripts(
  * Handle export room transcripts
  */
 async function handleExportRoomTranscripts(
-  params: { room_id: string; format?: "txt" | "json"; locale?: string },
+  params: {
+    room_id: string;
+    format?: "txt" | "json";
+    locale?: string;
+    session_id?: string;
+    timezone?: string;
+  },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { room_id, format, locale } = params;
+  const { room_id, format, locale, session_id, timezone } = params;
 
   if (!room_id || room_id.trim() === "") {
     return {
@@ -1103,6 +1119,8 @@ async function handleExportRoomTranscripts(
     const exportData = await apiClient.exportRoomTranscripts(room_id, {
       format,
       locale,
+      session_id,
+      timezone,
     });
 
     return {

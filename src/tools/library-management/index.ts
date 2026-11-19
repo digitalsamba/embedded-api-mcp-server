@@ -342,7 +342,8 @@ export function registerLibraryTools(): ToolDefinition[] {
           },
           name: {
             type: "string",
-            description: "Name of the webapp (optional)",
+            description:
+              "Name of the webapp. The API requires one; if omitted, the URL's host name is used.",
           },
           folderId: {
             type: "string",
@@ -1689,7 +1690,17 @@ async function handleCreateWebapp(
     const webappData: { url: string; name?: string; folder_id?: string } = {
       url,
     };
-    if (name !== undefined) webappData.name = name;
+    // The API requires a name (CreateWebappRequest); calls without one used
+    // to fail there. Default to the URL's host so they work.
+    if (name !== undefined && name.trim() !== "") {
+      webappData.name = name;
+    } else {
+      try {
+        webappData.name = new URL(url).host || url;
+      } catch {
+        webappData.name = url;
+      }
+    }
     if (folderId !== undefined) webappData.folder_id = folderId;
 
     const result = await apiClient.createWebapp(libraryId, webappData);
@@ -1838,10 +1849,13 @@ async function handleMoveLibraryFile(
   logger.info("Moving file", { libraryId, fileId, targetFolderId });
 
   try {
-    // Update the file's folder_id to move it
-    const result = await apiClient.updateLibraryFile(libraryId, fileId, {
-      folder_id: targetFolderId || null,
-    });
+    // The dedicated move endpoint checks that the target folder is in the
+    // same library; a PATCH of folder_id did not.
+    const result = await apiClient.moveLibraryFile(
+      libraryId,
+      fileId,
+      targetFolderId || null,
+    );
 
     const destination = targetFolderId
       ? `folder ${targetFolderId}`
@@ -1876,7 +1890,6 @@ async function handleMoveLibraryFile(
 
 /**
  * Handle move library folder
- * Note: Since API doesn't have native move, we'll update the parent_id
  */
 async function handleMoveLibraryFolder(
   params: { libraryId: string; folderId: string; targetParentId?: string },
@@ -1899,10 +1912,13 @@ async function handleMoveLibraryFolder(
   logger.info("Moving folder", { libraryId, folderId, targetParentId });
 
   try {
-    // Update the folder's parent_id to move it
-    const result = await apiClient.updateLibraryFolder(libraryId, folderId, {
-      parent_id: targetParentId || null,
-    });
+    // The dedicated move endpoint checks that the new parent is in the
+    // same library; a PATCH of parent_id did not.
+    const result = await apiClient.moveLibraryFolder(
+      libraryId,
+      folderId,
+      targetParentId || null,
+    );
     void result; // Result is used for side effects, response details not needed
 
     const destination = targetParentId

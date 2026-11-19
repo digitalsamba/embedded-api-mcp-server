@@ -1489,7 +1489,8 @@ export class DigitalSambaApiClient {
       | "transcripts"
       | "polls"
       | "recordings"
-      | "resources",
+      | "resources"
+      | "quizzes",
   ): Promise<void> {
     await this.request<void>(`/sessions/${sessionId}/${dataType}`, {
       method: "DELETE",
@@ -1943,6 +1944,8 @@ export class DigitalSambaApiClient {
     options?: {
       format?: "txt" | "json";
       locale?: string;
+      timezone?: string;
+      session_id?: string;
     },
   ): Promise<string> {
     const queryParams = new URLSearchParams();
@@ -2194,6 +2197,7 @@ export class DigitalSambaApiClient {
       session_id?: string;
       format?: "txt" | "json";
       locale?: string;
+      timezone?: string;
     },
   ): Promise<string> {
     const queryParams = new URLSearchParams();
@@ -2236,6 +2240,7 @@ export class DigitalSambaApiClient {
       session_id?: string;
       format?: "txt" | "json";
       locale?: string;
+      timezone?: string;
     },
   ): Promise<string> {
     const queryParams = new URLSearchParams();
@@ -2278,6 +2283,7 @@ export class DigitalSambaApiClient {
       session_id?: string;
       format?: "txt" | "json";
       locale?: string;
+      timezone?: string;
     },
   ): Promise<string> {
     const queryParams = new URLSearchParams();
@@ -2319,6 +2325,7 @@ export class DigitalSambaApiClient {
     options?: {
       format?: "txt" | "json";
       locale?: string;
+      timezone?: string;
     },
   ): Promise<string> {
     const queryParams = new URLSearchParams();
@@ -2583,6 +2590,37 @@ export class DigitalSambaApiClient {
         method: "PATCH",
         body: JSON.stringify(settings),
       },
+    );
+  }
+
+  /**
+   * Move a library file to another folder of the same library, or to the
+   * root with null (POST /libraries/{library}/files/{file}/move). Unlike a
+   * PATCH of folder_id, the API checks the target is in the same library.
+   */
+  async moveLibraryFile(
+    libraryId: string,
+    fileId: string,
+    folderId: string | null,
+  ): Promise<LibraryFile> {
+    return this.request<LibraryFile>(
+      `/libraries/${libraryId}/files/${fileId}/move`,
+      { method: "POST", body: JSON.stringify({ folder_id: folderId }) },
+    );
+  }
+
+  /**
+   * Move a library folder under another folder of the same library, or to
+   * the root with null (POST /libraries/{library}/folders/{folder}/move).
+   */
+  async moveLibraryFolder(
+    libraryId: string,
+    folderId: string,
+    parentId: string | null,
+  ): Promise<LibraryFolder> {
+    return this.request<LibraryFolder>(
+      `/libraries/${libraryId}/folders/${folderId}/move`,
+      { method: "POST", body: JSON.stringify({ parent_id: parentId }) },
     );
   }
 
@@ -3217,6 +3255,7 @@ export class DigitalSambaApiClient {
       session_id?: string;
       format?: "txt" | "json";
       locale?: string;
+      timezone?: string;
     },
   ): Promise<string> {
     const queryParams = new URLSearchParams();
