@@ -375,7 +375,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     {
       name: "delete-session-resources",
       description:
-        '[Communication Management] Delete all shared resources from a session. Use when users say: "delete session resources", "remove session files", "clear session shared content". Requires session_id. Permanently removes all shared files/content.',
+        '[Communication Management] Permanently delete ALL stored data for a session: recordings, transcripts, summaries, chat, Q&A, polls, quizzes, restream records, shared files and the banned-participant list. This is NOT a shared-files-only cleanup - it is the same operation as hard-delete-session-resources, and there is no undo. Use when users say: "delete session resources", "delete everything stored for this session", "wipe session data". To remove one kind of data only, use the specific tool instead (delete-session-chats, delete-session-recordings, delete-session-transcripts, ...). Requires session_id.',
       annotations: getToolAnnotations(
         "delete-session-resources",
         "Delete Session Resources",
@@ -385,7 +385,8 @@ export function registerCommunicationTools(): ToolDefinition[] {
         properties: {
           session_id: {
             type: "string",
-            description: "The ID of the session to delete resources from",
+            description:
+              "The ID of the session whose stored data (all of it) will be deleted",
           },
         },
         required: ["session_id"],
@@ -1493,7 +1494,7 @@ async function handleDeleteSessionResources(
       content: [
         {
           type: "text",
-          text: `Successfully deleted all resources for session ${session_id}`,
+          text: `Permanently deleted all stored data for session ${session_id}: recordings, transcripts, summaries, chat, Q&A, polls, quizzes, restream records, shared files and the banned-participant list.`,
         },
       ],
     };
