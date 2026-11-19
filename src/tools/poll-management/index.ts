@@ -9,7 +9,7 @@
  * - update-poll: Update an existing poll
  * - delete-poll: Delete a specific poll
  * - delete-session-polls: Delete all polls for a session
- * - delete-room-polls: Delete all polls for all sessions in a room
+ * - delete-room-polls: Delete all polls in a room (room-level endpoint)
  * - publish-poll-results: unsupported; the API has no publish-results endpoint,
  *   so this reports failure rather than silently doing nothing
  *
@@ -204,7 +204,7 @@ export function registerPollTools(): ToolDefinition[] {
     {
       name: "delete-room-polls",
       description:
-        '[Poll Management] Delete ALL polls from ALL sessions in a room. Use when users say: "delete all room polls", "remove all polls from room", "clear room poll history", "wipe all room surveys". Requires room_id. Affects all past and current session polls.',
+        '[Poll Management] Delete ALL polls in a room, including polls created through the API or dashboard and those from past sessions. Use when users say: "delete all room polls", "remove all polls from room", "clear room poll history", "wipe all room surveys". Requires room_id. Cannot be undone.',
       annotations: getToolAnnotations("delete-room-polls", "Delete Room Polls"),
       inputSchema: {
         type: "object",
@@ -743,40 +743,49 @@ async function handleDeleteRoomPolls(
   logger.info("Deleting room polls", { roomId: room_id });
 
   try {
-    // Get all sessions for the room
-    const sessionsResponse = await apiClient.listSessions({ room_id: room_id });
-    const sessions = sessionsResponse.data;
+    // One room-level call. This used to list the room's sessions and delete
+    // per session, which (a) never touched polls created through the API or
+    // dashboard, because the session endpoint only removes polls created by
+    // that session's participants, (b) stopped at the first 100 sessions, and
+    // (c) answered "No sessions found" for a room that had polls but had
+    // never been used.
+    await apiClient.deleteRoomPolls(room_id);
 
-    if (!sessions || sessions.length === 0) {
+    // Read back: a 204 is not evidence that the polls are gone.
+    let remaining: number | undefined;
+    try {
+      const response = await apiClient.getPolls(room_id, { limit: 1 });
+      remaining = Array.isArray(response)
+        ? response.length
+        : ((response as any)?.total_count ??
+          ((response as any)?.data ?? []).length);
+    } catch (error) {
+      logger.warn("Could not verify room poll deletion", {
+        roomId: room_id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
+    if (remaining !== undefined && remaining > 0) {
       return {
         content: [
           {
             type: "text",
-            text: `No sessions found for room ${room_id}`,
+            text: `The API accepted the delete for room ${room_id}, but ${remaining} poll(s) are still listed. Nothing should be assumed deleted; check with list-polls.`,
           },
         ],
+        isError: true,
       };
-    }
-
-    // Delete polls for each session
-    let deletedCount = 0;
-    for (const session of sessions) {
-      try {
-        await apiClient.deleteSessionPolls(session.id);
-        deletedCount++;
-      } catch (error) {
-        logger.warn("Failed to delete polls for session", {
-          sessionId: session.id,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
     }
 
     return {
       content: [
         {
           type: "text",
-          text: `Successfully deleted polls from ${deletedCount} sessions in room ${room_id}`,
+          text:
+            remaining === 0
+              ? `Deleted all polls in room ${room_id} (verified: the room now lists no polls).`
+              : `Delete of all polls in room ${room_id} was accepted by the API, but the result could not be verified. Check with list-polls.`,
         },
       ],
     };

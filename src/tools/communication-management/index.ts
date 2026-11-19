@@ -1342,45 +1342,16 @@ async function handleDeleteRoomSummaries(
   logger.info("Deleting room summaries", { roomId });
 
   try {
-    // Get all sessions for the room
-    const sessionsResponse = await apiClient.listSessions({ room_id: roomId });
-    const sessions = sessionsResponse.data;
+    // One room-level call. The earlier per-session loop stopped at the first
+    // 100 sessions and reported a session count as if it were the result.
+    await apiClient.deleteRoomSummaries(roomId);
 
-    if (!sessions || sessions.length === 0) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `No sessions found for room ${roomId}`,
-          },
-        ],
-      };
-    }
-
-    // Delete summaries for each session
-    let deletedCount = 0;
-    let failedCount = 0;
-    for (const session of sessions) {
-      try {
-        await apiClient.deleteSessionSummaries(session.id);
-        deletedCount++;
-      } catch (error) {
-        failedCount++;
-        logger.warn("Failed to delete summaries for session", {
-          sessionId: session.id,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
-
+    // There is no room-level read for summaries, so this cannot be read back.
     return {
       content: [
         {
           type: "text",
-          text:
-            failedCount > 0
-              ? `Deleted summaries from ${deletedCount} sessions in room ${roomId} (${failedCount} failed)`
-              : `Successfully deleted summaries from ${deletedCount} sessions in room ${roomId}`,
+          text: `Deleted the AI summaries of all sessions in room ${roomId} (accepted by the API; there is no room-level summary listing to verify against).`,
         },
       ],
     };
