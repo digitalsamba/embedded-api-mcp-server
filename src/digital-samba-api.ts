@@ -143,6 +143,48 @@ export type {
  */
 export type WriteResult = Record<string, unknown>;
 
+/**
+ * Refuse an API path whose segments would be rewritten before it is sent.
+ *
+ * IDs are interpolated into paths. fetch() resolves "." and ".." segments and
+ * the API ignores a trailing slash, so an ID of "..", ".", "" or "?x" silently
+ * retargets a request at a different route with the same HTTP method: on dev,
+ * deleting poll "." deleted every poll in the room (DELETE /rooms/{room}/polls)
+ * and deleting poll ".." deleted the room (DELETE /rooms/{room}). An ID can
+ * come from meeting content a model was asked to act on, so this is checked
+ * centrally instead of trusting each handler.
+ *
+ * It does not make an ID containing "/" safe; that needs per-ID encoding.
+ *
+ * @throws {ValidationError} if a path segment is empty, "." or ".."
+ */
+export function assertSafeApiPath(endpoint: string): void {
+  const path = endpoint.split(/[?#]/)[0];
+  if (path === "/") return; // team settings live at the API root
+
+  const reject = (reason: string): never => {
+    throw new ValidationError(
+      `Refusing to call the API: ${reason}. An ID argument is empty or malformed, and sending it would address a different resource than intended.`,
+      { validationErrors: { path: reason } },
+    );
+  };
+
+  if (!path.startsWith("/")) reject("the request path is not absolute");
+
+  for (const segment of path.split("/").slice(1)) {
+    let decoded = segment;
+    try {
+      decoded = decodeURIComponent(segment);
+    } catch {
+      // Not valid percent-encoding: compare the raw text.
+    }
+    if (decoded === "") reject("the request path has an empty segment");
+    if (decoded === "." || decoded === "..") {
+      reject(`the request path contains a "${decoded}" segment`);
+    }
+  }
+}
+
 export class DigitalSambaApiClient {
   protected apiBaseUrl: string;
   protected cache?: MemoryCache;
@@ -242,14 +284,21 @@ export class DigitalSambaApiClient {
     }
   }
 
+  /**
+   * Build the URL for an API path, refusing paths that would not reach the
+   * route they were written for (see assertSafeApiPath).
+   */
+  private apiUrl(endpoint: string): string {
+    assertSafeApiPath(endpoint);
+    return `${this.apiBaseUrl}${endpoint}`;
+  }
+
   protected async request<T>(
     endpoint: string,
     options: RequestInit = {},
   ): Promise<T> {
     // Handle case where endpoint is already a full URL (starts with http:// or https://)
-    const url = endpoint.startsWith("http")
-      ? endpoint
-      : `${this.apiBaseUrl}${endpoint}`;
+    const url = endpoint.startsWith("http") ? endpoint : this.apiUrl(endpoint);
     const method = options.method || "GET";
 
     // Log the actual URL being called (INFO level for visibility)
@@ -1880,7 +1929,7 @@ export class DigitalSambaApiClient {
 
     const apiKey = this.getApiKey();
     const response = await fetch(
-      `${this.apiBaseUrl}/rooms/${roomId}/transcripts/export${query}`,
+      this.apiUrl(`/rooms/${roomId}/transcripts/export${query}`),
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -1965,7 +2014,7 @@ export class DigitalSambaApiClient {
    */
   private async downloadTemplate(endpoint: string): Promise<string> {
     const apiKey = this.getApiKey();
-    const response = await fetch(`${this.apiBaseUrl}${endpoint}`, {
+    const response = await fetch(this.apiUrl(endpoint), {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
 
@@ -1992,7 +2041,7 @@ export class DigitalSambaApiClient {
     form.append("file", new Blob([csvContent], { type: "text/csv" }), filename);
 
     // Do not set Content-Type: fetch adds the multipart boundary itself
-    const response = await fetch(`${this.apiBaseUrl}${endpoint}`, {
+    const response = await fetch(this.apiUrl(endpoint), {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}` },
       body: form,
@@ -2131,7 +2180,7 @@ export class DigitalSambaApiClient {
 
     const apiKey = this.getApiKey();
     const response = await fetch(
-      `${this.apiBaseUrl}/rooms/${roomId}/polls/export${query}`,
+      this.apiUrl(`/rooms/${roomId}/polls/export${query}`),
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -2173,7 +2222,7 @@ export class DigitalSambaApiClient {
 
     const apiKey = this.getApiKey();
     const response = await fetch(
-      `${this.apiBaseUrl}/rooms/${roomId}/chat/export${query}`,
+      this.apiUrl(`/rooms/${roomId}/chat/export${query}`),
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -2215,7 +2264,7 @@ export class DigitalSambaApiClient {
 
     const apiKey = this.getApiKey();
     const response = await fetch(
-      `${this.apiBaseUrl}/rooms/${roomId}/questions/export${query}`,
+      this.apiUrl(`/rooms/${roomId}/questions/export${query}`),
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -2256,7 +2305,7 @@ export class DigitalSambaApiClient {
 
     const apiKey = this.getApiKey();
     const response = await fetch(
-      `${this.apiBaseUrl}/sessions/${sessionId}/transcripts/export${query}`,
+      this.apiUrl(`/sessions/${sessionId}/transcripts/export${query}`),
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -3160,7 +3209,7 @@ export class DigitalSambaApiClient {
 
     const apiKey = this.getApiKey();
     const response = await fetch(
-      `${this.apiBaseUrl}/rooms/${roomId}/quizzes/export${query}`,
+      this.apiUrl(`/rooms/${roomId}/quizzes/export${query}`),
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
