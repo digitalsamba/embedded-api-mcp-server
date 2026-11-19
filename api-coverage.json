@@ -311,12 +311,18 @@
       "operationId": "getAllParticipants",
       "resources": [
         "digitalsamba://analytics/participants"
+      ],
+      "tools": [
+        "get-participant-statistics"
       ]
     },
     "GET /api/v1/participants/{participant}": {
       "operationId": "getParticipantStatistics",
       "resources": [
         "digitalsamba://analytics/participants/{participantId}"
+      ],
+      "tools": [
+        "get-participant-analytics"
       ]
     },
     "GET /api/v1/rooms/{room}/participants": {
@@ -739,6 +745,7 @@
     "GET /api/v1/rooms/live": {
       "operationId": "getRoomsWithLiveParticipantsCount",
       "tools": [
+        "get-live-analytics",
         "list-live-rooms"
       ],
       "resources": [
@@ -749,6 +756,7 @@
     "GET /api/v1/rooms/live/participants": {
       "operationId": "getRoomsWithLiveParticipantsData",
       "tools": [
+        "get-live-analytics",
         "list-live-participants"
       ],
       "resources": [
@@ -760,6 +768,9 @@
       "resources": [
         "digitalsamba://analytics/live/{roomId}",
         "digitalsamba://rooms/{roomId}/live"
+      ],
+      "tools": [
+        "get-live-room-analytics"
       ]
     },
     "GET /api/v1/rooms/{room}/live/participants": {
@@ -771,9 +782,6 @@
     "GET /api/v1/statistics": {
       "operationId": "getTeamGlobalStatisticsByPeriod",
       "tools": [
-        "get-live-analytics",
-        "get-participant-analytics",
-        "get-participant-statistics",
         "get-room-analytics",
         "get-usage-analytics",
         "get-usage-statistics"
@@ -807,7 +815,6 @@
     "GET /api/v1/rooms/{room}/statistics": {
       "operationId": "getRoomStatisticsByPeriod",
       "tools": [
-        "get-live-room-analytics",
         "get-room-analytics"
       ]
     },
@@ -834,7 +841,10 @@
     },
     "GET /api/v1/participants/{participant}/statistics": {
       "operationId": "getParticipantStatistics",
-      "excluded": "Alias of GET /participants/{participant} (same handler, same body, same operationId in the spec); covered there."
+      "tools": [
+        "get-participant-statistics"
+      ],
+      "note": "Alias of GET /participants/{participant} (same handler); get-participant-statistics calls this path."
     },
     "POST /api/v1/rooms/{room}/transcription/start": {
       "operationId": "startTranscription",
