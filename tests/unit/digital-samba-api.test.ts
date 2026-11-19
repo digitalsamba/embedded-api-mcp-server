@@ -632,7 +632,7 @@ describe('DigitalSambaApiClient', () => {
 
     it('should get session summary', async () => {
       const mockSummary = { 
-        job_id: 'job-123',
+        id: 'job-123',
         status: 'READY' as const,
         summary: 'Session summary'
       };

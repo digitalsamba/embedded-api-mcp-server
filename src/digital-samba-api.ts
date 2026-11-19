@@ -1388,12 +1388,12 @@ export class DigitalSambaApiClient {
    * Get session summary
    */
   async getSessionSummary(sessionId: string): Promise<{
-    job_id: string;
+    id: string;
     status: "IN_PROGRESS" | "READY";
     summary: string;
   }> {
     return this.request<{
-      job_id: string;
+      id: string;
       status: "IN_PROGRESS" | "READY";
       summary: string;
     }>(`/sessions/${sessionId}/summary`);

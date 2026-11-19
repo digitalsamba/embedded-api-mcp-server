@@ -194,7 +194,7 @@ describe('Session Resources', () => {
 
     describe('Get specific session', () => {
       it('should get session details successfully', async () => {
-        mockApiClient.getSessionSummary.mockResolvedValue(mockSessionDetails);
+        mockApiClient.getSessionStatistics.mockResolvedValue(mockSessionDetails);
 
         const result = await handleSessionResource(
           'digitalsamba://sessions/session-1',
@@ -203,7 +203,7 @@ describe('Session Resources', () => {
           options
         );
 
-        expect(mockApiClient.getSessionSummary).toHaveBeenCalledWith('session-1');
+        expect(mockApiClient.getSessionStatistics).toHaveBeenCalledWith('session-1');
         expect(result.contents).toHaveLength(1);
         expect(result.contents[0].uri).toBe('digitalsamba://sessions/session-1');
         expect(JSON.parse(result.contents[0].text)).toEqual(mockSessionDetails);

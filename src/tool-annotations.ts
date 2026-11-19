@@ -49,6 +49,17 @@ export function getToolAnnotations(
     annotations.title = title;
   }
 
+  // get-session-summary is a GET with side effects: when the session has
+  // transcripts and no summary yet, the API starts an AI summary job and later
+  // fires the session-summary webhook. Clients auto-approve read-only tools,
+  // so it must not be marked as one.
+  if (toolName === "get-session-summary") {
+    annotations.readOnlyHint = false;
+    annotations.destructiveHint = false;
+    annotations.idempotentHint = false;
+    return annotations;
+  }
+
   // Read-only operations (list, get, export)
   if (
     toolName.startsWith("list-") ||

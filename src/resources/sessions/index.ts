@@ -162,8 +162,10 @@ export async function handleSessionResource(
         throw new Error("Session ID is required.");
       }
 
-      logger.info("Fetching session summary", { sessionId });
-      const session = await client.getSessionSummary(sessionId);
+      // Session details, not the AI summary: /summary errors without
+      // transcripts and can start a generation job, which a read must not do.
+      logger.info("Fetching session details", { sessionId });
+      const session = await client.getSessionStatistics(sessionId);
 
       return {
         contents: [

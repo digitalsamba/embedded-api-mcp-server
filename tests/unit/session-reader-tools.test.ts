@@ -141,6 +141,7 @@ describe('Session Reader Tools', () => {
     mockApiClient = {
       listSessions: jest.fn(),
       getSessionSummary: jest.fn(),
+      getSessionStatistics: jest.fn(),
       listSessionParticipants: jest.fn(),
       listRoomSessions: jest.fn()
     } as any;
@@ -224,7 +225,7 @@ describe('Session Reader Tools', () => {
 
   describe('get-session-details', () => {
     it('should get session details by ID', async () => {
-      mockApiClient.getSessionSummary.mockResolvedValue({
+      mockApiClient.getSessionStatistics.mockResolvedValue({
         id: 'session-1',
         room_id: 'room-1',
         room_name: 'Test Room 1',
@@ -240,7 +241,9 @@ describe('Session Reader Tools', () => {
         sessionId: 'session-1'
       }, mockApiClient, mockRequest);
 
-      expect(mockApiClient.getSessionSummary).toHaveBeenCalledWith('session-1');
+      expect(mockApiClient.getSessionStatistics).toHaveBeenCalledWith('session-1');
+      // /summary is the AI transcript summary, not session details
+      expect(mockApiClient.getSessionSummary).not.toHaveBeenCalled();
 
       const responseText = result.content[0].text;
       expect(responseText).toContain('session-1');
@@ -249,7 +252,7 @@ describe('Session Reader Tools', () => {
     });
 
     it('should handle missing session ID', async () => {
-      mockApiClient.getSessionSummary.mockRejectedValue(new Error('Session ID is required'));
+      mockApiClient.getSessionStatistics.mockRejectedValue(new Error('Session ID is required'));
 
       const result = await executeSessionTool('get-session-details', {}, mockApiClient, mockRequest);
 
@@ -258,7 +261,7 @@ describe('Session Reader Tools', () => {
     });
 
     it('should handle session not found', async () => {
-      mockApiClient.getSessionSummary.mockRejectedValue(new Error('Session not found'));
+      mockApiClient.getSessionStatistics.mockRejectedValue(new Error('Session not found'));
 
       const result = await executeSessionTool('get-session-details', {
         sessionId: 'non-existent'

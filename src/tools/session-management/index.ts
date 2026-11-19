@@ -127,7 +127,7 @@ export function registerSessionTools(): Tool[] {
     {
       name: "get-session-summary",
       description:
-        '[Session Management] Get a comprehensive summary of a session including participants, duration, and activities. Use when users say: "show session summary", "get meeting summary", "session details", "what happened in the session", "meeting report". Requires sessionId. Returns detailed session information.',
+        '[Session Management] Get the AI-generated summary of a session, built from its transcripts. Use when users say: "show session summary", "get meeting summary", "summarize the meeting", "what was discussed in the session". Requires sessionId. The session must have transcripts, otherwise the API returns an error. NOT read-only: if no summary exists yet, the first call starts generating one (status IN_PROGRESS) and the team\'s session-summary webhook fires when it is ready; call again to fetch it. For duration, participants and other session data use get-session-details.',
       annotations: getToolAnnotations(
         "get-session-summary",
         "Get Session Summary",
@@ -213,7 +213,7 @@ export function registerSessionTools(): Tool[] {
     {
       name: "get-session-details",
       description:
-        '[Session Management - TOOL] Get comprehensive details for a specific session. Use when users say: "session details", "meeting summary", "what happened in session", "session report", "session overview". Requires sessionId. This TOOL provides the same data as digitalsamba://sessions/{sessionId} resource. Returns detailed session data with duration, participants, and activity.',
+        '[Session Management - TOOL] Get comprehensive details for a specific session. Use when users say: "session details", "session statistics", "what happened in session", "session report", "session overview". Requires sessionId. This TOOL provides the same data as digitalsamba://sessions/{sessionId} resource. Returns detailed session data with duration, participants, and activity.',
       annotations: getToolAnnotations(
         "get-session-details",
         "Get Session Details",
@@ -631,7 +631,11 @@ export async function executeSessionTool(
       logger.info("Getting session details", { sessionId: args.sessionId });
 
       try {
-        const session = await apiClient.getSessionSummary(args.sessionId);
+        // GET /sessions/{id}/statistics is the session-details payload
+        // (GET /sessions/{id} is an alias of it in the API). This used to
+        // call /summary, the AI transcript summary: an error for sessions
+        // without transcripts, and a generation job for those with them.
+        const session = await apiClient.getSessionStatistics(args.sessionId);
 
         return {
           content: [
