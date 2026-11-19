@@ -313,6 +313,16 @@ describe("OAuth consent flow", () => {
     },
   );
 
+  it("an unknown client in a browser gets a page saying to re-add the connector", async () => {
+    const res = await fetch(
+      `${base}/oauth/authorize?client_id=expired&redirect_uri=${encodeURIComponent(CLIENT_REDIRECT)}&response_type=code`,
+      { headers: { accept: "text/html,application/xhtml+xml" } },
+    );
+    expect(res.status).toBe(400);
+    expect(res.headers.get("content-type")).toMatch(/text\/html/);
+    expect(await res.text()).toMatch(/Remove the Digital Samba connector/);
+  });
+
   // --- the decision ---------------------------------------------------------
 
   it("approval in the same browser goes to Digital Samba with the static upstream client", async () => {

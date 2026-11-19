@@ -39,6 +39,8 @@ export interface OAuthSession {
   accessToken: string;
   refreshToken?: string;
   expiresAt: number;
+  /** The registered client the session was issued to; renewed with it. */
+  clientId?: string;
 }
 
 // Pending authorization requests (state -> client request info)
@@ -541,8 +543,10 @@ export async function exchangeAuthorizationCode(
     accessToken: pending.dsAccessToken,
     refreshToken: pending.dsRefreshToken,
     expiresAt: Date.now() + TTL.SESSION * 1000,
+    clientId: pending.clientId,
   };
   await store.set(PREFIXES.SESSION + sessionId, session, TTL.SESSION);
+  await renewClient(pending.clientId);
 
   logger.info(
     `Token exchange successful, session: ${sessionId.substring(0, 8)}...`,
@@ -650,6 +654,8 @@ export async function exchangeCodeForTokens(
   await store.delete(key);
 
   const response = await fetch(config.tokenUrl, {
+    // Users are waiting in a browser on this call.
+    signal: AbortSignal.timeout(30_000),
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -759,7 +765,24 @@ export async function touchSession(sessionId: string): Promise<boolean> {
   }
 
   await store.set(key, { ...session, expiresAt: newExpiresAt }, TTL.SESSION);
+  if (session.clientId) {
+    await renewClient(session.clientId);
+  }
   return true;
+}
+
+/**
+ * Push a registered client's expiry out by a full TTL.CLIENT. Sessions issued
+ * before clientId was recorded cannot renew their client; those clients keep
+ * their original expiry.
+ */
+export async function renewClient(clientId: string): Promise<void> {
+  const store = getStore();
+  const key = PREFIXES.CLIENT + clientId;
+  const client = await store.get<RegisteredClient>(key);
+  if (client) {
+    await store.set(key, client, TTL.CLIENT);
+  }
 }
 
 /**

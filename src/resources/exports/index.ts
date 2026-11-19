@@ -15,6 +15,24 @@ import { Resource } from "@modelcontextprotocol/sdk/types.js";
 import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import logger from "../../logger.js";
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
+import { ApiResponseError } from "../../errors.js";
+
+/**
+ * Turn a failure into the right MCP error. Only a 404 means "not found";
+ * these handlers used to report every failure that way, so a rate limit,
+ * an authentication failure or a network error read as a missing record.
+ */
+function exportFailure(error: unknown, what: string): McpError {
+  if (error instanceof McpError) return error;
+  if (error instanceof ApiResponseError && error.statusCode === 404) {
+    return new McpError(ErrorCode.InvalidRequest, `${what} not found`);
+  }
+  const message = error instanceof Error ? error.message : String(error);
+  return new McpError(
+    ErrorCode.InternalError,
+    `Could not export ${what.toLowerCase()}: ${message}`,
+  );
+}
 
 /**
  * Export Resources Class
@@ -208,11 +226,8 @@ export class ExportResources {
           },
         ],
       };
-    } catch {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        `Recording ${recordingId} not found or not accessible`,
-      );
+    } catch (error) {
+      throw exportFailure(error, `Recording ${recordingId}`);
     }
   }
 
@@ -261,11 +276,8 @@ export class ExportResources {
             `Unknown session export type: ${exportType}`,
           );
       }
-    } catch {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        `Session ${sessionId} not found or not accessible`,
-      );
+    } catch (error) {
+      throw exportFailure(error, `Session ${sessionId}`);
     }
   }
 }
