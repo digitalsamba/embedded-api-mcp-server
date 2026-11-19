@@ -219,6 +219,49 @@ async function callExpectingError(tool, args = {}) {
 }
 
 /** Parse the first JSON object or array embedded in a tool's text output. */
+/** Count the records in a list tool's output, whatever shape it uses. */
+function countIn(text) {
+  if (/^No \w+ found/i.test(text.trim())) return 0;
+  const body = parseJson(text);
+  if (Array.isArray(body)) return body.length;
+  for (const key of [
+    "data",
+    "quizzes",
+    "polls",
+    "files",
+    "folders",
+    "libraries",
+  ]) {
+    if (Array.isArray(body?.[key])) return body[key].length;
+  }
+  if (typeof body?.total_count === "number") return body.total_count;
+  throw new Error(`cannot count records in: ${text.slice(0, 120)}`);
+}
+
+/**
+ * Read a resource, retrying on rate limits like call() does. Collection
+ * resources return one content item per record, so `allowEmpty` is for
+ * collections that are legitimately empty (a room created minutes ago).
+ */
+async function read(uri, { retries = 4, allowEmpty = false } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const result = await client.readResource({ uri });
+      const text = (result.contents ?? []).map((c) => c.text ?? "").join("\n");
+      must(Array.isArray(result.contents), `${uri} returned no contents array`);
+      if (allowEmpty && result.contents.length === 0) return "";
+      must(result.contents.length, `${uri} returned no contents`);
+      must(text.trim(), `${uri} returned empty text`);
+      return text;
+    } catch (error) {
+      const delay = rateLimitDelay(error.message);
+      if (delay === null || attempt >= retries) throw error;
+      console.log(`       rate limited, waiting ${delay}s (${uri})`);
+      await sleep(delay * 1000);
+    }
+  }
+}
+
 function parseJson(text) {
   const start = text.search(/[[{]/);
   if (start === -1) throw new Error("no JSON found in tool output");
@@ -606,6 +649,212 @@ async function run() {
     );
     return "created and updated";
   });
+
+  // -- no-session write tools, previously untested (#44) --------------------
+  group("room-level");
+
+  await check("generate-token returns a join link", async () => {
+    const text = await call("generate-token", {
+      room_id: created.roomId,
+      user_name: "Smoke Test",
+      external_id: `smoke-${shortId}`,
+    });
+    must(/https?:\/\/\S+/.test(text), `no link: ${text.slice(0, 120)}`);
+    must(/eyJ[\w-]+\.[\w-]+\./.test(text), "no JWT in the output");
+    return "link with token";
+  });
+
+  await check("create-quiz stores minutes as seconds (read back)", async () => {
+    const text = await call("create-quiz", {
+      room_id: created.roomId,
+      title: `${tag} quiz`,
+      time_limit_minutes: 2,
+      questions: [
+        {
+          text: "1 + 1?",
+          choices: [
+            { text: "2", correct: true },
+            { text: "3", correct: false },
+          ],
+        },
+      ],
+    });
+    must(
+      /2 min \(120 s\)/.test(text),
+      `time limit not stored as 120 s: ${text}`,
+    );
+    return "120 s";
+  });
+
+  await check("delete-room-quizzes removes them (read back)", async () => {
+    const before = countIn(
+      await call("list-room-quizzes", { room_id: created.roomId }),
+    );
+    must(before > 0, "no quiz to delete");
+    await call("delete-room-quizzes", { room_id: created.roomId });
+    const after = countIn(
+      await call("list-room-quizzes", { room_id: created.roomId }),
+    );
+    must(after === 0, `${after} quiz(zes) still listed`);
+    return `${before} -> 0`;
+  });
+
+  for (const [tool, args] of [
+    ["delete-room-chats", { roomId: created.roomId }],
+    ["delete-room-qa", { roomId: created.roomId }],
+    ["delete-room-transcripts", { room_id: created.roomId }],
+    ["delete-room-summaries", { roomId: created.roomId }],
+  ]) {
+    // Nothing to read back on a room nobody has joined; this proves the
+    // routing and the endpoint, which is what broke before (#30, #33).
+    await check(`${tool} is accepted`, async () => {
+      await call(tool, args);
+      return "accepted";
+    });
+  }
+
+  if (created.libraryId) {
+    group("library-extras");
+
+    await check("create-webapp without a name uses the URL host", async () => {
+      await call("create-webapp", {
+        libraryId: created.libraryId,
+        url: "https://www.example.com/embed",
+      });
+      const files = await call("list-library-files", {
+        libraryId: created.libraryId,
+      });
+      must(
+        /www\.example\.com/.test(files),
+        "webapp not listed by its host name",
+      );
+      return "listed as www.example.com";
+    });
+
+    await check("create-whiteboard appears in the library", async () => {
+      const before = countIn(
+        await call("list-library-files", { libraryId: created.libraryId }),
+      );
+      await call("create-whiteboard", { libraryId: created.libraryId });
+      const after = countIn(
+        await call("list-library-files", { libraryId: created.libraryId }),
+      );
+      must(after === before + 1, `files ${before} -> ${after}`);
+      return `files ${before} -> ${after}`;
+    });
+
+    await check("update-library rename persists (read back)", async () => {
+      const name = `${tag} renamed`;
+      await call("update-library", { libraryId: created.libraryId, name });
+      const details = await call("get-library-details", {
+        libraryId: created.libraryId,
+      });
+      must(details.includes(name), "new name not read back");
+      return "name verified";
+    });
+
+    await check("move-library-folder nests a folder (read back)", async () => {
+      const idOf = (text) =>
+        text.match(/ID: ([0-9a-f-]{36})/i)?.[1] ?? parseJson(text)?.id;
+      const parent = idOf(
+        await call("create-library-folder", {
+          libraryId: created.libraryId,
+          name: `parent-${shortId}`,
+        }),
+      );
+      const child = idOf(
+        await call("create-library-folder", {
+          libraryId: created.libraryId,
+          name: `child-${shortId}`,
+        }),
+      );
+      must(parent && child, "folders not created");
+      await call("move-library-folder", {
+        libraryId: created.libraryId,
+        folderId: child,
+        targetParentId: parent,
+      });
+      const details = await call("get-library-folder-details", {
+        libraryId: created.libraryId,
+        folderId: child,
+      });
+      must(details.includes(parent), "child does not name the new parent");
+      return "nested";
+    });
+  }
+
+  // -- tools fixed in #28 / #29, against an existing session ----------------
+  group("sessions");
+  let sessionId;
+  try {
+    const listed = parseJson(await call("list-sessions", { limit: 1 }));
+    sessionId = (Array.isArray(listed) ? listed : listed?.data)?.[0]?.id;
+  } catch {
+    sessionId = undefined;
+  }
+  if (!sessionId) {
+    skip(
+      "get-session-details / get-session-analytics",
+      "no session on the account",
+    );
+  } else {
+    await check(
+      "get-session-details is the session, not the AI summary",
+      async () => {
+        const body = parseJson(
+          await call("get-session-details", { sessionId }),
+        );
+        must(
+          body?.session_id === sessionId ||
+            body?.id === sessionId ||
+            body?.room_id,
+          "no session data",
+        );
+        must(!("summary" in (body ?? {})), "looks like the AI summary payload");
+        return "session data";
+      },
+    );
+    await check("get-session-analytics is not empty", async () => {
+      const text = await call("get-session-analytics", { sessionId });
+      must(text.trim() !== "[]", "empty array (the #28 bug)");
+      return "data returned";
+    });
+  }
+
+  // -- one read per resource family ------------------------------------------
+  group("resources");
+  const resourceUris = [
+    "digitalsamba://rooms",
+    `digitalsamba://rooms/${created.roomId}`,
+    // The new room has none of these; reading them proves the routing (#30
+    // sent both to the room object).
+    [`digitalsamba://rooms/${created.roomId}/sessions`, { allowEmpty: true }],
+    [`digitalsamba://rooms/${created.roomId}/recordings`, { allowEmpty: true }],
+    `digitalsamba://rooms/${created.roomId}/live`,
+    "digitalsamba://sessions",
+    "digitalsamba://recordings",
+    "digitalsamba://analytics/team",
+    "digitalsamba://analytics/live",
+    `digitalsamba://exports/polls/${created.roomId}`,
+    "digitalsamba://libraries",
+    ...(created.libraryId
+      ? [
+          `digitalsamba://libraries/${created.libraryId}`,
+          `digitalsamba://libraries/${created.libraryId}/files`,
+        ]
+      : []),
+    ...(sessionId ? [`digitalsamba://sessions/${sessionId}`] : []),
+  ];
+  for (const entry of resourceUris) {
+    const [uri, opts] = Array.isArray(entry) ? entry : [entry, {}];
+    await check(
+      `read ${uri.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/g, "{id}")}`,
+      async () => {
+        const text = await read(uri, opts);
+        return text ? `${text.length} chars` : "empty collection";
+      },
+    );
+  }
 
   // -- analytics: each tool answers its own question ------------------------
   // Four tools used to return team-wide totals (GET /statistics) whatever was
