@@ -3,8 +3,7 @@
   "spec": "openapi-stored.yaml",
   "unmappedTools": {
     "update-recording": "Calls nothing: the API has no recording-update endpoint, and the tool says so.",
-    "publish-poll-results": "Calls nothing: the API has no publish-results endpoint, and the tool says so.",
-    "delete-session-recordings": "Unreachable: server.ts routes any name containing 'recording' to the recording module, which rejects it. Meant to call DELETE /sessions/{session}/recordings (use bulk-delete-session-data until fixed)."
+    "publish-poll-results": "Calls nothing: the API has no publish-results endpoint, and the tool says so."
   },
   "operations": {
     "GET /api/v1": {
@@ -108,8 +107,9 @@
     },
     "DELETE /api/v1/rooms/{room}/summaries": {
       "operationId": "deleteSummariesByRoom",
-      "pending": "delete-room-summaries loops DELETE /sessions/{session}/summaries over the first page of sessions instead of calling this.",
-      "issue": 26
+      "tools": [
+        "delete-room-summaries"
+      ]
     },
     "GET /api/v1/rooms/{room}/polls": {
       "operationId": "getPolls",
@@ -125,8 +125,9 @@
     },
     "DELETE /api/v1/rooms/{room}/polls": {
       "operationId": "deletePollsByRoom",
-      "pending": "delete-room-polls loops DELETE /sessions/{session}/polls over the first page of sessions instead of calling this.",
-      "issue": 26
+      "tools": [
+        "delete-room-polls"
+      ]
     },
     "GET /api/v1/rooms/{room}/quizzes": {
       "operationId": "getQuizzes",
@@ -216,7 +217,6 @@
       "operationId": "deleteSummariesBySession",
       "tools": [
         "bulk-delete-session-data",
-        "delete-room-summaries",
         "delete-session-summaries"
       ]
     },
@@ -237,7 +237,6 @@
       "operationId": "deletePollsBySession",
       "tools": [
         "bulk-delete-session-data",
-        "delete-room-polls",
         "delete-session-polls"
       ]
     },
@@ -250,9 +249,9 @@
     "DELETE /api/v1/sessions/{session}/recordings": {
       "operationId": "deleteRecordingsBySession",
       "tools": [
-        "bulk-delete-session-data"
-      ],
-      "note": "delete-session-recordings also targets this path but is unreachable (dispatched to the recording module, which rejects it), so it is not listed."
+        "bulk-delete-session-data",
+        "delete-session-recordings"
+      ]
     },
     "DELETE /api/v1/sessions/{session}/resources": {
       "operationId": "deleteSessionResources",
