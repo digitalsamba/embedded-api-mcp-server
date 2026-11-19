@@ -22,6 +22,7 @@
 import express, { type Express, type Request, type Response } from "express";
 
 import logger from "../logger.js";
+import { rateLimit } from "../rate-limit.js";
 import {
   type OAuthConfig,
   generateState,
@@ -66,10 +67,18 @@ export function registerAuthorizeRoutes(
   // development).
   const secureCookies = oauthConfig.issuer.startsWith("https://");
 
+  // These are browser-facing: one user's browser, so a modest limit per IP.
+  // Each GET stores a 10-minute consent request.
+  const browserLimit = rateLimit({
+    name: "oauth-browser",
+    windowMs: 10 * 60 * 1000,
+    max: 60,
+  });
+
   // ---------------------------------------------------------------------------
   // Validate the client's request and show the consent page
   // ---------------------------------------------------------------------------
-  app.get("/oauth/authorize", async (req, res) => {
+  app.get("/oauth/authorize", browserLimit, async (req, res) => {
     const {
       client_id,
       redirect_uri,
@@ -111,18 +120,31 @@ export function registerAuthorizeRoutes(
       return;
     }
 
+    // PKCE is mandatory, S256 only (RFC 7636; required by the MCP
+    // authorization spec). Checked before anything is stored or shown. The
+    // redirect URI is valid by now, but an error page here is clearer to the
+    // developer of a non-compliant client than a redirect.
+    if (
+      code_challenge_method !== "S256" ||
+      typeof code_challenge !== "string" ||
+      !/^[A-Za-z0-9_-]{43,128}$/.test(code_challenge)
+    ) {
+      res.status(400).json({
+        error: "invalid_request",
+        error_description:
+          "PKCE is required: send code_challenge (base64url, 43-128 characters) with code_challenge_method=S256",
+      });
+      return;
+    }
+
     const clientName = client.client_name || "Unknown Client";
     const binding = createBrowserBinding();
     const consentId = await storeConsentRequest({
       clientId: client_id,
       clientName,
       redirectUri: redirect_uri,
-      codeChallenge:
-        typeof code_challenge === "string" ? code_challenge : undefined,
-      codeChallengeMethod:
-        typeof code_challenge_method === "string"
-          ? code_challenge_method
-          : undefined,
+      codeChallenge: code_challenge,
+      codeChallengeMethod: code_challenge_method,
       clientState: typeof clientState === "string" ? clientState : undefined,
       browserBindingHash: binding.hash,
     });
@@ -150,6 +172,7 @@ export function registerAuthorizeRoutes(
   // ---------------------------------------------------------------------------
   app.post(
     "/oauth/authorize",
+    browserLimit,
     express.urlencoded({ extended: false }),
     async (req: Request, res: Response) => {
       const consentId =
@@ -232,7 +255,7 @@ export function registerAuthorizeRoutes(
   // ---------------------------------------------------------------------------
   // Digital Samba returns; hand the client its authorization code
   // ---------------------------------------------------------------------------
-  app.get("/oauth/callback", async (req, res) => {
+  app.get("/oauth/callback", browserLimit, async (req, res) => {
     const { code, state, error, error_description } = req.query;
 
     if (error) {

@@ -428,12 +428,23 @@ describe("oauth", () => {
 
   describe("authorization codes", () => {
     const REDIRECT = "https://claude.ai/api/mcp/auth_callback";
+    // PKCE is mandatory, so every code below carries an S256 challenge.
+    const PKCE = (() => {
+      const verifier = "test-verifier-".padEnd(43, "x");
+      return {
+        verifier,
+        challenge: createHash("sha256").update(verifier).digest("base64url"),
+      };
+    })();
 
     it("issues an opaque code", async () => {
       const code = await oauth.createAuthorizationCode(
         "client-1",
         REDIRECT,
         "ds-access-token",
+        undefined,
+        PKCE.challenge,
+        "S256",
       );
 
       expect(code).toMatch(HEX_64);
@@ -444,12 +455,16 @@ describe("oauth", () => {
         "client-1",
         REDIRECT,
         "ds-access-token",
+        undefined,
+        PKCE.challenge,
+        "S256",
       );
 
       const result = await oauth.exchangeAuthorizationCode(
         code,
         "client-1",
         REDIRECT,
+        PKCE.verifier,
       );
 
       expect(result).toMatchObject({
@@ -465,12 +480,15 @@ describe("oauth", () => {
         REDIRECT,
         "ds-access-token",
         "ds-refresh-token",
+        PKCE.challenge,
+        "S256",
       );
 
       const result = await oauth.exchangeAuthorizationCode(
         code,
         "client-1",
         REDIRECT,
+        PKCE.verifier,
       );
       const session = await oauth.getSession(result!.access_token);
 
@@ -488,12 +506,16 @@ describe("oauth", () => {
         "client-1",
         REDIRECT,
         "ds-access-token",
+        undefined,
+        PKCE.challenge,
+        "S256",
       );
 
       const result = await oauth.exchangeAuthorizationCode(
         code,
         "client-1",
         REDIRECT,
+        PKCE.verifier,
       );
 
       expect(result?.access_token).not.toBe("ds-access-token");
@@ -510,13 +532,26 @@ describe("oauth", () => {
         "client-1",
         REDIRECT,
         "ds-access-token",
+        undefined,
+        PKCE.challenge,
+        "S256",
       );
 
       await expect(
-        oauth.exchangeAuthorizationCode(code, "client-1", REDIRECT),
+        oauth.exchangeAuthorizationCode(
+          code,
+          "client-1",
+          REDIRECT,
+          PKCE.verifier,
+        ),
       ).resolves.not.toBeNull();
       await expect(
-        oauth.exchangeAuthorizationCode(code, "client-1", REDIRECT),
+        oauth.exchangeAuthorizationCode(
+          code,
+          "client-1",
+          REDIRECT,
+          PKCE.verifier,
+        ),
       ).resolves.toBeNull();
     });
 
@@ -525,6 +560,9 @@ describe("oauth", () => {
         "client-1",
         REDIRECT,
         "ds-access-token",
+        undefined,
+        PKCE.challenge,
+        "S256",
       );
 
       await expect(
@@ -537,6 +575,9 @@ describe("oauth", () => {
         "client-1",
         REDIRECT,
         "ds-access-token",
+        undefined,
+        PKCE.challenge,
+        "S256",
       );
 
       await expect(
@@ -553,6 +594,9 @@ describe("oauth", () => {
         "client-1",
         REDIRECT,
         "ds-access-token",
+        undefined,
+        PKCE.challenge,
+        "S256",
       );
 
       await oauth.exchangeAuthorizationCode(code, "other-client", REDIRECT);
@@ -560,7 +604,12 @@ describe("oauth", () => {
       // RFC 6749 4.1.2: a code presented with wrong credentials has likely
       // leaked, so even the rightful client can no longer redeem it.
       await expect(
-        oauth.exchangeAuthorizationCode(code, "client-1", REDIRECT),
+        oauth.exchangeAuthorizationCode(
+          code,
+          "client-1",
+          REDIRECT,
+          PKCE.verifier,
+        ),
       ).resolves.toBeNull();
     });
 
@@ -570,12 +619,32 @@ describe("oauth", () => {
         "client-1",
         REDIRECT,
         "ds-access-token",
+        undefined,
+        PKCE.challenge,
+        "S256",
       );
 
       jest.advanceTimersByTime((sessionStore.TTL.AUTH_CODE + 1) * 1000);
 
       await expect(
-        oauth.exchangeAuthorizationCode(code, "client-1", REDIRECT),
+        oauth.exchangeAuthorizationCode(
+          code,
+          "client-1",
+          REDIRECT,
+          PKCE.verifier,
+        ),
+      ).resolves.toBeNull();
+    });
+
+    it("refuses to redeem a code that was issued without a PKCE challenge", async () => {
+      const code = await oauth.createAuthorizationCode(
+        "client-1",
+        REDIRECT,
+        "ds-access-token",
+      );
+
+      await expect(
+        oauth.exchangeAuthorizationCode(code, "client-1", REDIRECT, "anything"),
       ).resolves.toBeNull();
     });
 
@@ -677,17 +746,29 @@ describe("oauth", () => {
 
   describe("sessions", () => {
     const REDIRECT = "https://claude.ai/api/mcp/auth_callback";
+    // PKCE is mandatory, so every code below carries an S256 challenge.
+    const PKCE = (() => {
+      const verifier = "test-verifier-".padEnd(43, "x");
+      return {
+        verifier,
+        challenge: createHash("sha256").update(verifier).digest("base64url"),
+      };
+    })();
 
     async function newSession(): Promise<string> {
       const code = await oauth.createAuthorizationCode(
         "client-1",
         REDIRECT,
         "ds-access-token",
+        undefined,
+        PKCE.challenge,
+        "S256",
       );
       const result = await oauth.exchangeAuthorizationCode(
         code,
         "client-1",
         REDIRECT,
+        PKCE.verifier,
       );
       return result!.access_token;
     }
@@ -978,6 +1059,8 @@ describe("oauth", () => {
         authorization_endpoint: "https://mcp.example.com/oauth/authorize",
         token_endpoint: "https://mcp.example.com/oauth/token",
         registration_endpoint: "https://mcp.example.com/oauth/register",
+        revocation_endpoint: "https://mcp.example.com/oauth/revoke",
+        revocation_endpoint_auth_methods_supported: ["none"],
         response_types_supported: ["code"],
         grant_types_supported: ["authorization_code"],
         code_challenge_methods_supported: ["S256"],

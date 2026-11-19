@@ -198,6 +198,186 @@ export async function takeConsentRequest(
   return request;
 }
 
+/** Grant types a client may register; only authorization_code is issued. */
+const REGISTRABLE_GRANT_TYPES = new Set([
+  "authorization_code",
+  "refresh_token",
+]);
+const REGISTRABLE_AUTH_METHODS = new Set([
+  "none",
+  "client_secret_post",
+  "client_secret_basic",
+]);
+/** Schemes that must never be a redirect target. */
+const FORBIDDEN_REDIRECT_SCHEMES = new Set([
+  "javascript:",
+  "data:",
+  "vbscript:",
+  "file:",
+  "blob:",
+  "about:",
+  "ws:",
+  "wss:",
+  "ftp:",
+]);
+const MAX_REDIRECT_URIS = 10;
+const MAX_REDIRECT_URI_LENGTH = 2000;
+const MAX_CLIENT_NAME_LENGTH = 100;
+
+export type ClientMetadataResult =
+  | {
+      ok: true;
+      value: {
+        client_name?: string;
+        redirect_uris: string[];
+        grant_types?: string[];
+        response_types?: string[];
+        token_endpoint_auth_method?: string;
+      };
+    }
+  | { ok: false; error: string; description: string };
+
+/**
+ * Is this an acceptable redirect URI for a registering client?
+ *
+ * https anywhere; http only to this machine (native apps, RFC 8252 7.3);
+ * private-use schemes for desktop apps (RFC 8252 7.1), except schemes that
+ * execute or read locally. No fragments (RFC 6749 3.1.2).
+ */
+export function isAcceptableRedirectUri(uri: unknown): boolean {
+  if (typeof uri !== "string" || uri.length > MAX_REDIRECT_URI_LENGTH) {
+    return false;
+  }
+  let url: URL;
+  try {
+    url = new URL(uri);
+  } catch {
+    return false;
+  }
+  if (url.hash || uri.includes("#")) return false;
+  if (url.protocol === "https:") return url.hostname !== "";
+  if (url.protocol === "http:") {
+    return ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+  }
+  return !FORBIDDEN_REDIRECT_SCHEMES.has(url.protocol);
+}
+
+/**
+ * Validate a Dynamic Client Registration request (RFC 7591).
+ *
+ * Registration is unauthenticated, so everything stored from it is bounded:
+ * a few redirect URIs of sane length and scheme, a short display name (shown
+ * on the consent page), and only the grant types and auth methods this server
+ * understands.
+ */
+export function validateClientMetadata(body: unknown): ClientMetadataResult {
+  const fail = (description: string): ClientMetadataResult => ({
+    ok: false,
+    error: description.startsWith("redirect_uris")
+      ? "invalid_redirect_uri"
+      : "invalid_client_metadata",
+    description,
+  });
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return fail("the request body must be a JSON object");
+  }
+  const {
+    client_name,
+    redirect_uris,
+    grant_types,
+    response_types,
+    token_endpoint_auth_method,
+  } = body as Record<string, unknown>;
+
+  if (
+    !Array.isArray(redirect_uris) ||
+    redirect_uris.length === 0 ||
+    redirect_uris.length > MAX_REDIRECT_URIS
+  ) {
+    return fail(
+      `redirect_uris is required and must be an array of 1 to ${MAX_REDIRECT_URIS} URIs`,
+    );
+  }
+  const badUri = redirect_uris.find((uri) => !isAcceptableRedirectUri(uri));
+  if (badUri !== undefined) {
+    return fail(
+      "redirect_uris must be https, http to localhost, or a private-use app scheme, without a fragment",
+    );
+  }
+
+  let name: string | undefined;
+  if (client_name !== undefined && client_name !== null) {
+    if (typeof client_name !== "string") {
+      return fail("client_name must be a string");
+    }
+    // Shown on the consent page: no control characters, bounded length.
+    // eslint-disable-next-line no-control-regex
+    name = client_name.replace(/[\u0000-\u001f\u007f]/g, "").trim();
+    name = name.slice(0, MAX_CLIENT_NAME_LENGTH) || undefined;
+  }
+
+  const stringList = (value: unknown) =>
+    Array.isArray(value) && value.every((v) => typeof v === "string");
+
+  if (grant_types !== undefined) {
+    if (
+      !stringList(grant_types) ||
+      !(grant_types as string[]).every((g) => REGISTRABLE_GRANT_TYPES.has(g))
+    ) {
+      return fail(
+        "grant_types may only contain authorization_code and refresh_token",
+      );
+    }
+  }
+  if (response_types !== undefined) {
+    if (
+      !stringList(response_types) ||
+      !(response_types as string[]).every((r) => r === "code")
+    ) {
+      return fail('response_types may only contain "code"');
+    }
+  }
+  if (
+    token_endpoint_auth_method !== undefined &&
+    (typeof token_endpoint_auth_method !== "string" ||
+      !REGISTRABLE_AUTH_METHODS.has(token_endpoint_auth_method))
+  ) {
+    return fail(
+      "token_endpoint_auth_method must be none, client_secret_post or client_secret_basic",
+    );
+  }
+
+  return {
+    ok: true,
+    value: {
+      client_name: name,
+      redirect_uris: [...new Set(redirect_uris as string[])],
+      grant_types: grant_types as string[] | undefined,
+      response_types: response_types as string[] | undefined,
+      token_endpoint_auth_method: token_endpoint_auth_method as
+        | string
+        | undefined,
+    },
+  };
+}
+
+/**
+ * Revoke a session token this server issued (RFC 7009). Anything else is
+ * ignored: per the RFC the endpoint answers the same either way, so it
+ * cannot be used to test whether a token exists.
+ *
+ * This ends the MCP session. The Digital Samba access token behind it stays
+ * valid upstream until it expires; revoking that needs a Digital Samba API.
+ */
+export async function revokeToken(token: unknown): Promise<void> {
+  if (typeof token !== "string") return;
+  const sessionId = token.startsWith("oauth:") ? token.slice(6) : token;
+  if (!isOAuthSessionId(sessionId)) return;
+  await deleteSession(sessionId);
+  logger.info(`OAuth: session revoked (${sessionId.substring(0, 8)}...)`);
+}
+
 /**
  * Register a new OAuth client (DCR - RFC 7591)
  */
@@ -323,30 +503,33 @@ export async function exchangeAuthorizationCode(
     return null;
   }
 
-  // Verify PKCE if code_challenge was provided. Only S256 is supported
-  // (and advertised in server metadata); any other method is rejected
-  // rather than silently skipping verification.
-  if (pending.codeChallenge) {
-    if (pending.codeChallengeMethod !== "S256") {
-      await store.delete(key);
-      logger.warn(
-        `Token exchange: Unsupported code_challenge_method: ${pending.codeChallengeMethod}`,
-      );
-      return null;
-    }
-    if (!codeVerifier) {
-      await store.delete(key);
-      logger.warn("Token exchange: Missing code_verifier");
-      return null;
-    }
-    const expectedChallenge = createHash("sha256")
-      .update(codeVerifier)
-      .digest("base64url");
-    if (expectedChallenge !== pending.codeChallenge) {
-      await store.delete(key);
-      logger.warn("Token exchange: PKCE verification failed");
-      return null;
-    }
+  // PKCE is mandatory (S256 only, as advertised in server metadata). The
+  // authorize endpoint already refuses requests without a challenge; a code
+  // stored without one is refused here too rather than redeemed unverified.
+  if (!pending.codeChallenge) {
+    await store.delete(key);
+    logger.warn("Token exchange: code was issued without a PKCE challenge");
+    return null;
+  }
+  if (pending.codeChallengeMethod !== "S256") {
+    await store.delete(key);
+    logger.warn(
+      `Token exchange: Unsupported code_challenge_method: ${pending.codeChallengeMethod}`,
+    );
+    return null;
+  }
+  if (!codeVerifier) {
+    await store.delete(key);
+    logger.warn("Token exchange: Missing code_verifier");
+    return null;
+  }
+  const expectedChallenge = createHash("sha256")
+    .update(codeVerifier)
+    .digest("base64url");
+  if (expectedChallenge !== pending.codeChallenge) {
+    await store.delete(key);
+    logger.warn("Token exchange: PKCE verification failed");
+    return null;
   }
 
   // Clean up used code
@@ -606,6 +789,8 @@ export function getAuthorizationServerMetadata(config: OAuthConfig): object {
     authorization_endpoint: `${config.issuer}/oauth/authorize`,
     token_endpoint: `${config.issuer}/oauth/token`,
     registration_endpoint: `${config.issuer}/oauth/register`,
+    revocation_endpoint: `${config.issuer}/oauth/revoke`,
+    revocation_endpoint_auth_methods_supported: ["none"],
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code"],
     code_challenge_methods_supported: ["S256"],

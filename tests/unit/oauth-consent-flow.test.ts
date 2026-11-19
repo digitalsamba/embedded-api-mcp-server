@@ -260,6 +260,8 @@ describe("OAuth consent flow", () => {
     url.searchParams.set("client_id", client.client_id);
     url.searchParams.set("redirect_uri", "https://attacker.example/cb");
     url.searchParams.set("response_type", "code");
+    url.searchParams.set("code_challenge", pkce().challenge);
+    url.searchParams.set("code_challenge_method", "S256");
     const html = await (await fetch(url)).text();
 
     expect(html).toContain('<span class="dest">attacker.example</span>');
@@ -281,6 +283,35 @@ describe("OAuth consent flow", () => {
     expect(wrongRedirect.status).toBe(400);
     expect(wrongRedirect.headers.get("location")).toBeNull();
   });
+
+  it.each([
+    ["no challenge", {}],
+    [
+      "plain method",
+      { code_challenge: "a".repeat(43), code_challenge_method: "plain" },
+    ],
+    ["no method", { code_challenge: "a".repeat(43) }],
+    [
+      "malformed challenge",
+      { code_challenge: "short", code_challenge_method: "S256" },
+    ],
+  ])(
+    "refuses an authorization request without S256 PKCE (%s)",
+    async (_label, extra) => {
+      const client = await registerClient();
+      const url = new URL(`${base}/oauth/authorize`);
+      url.searchParams.set("client_id", client.client_id);
+      url.searchParams.set("redirect_uri", CLIENT_REDIRECT);
+      url.searchParams.set("response_type", "code");
+      for (const [k, v] of Object.entries(extra))
+        url.searchParams.set(k, v as string);
+      const res = await fetch(url, { redirect: "manual" });
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toMatchObject({ error: "invalid_request" });
+      expect(res.headers.getSetCookie()).toEqual([]);
+    },
+  );
 
   // --- the decision ---------------------------------------------------------
 
