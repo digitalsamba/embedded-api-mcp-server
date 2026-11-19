@@ -6,7 +6,7 @@
  * Sessions persisted in Redis (or in-memory for local dev).
  */
 
-import { randomBytes, createHash } from "node:crypto";
+import { randomBytes, createHash, timingSafeEqual } from "node:crypto";
 import logger from "./logger.js";
 import { getStore, PREFIXES, TTL } from "./session-store.js";
 
@@ -48,6 +48,28 @@ interface PendingClientAuth {
   codeChallenge?: string;
   codeChallengeMethod?: string;
   state?: string;
+  /**
+   * SHA-256 of the random value in the browser-binding cookie set when the
+   * user approved. The callback only accepts the flow in a browser that
+   * presents the matching cookie (see bindingMatches).
+   */
+  browserBindingHash?: string;
+  createdAt: number;
+}
+
+/**
+ * An authorization request waiting for the user to approve or cancel it on
+ * our consent page. Stored under a one-time ID that is only ever written into
+ * that page, and bound to the browser it was shown to.
+ */
+export interface ConsentRequest {
+  clientId: string;
+  clientName: string;
+  redirectUri: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: string;
+  clientState?: string;
+  browserBindingHash: string;
   createdAt: number;
 }
 
@@ -84,6 +106,7 @@ export async function storePendingClientAuth(
   codeChallenge?: string,
   codeChallengeMethod?: string,
   clientState?: string,
+  browserBindingHash?: string,
 ): Promise<void> {
   const store = getStore();
   const data: PendingClientAuth = {
@@ -92,6 +115,7 @@ export async function storePendingClientAuth(
     codeChallenge,
     codeChallengeMethod,
     state: clientState,
+    browserBindingHash,
     createdAt: Date.now(),
   };
   await store.set(PREFIXES.PENDING_CLIENT + ourState, data, TTL.PENDING_AUTH);
@@ -110,6 +134,68 @@ export async function getPendingClientAuth(
     await store.delete(key);
   }
   return pending;
+}
+
+/**
+ * A fresh random value for a browser-binding cookie, and the hash to store
+ * server-side. Only the hash is stored, so a leaked store entry cannot be
+ * turned into a valid cookie.
+ */
+export function createBrowserBinding(): { value: string; hash: string } {
+  const value = randomBytes(32).toString("hex");
+  return { value, hash: hashBinding(value) };
+}
+
+function hashBinding(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+/**
+ * Does a cookie value match a stored binding hash? Constant-time, and false
+ * for anything missing.
+ */
+export function bindingMatches(
+  cookieValue: string | undefined,
+  storedHash: string | undefined,
+): boolean {
+  if (!cookieValue || !storedHash) return false;
+  const a = Buffer.from(hashBinding(cookieValue), "hex");
+  const b = Buffer.from(storedHash, "hex");
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+/**
+ * Store an authorization request until the user decides on the consent page.
+ * @returns the one-time consent ID to embed in that page
+ */
+export async function storeConsentRequest(
+  request: Omit<ConsentRequest, "createdAt">,
+): Promise<string> {
+  const store = getStore();
+  const consentId = randomBytes(32).toString("hex");
+  await store.set(
+    PREFIXES.CONSENT + consentId,
+    { ...request, createdAt: Date.now() },
+    TTL.CONSENT,
+  );
+  return consentId;
+}
+
+/**
+ * Get and remove a consent request. One-time: a second submission of the same
+ * page finds nothing.
+ */
+export async function takeConsentRequest(
+  consentId: string,
+): Promise<ConsentRequest | null> {
+  if (!/^[0-9a-f]{64}$/.test(consentId)) return null;
+  const store = getStore();
+  const key = PREFIXES.CONSENT + consentId;
+  const request = await store.get<ConsentRequest>(key);
+  if (request) {
+    await store.delete(key);
+  }
+  return request;
 }
 
 /**

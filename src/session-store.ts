@@ -140,6 +140,7 @@ export const PREFIXES = {
   PENDING_AUTH: "mcp:pending:",
   PENDING_CLIENT: "mcp:pendingclient:",
   AUTH_CODE: "mcp:authcode:",
+  CONSENT: "mcp:consent:",
 } as const;
 
 // TTLs in seconds
@@ -155,4 +156,5 @@ export const TTL = {
   CODE_VERIFIER: 10 * 60, // 10 minutes
   PENDING_AUTH: 10 * 60, // 10 minutes
   AUTH_CODE: 10 * 60, // 10 minutes
+  CONSENT: 10 * 60, // 10 minutes
 } as const;
