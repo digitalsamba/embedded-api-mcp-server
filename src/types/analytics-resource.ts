@@ -26,8 +26,16 @@ export class AnalyticsResource {
   async getSessionAnalytics(sessionId: string): Promise<any>;
   async getSessionAnalytics(sessionId: string, filters: any): Promise<any>;
   async getSessionAnalytics(sessionId: string, filters?: any): Promise<any> {
-    // Implementation handled by API client - using correct method name
-    return this.apiClient.getSessionStatistics(sessionId, filters);
+    // The API takes one optional `metrics` query parameter: a comma-separated
+    // list of field names. Passing the filters object through sent
+    // `metrics=[object Object]`, which the API answers with an empty array.
+    const requested = filters?.metrics;
+    const metrics = Array.isArray(requested)
+      ? requested.join(",")
+      : typeof requested === "string"
+        ? requested
+        : undefined;
+    return this.apiClient.getSessionStatistics(sessionId, metrics || undefined);
   }
 
   async getParticipantAnalytics(participantId?: string): Promise<any> {

@@ -61,11 +61,21 @@ describe("AnalyticsResource", () => {
       expect(result).toEqual({ data: "session stats" });
     });
 
-    it("should get session analytics with sessionId and filters", async () => {
+    it("sends a metrics list as the comma-separated string the API expects", async () => {
       const filters = { metrics: ["duration", "participants"] };
-      const result = await analyticsResource.getSessionAnalytics("session123", filters);
-      expect(mockApiClient.getSessionStatistics).toHaveBeenCalledWith("session123", filters);
-      expect(result).toEqual({ data: "session stats" });
+      await analyticsResource.getSessionAnalytics("session123", filters);
+      expect(mockApiClient.getSessionStatistics).toHaveBeenCalledWith(
+        "session123",
+        "duration,participants",
+      );
+    });
+
+    it("never forwards a filters object as metrics (API returned [] for metrics=[object Object])", async () => {
+      await analyticsResource.getSessionAnalytics("session123", {
+        session_id: "session123",
+        date_start: "2026-01-01",
+      });
+      expect(mockApiClient.getSessionStatistics).toHaveBeenCalledWith("session123", undefined);
     });
   });
 
