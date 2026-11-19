@@ -157,9 +157,10 @@ describe('Analytics Tools Execution', () => {
           mockApiClient
         );
         
+        // Only the session ID: the generic filters object must not reach the
+        // client, where it was serialised as metrics=[object Object].
         expect(mockAnalyticsResource.getSessionAnalytics).toHaveBeenCalledWith(
-          'session-123',
-          { session_id: 'session-123' }
+          'session-123'
         );
         
         expect(result.content[0].text).toContain('session-123');

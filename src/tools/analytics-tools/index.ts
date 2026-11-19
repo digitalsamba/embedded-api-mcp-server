@@ -352,9 +352,10 @@ export async function executeAnalyticsTool(
 
       case "get-session-analytics": {
         logger.info("Executing session analytics query", { args });
+        // Session statistics are addressed by the session ID alone; the
+        // date/room/participant filters do not apply to this endpoint.
         const sessionResult = await analytics.getSessionAnalytics(
           args.sessionId,
-          filters,
         );
         return {
           content: [
