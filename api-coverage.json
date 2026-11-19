@@ -1,0 +1,991 @@
+{
+  "$comment": "Coverage manifest for openapi-stored.yaml. One entry per API operation, keyed by 'METHOD /path' because the spec reuses some operationIds. Each entry carries the spec's operationId plus exactly one disposition: tools/resources (MCP tools or resources whose handler calls this method+path), excluded (reason it is deliberately not exposed), or pending (what is needed, with the tracking issue). tests/unit/api-coverage.test.ts fails the build when the spec and this file disagree.",
+  "spec": "openapi-stored.yaml",
+  "unmappedTools": {
+    "update-recording": "Calls nothing: the API has no recording-update endpoint, and the tool says so.",
+    "publish-poll-results": "Calls nothing: the API has no publish-results endpoint, and the tool says so.",
+    "delete-session-recordings": "Unreachable: server.ts routes any name containing 'recording' to the recording module, which rejects it. Meant to call DELETE /sessions/{session}/recordings (use bulk-delete-session-data until fixed)."
+  },
+  "operations": {
+    "GET /api/v1": {
+      "operationId": "getDefaultRoomSettings",
+      "tools": [
+        "get-default-room-settings"
+      ]
+    },
+    "PATCH /api/v1": {
+      "operationId": "updateDefaultRoomSettings",
+      "tools": [
+        "update-default-room-settings"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/shared-notes/export": {
+      "operationId": "exportSharedNotes",
+      "pending": "New tool export-shared-notes (format md|txt|html).",
+      "issue": 26
+    },
+    "DELETE /api/v1/rooms/{room}/shared-notes": {
+      "operationId": "deleteSharedNotes",
+      "pending": "New tool delete-room-shared-notes (destructive; API refuses while the room is live).",
+      "issue": 26
+    },
+    "GET /api/v1/rooms/{room}/chat": {
+      "operationId": "getChatMessages",
+      "pending": "No tool lists chat messages as paginated JSON (export-chat-messages only exports); add list-chat-messages.",
+      "issue": 26
+    },
+    "POST /api/v1/rooms/{room}/chat": {
+      "operationId": "sendAChatMessageToTheRoom",
+      "tools": [
+        "send-chat-message"
+      ],
+      "note": "Renamed from sendChatMessage. Body contract changed 2026-09: participant is now required and breakout_id is accepted; the tool still treats participant as optional/no-effect."
+    },
+    "DELETE /api/v1/rooms/{room}/chat": {
+      "operationId": "deleteChatsByRoom",
+      "tools": [
+        "delete-room-chats"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/chat/export": {
+      "operationId": "exportChatMessages",
+      "tools": [
+        "export-chat-messages"
+      ],
+      "resources": [
+        "digitalsamba://exports/communications/{roomId}/chat"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/questions/export": {
+      "operationId": "exportQuestionsAndAnswers",
+      "tools": [
+        "export-qa-data"
+      ],
+      "resources": [
+        "digitalsamba://exports/communications/{roomId}/qa"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/transcripts": {
+      "operationId": "getRoomTranscripts",
+      "tools": [
+        "list-room-transcripts"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}/transcripts": {
+      "operationId": "deleteTranscriptsByRoom",
+      "tools": [
+        "delete-room-transcripts"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/transcripts/export": {
+      "operationId": "exportRoomTranscripts",
+      "tools": [
+        "export-room-transcripts"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/token": {
+      "operationId": "createRoomToken",
+      "tools": [
+        "generate-token"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/questions": {
+      "operationId": "getQuestionsAndAnswers",
+      "pending": "No tool lists Q&A; add list-questions (also gives create-question a real read-back instead of scanning the export).",
+      "issue": 26
+    },
+    "POST /api/v1/rooms/{room}/questions": {
+      "operationId": "createAQuestionInTheRoom",
+      "tools": [
+        "create-question"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}/questions": {
+      "operationId": "deleteQAByRoom",
+      "tools": [
+        "delete-room-qa"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}/summaries": {
+      "operationId": "deleteSummariesByRoom",
+      "pending": "delete-room-summaries loops DELETE /sessions/{session}/summaries over the first page of sessions instead of calling this.",
+      "issue": 26
+    },
+    "GET /api/v1/rooms/{room}/polls": {
+      "operationId": "getPolls",
+      "tools": [
+        "list-polls"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/polls": {
+      "operationId": "createPoll",
+      "tools": [
+        "create-poll"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}/polls": {
+      "operationId": "deletePollsByRoom",
+      "pending": "delete-room-polls loops DELETE /sessions/{session}/polls over the first page of sessions instead of calling this.",
+      "issue": 26
+    },
+    "GET /api/v1/rooms/{room}/quizzes": {
+      "operationId": "getQuizzes",
+      "tools": [
+        "list-room-quizzes"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/quizzes": {
+      "operationId": "createQuiz",
+      "tools": [
+        "create-quiz"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}/quizzes": {
+      "operationId": "deleteQuizzesByRoom",
+      "tools": [
+        "delete-room-quizzes"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}/recordings": {
+      "operationId": "deleteRecordingsByRoom",
+      "pending": "No tool; add delete-room-recordings.",
+      "issue": 26
+    },
+    "GET /api/v1/rooms": {
+      "operationId": "getAllTeamRooms",
+      "tools": [
+        "list-rooms"
+      ],
+      "resources": [
+        "digitalsamba://rooms"
+      ]
+    },
+    "POST /api/v1/rooms": {
+      "operationId": "createANewRoom",
+      "tools": [
+        "create-room"
+      ]
+    },
+    "DELETE /api/v1/rooms": {
+      "operationId": "deleteRoomsByTag",
+      "tools": [
+        "delete-rooms-by-tag"
+      ]
+    },
+    "GET /api/v1/rooms/{room}": {
+      "operationId": "getTheSpecifiedRoom",
+      "tools": [
+        "get-room-details"
+      ],
+      "resources": [
+        "digitalsamba://rooms/{roomId}"
+      ]
+    },
+    "PATCH /api/v1/rooms/{room}": {
+      "operationId": "updateRoom",
+      "tools": [
+        "update-room"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}": {
+      "operationId": "deleteRoom",
+      "tools": [
+        "delete-room"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}/resources": {
+      "operationId": "deleteRoomResources",
+      "pending": "No tool; delete-room only reaches this via delete_resources while deleting the room itself. Add delete-room-resources.",
+      "issue": 26
+    },
+    "DELETE /api/v1/sessions/{session}/chat": {
+      "operationId": "deleteChatsBySession",
+      "tools": [
+        "bulk-delete-session-data",
+        "delete-session-chats"
+      ]
+    },
+    "DELETE /api/v1/sessions/{session}/questions": {
+      "operationId": "deleteQABySession",
+      "tools": [
+        "bulk-delete-session-data",
+        "delete-session-qa"
+      ]
+    },
+    "DELETE /api/v1/sessions/{session}/summaries": {
+      "operationId": "deleteSummariesBySession",
+      "tools": [
+        "bulk-delete-session-data",
+        "delete-room-summaries",
+        "delete-session-summaries"
+      ]
+    },
+    "GET /api/v1/sessions/{session}/transcripts": {
+      "operationId": "getSessionTranscripts",
+      "tools": [
+        "list-session-transcripts"
+      ]
+    },
+    "DELETE /api/v1/sessions/{session}/transcripts": {
+      "operationId": "deleteTranscriptsBySession",
+      "tools": [
+        "bulk-delete-session-data",
+        "delete-session-transcripts"
+      ]
+    },
+    "DELETE /api/v1/sessions/{session}/polls": {
+      "operationId": "deletePollsBySession",
+      "tools": [
+        "bulk-delete-session-data",
+        "delete-room-polls",
+        "delete-session-polls"
+      ]
+    },
+    "DELETE /api/v1/sessions/{session}/quizzes": {
+      "operationId": "deleteQuizzesBySession",
+      "tools": [
+        "delete-session-quizzes"
+      ]
+    },
+    "DELETE /api/v1/sessions/{session}/recordings": {
+      "operationId": "deleteRecordingsBySession",
+      "tools": [
+        "bulk-delete-session-data"
+      ],
+      "note": "delete-session-recordings also targets this path but is unreachable (dispatched to the recording module, which rejects it), so it is not listed."
+    },
+    "DELETE /api/v1/sessions/{session}/resources": {
+      "operationId": "deleteSessionResources",
+      "tools": [
+        "bulk-delete-session-data",
+        "delete-session-resources",
+        "hard-delete-session-resources"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/sessions": {
+      "operationId": "getAllRoomSessions",
+      "tools": [
+        "get-all-room-sessions",
+        "list-room-sessions"
+      ]
+    },
+    "GET /api/v1/sessions": {
+      "operationId": "getAllSessions",
+      "tools": [
+        "list-sessions"
+      ],
+      "resources": [
+        "digitalsamba://sessions"
+      ]
+    },
+    "GET /api/v1/sessions/{session}": {
+      "operationId": "getSessionStatistics",
+      "excluded": "Alias of GET /sessions/{session}/statistics (same handler, same body, same operationId in the spec); covered there."
+    },
+    "GET /api/v1/sessions/{session}/summary": {
+      "operationId": "getSessionSummary",
+      "tools": [
+        "get-session-details",
+        "get-session-summary"
+      ],
+      "resources": [
+        "digitalsamba://sessions/{sessionId}"
+      ],
+      "note": "get-session-details and digitalsamba://sessions/{sessionId} call this AI-summary endpoint instead of GET /sessions/{session}."
+    },
+    "GET /api/v1/sessions/{session}/transcripts/export": {
+      "operationId": "exportSessionTranscripts",
+      "tools": [
+        "export-session-transcripts"
+      ],
+      "resources": [
+        "digitalsamba://exports/communications/{sessionId}/transcripts"
+      ]
+    },
+    "POST /api/v1/sessions/{session}/end": {
+      "operationId": "endTheSpecifiedLiveSession",
+      "tools": [
+        "end-session"
+      ]
+    },
+    "GET /api/v1/participants": {
+      "operationId": "getAllParticipants",
+      "resources": [
+        "digitalsamba://analytics/participants"
+      ]
+    },
+    "GET /api/v1/participants/{participant}": {
+      "operationId": "getParticipantStatistics",
+      "resources": [
+        "digitalsamba://analytics/participants/{participantId}"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/participants": {
+      "operationId": "getAllRoomParticipants",
+      "pending": "No tool or resource lists a room's participants across sessions; add list-room-participants.",
+      "issue": 26
+    },
+    "PATCH /api/v1/rooms/{room}/participants/{participant}": {
+      "operationId": "updateParticipant",
+      "pending": "New tool update-participant (change a live participant's role).",
+      "issue": 26
+    },
+    "POST /api/v1/rooms/{room}/participants/{participant}/raise-hand": {
+      "operationId": "raiseHand",
+      "tools": [
+        "raise-participant-hand"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/participants/{participant}/lower-hand": {
+      "operationId": "lowerHand",
+      "tools": [
+        "lower-participant-hand"
+      ]
+    },
+    "GET /api/v1/sessions/{session}/participants": {
+      "operationId": "getAllSessionParticipants",
+      "tools": [
+        "list-session-participants"
+      ],
+      "resources": [
+        "digitalsamba://sessions/{sessionId}/participants"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/phone-participants/joined": {
+      "operationId": "phoneParticipantsJoined",
+      "tools": [
+        "phone-participants-joined"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/phone-participants/left": {
+      "operationId": "phoneParticipantsLeft",
+      "tools": [
+        "phone-participants-left"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/phone-participants/{callId}/raise-hand": {
+      "operationId": "raiseHand",
+      "tools": [
+        "raise-phone-participant-hand"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/phone-participants/{callId}/lower-hand": {
+      "operationId": "lowerHand",
+      "tools": [
+        "lower-phone-participant-hand"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/phone-participants/{callId}/mute": {
+      "operationId": "mute",
+      "tools": [
+        "mute-phone-participant"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/phone-participants/{callId}/unmute": {
+      "operationId": "unmute",
+      "tools": [
+        "unmute-phone-participant"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/phone/connect": {
+      "operationId": "connectToThePhoneBridgeSIP",
+      "tools": [
+        "connect-phone"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/phone/disconnect": {
+      "operationId": "disconnectFromThePhoneBridgeSIP",
+      "tools": [
+        "disconnect-phone"
+      ]
+    },
+    "GET /api/v1/recordings": {
+      "operationId": "getAllTeamRecordings",
+      "tools": [
+        "get-recordings"
+      ],
+      "resources": [
+        "digitalsamba://recordings"
+      ]
+    },
+    "GET /api/v1/recordings/archived": {
+      "operationId": "getArchivedTeamRecordings",
+      "resources": [
+        "digitalsamba://recordings/archived"
+      ]
+    },
+    "GET /api/v1/recordings/{recording}": {
+      "operationId": "getTheSpecifiedRecording",
+      "tools": [
+        "export-recording-metadata",
+        "get-recording"
+      ],
+      "resources": [
+        "digitalsamba://exports/recordings/{recordingId}",
+        "digitalsamba://recordings/{recordingId}"
+      ]
+    },
+    "DELETE /api/v1/recordings/{recording}": {
+      "operationId": "deleteRecording",
+      "tools": [
+        "delete-recording"
+      ]
+    },
+    "GET /api/v1/recordings/{recording}/download": {
+      "operationId": "downloadTheSpecifiedRecording",
+      "tools": [
+        "get-recording-download-link"
+      ]
+    },
+    "GET /api/v1/recordings/{recording}/bookmarks": {
+      "operationId": "getBookmarks",
+      "tools": [
+        "get-recording-bookmarks"
+      ]
+    },
+    "POST /api/v1/recordings/{recording}/bookmarks": {
+      "operationId": "addABookmarkToARecording",
+      "pending": "New tool add-recording-bookmark (participant, bookmark, time).",
+      "issue": 26
+    },
+    "POST /api/v1/recordings/{recording}/archive": {
+      "operationId": "archiveRecording",
+      "tools": [
+        "archive-recording"
+      ]
+    },
+    "POST /api/v1/recordings/{recording}/unarchive": {
+      "operationId": "unarchiveRecording",
+      "tools": [
+        "unarchive-recording"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/recordings/start": {
+      "operationId": "startRecording",
+      "tools": [
+        "start-recording"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/recordings/stop": {
+      "operationId": "stopRecording",
+      "tools": [
+        "stop-recording"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/restreamers/start": {
+      "operationId": "startRestreamer",
+      "tools": [
+        "start-restreamer"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/restreamers/stop": {
+      "operationId": "stopRestreamer",
+      "tools": [
+        "stop-restreamer"
+      ]
+    },
+    "GET /api/v1/roles": {
+      "operationId": "getAvailableRolesForTheTeam",
+      "tools": [
+        "get-roles"
+      ]
+    },
+    "POST /api/v1/roles": {
+      "operationId": "createANewRole",
+      "tools": [
+        "create-role"
+      ]
+    },
+    "GET /api/v1/roles/{role}": {
+      "operationId": "getTheSpecifiedRole",
+      "tools": [
+        "get-role"
+      ]
+    },
+    "PATCH /api/v1/roles/{role}": {
+      "operationId": "updateTheSpecifiedRole",
+      "tools": [
+        "update-role"
+      ]
+    },
+    "DELETE /api/v1/roles/{role}": {
+      "operationId": "deleteTheSpecifiedRole",
+      "tools": [
+        "delete-role"
+      ]
+    },
+    "GET /api/v1/permissions": {
+      "operationId": "getAvailablePermissionsForRoles",
+      "tools": [
+        "get-permissions"
+      ]
+    },
+    "GET /api/v1/libraries": {
+      "operationId": "getAvailableLibrariesForTheTeam",
+      "tools": [
+        "list-libraries",
+        "search-libraries"
+      ]
+    },
+    "POST /api/v1/libraries": {
+      "operationId": "createANewLibrary",
+      "tools": [
+        "create-library"
+      ]
+    },
+    "GET /api/v1/libraries/{library}": {
+      "operationId": "getTheSpecifiedLibrary",
+      "tools": [
+        "get-library-details",
+        "verify-library-id"
+      ]
+    },
+    "PATCH /api/v1/libraries/{library}": {
+      "operationId": "updateTheSpecifiedLibrary",
+      "tools": [
+        "update-library"
+      ]
+    },
+    "DELETE /api/v1/libraries/{library}": {
+      "operationId": "deleteTheSpecifiedLibrary",
+      "tools": [
+        "delete-library"
+      ]
+    },
+    "GET /api/v1/libraries/{library}/hierarchy": {
+      "operationId": "getTheSpecifiedLibraryHierarchy",
+      "tools": [
+        "get-library-hierarchy"
+      ]
+    },
+    "GET /api/v1/libraries/{library}/folders": {
+      "operationId": "getAvailableLibraryFolders",
+      "tools": [
+        "list-library-folders"
+      ]
+    },
+    "POST /api/v1/libraries/{library}/folders": {
+      "operationId": "createANewLibraryFolder",
+      "tools": [
+        "create-library-folder"
+      ]
+    },
+    "GET /api/v1/libraries/{library}/folders/{libraryFolder}": {
+      "operationId": "getTheSpecifiedFolder",
+      "tools": [
+        "get-library-folder-details"
+      ]
+    },
+    "PATCH /api/v1/libraries/{library}/folders/{libraryFolder}": {
+      "operationId": "updateTheSpecifiedFolder",
+      "tools": [
+        "move-library-folder",
+        "update-library-folder"
+      ],
+      "note": "move-library-folder moves via parent_id here; the dedicated move endpoint is pending."
+    },
+    "DELETE /api/v1/libraries/{library}/folders/{libraryFolder}": {
+      "operationId": "deleteTheSpecifiedFolder",
+      "tools": [
+        "delete-library-folder"
+      ]
+    },
+    "POST /api/v1/libraries/{library}/folders/{libraryFolder}/move": {
+      "operationId": "moveTheSpecifiedFolderToAnotherFolder",
+      "pending": "Switch move-library-folder from PATCH parent_id to this endpoint (validates same library and no move into own subtree).",
+      "issue": 26
+    },
+    "GET /api/v1/libraries/{library}/files": {
+      "operationId": "getAvailableLibraryFiles",
+      "tools": [
+        "list-library-files"
+      ]
+    },
+    "POST /api/v1/libraries/{library}/files": {
+      "operationId": "createANewLibraryFile",
+      "tools": [
+        "bulk-upload-library-files",
+        "create-library-file"
+      ]
+    },
+    "GET /api/v1/libraries/{library}/files/{libraryFile}": {
+      "operationId": "getTheSpecifiedFile",
+      "tools": [
+        "get-library-file-details"
+      ]
+    },
+    "PATCH /api/v1/libraries/{library}/files/{libraryFile}": {
+      "operationId": "updateTheSpecifiedFile",
+      "tools": [
+        "move-library-file",
+        "update-library-file"
+      ],
+      "note": "move-library-file moves via folder_id here; the dedicated move endpoint is pending."
+    },
+    "DELETE /api/v1/libraries/{library}/files/{libraryFile}": {
+      "operationId": "deleteTheSpecifiedFile",
+      "tools": [
+        "bulk-delete-library-files",
+        "delete-library-file"
+      ]
+    },
+    "GET /api/v1/libraries/{library}/files/{libraryFile}/links": {
+      "operationId": "getFileLinks",
+      "tools": [
+        "get-file-links"
+      ]
+    },
+    "POST /api/v1/libraries/{library}/webapps": {
+      "operationId": "createANewWebappFile",
+      "tools": [
+        "copy-library-content",
+        "create-webapp"
+      ]
+    },
+    "POST /api/v1/libraries/{library}/whiteboards": {
+      "operationId": "createANewWhiteboardFile",
+      "tools": [
+        "create-whiteboard"
+      ]
+    },
+    "POST /api/v1/libraries/{library}/files/{libraryFile}/move": {
+      "operationId": "moveTheSpecifiedFileToAnotherFolder",
+      "pending": "Switch move-library-file from PATCH folder_id to this endpoint (validates the target is in the same library).",
+      "issue": 26
+    },
+    "GET /api/v1/rooms/{room}/polls/export": {
+      "operationId": "exportPolls",
+      "tools": [
+        "export-poll-results"
+      ],
+      "resources": [
+        "digitalsamba://exports/polls/{roomId}"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/polls/template": {
+      "operationId": "downloadPollCSVImportTemplate",
+      "tools": [
+        "get-poll-import-template"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/polls/import": {
+      "operationId": "importPollsFromCSV",
+      "tools": [
+        "import-polls"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/polls/{poll}": {
+      "operationId": "getPoll",
+      "pending": "No tool; add get-poll.",
+      "issue": 26
+    },
+    "PATCH /api/v1/rooms/{room}/polls/{poll}": {
+      "operationId": "updatePoll",
+      "tools": [
+        "update-poll"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}/polls/{poll}": {
+      "operationId": "deletePoll",
+      "tools": [
+        "delete-poll"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/polls/{poll}/results": {
+      "operationId": "pollResults",
+      "pending": "No tool; add get-poll-results (export-poll-results only exports).",
+      "issue": 26
+    },
+    "POST /api/v1/rooms/{room}/quizzes/import": {
+      "operationId": "importQuizzesFromCSV",
+      "tools": [
+        "import-quizzes"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/quizzes/template": {
+      "operationId": "downloadQuizCSVTemplate",
+      "tools": [
+        "get-quiz-import-template"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/quizzes/export": {
+      "operationId": "export",
+      "pending": "No tool; add export-quiz-results.",
+      "issue": 26
+    },
+    "GET /api/v1/rooms/{room}/quizzes/{quiz}": {
+      "operationId": "getQuiz",
+      "tools": [
+        "get-quiz"
+      ]
+    },
+    "PATCH /api/v1/rooms/{room}/quizzes/{quiz}": {
+      "operationId": "updateQuiz",
+      "tools": [
+        "update-quiz"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}/quizzes/{quiz}": {
+      "operationId": "deleteQuiz",
+      "tools": [
+        "delete-quiz"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/quizzes/{quiz}/results": {
+      "operationId": "quizResults",
+      "tools": [
+        "get-quiz-results"
+      ]
+    },
+    "GET /api/v1/rooms/live": {
+      "operationId": "getRoomsWithLiveParticipantsCount",
+      "tools": [
+        "list-live-rooms"
+      ],
+      "resources": [
+        "digitalsamba://analytics/live",
+        "digitalsamba://rooms/live"
+      ]
+    },
+    "GET /api/v1/rooms/live/participants": {
+      "operationId": "getRoomsWithLiveParticipantsData",
+      "tools": [
+        "list-live-participants"
+      ],
+      "resources": [
+        "digitalsamba://rooms/live/participants"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/live": {
+      "operationId": "getSingleRoomWithLiveParticipantsCount",
+      "resources": [
+        "digitalsamba://analytics/live/{roomId}",
+        "digitalsamba://rooms/{roomId}/live"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/live/participants": {
+      "operationId": "getSingleRoomWithLiveParticipantsData",
+      "resources": [
+        "digitalsamba://rooms/{roomId}/live/participants"
+      ]
+    },
+    "GET /api/v1/statistics": {
+      "operationId": "getTeamGlobalStatisticsByPeriod",
+      "tools": [
+        "get-live-analytics",
+        "get-participant-analytics",
+        "get-participant-statistics",
+        "get-room-analytics",
+        "get-usage-analytics",
+        "get-usage-statistics"
+      ],
+      "resources": [
+        "digitalsamba://analytics/team",
+        "digitalsamba://analytics/usage"
+      ],
+      "note": "Accepts date_start/date_end/metrics only; the participant/room/session/live filters several of these tools send are ignored by the API."
+    },
+    "GET /api/v1/statistics/team/current": {
+      "operationId": "getTeamGlobalStatisticsByCurrentPeriod",
+      "pending": "No tool; current-billing-period team statistics.",
+      "issue": 26
+    },
+    "GET /api/v1/statistics/current": {
+      "operationId": "getTeamStatisticsForCurrentPeriod",
+      "pending": "No tool; live current-period statistics (what get-live-analytics should probably call).",
+      "issue": 26
+    },
+    "GET /api/v1/statistics/totals": {
+      "operationId": "getTeamGlobalStatisticsByTags",
+      "pending": "No tool; per-tag usage totals (multi-tenant billing).",
+      "issue": 26
+    },
+    "GET /api/v1/statistics/participants/started-sessions": {
+      "operationId": "getStartedSessionsByParticipantUUIDs",
+      "pending": "No tool.",
+      "issue": 26
+    },
+    "GET /api/v1/rooms/{room}/statistics": {
+      "operationId": "getRoomStatisticsByPeriod",
+      "tools": [
+        "get-live-room-analytics",
+        "get-room-analytics"
+      ]
+    },
+    "GET /api/v1/rooms/{room}/statistics/current": {
+      "operationId": "getRoomStatisticsByCurrentPeriod",
+      "pending": "No tool; current-billing-period room statistics.",
+      "issue": 26
+    },
+    "GET /api/v1/sessions/{session}/statistics": {
+      "operationId": "getSessionStatistics",
+      "tools": [
+        "export-session-metadata",
+        "export-session-summary",
+        "get-session-analytics",
+        "get-session-statistics",
+        "get-session-statistics-details"
+      ],
+      "resources": [
+        "digitalsamba://analytics/sessions/{sessionId}",
+        "digitalsamba://exports/sessions/{sessionId}/metadata",
+        "digitalsamba://exports/sessions/{sessionId}/summary",
+        "digitalsamba://sessions/{sessionId}/statistics"
+      ]
+    },
+    "GET /api/v1/participants/{participant}/statistics": {
+      "operationId": "getParticipantStatistics",
+      "excluded": "Alias of GET /participants/{participant} (same handler, same body, same operationId in the spec); covered there."
+    },
+    "POST /api/v1/rooms/{room}/transcription/start": {
+      "operationId": "startTranscription",
+      "tools": [
+        "start-transcription"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/transcription/stop": {
+      "operationId": "stopTranscription",
+      "tools": [
+        "stop-transcription"
+      ]
+    },
+    "GET /api/v1/events": {
+      "operationId": "getWebhooksEvents",
+      "tools": [
+        "list-webhook-events"
+      ]
+    },
+    "GET /api/v1/webhooks": {
+      "operationId": "getWebhooksForTheTeam",
+      "tools": [
+        "list-webhooks"
+      ]
+    },
+    "POST /api/v1/webhooks": {
+      "operationId": "createANewWebhook",
+      "tools": [
+        "create-webhook"
+      ]
+    },
+    "GET /api/v1/webhooks/{webhook}": {
+      "operationId": "getTheSpecifiedWebhook",
+      "tools": [
+        "get-webhook"
+      ]
+    },
+    "PATCH /api/v1/webhooks/{webhook}": {
+      "operationId": "updateTheSpecifiedWebhook",
+      "tools": [
+        "update-webhook"
+      ]
+    },
+    "DELETE /api/v1/webhooks/{webhook}": {
+      "operationId": "deleteTheSpecifiedWebhook",
+      "tools": [
+        "delete-webhook"
+      ]
+    },
+    "GET /api/v1/alert-recipients": {
+      "operationId": "getAlertRecipientsForTheTeam",
+      "pending": "New tool list-alert-recipients.",
+      "issue": 26
+    },
+    "POST /api/v1/alert-recipients": {
+      "operationId": "addAnAlertRecipientToTheTeam",
+      "pending": "New tool create-alert-recipient (email).",
+      "issue": 26
+    },
+    "PATCH /api/v1/alert-recipients/{alertRecipient}": {
+      "operationId": "updateTheSpecifiedAlertRecipient",
+      "pending": "New tool update-alert-recipient.",
+      "issue": 26
+    },
+    "DELETE /api/v1/alert-recipients/{alertRecipient}": {
+      "operationId": "deleteTheSpecifiedAlertRecipient",
+      "pending": "New tool delete-alert-recipient.",
+      "issue": 26
+    },
+    "PATCH /api/v1/rooms/{room}/questions/{question}": {
+      "operationId": "updateQuestion",
+      "tools": [
+        "update-question"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}/questions/{question}": {
+      "operationId": "deleteQuestion",
+      "tools": [
+        "delete-question"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/questions/{question}/dismiss": {
+      "operationId": "dismissQuestion",
+      "tools": [
+        "dismiss-question"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/questions/{question}/reopen": {
+      "operationId": "reopenQuestion",
+      "tools": [
+        "reopen-question"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/questions/{question}/vote": {
+      "operationId": "upvoteQuestion",
+      "tools": [
+        "upvote-question"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}/questions/{question}/vote": {
+      "operationId": "removeQuestionVote",
+      "tools": [
+        "remove-question-vote"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/questions/{question}/answers": {
+      "operationId": "answerQuestionInTheRoom",
+      "tools": [
+        "answer-question"
+      ]
+    },
+    "PATCH /api/v1/rooms/{room}/questions/{question}/answers/{answer}": {
+      "operationId": "updateAnswer",
+      "tools": [
+        "update-question-answer"
+      ]
+    },
+    "DELETE /api/v1/rooms/{room}/questions/{question}/answers/{answer}": {
+      "operationId": "deleteAnswer",
+      "tools": [
+        "delete-question-answer"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/questions/{question}/live-answers/start": {
+      "operationId": "startALiveAnswer",
+      "tools": [
+        "start-question-live-answer"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/questions/{question}/live-answers/stop": {
+      "operationId": "stopALiveAnswer",
+      "tools": [
+        "stop-question-live-answer"
+      ]
+    },
+    "POST /api/v1/rooms/{room}/questions/{question}/live-answers/cancel": {
+      "operationId": "cancelALiveAnswer",
+      "tools": [
+        "cancel-question-live-answer"
+      ]
+    },
+    "GET /api/v1/system-checks/{supportId}": {
+      "operationId": "getSystemCheckResults",
+      "pending": "New tool get-system-check-results (support ID from the pre-call check).",
+      "issue": 26
+    },
+    "GET /api/v1/usage": {
+      "operationId": "getCurrentParticipationMinutesUsage",
+      "pending": "New tool get-usage (participation minutes used vs plan limit in the current billing period).",
+      "issue": 26
+    }
+  }
+}
