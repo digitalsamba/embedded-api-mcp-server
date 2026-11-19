@@ -126,7 +126,8 @@ describe("session-store", () => {
       const { sessionStore } = freshModules();
 
       expect(sessionStore.TTL.SESSION).toBe(30 * 24 * 60 * 60);
-      expect(sessionStore.TTL.CLIENT).toBe(30 * 24 * 60 * 60);
+      // Longer than SESSION: renewed with its sessions (#41).
+      expect(sessionStore.TTL.CLIENT).toBe(60 * 24 * 60 * 60);
       expect(sessionStore.TTL.CODE_VERIFIER).toBe(10 * 60);
       expect(sessionStore.TTL.PENDING_AUTH).toBe(10 * 60);
       expect(sessionStore.TTL.AUTH_CODE).toBe(10 * 60);

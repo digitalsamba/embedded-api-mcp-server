@@ -185,6 +185,9 @@ export function assertSafeApiPath(endpoint: string): void {
   }
 }
 
+/** Deadline for one upstream API call; API_TIMEOUT_MS overrides it. */
+const API_TIMEOUT_MS = Number(process.env.API_TIMEOUT_MS) || 120_000;
+
 /** POST /libraries/{library}/files response (see createLibraryFile). */
 export interface LibraryFileUploadTicket {
   file_id: string;
@@ -322,6 +325,44 @@ export class DigitalSambaApiClient {
     return `${this.apiBaseUrl}${endpoint}`;
   }
 
+  /**
+   * fetch() with a deadline. Without one, a stalled API held a tool call
+   * until Node's own fetch timeout, with nothing logged. The default is
+   * generous because exports can be slow; API_TIMEOUT_MS overrides it.
+   */
+  protected async fetchWithTimeout(
+    url: string,
+    init: RequestInit = {},
+  ): Promise<Response> {
+    const timeoutMs = API_TIMEOUT_MS;
+    try {
+      return await fetch(url, {
+        ...init,
+        signal: init.signal ?? AbortSignal.timeout(timeoutMs),
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        (error.name === "TimeoutError" || error.name === "AbortError")
+      ) {
+        const method = init.method || "GET";
+        const path = url.replace(this.apiBaseUrl, "");
+        logger.error(`API request timed out after ${timeoutMs} ms`, {
+          method,
+          path,
+        });
+        throw new ApiRequestError(
+          `The Digital Samba API did not respond within ${Math.round(timeoutMs / 1000)} s (${method} ${path}).` +
+            (method === "GET"
+              ? ""
+              : " The change may still have been applied; check before retrying."),
+          { cause: error },
+        );
+      }
+      throw error;
+    }
+  }
+
   protected async request<T>(
     endpoint: string,
     options: RequestInit = {},
@@ -374,11 +415,13 @@ export class DigitalSambaApiClient {
 
       let response;
       try {
-        response = await fetch(url, {
+        response = await this.fetchWithTimeout(url, {
           ...options,
           headers,
         });
       } catch (error) {
+        // A timeout is already a clear ApiRequestError.
+        if (error instanceof ApiRequestError) throw error;
         // Handle network errors
         logger.error("Network error in API request", {
           url,
@@ -432,8 +475,18 @@ export class DigitalSambaApiClient {
         } else if (response.status === 401 || response.status === 403) {
           // 401: Missing or invalid API key
           // 403: Valid API key but insufficient permissions
+          const upstream = errorData.message || errorText;
+          // Over OAuth, sign-in, initialize and tools/list all succeed before
+          // the first API call, so a bare "Unauthenticated." gave the user no
+          // idea why every tool fails or what to do about it.
+          const viaOAuth = this.apiBaseUrl.includes("/oauth-api/");
           throw new AuthenticationError(
-            `Authentication error: ${errorData.message || errorText}`,
+            viaOAuth && response.status === 401
+              ? `Authentication error: Digital Samba rejected this connection's access (${upstream}). ` +
+                "Sign-in worked, but the signed-in Digital Samba user cannot use the API through the connector. " +
+                "This usually means the user is not the team owner: connector access currently works for the team owner's login only. " +
+                "It also happens if access was revoked; disconnecting and reconnecting fixes that case."
+              : `Authentication error: ${upstream}`,
           );
         } else if (response.status === 404) {
           // Not Found error - resource doesn't exist
@@ -1957,7 +2010,7 @@ export class DigitalSambaApiClient {
     const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
 
     const apiKey = this.getApiKey();
-    const response = await fetch(
+    const response = await this.fetchWithTimeout(
       this.apiUrl(`/rooms/${roomId}/transcripts/export${query}`),
       {
         headers: {
@@ -2043,7 +2096,7 @@ export class DigitalSambaApiClient {
    */
   private async downloadTemplate(endpoint: string): Promise<string> {
     const apiKey = this.getApiKey();
-    const response = await fetch(this.apiUrl(endpoint), {
+    const response = await this.fetchWithTimeout(this.apiUrl(endpoint), {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
 
@@ -2070,7 +2123,7 @@ export class DigitalSambaApiClient {
     form.append("file", new Blob([csvContent], { type: "text/csv" }), filename);
 
     // Do not set Content-Type: fetch adds the multipart boundary itself
-    const response = await fetch(this.apiUrl(endpoint), {
+    const response = await this.fetchWithTimeout(this.apiUrl(endpoint), {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}` },
       body: form,
@@ -2208,7 +2261,7 @@ export class DigitalSambaApiClient {
     const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
 
     const apiKey = this.getApiKey();
-    const response = await fetch(
+    const response = await this.fetchWithTimeout(
       this.apiUrl(`/rooms/${roomId}/polls/export${query}`),
       {
         headers: {
@@ -2250,7 +2303,7 @@ export class DigitalSambaApiClient {
     const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
 
     const apiKey = this.getApiKey();
-    const response = await fetch(
+    const response = await this.fetchWithTimeout(
       this.apiUrl(`/rooms/${roomId}/chat/export${query}`),
       {
         headers: {
@@ -2292,7 +2345,7 @@ export class DigitalSambaApiClient {
     const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
 
     const apiKey = this.getApiKey();
-    const response = await fetch(
+    const response = await this.fetchWithTimeout(
       this.apiUrl(`/rooms/${roomId}/questions/export${query}`),
       {
         headers: {
@@ -2333,7 +2386,7 @@ export class DigitalSambaApiClient {
     const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
 
     const apiKey = this.getApiKey();
-    const response = await fetch(
+    const response = await this.fetchWithTimeout(
       this.apiUrl(`/sessions/${sessionId}/transcripts/export${query}`),
       {
         headers: {
@@ -3231,7 +3284,7 @@ export class DigitalSambaApiClient {
     const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
 
     const apiKey = this.getApiKey();
-    const response = await fetch(
+    const response = await this.fetchWithTimeout(
       this.apiUrl(`/rooms/${roomId}/quizzes/export${query}`),
       {
         headers: {

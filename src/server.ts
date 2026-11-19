@@ -196,6 +196,75 @@ function asResourceContents(
   };
 }
 
+function listAllTools(): any[] {
+  return [
+    ...registerRoomTools(),
+    ...registerSessionTools(),
+    ...registerRecordingTools(),
+    ...registerAnalyticsTools(),
+    ...registerLiveSessionTools(),
+    ...registerCommunicationTools(),
+    ...registerPollTools(),
+    ...registerQuizTools(),
+    ...registerLibraryTools(),
+    ...registerRoleTools(),
+    ...registerWebhookTools(),
+    ...registerExportTools(),
+  ];
+}
+
+let requiredByTool: Map<string, string[]> | null = null;
+
+/**
+ * Check a call for the required ID arguments it is missing.
+ *
+ * Nothing enforced inputSchema.required, so a missing or misnamed ID (both
+ * room_id and roomId conventions exist across tools) reached the API as
+ * "/undefined" and came back as a 404 for something that exists.
+ *
+ * Only ID arguments are enforced. Some schemas mark other fields required
+ * that callers have always been able to omit (create-room's name is not even
+ * an API field, #37), and failing those calls now would break working clients.
+ *
+ * @returns an error message naming what is missing, or null if complete
+ */
+export function missingRequiredArguments(
+  toolName: string,
+  args: Record<string, unknown> | undefined,
+): string | null {
+  requiredByTool ??= new Map(
+    listAllTools().map((t) => [
+      t.name,
+      ((t.inputSchema?.required ?? []) as string[]).filter((k) =>
+        /id$/i.test(k),
+      ),
+    ]),
+  );
+  const required = requiredByTool.get(toolName);
+  if (!required?.length) return null;
+
+  const given = args ?? {};
+  const missing = required.filter(
+    (key) =>
+      given[key] === undefined ||
+      given[key] === null ||
+      (typeof given[key] === "string" && (given[key] as string).trim() === ""),
+  );
+  if (!missing.length) return null;
+
+  // Point out the other naming convention when that is what was sent.
+  const norm = (k: string) => k.toLowerCase().replace(/_/g, "");
+  const hints = missing
+    .map((key) => {
+      const sent = Object.keys(given).find(
+        (k) => k !== key && norm(k) === norm(key),
+      );
+      return sent ? `${key} (you sent ${sent}; this tool uses ${key})` : key;
+    })
+    .join(", ");
+  return `Missing required argument(s) for ${toolName}: ${hints}. Nothing was sent to the API.`;
+}
+
 /**
  * Creates and configures the MCP server with all handlers
  */
@@ -301,20 +370,7 @@ export function createServer(config: ServerConfig = {}): Server {
 
   // Register tool handlers
   server.setRequestHandler(ListToolsRequestSchema, async () => {
-    const allTools = [
-      ...registerRoomTools(),
-      ...registerSessionTools(),
-      ...registerRecordingTools(),
-      ...registerAnalyticsTools(),
-      ...registerLiveSessionTools(),
-      ...registerCommunicationTools(),
-      ...registerPollTools(),
-      ...registerQuizTools(),
-      ...registerLibraryTools(),
-      ...registerRoleTools(),
-      ...registerWebhookTools(),
-      ...registerExportTools(),
-    ];
+    const allTools = listAllTools();
 
     logger.debug(`ListToolsRequest: Registered ${allTools.length} total tools`);
 
@@ -334,6 +390,11 @@ export function createServer(config: ServerConfig = {}): Server {
     const { name, arguments: args } = request.params;
 
     logger.debug(`Executing tool: ${name}`);
+
+    const missing = missingRequiredArguments(name, args);
+    if (missing) {
+      throw new McpError(ErrorCode.InvalidParams, missing);
+    }
 
     try {
       // Room management tools

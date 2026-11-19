@@ -168,7 +168,12 @@ export const TTL = {
   // customer, every day. Kept well below the DS token's life because a session
   // ID is a bearer credential.
   SESSION: 30 * 24 * 60 * 60, // 30 days
-  CLIENT: 30 * 24 * 60 * 60, // 30 days
+  // Longer than SESSION and renewed whenever a session of the client slides
+  // (touchSession) or the client is used to authorize, so a registration never
+  // expires underneath an active connection. It used to be a fixed 30 days
+  // while sessions slid, and the next sign-in of a long-lived connector hit
+  // "Unknown client_id".
+  CLIENT: 60 * 24 * 60 * 60, // 60 days
   CODE_VERIFIER: 10 * 60, // 10 minutes
   PENDING_AUTH: 10 * 60, // 10 minutes
   AUTH_CODE: 10 * 60, // 10 minutes

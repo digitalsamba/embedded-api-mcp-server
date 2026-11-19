@@ -28,6 +28,7 @@ import {
   generateState,
   buildAuthorizationUrl,
   getRegisteredClient,
+  renewClient,
   validateRedirectUri,
   storePendingClientAuth,
   getPendingClientAuth,
@@ -103,6 +104,17 @@ export function registerAuthorizeRoutes(
 
     const client = await getRegisteredClient(client_id);
     if (!client) {
+      // A person is usually looking at this in a browser, after their app's
+      // registration expired or was lost; raw JSON told them nothing.
+      if (req.accepts(["html", "json"]) === "html") {
+        sendErrorPage(
+          res,
+          400,
+          "This connection needs to be set up again",
+          "The app's registration with this server is unknown or has expired. Remove the Digital Samba connector in your app and add it again.",
+        );
+        return;
+      }
       res.status(400).json({
         error: "invalid_client",
         error_description:
@@ -110,6 +122,7 @@ export function registerAuthorizeRoutes(
       });
       return;
     }
+    await renewClient(client_id);
 
     // Never redirect to an unvalidated URI, so this error is shown here.
     if (!(await validateRedirectUri(client_id, redirect_uri))) {
