@@ -241,7 +241,7 @@ export function registerLibraryTools(): ToolDefinition[] {
           contentType: {
             type: "string",
             description:
-              "MIME type of the file, e.g. video/mp4. On presigned storage the upload URL is signed for this type, so the upload must send the same Content-Type (default application/octet-stream).",
+              "MIME type of the file, e.g. video/mp4 (default application/octet-stream). On presigned storage the API prepares the upload for this type; send the same Content-Type when uploading.",
           },
         },
         required: ["libraryId", "name"],
@@ -1253,7 +1253,7 @@ async function handleDeleteLibraryFolder(
  * Explain how to finish an upload from the API's response.
  *
  * Default storage returns an upload `token`. Presigned (scaleway) storage
- * returns no token: the bytes go to a URL signed for one Content-Type, and
+ * returns no token: the bytes go to a presigned URL prepared for a Content-Type, and
  * the file stays "uploading" until POST callback_url is made. Large files get
  * multipart `parts`. The old output printed "Upload Token: undefined" for
  * the presigned case and dropped everything needed to complete it.
@@ -1288,7 +1288,7 @@ export function describeUploadTicket(
     lines.push(
       `Storage: presigned`,
       `1. PUT the file bytes to: ${ticket.external_storage_url}`,
-      `   with header Content-Type: ${type} (the URL is signed for it; another type is rejected).`,
+      `   with header Content-Type: ${type} (the type the upload was prepared for).`,
       `2. Then POST ${ticket.callback_url} (a Digital Samba API call, same credentials) with JSON {"size": <bytes>}.`,
     );
   }
@@ -2048,7 +2048,7 @@ async function handleBulkUploadLibraryFiles(
     const promises = batch.map(async (file) => {
       try {
         // The API reads file_size and content_type; size / mime_type were
-        // ignored, so no file was ever split for multipart or signed for
+        // ignored, so no file was ever split for multipart or prepared for
         // its type.
         const fileData: any = {
           name: file.name,

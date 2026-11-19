@@ -2,7 +2,7 @@
  * Library upload and link output (#39).
  *
  * On presigned storage POST /libraries/{id}/files returns no `token`, but a
- * URL signed for one Content-Type plus a callback that must be called before
+ * presigned URL plus a callback that must be called before
  * the file leaves "uploading" (LibraryFilesController::storeFile,
  * ScalewayPresignedUpload::getPayload). The tool printed "Upload Token:
  * undefined" and dropped the callback. get-file-links printed "No pages" for

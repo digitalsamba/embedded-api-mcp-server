@@ -2534,7 +2534,7 @@ export class DigitalSambaApiClient {
    *
    * The response depends on the storage behind the library: `storage:
    * "default"` carries an upload `token`; `storage: "scaleway"` carries a
-   * presigned URL (signed for `content_type`) plus `callback_url` /
+   * presigned URL (prepared for `content_type`) plus `callback_url` /
    * `callback_token`, and for files of at least the part size, multipart
    * `upload_id` / `part_size` / `parts`.
    */
