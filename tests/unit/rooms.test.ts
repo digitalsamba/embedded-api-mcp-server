@@ -316,8 +316,8 @@ describe('Room Tools', () => {
           max_participants: 100
         }, mockRequest, options);
 
+        // The API has no name field; with a description given, the name is not sent (#37).
         expect(mockApiClient.createRoom).toHaveBeenCalledWith({
-          name: 'Test Room',
           description: 'A test room',
           friendly_url: 'test-room',
           privacy: 'public',
@@ -332,8 +332,8 @@ describe('Room Tools', () => {
 
         const result = await executeRoomTool('create-room', {}, mockRequest, options);
 
+        // No invented name: the API has no name field (#37).
         expect(mockApiClient.createRoom).toHaveBeenCalledWith({
-          name: 'Test Room',
           privacy: 'public'
         });
         expect(result.content[0].text).toContain('Room created successfully');
@@ -361,11 +361,13 @@ describe('Room Tools', () => {
           privacy: 'private'
         }, mockRequest, options);
 
+        // A rename is stored as the description, since the API has no name field (#37).
         expect(mockApiClient.updateRoom).toHaveBeenCalledWith('test-room-id', {
-          name: 'Updated Room',
+          description: 'Updated Room',
           privacy: 'private'
         });
         expect(result.content[0].text).toContain('Room updated successfully');
+        expect(result.content[0].text).toContain("saved as the room's description");
         expect(result.isError).toBeUndefined();
       });
 

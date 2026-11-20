@@ -365,6 +365,22 @@ async function run() {
     return "3 fields verified by read-back";
   });
 
+  await check(
+    "update-room name is saved as the description (#37)",
+    async () => {
+      const renamed = `${tag} renamed`;
+      await call("update-room", { room_id: created.roomId, name: renamed });
+      const room = parseJson(
+        await call("get-room-details", { room_id: created.roomId }),
+      );
+      must(
+        room.description === renamed,
+        `description is ${JSON.stringify(room.description)}, not the new name`,
+      );
+      return "name read back as description";
+    },
+  );
+
   // -- polls ---------------------------------------------------------------
   group("polls");
 
