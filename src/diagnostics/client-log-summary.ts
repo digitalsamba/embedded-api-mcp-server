@@ -99,6 +99,53 @@ export const MILESTONES: Milestone[] = [
     pattern: /no broadcast permission|without broadcast permission/,
   },
   {
+    key: "gumPending",
+    label: "Camera/microphone request hung waiting for the browser",
+    pattern: /^\[GUM\] request still pending/,
+  },
+  {
+    key: "gumGranted",
+    label: "Hung camera/microphone request was granted",
+    pattern: /^\[GUM\] permission granted while pending/,
+  },
+  {
+    key: "weakConnection",
+    label: "Client warned of a weak connection",
+    pattern: /^Connection is weak\./,
+  },
+  {
+    key: "audioPlayBlocked",
+    label: "Browser blocked audio playback until a click (autoplay)",
+    pattern: /^\[AUDIO-PLAYBACK\] play\(\) blocked, awaiting user gesture/,
+  },
+  {
+    key: "audioNotPlaying",
+    label: "Received audio attached but not playing",
+    pattern: /^\[AUDIO-HEALTH\] audio attached but not playing/,
+  },
+  {
+    key: "audioRecovered",
+    label: "Stuck audio recovered",
+    pattern: /^\[AUDIO-PLAYBACK\] audio stuck — recovered/,
+  },
+  {
+    key: "audioNeverDelivered",
+    label: "Received audio never delivered",
+    pattern: /^\[AUDIO-HEALTH\] audio never delivered/,
+  },
+  {
+    key: "audioElementError",
+    label: "Audio playback error",
+    pattern:
+      /^\[AUDIO-HEALTH\] Audio element error|^\[AUDIO-PLAYBACK\] (play\(\) failed|failed to set srcObject)/,
+  },
+  {
+    key: "speakerSelectFailed",
+    label: "Selecting the speaker/output device failed",
+    pattern:
+      /^\[AUDIO-PLAYBACK\] (setSinkId failed|audio output device mismatch)/,
+  },
+  {
     key: "dyingWords",
     label: "Page unloaded/crashed (dying words)",
     pattern: /^dying words/,
@@ -155,7 +202,14 @@ function mediaErrorOf(
     payloadText = "";
   }
 
-  let m = message.match(/^Media capture failed: (\w+):/);
+  let m = message.match(/^\[GUM\] late settle — rejected:(\w+)/);
+  if (m && MEDIA_ERROR_NAME.test(m[1])) {
+    return {
+      error: m[1],
+      context: "answering a camera/microphone request that had hung",
+    };
+  }
+  m = message.match(/^Media capture failed: (\w+):/);
   if (m && MEDIA_ERROR_NAME.test(m[1])) {
     return {
       error: m[1],
@@ -306,6 +360,39 @@ export function summarizeClientLogs(
     }
     if (has("iceFailed"))
       findings.push("The client logged a failed media connection.");
+    const n = (k: string) => milestones.get(k)?.count ?? 0;
+    if (has("gumPending"))
+      findings.push(
+        `The camera/microphone request hung waiting for the browser ${n("gumPending")}x (usually a permission prompt nobody answered, or one hidden behind another window)` +
+          (has("gumGranted") ? "; permission was granted later." : "."),
+      );
+    if (has("weakConnection"))
+      findings.push(
+        `The client warned ${n("weakConnection")}x that this participant's connection was weak (their own sending quality).`,
+      );
+    if (has("audioPlayBlocked"))
+      findings.push(
+        "The browser blocked audio playback until the user clicked on the page (autoplay policy): they would hear nothing until then.",
+      );
+    if (has("audioNotPlaying"))
+      findings.push(
+        `Received audio was attached but not playing ${n("audioNotPlaying")}x; the client re-attached it` +
+          (has("audioRecovered")
+            ? ` (recovered ${n("audioRecovered")}x).`
+            : "."),
+      );
+    if (has("audioNeverDelivered"))
+      findings.push(
+        `Received audio never arrived ${n("audioNeverDelivered")}x (track stayed muted past the delivery deadline).`,
+      );
+    if (has("audioElementError"))
+      findings.push(
+        `Audio playback failed ${n("audioElementError")}x in the browser.`,
+      );
+    if (has("speakerSelectFailed"))
+      findings.push(
+        `Selecting the speaker/output device failed ${n("speakerSelectFailed")}x: audio may have played on a different device than the one chosen.`,
+      );
     if (has("e2eeDecryptFailed"))
       findings.push(
         `E2EE decryption failed ${milestones.get("e2eeDecryptFailed")!.count}x.`,
@@ -319,7 +406,11 @@ export function summarizeClientLogs(
         "Signalling messages were dropped while the socket was not open (network interruption).",
       );
     if (!findings.length)
-      findings.push("No problems found in the client logs.");
+      findings.push(
+        topProblems.length
+          ? "No known problem patterns in the client logs; the most frequent warnings and errors are under topProblems."
+          : "No problems found in the client logs.",
+      );
   }
 
   return {

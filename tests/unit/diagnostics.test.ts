@@ -244,7 +244,37 @@ describe("client log summary", () => {
     expect(s.findings[2]).toMatch(/Camera switch \(the previous stream kept working\): OverconstrainedError/);
   });
 
-  it("does not flag media access when a track was obtained", () => {
+  it("reports audio, permission-prompt and weak-connection signals, one per incident", () => {
+    const s = summarizeClientLogs([
+      { level: "warn", message: "[GUM] request still pending — join-screen", timestamp: at(1) },
+      { level: "warn", message: "[GUM] permission granted while pending — camera", timestamp: at(9) },
+      { level: "info", message: "[GUM] late settle — rejected:NotReadableError", timestamp: at(10) },
+      { level: "warn", message: "Connection is weak. Publishing MOS: 2.10, Consecutive poor readings: 3", timestamp: at(20) },
+      { level: "warn", message: "[AUDIO-PLAYBACK] play() blocked, awaiting user gesture", timestamp: at(21) },
+      // one stuck-audio incident logs both of these; only the first counts
+      { level: "warn", message: "[AUDIO-HEALTH] audio attached but not playing — triggering recovery", timestamp: at(30) },
+      { level: "info", message: "[AUDIO-PLAYBACK] audio stuck — detected", timestamp: at(30) },
+      { level: "info", message: "[AUDIO-PLAYBACK] audio stuck — recovered after re-attach", timestamp: at(31) },
+      // one speaker failure logs both of these; only the first counts
+      { level: "warn", message: "[AUDIO-PLAYBACK] setSinkId failed", timestamp: at(40) },
+      { level: "warn", message: "[AUDIO-PLAYBACK] failed to set audio output device during initial attachment", timestamp: at(40) },
+    ]);
+    const all = s.findings.join("\n");
+    expect(s.mediaErrors.map((e) => e.error)).toEqual(["NotReadableError"]);
+    expect(all).toMatch(/answering a camera\/microphone request that had hung: NotReadableError/);
+    expect(all).toMatch(/hung waiting for the browser 1x .*; permission was granted later\./);
+    expect(all).toMatch(/warned 1x that this participant's connection was weak/);
+    expect(all).toMatch(/blocked audio playback until the user clicked/);
+    expect(all).toMatch(/attached but not playing 1x; the client re-attached it \(recovered 1x\)/);
+    expect(all).toMatch(/speaker\/output device failed 1x/);
+  });
+
+  it("does not call a log with warnings clean", () => {
+    const s = summarizeClientLogs([{ level: "warn", message: "Something unrecognised", timestamp: at(1) }]);
+    expect(s.findings[0]).toMatch(/No known problem patterns/);
+  });
+
+    it("does not flag media access when a track was obtained", () => {
     const s = summarizeClientLogs([
       { level: "info", message: "Requesting user media", timestamp: at(1) },
       { level: "info", message: "audio track settings:", timestamp: at(2) },
