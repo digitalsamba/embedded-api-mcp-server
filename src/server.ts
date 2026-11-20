@@ -98,6 +98,11 @@ import {
   registerExportTools,
   executeExportTool,
 } from "./tools/export-tools/index.js";
+import {
+  DIAGNOSTICS_TOOL_NAMES,
+  registerDiagnosticsTools,
+  executeDiagnosticsTool,
+} from "./tools/diagnostics-tools/index.js";
 
 import {
   VERSION,
@@ -216,6 +221,7 @@ function listAllTools(): any[] {
     ...registerRoleTools(),
     ...registerWebhookTools(),
     ...registerExportTools(),
+    ...registerDiagnosticsTools(),
   ];
 }
 
@@ -403,8 +409,12 @@ export function createServer(config: ServerConfig = {}): Server {
     }
 
     try {
+      // Call diagnostics tools
+      if ((DIAGNOSTICS_TOOL_NAMES as readonly string[]).includes(name)) {
+        return await executeDiagnosticsTool(name, args || {}, client);
+      }
       // Room management tools
-      if (
+      else if (
         name === "create-room" ||
         name === "update-room" ||
         name === "delete-room" ||
