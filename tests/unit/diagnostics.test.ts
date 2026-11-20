@@ -173,7 +173,13 @@ describe("rtcstats summary", () => {
     expect(never.findings.join("\n")).toMatch(/No media connection ever connected/);
   });
 
-  it("does not count a sleeping page as bad quality", () => {
+  it("claims nothing about camera/microphone when the dump does not record getUserMedia", () => {
+    const quiet = summarizeDump(parseDump(dump([[24, "PC_0", "checking", T0], [24, "PC_0", "connected", T0 + 200]])));
+    expect(quiet.media.recorded).toBe(false);
+    expect(quiet.findings).toEqual(["No problems found in the WebRTC stats."]);
+  });
+
+    it("does not count a sleeping page as bad quality", () => {
     const asleep = summarizeDump(
       parseDump(dump([
         [":samba-track-scores", null, scores(2, [2]), T0],
@@ -192,16 +198,18 @@ describe("client log summary", () => {
   it("finds milestones in order and groups repeated problems", () => {
     const s = summarizeClientLogs([
       { level: "info", message: "Requesting user media", timestamp: at(1) },
+      { level: "info", message: "audio track settings:", timestamp: at(2) },
       { level: "info", message: "ICE connection established successfully", timestamp: at(3) },
       { level: "warn", message: "[AUDIO-HEALTH] Audio stalled", timestamp: at(10) },
       { level: "warn", message: "[AUDIO-HEALTH] Audio stalled", timestamp: at(20) },
       { level: "error", message: "Request 1234 failed", timestamp: at(30) },
       { level: "error", message: "Request 5678 failed", timestamp: at(40) },
     ]);
-    expect(s.lines).toBe(6);
-    expect(s.byLevel).toEqual({ info: 2, warn: 2, error: 2 });
+    expect(s.lines).toBe(7);
+    expect(s.byLevel).toEqual({ info: 3, warn: 2, error: 2 });
     expect(s.milestones.map((m) => m.label)).toEqual([
       "Requested camera/microphone",
+      "Got a microphone track",
       "Media connection established",
       "Received audio stalled",
     ]);
@@ -210,9 +218,19 @@ describe("client log summary", () => {
     expect(s.findings).toEqual(["Received audio stalled 2x."]);
   });
 
-  it("says when media was requested but never connected", () => {
+  it("infers a failed camera/microphone request from a request with no track after it", () => {
     const s = summarizeClientLogs([{ level: "info", message: "Requesting user media", timestamp: at(1) }]);
-    expect(s.findings[0]).toMatch(/never record a media connection/);
+    expect(s.findings[0]).toMatch(/requested 1x but no track was ever obtained/);
+    expect(s.findings[1]).toMatch(/never record a media connection/);
+  });
+
+  it("does not flag media access when a track was obtained", () => {
+    const s = summarizeClientLogs([
+      { level: "info", message: "Requesting user media", timestamp: at(1) },
+      { level: "info", message: "audio track settings:", timestamp: at(2) },
+      { level: "info", message: "ICE connection established successfully", timestamp: at(3) },
+    ]);
+    expect(s.findings).toEqual(["No problems found in the client logs."]);
   });
 
   it("handles an empty log", () => {

@@ -31,6 +31,16 @@ export const MILESTONES: Milestone[] = [
     pattern: /^Requesting user media/,
   },
   {
+    key: "audioObtained",
+    label: "Got a microphone track",
+    pattern: /^audio track settings:/,
+  },
+  {
+    key: "videoObtained",
+    label: "Got a camera track",
+    pattern: /^video track settings:/,
+  },
+  {
     key: "loginRejected",
     label: "Login rejected by server",
     pattern: /^Login rejected by server/,
@@ -194,6 +204,18 @@ export function summarizeClientLogs(
       findings.push(
         "Mic/camera were blocked by the participant's role (no broadcast permission), not by the browser.",
       );
+    // A failed getUserMedia is only logged to the browser console, so its
+    // error name never reaches these logs: the evidence is a request with no
+    // track after it.
+    if (
+      has("mediaRequested") &&
+      !has("audioObtained") &&
+      !has("videoObtained")
+    ) {
+      findings.push(
+        `Camera/microphone were requested ${milestones.get("mediaRequested")!.count}x but no track was ever obtained: access failed (permission denied, device in use, or no device). The browser's error name is not sent to these logs.`,
+      );
+    }
     if (has("mediaRequested") && !has("iceConnected") && !has("iceFailed")) {
       findings.push(
         "Requested media but the client logs never record a media connection being established.",

@@ -41,6 +41,12 @@ const MEDIA_ERROR_MEANING: Record<string, string> = {
 };
 
 export interface MediaAccessSummary {
+  /**
+   * Whether this dump records getUserMedia at all. Our client's rtcstats
+   * trace does not wrap navigator.mediaDevices, so usually it does not:
+   * camera/microphone access then has to come from the client logs.
+   */
+  recorded: boolean;
   requests: number;
   successes: number;
   failures: Array<{ error: string; meaning?: string; at: string }>;
@@ -114,6 +120,8 @@ export interface RtcstatsSummary {
     audioConcealedPct?: number;
     videoInLossPct?: number;
     videoFreezes?: number;
+    /** Received video streams the freeze figures are summed over. */
+    videoStreams?: number;
     videoFreezeS?: number;
     maxRttMs?: number;
   };
@@ -223,6 +231,7 @@ function summarizeMedia(events: RtcEvent[]): MediaAccessSummary {
     screenshareRequests: 0,
     screenshareFailures: [],
     tracksEnded: 0,
+    recorded: false,
   };
   for (const ev of events) {
     switch (ev.type) {
@@ -262,6 +271,7 @@ function summarizeMedia(events: RtcEvent[]): MediaAccessSummary {
         break;
     }
   }
+  media.recorded = media.requests + media.successes + media.failures.length > 0;
   return media;
 }
 
@@ -495,7 +505,8 @@ function summarizeRtp(pcs: PcResult[]): RtcstatsSummary["rtp"] {
   let vRecv = 0,
     vLost = 0,
     freezes = 0,
-    freezeS = 0;
+    freezeS = 0,
+    vStreams = 0;
   let maxRtt: number | undefined;
   for (const pc of pcs) {
     if (pc.maxRttMs !== undefined) maxRtt = Math.max(maxRtt ?? 0, pc.maxRttMs);
@@ -507,6 +518,7 @@ function summarizeRtp(pcs: PcResult[]): RtcstatsSummary["rtp"] {
         aSamples += num(r.totalSamplesReceived) ?? 0;
         aConcealed += num(r.concealedSamples) ?? 0;
       } else if (r.kind === "video") {
+        vStreams += 1;
         vRecv += num(r.packetsReceived) ?? 0;
         vLost += Math.max(num(r.packetsLost) ?? 0, 0);
         freezes += num(r.freezeCount) ?? 0;
@@ -522,6 +534,7 @@ function summarizeRtp(pcs: PcResult[]): RtcstatsSummary["rtp"] {
   if (vRecv + vLost > 0) {
     rtp.videoInLossPct = round((100 * vLost) / (vRecv + vLost), 2);
     rtp.videoFreezes = freezes;
+    rtp.videoStreams = vStreams;
     rtp.videoFreezeS = round(freezeS, 0);
   }
   if (maxRtt !== undefined) rtp.maxRttMs = round(maxRtt, 0);
@@ -541,10 +554,6 @@ function findingsFor(s: Omit<RtcstatsSummary, "findings">): string[] {
     f.push(
       `Camera/microphone access failed ${media.failures.length}x${recovered}: ${last.error}` +
         (last.meaning ? ` - ${last.meaning}.` : "."),
-    );
-  } else if (media.requests === 0) {
-    f.push(
-      "Camera/microphone were never requested (joined without devices, or as a viewer-only role).",
     );
   }
   if (
@@ -621,7 +630,7 @@ function findingsFor(s: Omit<RtcstatsSummary, "findings">): string[] {
     );
   if (receiving.badS >= 10) {
     f.push(
-      `Receiving quality was poor for ${receiving.badS} s (${receiving.badPct}% of the time, longest ${receiving.longestBadRunS} s): this participant's own download was the problem.`,
+      `Receiving quality was poor for ${receiving.badS} s (${receiving.badPct}% of the time, longest ${receiving.longestBadRunS} s): the median received stream was poor, which points to this participant's own download rather than one sender.`,
     );
   }
   if ((rtp.audioConcealedPct ?? 0) >= 2)
@@ -630,7 +639,7 @@ function findingsFor(s: Omit<RtcstatsSummary, "findings">): string[] {
     );
   if ((rtp.videoFreezeS ?? 0) >= 10)
     f.push(
-      `Received video froze ${rtp.videoFreezes}x, ${rtp.videoFreezeS} s in total.`,
+      `Received video froze for ${rtp.videoFreezeS} s (${rtp.videoFreezes} freezes), summed over ${rtp.videoStreams} received video stream(s) still open at the end of the call.`,
     );
   if (quality.pausedS >= 30) {
     f.push(
