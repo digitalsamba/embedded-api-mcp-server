@@ -1667,7 +1667,8 @@ export class DigitalSambaApiClient {
     roomId: string,
     data: {
       message: string;
-      participant?: QAParticipant;
+      participant: QAParticipant;
+      breakout_id?: string;
     },
   ): Promise<WriteResult> {
     this.invalidateApiCache();
