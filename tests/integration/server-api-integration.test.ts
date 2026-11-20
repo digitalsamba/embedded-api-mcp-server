@@ -158,7 +158,8 @@ describe('MCP Server Integration', () => {
       if (roomDataMatch) {
         const roomData = JSON.parse(roomDataMatch[0]);
         expect(roomData).toHaveProperty('id');
-        expect(roomData.name).toBe('Test Integration Room');
+        // The API has no name field; the name is saved as the description (#37).
+        expect(roomData.description).toBe('Test Integration Room');
         expect(roomData.privacy).toBe('public');
       }
     });
