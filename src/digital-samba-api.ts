@@ -684,10 +684,9 @@ export class DigitalSambaApiClient {
    * Create a new room
    *
    * Creates a new video conferencing room with the specified settings.
-   * Only the 'name' field is required; all other settings are optional.
+   * All settings are optional. The API has no room name field; use `description`.
    *
    * @param {RoomCreateSettings} settings - Room configuration
-   * @param {string} settings.name - Room name (required)
    * @param {string} [settings.description] - Room description
    * @param {'public'|'private'} [settings.privacy] - Room privacy setting
    * @param {number} [settings.max_participants] - Maximum participants (2-2000)
@@ -699,14 +698,13 @@ export class DigitalSambaApiClient {
    * @example
    * // Create a basic room
    * const room = await client.createRoom({
-   *   name: 'Team Standup'
+   *   description: 'Team Standup'
    * });
    *
    * @example
    * // Create a fully configured room
    * const room = await client.createRoom({
-   *   name: 'All Hands Meeting',
-   *   description: 'Monthly company meeting',
+   *   description: 'All Hands Meeting',
    *   privacy: 'private',
    *   max_participants: 200,
    *   friendly_url: 'all-hands',
@@ -715,15 +713,9 @@ export class DigitalSambaApiClient {
    * });
    */
   async createRoom(settings: RoomCreateSettings): Promise<Room> {
-    // Make sure name is defined (it's required by the API)
-    const roomSettings = {
-      ...settings,
-      name: settings.name || "New Meeting Room",
-    };
-
     return this.request<Room>("/rooms", {
       method: "POST",
-      body: JSON.stringify(roomSettings),
+      body: JSON.stringify(settings),
     });
   }
 

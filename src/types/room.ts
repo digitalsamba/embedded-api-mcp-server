@@ -52,7 +52,8 @@ export interface Room {
 }
 
 export interface RoomCreateSettings {
-  name: string; // Required field
+  /** Not an API field: the API drops it. create-room/update-room map it to description (#37). */
+  name?: string;
   description?: string;
   friendly_url?: string;
   privacy?: "public" | "private";

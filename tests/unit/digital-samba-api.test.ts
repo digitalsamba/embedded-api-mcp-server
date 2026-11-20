@@ -468,7 +468,7 @@ describe('DigitalSambaApiClient', () => {
 
     describe('createRoom', () => {
       it('should create room with minimal settings', async () => {
-        const mockRoom = { id: '123', name: 'New Meeting Room' };
+        const mockRoom = { id: '123' };
         
         (global.fetch as jest.Mock).mockResolvedValueOnce({
           ok: true,
@@ -482,7 +482,7 @@ describe('DigitalSambaApiClient', () => {
           `${mockApiUrl}/rooms`,
           expect.objectContaining({
             method: 'POST',
-            body: JSON.stringify({ name: 'New Meeting Room' })
+            body: JSON.stringify({})
           })
         );
         expect(result).toEqual(mockRoom);

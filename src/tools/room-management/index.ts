@@ -21,6 +21,34 @@ import { normalizeBooleans } from "../../utils.js";
 import { getToolAnnotations } from "../../tool-annotations.js";
 
 /**
+ * The API has no room name field, so a `name` sent to it is silently dropped (#37). Its own `topic`
+ * alias is stored as `description`; do the same with `name` when no description is given.
+ * Removes `name` from `settings` and returns a note for the tool result, if one is needed.
+ */
+export function applyRoomName(
+  settings: Record<string, unknown>,
+): string | undefined {
+  const { name } = settings;
+  delete settings.name;
+
+  if (typeof name !== "string" || name.trim() === "") {
+    return undefined;
+  }
+
+  const { description } = settings;
+  if (
+    description === undefined ||
+    description === null ||
+    (typeof description === "string" && description.trim() === "")
+  ) {
+    settings.description = name;
+    return `The API has no room name field, so "${name}" was saved as the room's description.`;
+  }
+
+  return `The API has no room name field and a description was also given, so the name "${name}" was not saved.`;
+}
+
+/**
  * Register all room management tools
  *
  * @returns Array of MCP Tool definitions
@@ -39,7 +67,8 @@ export function registerRoomTools(): Tool[] {
             type: "string",
             minLength: 3,
             maxLength: 100,
-            description: "Room name (required)",
+            description:
+              "Room name. The API has no room name field, so this is stored as the room's description unless a description is also given.",
           },
           description: {
             type: "string",
@@ -326,7 +355,6 @@ export function registerRoomTools(): Tool[] {
               "When the room expires, as an ISO 8601 date-time in the future; null for never",
           },
         },
-        required: ["name"],
       },
     },
     {
@@ -349,7 +377,8 @@ export function registerRoomTools(): Tool[] {
             type: "string",
             minLength: 3,
             maxLength: 100,
-            description: "Room name",
+            description:
+              "New room name. The API has no room name field, so this is stored as the room's description unless a description is also given.",
           },
           description: {
             type: "string",
@@ -990,10 +1019,7 @@ export async function executeRoomTool(
       });
 
       try {
-        // Ensure we have a name
-        if (!settings.name) {
-          settings.name = "Test Room";
-        }
+        const nameNote = applyRoomName(settings);
 
         // Ensure privacy field has a default value
         if (!settings.privacy) {
@@ -1013,7 +1039,7 @@ export async function executeRoomTool(
           content: [
             {
               type: "text",
-              text: `Room created successfully!\n\n${JSON.stringify(room, null, 2)}`,
+              text: `Room created successfully!${nameNote ? `\n\n${nameNote}` : ""}\n\n${JSON.stringify(room, null, 2)}`,
             },
           ],
         };
@@ -1050,6 +1076,8 @@ export async function executeRoomTool(
       });
 
       try {
+        const nameNote = applyRoomName(settings);
+
         // Normalize boolean values (Claude sometimes sends 0/1 instead of true/false)
         const normalizedSettings = normalizeBooleans(settings);
 
@@ -1064,7 +1092,7 @@ export async function executeRoomTool(
           content: [
             {
               type: "text",
-              text: `Room updated successfully!\n\n${JSON.stringify(room, null, 2)}`,
+              text: `Room updated successfully!${nameNote ? `\n\n${nameNote}` : ""}\n\n${JSON.stringify(room, null, 2)}`,
             },
           ],
         };
