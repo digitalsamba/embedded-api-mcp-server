@@ -10,8 +10,11 @@
  * @module diagnostics/client-log-summary
  */
 
+import { MEDIA_ERROR_MEANING } from "./rtcstats-summary.js";
+
 export interface ClientLogLine {
   message?: string | null;
+  payload?: Record<string, unknown> | null;
   level?: string | null;
   action?: string | null;
   timestamp?: string | null;
@@ -115,7 +118,65 @@ export interface ClientLogSummary {
     count: number;
     first: string;
   }>;
+  /** Camera/microphone errors the client reported, by DOMException name. */
+  mediaErrors: Array<{
+    error: string;
+    count: number;
+    first: string;
+    context: string;
+  }>;
   findings: string[];
+}
+
+const MEDIA_ERROR_NAME_IN_TEXT =
+  /\b((?:NotAllowed|NotFound|NotReadable|TrackStart|Overconstrained|Abort|Security|DevicesNotFound)Error)\b/;
+const MEDIA_ERROR_NAME =
+  /^(NotAllowed|NotFound|NotReadable|TrackStart|Overconstrained|Abort|Security|DevicesNotFound)Error$/;
+
+/**
+ * The remote log lines that carry a camera/microphone error name
+ * (react-frontend): reportMediaCaptureFailure ("Media capture failed: <Name>:
+ * ...", in-call unmute / device switch), GENERIC_JANUS_ERROR ("WebRTC client
+ * error in <source>: <Name> | ...", publishing), and logSwitchCaptureFailure
+ * ("<op> capture failed; keeping current stream", name in the payload).
+ * The join screen's own handler logs to the browser console only.
+ */
+function mediaErrorOf(
+  message: string,
+  payload: unknown,
+): { error: string; context: string } | null {
+  // The client sends every argument after the message as a JSON array in
+  // payload, so the name can be in either; search both as text.
+  const nameIn = (text: string) => text.match(MEDIA_ERROR_NAME_IN_TEXT)?.[1];
+  let payloadText = "";
+  try {
+    payloadText = payload ? JSON.stringify(payload) : "";
+  } catch {
+    payloadText = "";
+  }
+
+  let m = message.match(/^Media capture failed: (\w+):/);
+  if (m && MEDIA_ERROR_NAME.test(m[1])) {
+    return {
+      error: m[1],
+      context: "turning on or switching a device in the call",
+    };
+  }
+  m = message.match(/^WebRTC client error in ([^:]+):(.*)$/);
+  if (m) {
+    const name = nameIn(m[2]) ?? nameIn(payloadText);
+    if (name) return { error: name, context: `publishing (${m[1]})` };
+  }
+  m = message.match(/^(.+) capture failed; keeping current stream/);
+  if (m) {
+    const name = nameIn(payloadText);
+    if (name)
+      return {
+        error: name,
+        context: `${m[1]} (the previous stream kept working)`,
+      };
+  }
+  return null;
 }
 
 /** Collapse ids and numbers so repeats of one message group together. */
@@ -134,6 +195,10 @@ export function summarizeClientLogs(
   maxProblems = 12,
 ): ClientLogSummary {
   const byLevel: Record<string, number> = {};
+  const mediaErrors = new Map<
+    string,
+    { error: string; count: number; first: string; context: string }
+  >();
   const milestones = new Map<
     string,
     { label: string; first: string; count: number }
@@ -148,6 +213,18 @@ export function summarizeClientLogs(
   for (const line of logs) {
     const message = String(line.message ?? "");
     const level = String(line.level ?? "info").toLowerCase();
+    const mediaError = mediaErrorOf(message, line.payload);
+    if (mediaError) {
+      const key = `${mediaError.error}|${mediaError.context}`;
+      const hit = mediaErrors.get(key);
+      if (hit) hit.count += 1;
+      else
+        mediaErrors.set(key, {
+          ...mediaError,
+          count: 1,
+          first: String(line.timestamp ?? ""),
+        });
+    }
     const at = String(line.timestamp ?? "");
     byLevel[level] = (byLevel[level] ?? 0) + 1;
     if (at) {
@@ -204,16 +281,22 @@ export function summarizeClientLogs(
       findings.push(
         "Mic/camera were blocked by the participant's role (no broadcast permission), not by the browser.",
       );
-    // A failed getUserMedia is only logged to the browser console, so its
-    // error name never reaches these logs: the evidence is a request with no
-    // track after it.
+    for (const e of mediaErrors.values()) {
+      const meaning = MEDIA_ERROR_MEANING[e.error];
+      findings.push(
+        `Camera/microphone access failed ${e.count}x while ${e.context}: ${e.error}${meaning ? ` - ${meaning}` : ""}.`,
+      );
+    }
+    // A denial on the join screen is logged to the browser console only, so
+    // there the evidence is a request with no track after it.
     if (
+      !mediaErrors.size &&
       has("mediaRequested") &&
       !has("audioObtained") &&
       !has("videoObtained")
     ) {
       findings.push(
-        `Camera/microphone were requested ${milestones.get("mediaRequested")!.count}x but no track was ever obtained: access failed (permission denied, device in use, or no device). The browser's error name is not sent to these logs.`,
+        `Camera/microphone were requested ${milestones.get("mediaRequested")!.count}x but no track was ever obtained: access failed (permission denied, device in use, or no device). The error name is not in the logs for this case.`,
       );
     }
     if (has("mediaRequested") && !has("iceConnected") && !has("iceFailed")) {
@@ -246,6 +329,7 @@ export function summarizeClientLogs(
     byLevel,
     milestones: orderedMilestones,
     topProblems,
+    mediaErrors: [...mediaErrors.values()],
     findings,
   };
 }

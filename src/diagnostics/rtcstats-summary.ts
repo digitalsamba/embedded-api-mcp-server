@@ -24,7 +24,7 @@ const GUM = "navigator.mediaDevices.getUserMedia";
 const GDM = "navigator.mediaDevices.getDisplayMedia";
 
 /** What a getUserMedia error name means for the person on the call. */
-const MEDIA_ERROR_MEANING: Record<string, string> = {
+export const MEDIA_ERROR_MEANING: Record<string, string> = {
   NotAllowedError:
     "permission denied: the user, the browser or an OS privacy setting blocked camera/microphone access",
   NotFoundError: "no camera or microphone was found",

@@ -224,6 +224,26 @@ describe("client log summary", () => {
     expect(s.findings[1]).toMatch(/never record a media connection/);
   });
 
+  it("names the camera/microphone error from each remote log line that carries it", () => {
+    const s = summarizeClientLogs([
+      { level: "error", message: "Media capture failed: NotAllowedError: Permission denied", timestamp: at(1) },
+      { level: "error", message: "Media capture failed: NotAllowedError: Permission denied", timestamp: at(5) },
+      // as the client sends them: extra arguments arrive as a JSON array in payload
+      { level: "error", message: "WebRTC client error in publishing:", payload: ["Timeout waiting for media server"] as any, timestamp: at(6) },
+      { level: "error", message: "WebRTC client error in publishing:", payload: ["NotReadableError | Could not start video source"] as any, timestamp: at(7) },
+      { level: "warn", message: "Camera switch capture failed; keeping current stream", payload: [{ name: "OverconstrainedError", message: "" }] as any, timestamp: at(8) },
+      { level: "error", message: "Media capture failed: TypeError: x", timestamp: at(9) },
+    ]);
+    expect(s.mediaErrors.map((e) => [e.error, e.count])).toEqual([
+      ["NotAllowedError", 2],
+      ["NotReadableError", 1],
+      ["OverconstrainedError", 1],
+    ]);
+    expect(s.findings[0]).toMatch(/failed 2x while turning on or switching a device in the call: NotAllowedError - permission denied/);
+    expect(s.findings[1]).toMatch(/while publishing \(publishing\): NotReadableError/);
+    expect(s.findings[2]).toMatch(/Camera switch \(the previous stream kept working\): OverconstrainedError/);
+  });
+
   it("does not flag media access when a track was obtained", () => {
     const s = summarizeClientLogs([
       { level: "info", message: "Requesting user media", timestamp: at(1) },
