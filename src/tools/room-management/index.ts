@@ -250,6 +250,11 @@ export function registerRoomTools(): Tool[] {
             description:
               "Where participant name and status icons appear on each video tile",
           },
+          always_show_names_on_tiles_enabled: {
+            type: "boolean",
+            description:
+              "Always show participant names on their video tiles, not only on hover",
+          },
           room_reactions_enabled: {
             type: "boolean",
             description: "Allow participants to use emoji reactions",
@@ -336,7 +341,7 @@ export function registerRoomTools(): Tool[] {
           e2ee_enabled: {
             type: "boolean",
             description:
-              "Enable end-to-end encryption (depends on the account's plan)",
+              "Enable end-to-end encryption (depends on the account's plan). While it is on, polls, Q&A, shared notes, transcription and captions, telephony and WHIP are unavailable, chat cannot be sent through the API and chat export is off. Recording and restreaming still work (E2EE is suspended while recording).",
           },
           breakout_rooms_enabled: {
             type: "boolean",
@@ -549,6 +554,11 @@ export function registerRoomTools(): Tool[] {
             description:
               "Where participant name and status icons appear on each video tile",
           },
+          always_show_names_on_tiles_enabled: {
+            type: "boolean",
+            description:
+              "Always show participant names on their video tiles, not only on hover",
+          },
           room_reactions_enabled: {
             type: "boolean",
             description: "Allow participants to use emoji reactions",
@@ -635,7 +645,7 @@ export function registerRoomTools(): Tool[] {
           e2ee_enabled: {
             type: "boolean",
             description:
-              "Enable end-to-end encryption (depends on the account's plan)",
+              "Enable end-to-end encryption (depends on the account's plan). While it is on, polls, Q&A, shared notes, transcription and captions, telephony and WHIP are unavailable, chat cannot be sent through the API and chat export is off. Recording and restreaming still work (E2EE is suspended while recording).",
           },
           breakout_rooms_enabled: {
             type: "boolean",
@@ -839,6 +849,7 @@ export function registerRoomTools(): Tool[] {
                 type: "string",
                 enum: ["top", "bottom"],
               },
+              always_show_names_on_tiles_enabled: { type: "boolean" },
               room_reactions_enabled: { type: "boolean" },
               connection_quality_indicator_enabled: { type: "boolean" },
               video_fit_mode_enabled: { type: "boolean" },

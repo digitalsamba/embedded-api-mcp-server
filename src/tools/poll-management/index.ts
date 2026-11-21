@@ -85,6 +85,11 @@ export function registerPollTools(): ToolDefinition[] {
                   type: "string",
                   description: "Optional ID for the option",
                 },
+                correct: {
+                  type: "boolean",
+                  description:
+                    "Mark this option as a correct answer. A single-choice poll keeps only the first one marked; on update, options sent without correct keep their current mark. Ignored for type free.",
+                },
               },
               required: ["text"],
             },
@@ -142,6 +147,11 @@ export function registerPollTools(): ToolDefinition[] {
                 id: {
                   type: "string",
                   description: "Optional ID for the option",
+                },
+                correct: {
+                  type: "boolean",
+                  description:
+                    "Mark this option as a correct answer. A single-choice poll keeps only the first one marked; on update, options sent without correct keep their current mark. Ignored for type free.",
                 },
               },
               required: ["text"],
@@ -360,7 +370,7 @@ async function handleCreatePoll(
   params: {
     room_id: string;
     question: string;
-    options: Array<{ text: string; id?: string }>;
+    options: Array<{ text: string; id?: string; correct?: boolean }>;
     type?: "single" | "multiple" | "free";
     anonymous?: boolean;
     show_results?: boolean;
@@ -482,7 +492,7 @@ async function handleUpdatePoll(
     room_id: string;
     poll_id: string;
     question?: string;
-    options?: Array<{ text: string; id?: string }>;
+    options?: Array<{ text: string; id?: string; correct?: boolean }>;
     type?: "single" | "multiple" | "free";
     anonymous?: boolean;
     show_results?: boolean;

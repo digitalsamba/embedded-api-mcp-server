@@ -996,6 +996,12 @@
       "operationId": "getCurrentParticipationMinutesUsage",
       "pending": "New tool get-usage (participation minutes used vs plan limit in the current billing period).",
       "issue": 26
+    },
+    "GET /api/v1/recordings/{recording}/captions": {
+      "operationId": "downloadRecordingCaptions",
+      "tools": [
+        "get-recording-captions"
+      ]
     }
   }
 }

@@ -13,7 +13,7 @@ describe("Recording Tools Adapter", () => {
     it("should register all recording tools", () => {
       const tools = registerRecordingTools();
       
-      expect(tools).toHaveLength(10);
+      expect(tools).toHaveLength(11);
 
       const toolNames = tools.map(t => t.name);
       expect(toolNames).toContain("delete-recording");
@@ -26,6 +26,7 @@ describe("Recording Tools Adapter", () => {
       expect(toolNames).toContain("get-recording-download-link");
       expect(toolNames).toContain("unarchive-recording");
       expect(toolNames).toContain("get-recording-bookmarks");
+      expect(toolNames).toContain("get-recording-captions");
       
       // Check that tools have proper structure
       tools.forEach(tool => {
@@ -176,5 +177,33 @@ describe("Recording Tools Adapter", () => {
         executeRecordingTool("unknown-tool", {}, mockClient)
       ).rejects.toThrow("Unknown recording tool: unknown-tool");
     });
+  });
+});
+describe("get-recording-captions (#26)", () => {
+  it("returns the captions file and passes the format", async () => {
+    const vtt = "WEBVTT\n\n00:00:01.000 --> 00:00:03.000\nHello\n";
+    const client: any = {
+      getRecordingCaptions: jest.fn().mockResolvedValue(vtt),
+    };
+    const result: any = await executeRecordingTool(
+      "get-recording-captions",
+      { recording_id: "rec-1", format: "srt" },
+      client,
+    );
+    expect(client.getRecordingCaptions).toHaveBeenCalledWith("rec-1", "srt");
+    expect(result.content[0].text).toBe(vtt);
+  });
+
+  it("explains an empty file instead of returning a bare header", async () => {
+    const client: any = {
+      getRecordingCaptions: jest.fn().mockResolvedValue("WEBVTT\n"),
+    };
+    const result: any = await executeRecordingTool(
+      "get-recording-captions",
+      { recording_id: "rec-1" },
+      client,
+    );
+    expect(result.content[0].text).toMatch(/no cues/);
+    expect(result.content[0].text).toMatch(/transcription_store_enabled/);
   });
 });

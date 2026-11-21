@@ -147,7 +147,7 @@ Use the server URL `https://mcp.digitalsamba.com/mcp` with any MCP-compatible cl
 
 ## Available Tools
 
-The MCP server provides **145 tools** covering the complete Digital Samba API.
+The MCP server provides **146 tools** covering the complete Digital Samba API.
 
 ### Room Management (11 tools)
 | Tool | Description |
@@ -179,7 +179,7 @@ The MCP server provides **145 tools** covering the complete Digital Samba API.
 | `hard-delete-session-resources` | Permanently delete data |
 | `bulk-delete-session-data` | Bulk delete operations |
 
-### Recording Management (10 tools)
+### Recording Management (11 tools)
 | Tool | Description |
 |------|-------------|
 | `get-recordings` | List recordings with filters |
@@ -190,6 +190,7 @@ The MCP server provides **145 tools** covering the complete Digital Samba API.
 | `archive-recording` | Archive a recording |
 | `unarchive-recording` | Restore archived recording |
 | `get-recording-bookmarks` | Get recording bookmarks |
+| `get-recording-captions` | Get WebVTT/SRT captions from stored transcripts |
 | `start-recording` | Start recording a session |
 | `stop-recording` | Stop recording |
 

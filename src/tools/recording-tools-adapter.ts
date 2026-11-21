@@ -185,6 +185,30 @@ export function registerRecordingTools(): Tool[] {
         required: ["recording_id"],
       },
     },
+    {
+      name: "get-recording-captions",
+      description:
+        '[Recording Management] Get a captions/subtitles file for a recording, built from the recorded session\'s transcripts. Use when users say: "get captions for the recording", "download subtitles", "make a VTT/SRT file", "caption this recording". Requires recording_id. Returns WebVTT (default) or SRT text timed from the start of the recording. The file has no cues unless the room stores transcripts (transcription_store_enabled); breakout-room recordings are not supported.',
+      annotations: getToolAnnotations(
+        "get-recording-captions",
+        "Get Recording Captions",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          recording_id: {
+            type: "string",
+            description: "The ID of the recording",
+          },
+          format: {
+            type: "string",
+            enum: ["vtt", "srt"],
+            description: "Captions format: vtt (WebVTT, default) or srt",
+          },
+        },
+        required: ["recording_id"],
+      },
+    },
   ];
 }
 
@@ -311,6 +335,29 @@ export async function executeRecordingTool(
           {
             type: "text",
             text: JSON.stringify(bookmarks, null, 2),
+          },
+        ],
+      };
+    }
+
+    case "get-recording-captions": {
+      const captions = await client.getRecordingCaptions(
+        args.recording_id,
+        args.format,
+      );
+      // A file with a header and no cues means the session's transcripts were
+      // not stored, which is easy to mistake for a broken download.
+      const hasCues = /-->/.test(captions);
+      return {
+        content: [
+          {
+            type: "text",
+            text: hasCues
+              ? captions
+              : `The captions file for recording ${args.recording_id} has no cues. ` +
+                `Captions are built from stored transcripts, so the room probably ` +
+                `did not store them (transcription_store_enabled) or nothing was ` +
+                `transcribed.\n\n${captions}`,
           },
         ],
       };
