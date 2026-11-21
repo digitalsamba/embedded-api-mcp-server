@@ -957,14 +957,26 @@ async function run() {
     return "404 surfaced";
   });
 
+  await check(
+    "send-chat-message passes validation, refused on an idle room",
+    async () => {
+      // Without participant the API answers "participant field is required"
+      // (#36); with it, validation passes and an idle room is refused.
+      const message = await callExpectingError("send-chat-message", {
+        roomId: created.roomId,
+        message: "smoke chat",
+        participant: { name: "Smoke", external_id: tag },
+      });
+      must(/not active/i.test(message), `unexpected message: ${message}`);
+      return "refused as not active";
+    },
+  );
+
   // -- needs a live session ------------------------------------------------
   group("session-dependent");
 
   const liveOnly = [
-    [
-      "send-chat-message",
-      "signalling server has no chat endpoint; backend fix scheduled (proven 2026-08-14)",
-    ],
+    ["send-chat-message delivery", "needs an active session"],
     ["create-question", "needs an active session"],
     ["raise-participant-hand", "needs a live participant"],
     ["start-transcription", "needs an active session"],

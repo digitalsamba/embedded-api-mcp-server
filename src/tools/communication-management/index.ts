@@ -50,33 +50,28 @@ interface ToolDefinition {
  * Shared schema for the Q&A participant identity object
  */
 /**
- * Chat's own participant schema.
+ * Chat's participant schema: who the message appears from.
  *
- * Dropped twice over. `SendMessageRequest` validates `message` alone, so this
- * object never leaves Laravel; and it would not matter if it did, because the
- * signalling server has no chat endpoint on `master` at all — sending chat is a
- * WebSocket-only operation there, while Q&A was deliberately given an external
- * HTTP surface. So chat sends 404 internally and are reported as 200.
- *
- * Kept in the schema because it is the shape Q&A uses and the shape a real
- * implementation would want, but described so nobody expects it to do anything.
+ * Required by the API since the September 2026 re-release (`WithParticipant`).
+ * An `id` must belong to the room's live session; a `{ name, external_id }`
+ * pair reuses that external participant or creates one in the session.
  */
 const chatParticipantSchema = {
   type: "object",
   description:
-    "Intended sender: either { id } or { name, external_id }. HAS NO EFFECT — the chat endpoint validates only the message text and drops this. Note that chat sending does not work at all on any account (see the tool description), so this is not the reason a message fails to arrive.",
+    'Who the message appears from: either { "id" } (UUID of a participant in the room\'s live session) or { "name", "external_id" } (reused if that external participant exists in the session, otherwise created).',
   properties: {
     id: {
       type: "string",
-      description: "UUID of an existing participant (no effect)",
+      description: "UUID of a participant in the live session",
     },
     name: {
       type: "string",
-      description: "Participant display name (no effect)",
+      description: "Sender display name (with external_id)",
     },
     external_id: {
       type: "string",
-      description: "External participant ID (no effect)",
+      description: "Your identifier for the sender (with name)",
     },
   },
 };
@@ -407,7 +402,7 @@ export function registerCommunicationTools(): ToolDefinition[] {
     {
       name: "send-chat-message",
       description:
-        '[Communication Management] Send a chat message to a room. Use when users say: "send a message to the room", "post in chat", "send chat message". Requires roomId and message. KNOWN BROKEN: the platform cannot deliver these — the signalling server has no chat endpoint, so the API accepts the message, drops it, and returns success. This tool reads the chat back and reports the failure instead of repeating that claim. Not fixable from here.',
+        '[Communication Management] Send a chat message into a room\'s live session, as a given participant. Use when users say: "send a message to the room", "post in chat", "send chat message". Requires roomId, message and participant. The room must have a live session: an idle room is refused with "room is not active", and end-to-end encrypted sessions are refused too. Where the room persists chat, the message is confirmed by reading the chat export back; elsewhere the result says the API accepted it, which is all that can be checked.',
       annotations: getToolAnnotations("send-chat-message", "Send Chat Message"),
       inputSchema: {
         type: "object",
@@ -418,11 +413,18 @@ export function registerCommunicationTools(): ToolDefinition[] {
           },
           message: {
             type: "string",
-            description: "The chat message text",
+            minLength: 1,
+            maxLength: 1024,
+            description: "The chat message text (1-1024 characters)",
           },
           participant: chatParticipantSchema,
+          breakoutId: {
+            type: "string",
+            description:
+              "UUID of a breakout room in this room, to send the message there instead of the main room",
+          },
         },
-        required: ["roomId", "message"],
+        required: ["roomId", "message", "participant"],
       },
     },
     {
@@ -1540,90 +1542,67 @@ async function runQaHandler(
 
 /**
  * Handle send chat message
+ *
+ * The API forwards the message to the signalling server and returns an error
+ * when it is refused (no live session, E2EE, or a signalling failure), so a
+ * success response means the message was handed over. The chat export is the
+ * only read-back, and it only holds anything when the room persists chat; it
+ * decides the outcome there and is skipped elsewhere.
  */
 async function handleSendChatMessage(
-  params: { roomId: string; message: string; participant?: any },
+  params: {
+    roomId: string;
+    message: string;
+    participant: any;
+    breakoutId?: string;
+  },
   apiClient: DigitalSambaApiClient,
 ): Promise<any> {
-  const { roomId, message, participant } = params;
-
-  // The chat export is the only read-back available, and it only contains
-  // anything when the room persists chat. Where the room does persist, the
-  // export decides the outcome; where it does not, an empty export would prove
-  // nothing on its own — but we no longer need it to.
-  //
-  // Delivery is impossible on every account: the API forwards the message to
-  // `{signalling}/rooms/{uuid}/chatMessages`, which no released build of the
-  // signalling server routes, and then reports 200 regardless. Verified on
-  // 2026-08-14 by raw curl in a live session — two API sends returned 200 and
-  // reached neither the room nor any read endpoint, while a message typed in the
-  // browser the same minute persisted and exported correctly. So when there is
-  // no read-back to run, report the known failure rather than "accepted,
-  // unverified", which reassures the caller about something that cannot happen.
-  //
-  // A fix is scheduled backend-side. Once it lands, rooms that persist chat
-  // start passing on their own; delete this branch to restore the honest
-  // unverified wording for the rest.
+  const { roomId, message, participant, breakoutId } = params;
   const persists = await roomPersistsChat(roomId, apiClient);
 
-  if (!persists) {
-    // Still issue the request. It costs nothing, and once the backend fix lands
-    // it is the difference between a delivered message and a lost one.
-    try {
-      logger.info("Sending chat message (unverifiable room)", { roomId });
-      await apiClient.sendChatMessage(roomId, { message, participant });
-    } catch (error) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Error sending chat message: ${error instanceof Error ? error.message : String(error)}`,
-          },
-        ],
-        isError: true,
-      };
-    }
-
-    return {
-      content: [
-        {
-          type: "text",
-          text:
-            `Chat message NOT delivered to room ${roomId}. The API accepted the ` +
-            `request and returned success, but the platform cannot deliver it: the ` +
-            `signalling server has no chat endpoint, so nothing reaches the room. ` +
-            `No read-back is available for this room either, so this cannot be ` +
-            `confirmed from here. A backend fix is scheduled; until it ships, treat ` +
-            `every send as failed.`,
-        },
-      ],
-      isError: true,
-    };
-  }
-
   return verifiedWrite({
-    required: { roomId, message },
-    describe: `a chat message to room ${roomId}`,
+    required: { roomId, message, participant },
+    describe: `a chat message to room ${roomId}${breakoutId ? ` (breakout ${breakoutId})` : ""}`,
     verb: "Sent",
     errorLabel: "sending chat message",
     action: () => {
-      logger.info("Sending chat message", { roomId });
-      return apiClient.sendChatMessage(roomId, { message, participant });
-    },
-    verify: async () => {
-      const exported = await apiClient.exportChatMessages(roomId, {
-        format: "json",
+      logger.info("Sending chat message", { roomId, persists });
+      return apiClient.sendChatMessage(roomId, {
+        message,
+        participant,
+        ...(breakoutId ? { breakout_id: breakoutId } : {}),
       });
-      const found = exportContains(exported, message);
-      return {
-        landed: found,
-        evidence: found
-          ? "the message appears in the room's chat export"
-          : "the message is absent from the room's chat export",
-      };
     },
+    verify: persists
+      ? async () => {
+          // The signalling server stores the message after relaying it, so
+          // give the export a few seconds before calling it missing.
+          for (let attempt = 0; attempt < CHAT_READBACK_ATTEMPTS; attempt++) {
+            if (attempt > 0) {
+              await new Promise((r) => setTimeout(r, CHAT_READBACK_DELAY_MS));
+            }
+            const exported = await apiClient.exportChatMessages(roomId, {
+              format: "json",
+            });
+            if (exportContains(exported, message)) {
+              return {
+                landed: true,
+                evidence: "the message appears in the room's chat export",
+              };
+            }
+          }
+          return {
+            landed: false,
+            evidence: "the message is absent from the room's chat export",
+          };
+        }
+      : undefined,
   });
 }
+
+const CHAT_READBACK_ATTEMPTS = 4;
+const CHAT_READBACK_DELAY_MS = 1000;
 
 /**
  * Whether a room persists chat, i.e. whether the chat export can serve as a

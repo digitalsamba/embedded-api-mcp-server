@@ -15,7 +15,10 @@ import {
 } from "../../src/tools/verified-write.js";
 import { executePollTool } from "../../src/tools/poll-management/index.js";
 import { executeQuizTool } from "../../src/tools/quiz-management/index.js";
-import { executeCommunicationTool } from "../../src/tools/communication-management/index.js";
+import {
+  executeCommunicationTool,
+  registerCommunicationTools,
+} from "../../src/tools/communication-management/index.js";
 import { executeLiveSessionTool } from "../../src/tools/live-session-controls/index.js";
 
 const textOf = (result: any): string => result.content[0].text;
@@ -250,21 +253,33 @@ describe("import-quizzes", () => {
 });
 
 describe("send-chat-message", () => {
+  // Required since the API's September 2026 re-release of chat (#36).
+  const participant = { name: "Ada", external_id: "ada-1" };
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it("reports an error when the message never reaches a persisted room", async () => {
+    jest.useFakeTimers();
     const apiClient: any = {
       getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: true }),
       sendChatMessage: jest.fn().mockResolvedValue({}),
       exportChatMessages: jest.fn().mockResolvedValue("[]"),
     };
 
-    const result = await executeCommunicationTool(
+    const pending = executeCommunicationTool(
       "send-chat-message",
-      { roomId: "r1", message: "hello" },
+      { roomId: "r1", message: "hello", participant },
       apiClient,
     );
+    await jest.runAllTimersAsync();
+    const result = await pending;
 
     expect(result.isError).toBe(true);
     expect(textOf(result)).toContain("absent from the room's chat export");
+    // Polled a few times before calling it missing.
+    expect(apiClient.exportChatMessages.mock.calls.length).toBeGreaterThan(1);
   });
 
   it("confirms delivery when the message appears in the export", async () => {
@@ -278,7 +293,7 @@ describe("send-chat-message", () => {
 
     const result = await executeCommunicationTool(
       "send-chat-message",
-      { roomId: "r1", message: "hello" },
+      { roomId: "r1", message: "hello", participant },
       apiClient,
     );
 
@@ -286,11 +301,34 @@ describe("send-chat-message", () => {
     expect(textOf(result)).toContain("confirmed by read-back");
   });
 
-  it("reports failure when the room offers no read-back, rather than 'unverified'", async () => {
-    // Without persistence there is no export to check. That used to mean the
-    // tool said "accepted, effect not verified" — a reassurance that cannot be
-    // true, since the platform delivers no chat at all (the signalling server
-    // has no chat endpoint; proven live 2026-08-14). Report the known failure.
+  it("confirms a message that reaches the export on a later attempt", async () => {
+    jest.useFakeTimers();
+    const apiClient: any = {
+      getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: true }),
+      sendChatMessage: jest.fn().mockResolvedValue({}),
+      exportChatMessages: jest
+        .fn()
+        .mockResolvedValueOnce("[]")
+        .mockResolvedValue(JSON.stringify([{ message: "hello" }])),
+    };
+
+    const pending = executeCommunicationTool(
+      "send-chat-message",
+      { roomId: "r1", message: "hello", participant },
+      apiClient,
+    );
+    await jest.runAllTimersAsync();
+    const result = await pending;
+
+    expect(result.isError).toBeUndefined();
+    expect(textOf(result)).toContain("confirmed by read-back");
+  });
+
+  it("says 'accepted, not verified' when the room offers no read-back", async () => {
+    // Chat was undeliverable until the API's September 2026 fix, and this
+    // tool used to report every such send as failed. The API now returns an
+    // error when the signalling server refuses the message, so success here
+    // is a real hand-over, just not one this server can confirm.
     const apiClient: any = {
       getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: false }),
       sendChatMessage: jest.fn().mockResolvedValue({}),
@@ -299,18 +337,17 @@ describe("send-chat-message", () => {
 
     const result = await executeCommunicationTool(
       "send-chat-message",
-      { roomId: "r1", message: "hello" },
+      { roomId: "r1", message: "hello", participant },
       apiClient,
     );
 
-    expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("NOT delivered");
+    expect(result.isError).toBeUndefined();
+    expect(textOf(result)).toContain("not verified");
+    expect(textOf(result)).not.toContain("NOT delivered");
     expect(apiClient.exportChatMessages).not.toHaveBeenCalled();
   });
 
-  it("still issues the request when it cannot verify", async () => {
-    // So the message lands the day the backend fix ships, rather than being
-    // dropped by us on the way out.
+  it("sends the participant and maps breakoutId to breakout_id", async () => {
     const apiClient: any = {
       getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: false }),
       sendChatMessage: jest.fn().mockResolvedValue({}),
@@ -318,20 +355,21 @@ describe("send-chat-message", () => {
 
     await executeCommunicationTool(
       "send-chat-message",
-      { roomId: "r1", message: "hello" },
+      { roomId: "r1", message: "hello", participant, breakoutId: "b1" },
       apiClient,
     );
 
     expect(apiClient.sendChatMessage).toHaveBeenCalledWith("r1", {
       message: "hello",
-      participant: undefined,
+      participant,
+      breakout_id: "b1",
     });
   });
 
-  it("reports a transport error distinctly from an undeliverable message", async () => {
+  it("refuses to send without a participant", async () => {
     const apiClient: any = {
       getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: false }),
-      sendChatMessage: jest.fn().mockRejectedValue(new Error("boom")),
+      sendChatMessage: jest.fn(),
     };
 
     const result = await executeCommunicationTool(
@@ -341,7 +379,37 @@ describe("send-chat-message", () => {
     );
 
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("boom");
+    expect(textOf(result)).toContain("participant is required");
+    expect(apiClient.sendChatMessage).not.toHaveBeenCalled();
+  });
+
+  it("passes an API refusal through as an error", async () => {
+    const apiClient: any = {
+      getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: false }),
+      sendChatMessage: jest
+        .fn()
+        .mockRejectedValue(new Error("This room is not active")),
+    };
+
+    const result = await executeCommunicationTool(
+      "send-chat-message",
+      { roomId: "r1", message: "hello", participant },
+      apiClient,
+    );
+
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain("This room is not active");
+  });
+
+  it("requires participant in the schema", () => {
+    const tool = registerCommunicationTools().find(
+      (t) => t.name === "send-chat-message",
+    )!;
+    expect(tool.inputSchema.required).toEqual(
+      expect.arrayContaining(["roomId", "message", "participant"]),
+    );
+    expect(tool.inputSchema.properties).toHaveProperty("breakoutId");
+    expect(tool.description).not.toMatch(/KNOWN BROKEN/);
   });
 });
 
