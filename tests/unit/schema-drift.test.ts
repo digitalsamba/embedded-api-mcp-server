@@ -64,6 +64,7 @@ describe("room schemas", () => {
         "breakout_rooms_enabled",
         "session_length",
         "expires_at",
+        "always_show_names_on_tiles_enabled",
       ]) {
         expect(props(tool(rooms, name))).toHaveProperty(key);
       }

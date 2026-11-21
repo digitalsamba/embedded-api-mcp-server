@@ -2319,6 +2319,39 @@ export class DigitalSambaApiClient {
 
     return response.text();
   }
+  /**
+   * Download a recording's captions (WebVTT or SRT), built from the stored
+   * transcripts of the recorded session. Empty of cues when the room does not
+   * store transcripts.
+   */
+  async getRecordingCaptions(
+    recordingId: string,
+    format?: "vtt" | "srt",
+  ): Promise<string> {
+    const queryParams = new URLSearchParams();
+    if (format) queryParams.append("format", format);
+
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+
+    const apiKey = this.getApiKey();
+    const response = await this.fetchWithTimeout(
+      this.apiUrl(`/recordings/${recordingId}/captions${query}`),
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Digital Samba API error (${response.status}): ${errorText}`,
+      );
+    }
+
+    return response.text();
+  }
 
   /**
    * Export Q&A (questions and answers)

@@ -27,7 +27,7 @@ export interface PollCreateSettings {
   multiple?: boolean;
   anonymous?: boolean;
   /** Not used, and excluded by the API, for type "free". */
-  options?: { text: string; id?: string }[];
+  options?: { text: string; id?: string; correct?: boolean }[];
 }
 
 // Quiz related interfaces
