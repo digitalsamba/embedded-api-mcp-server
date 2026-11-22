@@ -39,7 +39,7 @@ describe('Analytics Tools Execution', () => {
     it('should register analytics tools', () => {
       const tools = registerAnalyticsTools();
       
-      expect(tools).toHaveLength(8);
+      expect(tools).toHaveLength(12);
       expect(tools[0].name).toBe('get-participant-statistics');
       expect(tools[1].name).toBe('get-room-analytics');
       expect(tools[2].name).toBe('get-usage-statistics');
@@ -48,6 +48,10 @@ describe('Analytics Tools Execution', () => {
       expect(tools[5].name).toBe('get-live-room-analytics');
       expect(tools[6].name).toBe('get-session-analytics');
       expect(tools[7].name).toBe('get-participant-analytics');
+      expect(tools[8].name).toBe('get-plan-usage');
+      expect(tools[9].name).toBe('get-current-period-statistics');
+      expect(tools[10].name).toBe('get-usage-by-tag');
+      expect(tools[11].name).toBe('list-started-sessions');
     });
 
     it('should have proper input schemas', () => {
