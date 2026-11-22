@@ -1,0 +1,61 @@
+# Live smoke test against the dev Digital Samba API
+#
+# Runs scripts/smoke-test.mjs: drives the built server over stdio and confirms
+# every write by reading the state back (see the script's header).
+#
+# Manual trigger only, on purpose:
+#   - it creates and deletes rooms, libraries, roles and webhooks on a shared
+#     dev account;
+#   - dev rate-limits after about two back-to-back runs.
+# Run it before tagging a release (it is the release gate) or after a change
+# to a handler.
+#
+# Environment secrets (development):
+#   - SMOKE_DEVELOPER_KEY: developer key of the dev test account
+#   - SMOKE_API_URL: dev API base URL, ending in /api/v1. Kept as a secret
+#     because this repository is public. The script refuses to run
+#     against production.
+
+name: Smoke Test (dev)
+
+on:
+  workflow_dispatch:
+
+# Smoke writes to one shared account; two runs at once collide and trip the
+# rate limit. Queue instead of cancelling, so a run never stops halfway and
+# strands what it created.
+concurrency:
+  group: smoke-dev
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Smoke test against dev
+    runs-on: ubuntu-latest
+    environment: development
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run smoke test
+        env:
+          DIGITAL_SAMBA_DEVELOPER_KEY: ${{ secrets.SMOKE_DEVELOPER_KEY }}
+          DIGITAL_SAMBA_API_URL: ${{ secrets.SMOKE_API_URL }}
+        run: npm run smoke
