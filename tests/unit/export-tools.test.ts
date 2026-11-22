@@ -55,6 +55,7 @@ describe('Export Tools', () => {
       exportTranscripts: jest.fn(),
       exportPolls: jest.fn(),
       exportQuizzes: jest.fn(),
+      exportSharedNotes: jest.fn(),
       getRecording: jest.fn(),
       getSessionStatistics: jest.fn()
     } as any;
@@ -74,13 +75,14 @@ describe('Export Tools', () => {
     it('should register all export tools', () => {
       const tools = registerExportTools();
       
-      expect(tools).toHaveLength(8);
+      expect(tools).toHaveLength(9);
       expect(tools.map(t => t.name)).toEqual([
         'export-chat-messages',
         'export-qa-data',
         'export-session-transcripts',
         'export-poll-results',
         'export-quiz-results',
+        'export-shared-notes',
         'export-recording-metadata',
         'export-session-summary',
         'export-session-metadata'
@@ -211,6 +213,66 @@ describe('Export Tools', () => {
 
         expect(result.isError).toBe(true);
         expect(result.content[0].text).toContain('boom');
+      });
+    });
+
+    describe('export-shared-notes', () => {
+      it('defaults to md and fences the document as markdown', async () => {
+        mockApiClient.exportSharedNotes.mockResolvedValue('# Agenda\n- item');
+
+        const result = await executeExportTool('export-shared-notes', {
+          roomId: 'test-room-id'
+        }, mockRequest, options);
+
+        expect(mockApiClient.exportSharedNotes).toHaveBeenCalledWith('test-room-id', 'md');
+        expect(result.content[0].text).toContain('```markdown\n# Agenda\n- item\n```');
+        expect(result.isError).toBeUndefined();
+      });
+
+      it('passes html through', async () => {
+        mockApiClient.exportSharedNotes.mockResolvedValue('<p>hi</p>');
+
+        const result = await executeExportTool('export-shared-notes', {
+          roomId: 'test-room-id',
+          format: 'html'
+        }, mockRequest, options);
+
+        expect(mockApiClient.exportSharedNotes).toHaveBeenCalledWith('test-room-id', 'html');
+        expect(result.content[0].text).toContain('```html\n<p>hi</p>\n```');
+      });
+
+      it('says when the document is empty', async () => {
+        mockApiClient.exportSharedNotes.mockResolvedValue('\n');
+
+        const result = await executeExportTool('export-shared-notes', {
+          roomId: 'test-room-id'
+        }, mockRequest, options);
+
+        expect(result.content[0].text).toContain('The shared notes document is empty.');
+      });
+
+      it('refuses an unknown format without calling the API', async () => {
+        const result = await executeExportTool('export-shared-notes', {
+          roomId: 'test-room-id',
+          format: 'pdf'
+        }, mockRequest, options);
+
+        expect(mockApiClient.exportSharedNotes).not.toHaveBeenCalled();
+        expect(result.isError).toBe(true);
+      });
+
+      it('names the causes of the API 400', async () => {
+        mockApiClient.exportSharedNotes.mockRejectedValue(
+          new Error('Digital Samba API error (400): {"message":"Can not export shared notes."}')
+        );
+
+        const result = await executeExportTool('export-shared-notes', {
+          roomId: 'test-room-id'
+        }, mockRequest, options);
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('shared_notes_enabled');
+        expect(result.content[0].text).toContain('no document exists');
       });
     });
 

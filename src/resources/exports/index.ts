@@ -5,6 +5,7 @@
  * - Communication data (chat messages, Q&A, transcripts)
  * - Poll data and results
  * - Quiz results
+ * - Shared notes
  * - Recording downloads and metadata
  *
  * Resources in this module are read-only and provide data export capabilities.
@@ -76,6 +77,8 @@ export class ExportResources {
           return this.handlePollsExport(pathParts, url.searchParams);
         case "quizzes":
           return this.handleQuizzesExport(pathParts, url.searchParams);
+        case "shared-notes":
+          return this.handleSharedNotesExport(pathParts, url.searchParams);
         case "recordings":
           return this.handleRecordingExport(pathParts, url.searchParams);
         case "sessions":
@@ -258,6 +261,65 @@ export class ExportResources {
   }
 
   /**
+   * Handle shared notes export: the room's notes document as md (default),
+   * txt or html.
+   */
+  private async handleSharedNotesExport(
+    pathParts: string[],
+    searchParams: URLSearchParams,
+  ): Promise<{ contents: Array<{ type: string; text: string }> }> {
+    if (pathParts.length < 2) {
+      throw new McpError(
+        ErrorCode.InvalidRequest,
+        "Shared notes export requires: /shared-notes/{roomId}",
+      );
+    }
+
+    const roomId = pathParts[1];
+    const format = searchParams.get("format") || "md";
+    if (!["md", "txt", "html"].includes(format)) {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Unsupported shared notes export format: ${format} (use md, txt or html)`,
+      );
+    }
+
+    let exportData: string;
+    try {
+      exportData = await this.api.exportSharedNotes(
+        roomId,
+        format as "md" | "txt" | "html",
+      );
+    } catch (error) {
+      // The API gives one 400 ("Can not export shared notes.") for three
+      // different causes; name them so the caller knows what to check.
+      const message = error instanceof Error ? error.message : String(error);
+      if (/\(400\)/.test(message)) {
+        throw new McpError(
+          ErrorCode.InvalidRequest,
+          `Could not export the shared notes of room ${roomId}: ${message}. ` +
+            "The API refuses when shared notes are off for the room " +
+            "(shared_notes_enabled), when nobody has opened the notes in a " +
+            "session yet so no document exists, or when the notes service fails.",
+        );
+      }
+      throw exportFailure(error, `Shared notes for room ${roomId}`);
+    }
+
+    const fence = format === "md" ? "markdown" : format;
+    return {
+      contents: [
+        {
+          type: "text",
+          text: exportData.trim()
+            ? `# Shared Notes Export for Room ${roomId}\n\nFormat: ${format.toUpperCase()}\n\n\`\`\`${fence}\n${exportData}\n\`\`\``
+            : `# Shared Notes Export for Room ${roomId}\n\nThe shared notes document is empty.`,
+        },
+      ],
+    };
+  }
+
+  /**
    * Handle recording export/download
    */
   private async handleRecordingExport(
@@ -379,6 +441,13 @@ export function registerExportResources(): Resource[] {
       name: "Quiz Results Export",
       description:
         '[Export Data] Export quiz results from a room: every participant with their correct answers, score, pass or fail, and submission time, per quiz run. Use to access: "quiz results export", "download quiz scores", "quiz report". Requires roomId. Supports format (json/csv/txt), session_id, locale and timezone parameters.',
+      mimeType: "text/plain",
+    },
+    {
+      uri: "digitalsamba://exports/shared-notes/{roomId}",
+      name: "Shared Notes Export",
+      description:
+        '[Export Data] Export the shared notes document of a room. Use to access: "shared notes", "meeting notes", "export notes", "download shared notes". Requires roomId. Supports format (md/txt/html, default md). Fails when shared notes are off for the room.',
       mimeType: "text/plain",
     },
     {

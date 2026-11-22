@@ -58,6 +58,8 @@ export async function executeExportTool(
         return await handleExportPolls(params, exportResources);
       case "export-quiz-results":
         return await handleExportQuizResults(params, exportResources);
+      case "export-shared-notes":
+        return await handleExportSharedNotes(params, exportResources);
       case "export-recording-metadata":
         return await handleExportRecordingMetadata(params, exportResources);
       case "export-session-summary":
@@ -73,6 +75,7 @@ export async function executeExportTool(
             "export-session-transcripts",
             "export-poll-results",
             "export-quiz-results",
+            "export-shared-notes",
             "export-recording-metadata",
             "export-session-summary",
             "export-session-metadata",
@@ -217,6 +220,20 @@ async function handleExportQuizResults(
           ...(params.locale && { locale: params.locale }),
           ...(params.timezone && { timezone: params.timezone }),
         }).toString()}`
+      : ""
+  }`;
+
+  const result = await exportResources.handleResourceRequest(uri);
+  return { content: result.contents };
+}
+
+async function handleExportSharedNotes(
+  params: { roomId: string; format?: string },
+  exportResources: ExportResources,
+): Promise<any> {
+  const uri = `digitalsamba://exports/shared-notes/${params.roomId}${
+    params.format
+      ? `?${new URLSearchParams({ format: params.format }).toString()}`
       : ""
   }`;
 
@@ -462,6 +479,30 @@ export function registerExportTools(): Tool[] {
             type: "string",
             description:
               "Optional session ID to limit the export to one session",
+          },
+        },
+        required: ["roomId"],
+      } as const,
+    },
+    {
+      name: "export-shared-notes",
+      description:
+        '[Export Tools] Export the shared notes document of a room (the collaborative notes participants write during meetings). Use when users say: "export shared notes", "get the meeting notes", "download notes from the room". Requires roomId. Mirrors digitalsamba://exports/shared-notes/{roomId} resource for AI assistant compatibility. Supports format (md, txt or html; default md). Fails when shared notes are off for the room.',
+      annotations: getToolAnnotations(
+        "export-shared-notes",
+        "Export Shared Notes",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: {
+            type: "string",
+            description: "Room ID to export shared notes from",
+          },
+          format: {
+            type: "string",
+            enum: ["md", "txt", "html"],
+            description: "Export format (default: md)",
           },
         },
         required: ["roomId"],

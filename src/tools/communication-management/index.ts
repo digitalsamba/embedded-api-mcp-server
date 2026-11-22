@@ -13,6 +13,7 @@
  * - delete-room-transcripts: Delete all transcripts for a room
  * - delete-session-summaries: Delete all summaries for a session
  * - delete-room-summaries: Delete all summaries for a room
+ * - delete-room-shared-notes: Delete a room's shared notes document
  *
  * @module tools/communication-management
  * @author Digital Samba Team
@@ -352,6 +353,26 @@ export function registerCommunicationTools(): ToolDefinition[] {
           roomId: {
             type: "string",
             description: "The ID of the room to delete summaries from",
+          },
+        },
+        required: ["roomId"],
+      },
+    },
+
+    {
+      name: "delete-room-shared-notes",
+      description:
+        '[Communication Management] Delete the shared notes document of a room. The room starts a new, empty document the next time notes are opened. Use when users say: "delete shared notes", "clear the room notes", "wipe shared notes". Requires roomId. Refused while the room has a live session. Export them first with export-shared-notes if they may be needed.',
+      annotations: getToolAnnotations(
+        "delete-room-shared-notes",
+        "Delete Room Shared Notes",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: {
+            type: "string",
+            description: "The ID of the room whose shared notes to delete",
           },
         },
         required: ["roomId"],
@@ -738,6 +759,8 @@ export async function executeCommunicationTool(
     // Summary Management
     case "delete-session-summaries":
       return handleDeleteSessionSummaries(params, apiClient);
+    case "delete-room-shared-notes":
+      return handleDeleteRoomSharedNotes(params, apiClient);
     case "delete-room-summaries":
       return handleDeleteRoomSummaries(params, apiClient);
 
@@ -1479,6 +1502,42 @@ async function handleDeleteRoomSummaries(
       isError: true,
     };
   }
+}
+
+/**
+ * Handle delete room shared notes
+ *
+ * The API answers 204 even when the notes service failed to delete the old
+ * document: it gives the room a new document id regardless. So the only
+ * evidence is the room's has_shared_notes flag, read back afterwards.
+ */
+async function handleDeleteRoomSharedNotes(
+  params: { roomId: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { roomId } = params;
+  logger.info("Deleting room shared notes", { roomId });
+
+  return verifiedWrite({
+    required: { roomId: roomId?.trim() },
+    describe: `the shared notes of room ${roomId}`,
+    verb: "Deleted",
+    errorLabel: "deleting room shared notes",
+    action: () => apiClient.deleteRoomSharedNotes(roomId),
+    verify: async () => {
+      const resources = await apiClient.getRoomResources(roomId);
+      const has: unknown = resources?.has_shared_notes;
+      if (typeof has !== "boolean") {
+        throw new Error("the room resources response has no has_shared_notes");
+      }
+      return {
+        landed: has === false,
+        evidence: has
+          ? "the room still reports shared notes"
+          : "the room now reports no shared notes",
+      };
+    },
+  });
 }
 
 /**

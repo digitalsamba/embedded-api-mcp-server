@@ -147,7 +147,7 @@ Use the server URL `https://mcp.digitalsamba.com/mcp` with any MCP-compatible cl
 
 ## Available Tools
 
-The MCP server provides **151 tools** covering the complete Digital Samba API.
+The MCP server provides **153 tools** covering the complete Digital Samba API.
 
 ### Room Management (11 tools)
 | Tool | Description |
@@ -224,7 +224,7 @@ The MCP server provides **151 tools** covering the complete Digital Samba API.
 | `get-live-room-analytics` | Live metrics for a room |
 | `get-participant-analytics` | Specific participant stats |
 
-### Communication Management (29 tools)
+### Communication Management (30 tools)
 | Tool | Description |
 |------|-------------|
 | `list-room-transcripts` | List room transcripts |
@@ -238,6 +238,7 @@ The MCP server provides **151 tools** covering the complete Digital Samba API.
 | `delete-room-transcripts` | Delete all room transcripts |
 | `delete-session-summaries` | Delete AI summaries |
 | `delete-room-summaries` | Delete all room summaries |
+| `delete-room-shared-notes` | Delete a room's shared notes |
 | `delete-session-recordings` | Delete session recordings |
 | `delete-session-resources` | Delete session resources |
 | `list-chat-messages` | List a room's chat messages |
@@ -336,7 +337,7 @@ The MCP server provides **151 tools** covering the complete Digital Samba API.
 | `update-webhook` | Update webhook |
 | `delete-webhook` | Delete webhook |
 
-### Export Tools (8 tools)
+### Export Tools (9 tools)
 | Tool | Description |
 |------|-------------|
 | `export-chat-messages` | Export chat |
@@ -344,6 +345,7 @@ The MCP server provides **151 tools** covering the complete Digital Samba API.
 | `export-session-transcripts` | Export transcripts |
 | `export-poll-results` | Export polls |
 | `export-quiz-results` | Export quiz results |
+| `export-shared-notes` | Export a room's shared notes |
 | `export-recording-metadata` | Export recording data |
 | `export-session-summary` | Export summary |
 | `export-session-metadata` | Export metadata |

@@ -20,13 +20,18 @@
     },
     "GET /api/v1/rooms/{room}/shared-notes/export": {
       "operationId": "exportSharedNotes",
-      "pending": "New tool export-shared-notes (format md|txt|html).",
-      "issue": 26
+      "tools": [
+        "export-shared-notes"
+      ],
+      "resources": [
+        "digitalsamba://exports/shared-notes/{roomId}"
+      ]
     },
     "DELETE /api/v1/rooms/{room}/shared-notes": {
       "operationId": "deleteSharedNotes",
-      "pending": "New tool delete-room-shared-notes (destructive; API refuses while the room is live).",
-      "issue": 26
+      "tools": [
+        "delete-room-shared-notes"
+      ]
     },
     "GET /api/v1/rooms/{room}/chat": {
       "operationId": "getChatMessages",
