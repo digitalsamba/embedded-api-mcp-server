@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Overview
 
-Digital Samba Embedded API MCP Server - a Model Context Protocol server for Digital Samba's Embedded API, providing 151 tools and 38 resources for complete control over video conferencing features.
+Digital Samba Embedded API MCP Server - a Model Context Protocol server for Digital Samba's Embedded API, providing 153 tools and 39 resources for complete control over video conferencing features.
 
 **This is primarily a hosted remote MCP server** (production: https://mcp.digitalsamba.com, dev: https://mcp-dev.digitalsamba.com) that Digital Samba customers connect to from Claude Desktop or other MCP clients via OAuth. The npm package (`@digitalsamba/embedded-api-mcp-server`) is the legacy stdio distribution and is slated for deprecation.
 
@@ -77,20 +77,20 @@ src/
 │   ├── stdio.ts          # stdio transport
 │   └── http.ts           # Streamable HTTP transport + OAuth endpoints
 ├── types/                # TypeScript type definitions
-├── resources/            # Read-only MCP resources (38)
-└── tools/                # MCP tools (151)
+├── resources/            # Read-only MCP resources (39)
+└── tools/                # MCP tools (153)
     ├── room-management/       # 11 tools
     ├── session-management/    # 11 tools
     ├── recording-tools-adapter.ts  # 11 tools (the live implementation)
     ├── analytics-tools/       # 8 tools
     ├── live-session-controls/ # 14 tools (transcription, phone, restreamer)
-    ├── communication-management/ # 29 tools (chat/Q&A/transcripts/summaries)
+    ├── communication-management/ # 30 tools (chat/Q&A/transcripts/summaries/shared notes)
     ├── poll-management/       # 11 tools
     ├── quiz-management/       # 10 tools
     ├── library-management/    # 26 tools
     ├── role-management/       # 6 tools
     ├── webhook-management/    # 6 tools
-    └── export-tools/          # 8 tools
+    └── export-tools/          # 9 tools
 ```
 
 Implementation notes:
@@ -100,7 +100,7 @@ Implementation notes:
 
 ## MCP Implementation
 
-- 151 tools (actions) and 38 resources (read-only, `digitalsamba://` URIs)
+- 153 tools (actions) and 39 resources (read-only, `digitalsamba://` URIs)
 - Because many MCP clients don't expose resources, most resources have "reader tool" equivalents (`list-rooms`, `get-recordings`, etc.) — keep both in sync when adding functionality
 - All tools carry annotations (`readOnlyHint`, `destructiveHint`) via `src/tool-annotations.ts`
 

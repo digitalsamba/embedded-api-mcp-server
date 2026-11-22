@@ -3414,6 +3414,67 @@ export class DigitalSambaApiClient {
     return response.text();
   }
 
+  /**
+   * Export a room's shared notes document as md (the API default), txt or html.
+   * The API answers 400 when shared notes are off for the room.
+   */
+  async exportSharedNotes(
+    roomId: string,
+    format?: "md" | "txt" | "html",
+  ): Promise<string> {
+    const query = format
+      ? `?${new URLSearchParams({ format }).toString()}`
+      : "";
+
+    const apiKey = this.getApiKey();
+    const response = await this.fetchWithTimeout(
+      this.apiUrl(`/rooms/${roomId}/shared-notes/export${query}`),
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Digital Samba API error (${response.status}): ${errorText}`,
+      );
+    }
+
+    return response.text();
+  }
+
+  /**
+   * Delete a room's shared notes document. The API then gives the room a new,
+   * empty document, and refuses (400) while the room has a live session.
+   */
+  async deleteRoomSharedNotes(roomId: string): Promise<void> {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+
+    await this.request<void>(`/rooms/${roomId}/shared-notes`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Which kinds of content a room holds (GET /rooms/{room}/resources). In the
+   * v1 routes but not in the published spec.
+   */
+  async getRoomResources(roomId: string): Promise<{
+    has_transcripts: boolean;
+    has_chat_messages: boolean;
+    has_qa: boolean;
+    has_polls: boolean;
+    has_quizzes: boolean;
+    has_shared_notes: boolean;
+  }> {
+    return this.request(`/rooms/${roomId}/resources`);
+  }
+
   // Restreamers
 
   /**

@@ -30,7 +30,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const EXPECTED_TOOL_COUNT = 151;
+const EXPECTED_TOOL_COUNT = 153;
 
 // .env.local first (local dev secrets), then .env. Neither overrides a value
 // already exported in the environment.
@@ -395,6 +395,29 @@ async function run() {
       return "data [] / total_count 0";
     });
   }
+
+  // -- shared notes (no live session needed) ------------------------------
+  group("shared notes");
+
+  await check(
+    "export-shared-notes explains the 400 for a new room",
+    async () => {
+      // Nobody has opened the notes, so no document exists and the API refuses.
+      const error = await callExpectingError("export-shared-notes", {
+        roomId: created.roomId,
+      });
+      must(/no document exists/.test(error), `got: ${error.slice(0, 160)}`);
+      return "refused, causes named";
+    },
+  );
+
+  await check("delete-room-shared-notes confirms by read-back", async () => {
+    const text = await call("delete-room-shared-notes", {
+      roomId: created.roomId,
+    });
+    must(/confirmed by read-back/.test(text), `got: ${text.slice(0, 160)}`);
+    return "has_shared_notes false";
+  });
 
   // -- polls ---------------------------------------------------------------
   group("polls");
