@@ -123,6 +123,8 @@ itself when the digest changes. The final workflow step waits for the host's
 - `ci.yml` - build + tests (Node 18/20 matrix), lint + format check (all enforced)
 - `deploy-dev.yml` - push to `develop` → image pushed → dev host self-deploys (mcp-dev.digitalsamba.com)
 - `deploy-prod.yml` - tag `v*` → image pushed → prod host self-deploys (mcp.digitalsamba.com), then syncs develop/main
+- Both deploy workflows end with `scripts/verify-deploy.sh` (unauthenticated `POST /mcp` → 401 + `WWW-Authenticate`; OAuth authorization-server and protected-resource metadata → 200 with the right issuer/resource)
+- `smoke.yml` - manual-trigger only: `npm run smoke` against dev (env secrets `SMOKE_DEVELOPER_KEY`, `SMOKE_API_URL` on `development`). Never on push/PR: it writes to a shared account and dev rate-limits after ~2 runs
 - `check-api-updates.yml` - weekly drift alarm (Mondays): diffs operations (new/removed/renamed/changed) and boolean properties against `openapi-stored.yaml`, cross-checks the endpoint list with digital-samba-skill's `api-reference.md`, and compares the published `@digitalsamba/embedded-sdk` with `.github/embedded-sdk-version` (flag only). It never skips because an issue is open: a new state is commented onto the open `api-update` / `sdk-update` issue, deduplicated by a `spec-sha256:` / `sdk-version:` marker; otherwise a new issue is opened. Close the issue from the PR that updates the stored spec
 - `deployment/docker-compose.yml` is a **reference copy only** - the live compose
   and .env files are host-managed by ops; compose/env changes are an ops request,

@@ -11,6 +11,9 @@
 #      pointing clients at the OAuth metadata (how they discover sign-in).
 #   2. /.well-known/oauth-authorization-server -> 200, issuer equal to the
 #      URL, PKCE S256 advertised.
+#   3. /.well-known/oauth-protected-resource -> 200, resource equal to the
+#      URL and the URL listed in authorization_servers (RFC 9728; the
+#      document the 401 above points clients at).
 #
 # Read-only and unauthenticated; creates nothing.
 
@@ -43,6 +46,18 @@ if [ "$META_STATUS" = "200" ] && [ "$ISSUER" = "$URL" ] && [ "$S256" = "true" ];
   echo "ok   OAuth metadata -> 200, issuer $ISSUER, S256"
 else
   echo "FAIL OAuth metadata -> $META_STATUS, issuer '${ISSUER}' (want '$URL'), S256=${S256:-?}"
+  FAIL=1
+fi
+
+PRM=$(curl -sS --max-time 15 -w '\n%{http_code}' "$URL/.well-known/oauth-protected-resource")
+PRM_STATUS=${PRM##*$'\n'}
+PRM_BODY=${PRM%$'\n'*}
+RESOURCE=$(printf '%s' "$PRM_BODY" | jq -r '.resource // empty' 2>/dev/null || true)
+LISTS_AS=$(printf '%s' "$PRM_BODY" | jq -r --arg u "$URL" '(.authorization_servers // []) | index($u) != null' 2>/dev/null || true)
+if [ "$PRM_STATUS" = "200" ] && [ "$RESOURCE" = "$URL" ] && [ "$LISTS_AS" = "true" ]; then
+  echo "ok   Protected-resource metadata -> 200, resource $RESOURCE"
+else
+  echo "FAIL Protected-resource metadata -> $PRM_STATUS, resource '${RESOURCE}' (want '$URL'), lists authorization server=${LISTS_AS:-?}"
   FAIL=1
 fi
 
