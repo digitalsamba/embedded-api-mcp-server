@@ -4,6 +4,7 @@
  * This module provides MCP resources for exporting various types of data from Digital Samba:
  * - Communication data (chat messages, Q&A, transcripts)
  * - Poll data and results
+ * - Quiz results
  * - Recording downloads and metadata
  *
  * Resources in this module are read-only and provide data export capabilities.
@@ -73,6 +74,8 @@ export class ExportResources {
           return this.handleCommunicationExport(pathParts, url.searchParams);
         case "polls":
           return this.handlePollsExport(pathParts, url.searchParams);
+        case "quizzes":
+          return this.handleQuizzesExport(pathParts, url.searchParams);
         case "recordings":
           return this.handleRecordingExport(pathParts, url.searchParams);
         case "sessions":
@@ -205,6 +208,56 @@ export class ExportResources {
   }
 
   /**
+   * Handle quiz results export. The API defaults to csv; json is the default
+   * here, as for the other exports. Its zip (detailed report) is binary and is
+   * not offered.
+   */
+  private async handleQuizzesExport(
+    pathParts: string[],
+    searchParams: URLSearchParams,
+  ): Promise<{ contents: Array<{ type: string; text: string }> }> {
+    if (pathParts.length < 2) {
+      throw new McpError(
+        ErrorCode.InvalidRequest,
+        "Quizzes export requires: /quizzes/{roomId}",
+      );
+    }
+
+    const roomId = pathParts[1];
+    const format = searchParams.get("format") || "json";
+    if (!["json", "csv", "txt"].includes(format)) {
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Unsupported quiz export format: ${format} (use json, csv or txt)`,
+      );
+    }
+    const sessionId = searchParams.get("session_id") || undefined;
+    const locale = searchParams.get("locale") || undefined;
+    const timezone = searchParams.get("timezone") || undefined;
+
+    let exportData: string;
+    try {
+      exportData = await this.api.exportQuizzes(roomId, {
+        format: format as "json" | "csv" | "txt",
+        session_id: sessionId,
+        locale,
+        timezone,
+      });
+    } catch (error) {
+      throw exportFailure(error, `Quiz results for room ${roomId}`);
+    }
+
+    return {
+      contents: [
+        {
+          type: "text",
+          text: `# Quiz Results Export for Room ${roomId}\n\nFormat: ${format.toUpperCase()}\n${sessionId ? `Session: ${sessionId}\n` : ""}\n\`\`\`${format}\n${exportData}\n\`\`\``,
+        },
+      ],
+    };
+  }
+
+  /**
    * Handle recording export/download
    */
   private async handleRecordingExport(
@@ -319,6 +372,13 @@ export function registerExportResources(): Resource[] {
       name: "Polls Export",
       description:
         '[Export Data] Export poll questions, options, and results from a room. Use to access: "poll export", "download poll results", "export poll data", "poll results export", "save poll information". Requires roomId. Supports format (txt/json) and session_id parameters.',
+      mimeType: "text/plain",
+    },
+    {
+      uri: "digitalsamba://exports/quizzes/{roomId}",
+      name: "Quiz Results Export",
+      description:
+        '[Export Data] Export quiz results from a room: every participant with their correct answers, score, pass or fail, and submission time, per quiz run. Use to access: "quiz results export", "download quiz scores", "quiz report". Requires roomId. Supports format (json/csv/txt), session_id, locale and timezone parameters.',
       mimeType: "text/plain",
     },
     {

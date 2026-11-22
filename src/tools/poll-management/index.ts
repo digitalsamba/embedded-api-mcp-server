@@ -12,6 +12,9 @@
  * - delete-room-polls: Delete all polls in a room (room-level endpoint)
  * - publish-poll-results: unsupported; the API has no publish-results endpoint,
  *   so this reports failure rather than silently doing nothing
+ * - list-polls: List a room's polls
+ * - get-poll: Get one poll with its options
+ * - get-poll-results: Get a poll's results, one entry per ended run
  *
  * @module tools/poll-management
  * @author Digital Samba Team
@@ -284,6 +287,50 @@ export function registerPollTools(): ToolDefinition[] {
       },
     },
     {
+      name: "get-poll",
+      description:
+        '[Poll Management] Get one poll: its question, type, anonymity, status and options (with which are marked correct). Use when users say: "show poll", "get poll details", "what are the options of this poll". Requires room_id and poll_id.',
+      annotations: getToolAnnotations("get-poll", "Get Poll"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room containing the poll",
+          },
+          poll_id: {
+            type: "string",
+            description: "The ID of the poll",
+          },
+        },
+        required: ["room_id", "poll_id"],
+      },
+    },
+    {
+      name: "get-poll-results",
+      description:
+        '[Poll Management] Get the results of a poll as structured data: one entry per time the poll was run and ended, with total voters, votes per option and (unless the poll is anonymous) who voted for what. Use when users say: "poll results", "how did people vote", "who voted for", "show poll votes". Requires room_id and poll_id; optionally session_id. A poll that has never been run and ended has no results. For a file export of all polls in a room, use export-poll-results.',
+      annotations: getToolAnnotations("get-poll-results", "Get Poll Results"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room containing the poll",
+          },
+          poll_id: {
+            type: "string",
+            description: "The ID of the poll",
+          },
+          session_id: {
+            type: "string",
+            description: "Only return results from this session",
+          },
+        },
+        required: ["room_id", "poll_id"],
+      },
+    },
+    {
       name: "get-poll-import-template",
       description:
         '[Poll Management] Download the CSV template for bulk poll import. Use when users say: "get poll import template", "poll CSV template", "how do I bulk import polls". Requires room_id. Returns the CSV template content.',
@@ -354,6 +401,10 @@ export async function executePollTool(
       return handlePublishPollResults(params);
     case "list-polls":
       return handleListPolls(params, apiClient);
+    case "get-poll":
+      return handleGetPoll(params, apiClient);
+    case "get-poll-results":
+      return handleGetPollResults(params, apiClient);
     case "get-poll-import-template":
       return handleGetPollImportTemplate(params, apiClient);
     case "import-polls":
@@ -981,6 +1032,134 @@ async function handleListPolls(
       isError: true,
     };
   }
+}
+
+/**
+ * Handle get poll
+ */
+async function handleGetPoll(
+  params: { room_id: string; poll_id: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id, poll_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+  if (!poll_id || poll_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Poll ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Getting poll", { room_id, poll_id });
+
+  try {
+    const poll = await apiClient.getPoll(room_id, poll_id);
+    return {
+      content: [{ type: "text", text: JSON.stringify(poll, null, 2) }],
+    };
+  } catch (error) {
+    return pollReadError(error, "getting poll", room_id, poll_id);
+  }
+}
+
+/**
+ * Handle get poll results
+ *
+ * GET /rooms/{room}/polls/{poll}/results returns one entry per ended run of
+ * the poll (PollResultCollection). Free-text polls list each distinct answer
+ * as an option with no id; options carry voters only when someone voted
+ * for them and the poll is not anonymous.
+ */
+async function handleGetPollResults(
+  params: { room_id: string; poll_id: string; session_id?: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id, poll_id, session_id } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Room ID is required." }],
+      isError: true,
+    };
+  }
+  if (!poll_id || poll_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: "Poll ID is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Getting poll results", { room_id, poll_id, session_id });
+
+  try {
+    const response = await apiClient.getPollResults(
+      room_id,
+      poll_id,
+      session_id || undefined,
+    );
+    const runs = Array.isArray(response)
+      ? response
+      : ((response as any)?.data ?? []);
+
+    if (runs.length === 0) {
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              `Poll ${poll_id} has no results` +
+              (session_id ? ` in session ${session_id}` : "") +
+              ". Results exist only once the poll has been run and ended in a live session.",
+          },
+        ],
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: "text",
+          text:
+            `Poll ${poll_id} has results from ${runs.length} run(s):\n\n` +
+            JSON.stringify(runs, null, 2),
+        },
+      ],
+    };
+  } catch (error) {
+    return pollReadError(error, "getting poll results", room_id, poll_id);
+  }
+}
+
+/**
+ * Error result for a poll read. Only a 404 means the poll (or room) is
+ * missing; anything else is reported as the failure it was.
+ */
+function pollReadError(
+  error: unknown,
+  label: string,
+  roomId: string,
+  pollId: string,
+): any {
+  const message = error instanceof Error ? error.message : String(error);
+  logger.error(`Error ${label}`, { roomId, pollId, error: message });
+  const notFound = (error as { statusCode?: number })?.statusCode === 404;
+  return {
+    content: [
+      {
+        type: "text",
+        text: notFound
+          ? `Poll ${pollId} not found in room ${roomId}.`
+          : `Error ${label}: ${message}`,
+      },
+    ],
+    isError: true,
+  };
 }
 
 /**

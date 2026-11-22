@@ -56,6 +56,8 @@ export async function executeExportTool(
         return await handleExportTranscripts(params, exportResources);
       case "export-poll-results":
         return await handleExportPolls(params, exportResources);
+      case "export-quiz-results":
+        return await handleExportQuizResults(params, exportResources);
       case "export-recording-metadata":
         return await handleExportRecordingMetadata(params, exportResources);
       case "export-session-summary":
@@ -70,6 +72,7 @@ export async function executeExportTool(
             "export-qa-data",
             "export-session-transcripts",
             "export-poll-results",
+            "export-quiz-results",
             "export-recording-metadata",
             "export-session-summary",
             "export-session-metadata",
@@ -182,6 +185,31 @@ async function handleExportPolls(
   exportResources: ExportResources,
 ): Promise<any> {
   const uri = `digitalsamba://exports/polls/${params.roomId}${
+    params.format || params.sessionId || params.locale || params.timezone
+      ? `?${new URLSearchParams({
+          ...(params.format && { format: params.format }),
+          ...(params.sessionId && { session_id: params.sessionId }),
+          ...(params.locale && { locale: params.locale }),
+          ...(params.timezone && { timezone: params.timezone }),
+        }).toString()}`
+      : ""
+  }`;
+
+  const result = await exportResources.handleResourceRequest(uri);
+  return { content: result.contents };
+}
+
+async function handleExportQuizResults(
+  params: {
+    roomId: string;
+    format?: string;
+    sessionId?: string;
+    locale?: string;
+    timezone?: string;
+  },
+  exportResources: ExportResources,
+): Promise<any> {
+  const uri = `digitalsamba://exports/quizzes/${params.roomId}${
     params.format || params.sessionId || params.locale || params.timezone
       ? `?${new URLSearchParams({
           ...(params.format && { format: params.format }),
@@ -394,6 +422,46 @@ export function registerExportTools(): Tool[] {
           sessionId: {
             type: "string",
             description: "Optional session ID to filter polls",
+          },
+        },
+        required: ["roomId"],
+      } as const,
+    },
+    {
+      name: "export-quiz-results",
+      description:
+        '[Export Tools] Export quiz results for a room: for each quiz run, every participant with their correct answers, score, pass or fail, and submission time. Use when users say: "export quiz results", "download quiz scores", "quiz report", "who passed the quizzes". Requires roomId. Mirrors digitalsamba://exports/quizzes/{roomId} resource for AI assistant compatibility. Supports format (json, csv or txt) and optional sessionId. For the results of one quiz as structured data, use get-quiz-results.',
+      annotations: getToolAnnotations(
+        "export-quiz-results",
+        "Export Quiz Results",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          roomId: {
+            type: "string",
+            description: "Room ID to export quiz results from",
+          },
+          format: {
+            type: "string",
+            enum: ["json", "csv", "txt"],
+            description: "Export format (default: json)",
+          },
+          locale: {
+            type: "string",
+            enum: ["en", "it", "de", "es"],
+            description:
+              "Export language for headings and labels (default: en)",
+          },
+          timezone: {
+            type: "string",
+            description:
+              "IANA time zone for timestamps in the export, e.g. Europe/London (default: UTC)",
+          },
+          sessionId: {
+            type: "string",
+            description:
+              "Optional session ID to limit the export to one session",
           },
         },
         required: ["roomId"],
