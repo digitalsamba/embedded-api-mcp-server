@@ -54,6 +54,7 @@ describe('Export Tools', () => {
       exportQA: jest.fn(),
       exportTranscripts: jest.fn(),
       exportPolls: jest.fn(),
+      exportQuizzes: jest.fn(),
       getRecording: jest.fn(),
       getSessionStatistics: jest.fn()
     } as any;
@@ -73,12 +74,13 @@ describe('Export Tools', () => {
     it('should register all export tools', () => {
       const tools = registerExportTools();
       
-      expect(tools).toHaveLength(7);
+      expect(tools).toHaveLength(8);
       expect(tools.map(t => t.name)).toEqual([
         'export-chat-messages',
         'export-qa-data',
         'export-session-transcripts',
         'export-poll-results',
+        'export-quiz-results',
         'export-recording-metadata',
         'export-session-summary',
         'export-session-metadata'
@@ -149,6 +151,66 @@ describe('Export Tools', () => {
         expect(mockApiClient.exportPolls).toHaveBeenCalled();
         expect(result.content[0].text).toContain('Polls Export for Room test-room-id');
         expect(result.content[0].text).toContain(mockPollExportData);
+      });
+    });
+
+    describe('export-quiz-results', () => {
+      it('defaults to json and forwards session, locale and timezone', async () => {
+        mockApiClient.exportQuizzes.mockResolvedValue('[]');
+
+        const result = await executeExportTool('export-quiz-results', {
+          roomId: 'test-room-id',
+          sessionId: 'sess-1',
+          locale: 'de',
+          timezone: 'Europe/Berlin'
+        }, mockRequest, options);
+
+        expect(mockApiClient.exportQuizzes).toHaveBeenCalledWith('test-room-id', {
+          format: 'json',
+          session_id: 'sess-1',
+          locale: 'de',
+          timezone: 'Europe/Berlin'
+        });
+        expect(result.content[0].text).toContain('Quiz Results Export for Room test-room-id');
+        expect(result.content[0].text).toContain('```json\n[]\n```');
+        expect(result.isError).toBeUndefined();
+      });
+
+      it('passes csv through', async () => {
+        mockApiClient.exportQuizzes.mockResolvedValue('Quiz title,Participant');
+
+        const result = await executeExportTool('export-quiz-results', {
+          roomId: 'test-room-id',
+          format: 'csv'
+        }, mockRequest, options);
+
+        expect(mockApiClient.exportQuizzes).toHaveBeenCalledWith(
+          'test-room-id',
+          expect.objectContaining({ format: 'csv' })
+        );
+        expect(result.content[0].text).toContain('```csv\nQuiz title,Participant\n```');
+      });
+
+      it('refuses the binary zip format without calling the API', async () => {
+        const result = await executeExportTool('export-quiz-results', {
+          roomId: 'test-room-id',
+          format: 'zip'
+        }, mockRequest, options);
+
+        expect(mockApiClient.exportQuizzes).not.toHaveBeenCalled();
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toMatch(/Unsupported quiz export format: zip/);
+      });
+
+      it('reports an API failure as an error', async () => {
+        mockApiClient.exportQuizzes.mockRejectedValue(new Error('Digital Samba API error (500): boom'));
+
+        const result = await executeExportTool('export-quiz-results', {
+          roomId: 'test-room-id'
+        }, mockRequest, options);
+
+        expect(result.isError).toBe(true);
+        expect(result.content[0].text).toContain('boom');
       });
     });
 

@@ -147,7 +147,7 @@ Use the server URL `https://mcp.digitalsamba.com/mcp` with any MCP-compatible cl
 
 ## Available Tools
 
-The MCP server provides **148 tools** covering the complete Digital Samba API.
+The MCP server provides **151 tools** covering the complete Digital Samba API.
 
 ### Room Management (11 tools)
 | Tool | Description |
@@ -257,7 +257,7 @@ The MCP server provides **148 tools** covering the complete Digital Samba API.
 | `stop-question-live-answer` | Stop a live answer |
 | `cancel-question-live-answer` | Cancel a live answer |
 
-### Poll Management (8 tools)
+### Poll Management (11 tools)
 | Tool | Description |
 |------|-------------|
 | `create-poll` | Create a new poll |
@@ -266,6 +266,9 @@ The MCP server provides **148 tools** covering the complete Digital Samba API.
 | `delete-session-polls` | Delete session polls |
 | `delete-room-polls` | Delete all room polls |
 | `publish-poll-results` | Publish results |
+| `list-polls` | List a room's polls |
+| `get-poll` | Get one poll with its options |
+| `get-poll-results` | Get a poll's results and votes |
 | `get-poll-import-template` | Download poll CSV import template |
 | `import-polls` | Import polls from CSV |
 
@@ -333,13 +336,14 @@ The MCP server provides **148 tools** covering the complete Digital Samba API.
 | `update-webhook` | Update webhook |
 | `delete-webhook` | Delete webhook |
 
-### Export Tools (7 tools)
+### Export Tools (8 tools)
 | Tool | Description |
 |------|-------------|
 | `export-chat-messages` | Export chat |
 | `export-qa-data` | Export Q&A |
 | `export-session-transcripts` | Export transcripts |
 | `export-poll-results` | Export polls |
+| `export-quiz-results` | Export quiz results |
 | `export-recording-metadata` | Export recording data |
 | `export-session-summary` | Export summary |
 | `export-session-metadata` | Export metadata |

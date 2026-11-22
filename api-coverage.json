@@ -687,8 +687,9 @@
     },
     "GET /api/v1/rooms/{room}/polls/{poll}": {
       "operationId": "getPoll",
-      "pending": "No tool; add get-poll.",
-      "issue": 26
+      "tools": [
+        "get-poll"
+      ]
     },
     "PATCH /api/v1/rooms/{room}/polls/{poll}": {
       "operationId": "updatePoll",
@@ -704,8 +705,9 @@
     },
     "GET /api/v1/rooms/{room}/polls/{poll}/results": {
       "operationId": "pollResults",
-      "pending": "No tool; add get-poll-results (export-poll-results only exports).",
-      "issue": 26
+      "tools": [
+        "get-poll-results"
+      ]
     },
     "POST /api/v1/rooms/{room}/quizzes/import": {
       "operationId": "importQuizzesFromCSV",
@@ -721,8 +723,12 @@
     },
     "GET /api/v1/rooms/{room}/quizzes/export": {
       "operationId": "export",
-      "pending": "No tool; add export-quiz-results.",
-      "issue": 26
+      "tools": [
+        "export-quiz-results"
+      ],
+      "resources": [
+        "digitalsamba://exports/quizzes/{roomId}"
+      ]
     },
     "GET /api/v1/rooms/{room}/quizzes/{quiz}": {
       "operationId": "getQuiz",

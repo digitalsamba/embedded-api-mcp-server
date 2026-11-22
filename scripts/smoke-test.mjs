@@ -30,7 +30,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const EXPECTED_TOOL_COUNT = 148;
+const EXPECTED_TOOL_COUNT = 151;
 
 // .env.local first (local dev secrets), then .env. Neither overrides a value
 // already exported in the environment.
@@ -435,6 +435,28 @@ async function run() {
     return "question verified";
   });
 
+  await check("get-poll reads the poll with its options", async () => {
+    const poll = parseJson(
+      await call("get-poll", { room_id: created.roomId, poll_id: pollId }),
+    );
+    must(poll.id === pollId, `got poll ${poll.id}`);
+    must(poll.question === "smoke control poll EDITED", "stale question");
+    must(
+      poll.options?.map((o) => o.text).join() === "Alpha,Beta",
+      `options ${JSON.stringify(poll.options)}`,
+    );
+    return "question + 2 options";
+  });
+
+  await check("get-poll-results is empty for a poll never run", async () => {
+    const text = await call("get-poll-results", {
+      room_id: created.roomId,
+      poll_id: pollId,
+    });
+    must(/has no results/.test(text), `got: ${text.slice(0, 120)}`);
+    return "no runs, no results";
+  });
+
   await knownIssue(
     "import-polls creates polls",
     "API defect: PollsController@import hardcodes preview mode, never saves",
@@ -474,7 +496,12 @@ async function run() {
     await call("delete-poll", { room_id: created.roomId, poll_id: pollId });
     const remaining = await call("list-polls", { room_id: created.roomId });
     must(!remaining.includes(pollId), "poll still present");
-    return "poll gone";
+    const error = await callExpectingError("get-poll", {
+      room_id: created.roomId,
+      poll_id: pollId,
+    });
+    must(/not found/i.test(error), `get-poll after delete: ${error}`);
+    return "poll gone (list + get-poll 404)";
   });
 
   // -- quizzes -------------------------------------------------------------
@@ -495,6 +522,31 @@ async function run() {
     quizId = quizzes[0].id;
     return `quiz ${quizId}`;
   });
+
+  for (const format of ["json", "csv"]) {
+    await check(
+      `export-quiz-results (${format}) for a room with no runs`,
+      async () => {
+        const text = await call("export-quiz-results", {
+          roomId: created.roomId,
+          format,
+        });
+        const body = text.match(/```\w+\n([\s\S]*)\n```/)?.[1];
+        must(body !== undefined, "no fenced export body");
+        if (format === "json") {
+          const rows = JSON.parse(body);
+          must(
+            Array.isArray(rows) && rows.length === 0,
+            `got ${body.slice(0, 80)}`,
+          );
+          return "[]";
+        }
+        const lines = body.trim().split("\n");
+        must(lines.length === 1, `${lines.length} lines; expected header only`);
+        return `header: ${lines[0].slice(0, 40)}`;
+      },
+    );
+  }
 
   if (quizId) {
     await check("update-quiz persists (read back)", async () => {

@@ -2192,7 +2192,7 @@ export class DigitalSambaApiClient {
   }
 
   /**
-   * Get poll results
+   * Get poll results: one entry per ended run of the poll
    */
   async getPollResults(
     roomId: string,
@@ -2208,10 +2208,13 @@ export class DigitalSambaApiClient {
       ended?: string;
       votes: number;
       options: {
-        id: string;
+        /** Absent for free-text polls, where each distinct answer is an option */
+        id?: string;
         text: string;
+        correct?: boolean;
         voted: number;
-        voters: {
+        /** Absent when the poll is anonymous or the option has no votes */
+        voters?: {
           id: string;
           name: string;
         }[];
@@ -2234,10 +2237,13 @@ export class DigitalSambaApiClient {
         ended?: string;
         votes: number;
         options: {
-          id: string;
+          /** Absent for free-text polls, where each distinct answer is an option */
+          id?: string;
           text: string;
+          correct?: boolean;
           voted: number;
-          voters: {
+          /** Absent when the poll is anonymous or the option has no votes */
+          voters?: {
             id: string;
             name: string;
           }[];
@@ -3364,13 +3370,15 @@ export class DigitalSambaApiClient {
   }
 
   /**
-   * Export quizzes
+   * Export quiz results for a room (summary: one row per participant per run).
+   * The API defaults to csv; its `zip` format (detailed report) is binary and
+   * is not supported here.
    */
   async exportQuizzes(
     roomId: string,
     options?: {
       session_id?: string;
-      format?: "txt" | "json";
+      format?: "csv" | "txt" | "json";
       locale?: string;
       timezone?: string;
     },
