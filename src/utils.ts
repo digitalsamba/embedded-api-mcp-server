@@ -112,6 +112,11 @@ export const BOOLEAN_FIELDS = new Set([
   "multipleAnswers",
   // Other settings that may have boolean values
   "live",
+  // Room deletion flags. The API reads these with a plain truthiness check,
+  // so an unconverted "false" string would turn the deletion ON.
+  "delete_resources",
+  "delete_history",
+  "delete_library",
 ]);
 
 /**
