@@ -31,6 +31,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import { DigitalSambaApiClient } from "../../digital-samba-api.js";
 import logger from "../../logger.js";
 import { getToolAnnotations } from "../../tool-annotations.js";
+import type { QuestionRecord } from "../../types/communication.js";
 import { verifiedWrite } from "../verified-write.js";
 
 /**
@@ -400,9 +401,88 @@ export function registerCommunicationTools(): ToolDefinition[] {
 
     // Live Chat / Q&A Interaction
     {
+      name: "list-chat-messages",
+      description:
+        '[Communication Management] List a room\'s chat messages as JSON. Use when users say: "show the chat", "what was said in chat", "list chat messages", "read the room chat". Requires room_id; filter by session_id and page with limit/offset. Each message has its text, sender, breakout and reply parent, newest first. Only rooms with chat persistence enabled (chat_persistence_enabled) keep any messages; use export-chat-messages for a txt/json file instead.',
+      annotations: getToolAnnotations(
+        "list-chat-messages",
+        "List Chat Messages",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+          session_id: {
+            type: "string",
+            description: "Only return messages from this session of the room",
+          },
+          limit: {
+            type: "number",
+            minimum: 1,
+            maximum: 100,
+            description:
+              "Maximum number of messages to return (1-100, default 100)",
+          },
+          offset: {
+            type: "number",
+            minimum: 0,
+            description: "Number of messages to skip, for pagination",
+          },
+          order: {
+            type: "string",
+            enum: ["asc", "desc"],
+            description:
+              "Sort by creation time: desc (newest first, the default) or asc",
+          },
+        },
+        required: ["room_id"],
+      },
+    },
+    {
+      name: "list-questions",
+      description:
+        '[Q&A Management] List a room\'s Q&A questions as JSON, with their votes and answers. Use when users say: "show the questions", "list Q&A", "what questions were asked", "get the question id". Requires room_id; filter by session_id and page with limit/offset. Newest first. Gives the question ids that update-question, answer-question and the other Q&A tools need; use export-qa-data for a file instead.',
+      annotations: getToolAnnotations("list-questions", "List Questions"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+          session_id: {
+            type: "string",
+            description: "Only return questions from this session of the room",
+          },
+          limit: {
+            type: "number",
+            minimum: 1,
+            maximum: 100,
+            description:
+              "Maximum number of questions to return (1-100, default 100)",
+          },
+          offset: {
+            type: "number",
+            minimum: 0,
+            description: "Number of questions to skip, for pagination",
+          },
+          order: {
+            type: "string",
+            enum: ["asc", "desc"],
+            description:
+              "Sort by creation time: desc (newest first, the default) or asc",
+          },
+        },
+        required: ["room_id"],
+      },
+    },
+    {
       name: "send-chat-message",
       description:
-        '[Communication Management] Send a chat message into a room\'s live session, as a given participant. Use when users say: "send a message to the room", "post in chat", "send chat message". Requires roomId, message and participant. The room must have a live session: an idle room is refused with "room is not active", and end-to-end encrypted sessions are refused too. Where the room persists chat, the message is confirmed by reading the chat export back; elsewhere the result says the API accepted it, which is all that can be checked.',
+        '[Communication Management] Send a chat message into a room\'s live session, as a given participant. Use when users say: "send a message to the room", "post in chat", "send chat message". Requires roomId, message and participant. The room must have a live session: an idle room is refused with "room is not active", and end-to-end encrypted sessions are refused too. Where the room persists chat, the message is confirmed by reading the room chat back (see list-chat-messages); elsewhere the result says the API accepted it, which is all that can be checked.',
       annotations: getToolAnnotations("send-chat-message", "Send Chat Message"),
       inputSchema: {
         type: "object",
@@ -668,6 +748,14 @@ export async function executeCommunicationTool(
       return handleDeleteSessionResources(params, apiClient);
 
     // Live Chat / Q&A Interaction
+    case "list-chat-messages":
+      return handleListRoomItems(params, "chat messages", (roomId, query) =>
+        apiClient.listChatMessages(roomId, query),
+      );
+    case "list-questions":
+      return handleListRoomItems(params, "questions", (roomId, query) =>
+        apiClient.listQuestions(roomId, query),
+      );
     case "send-chat-message":
       return handleSendChatMessage(params, apiClient);
     case "create-question":
@@ -1518,6 +1606,45 @@ async function handleDeleteSessionResources(
 }
 
 /**
+ * Handle list-chat-messages and list-questions: a room-scoped paginated read.
+ */
+async function handleListRoomItems(
+  params: {
+    room_id?: string;
+    session_id?: string;
+    limit?: number;
+    offset?: number;
+    order?: "asc" | "desc";
+  },
+  what: string,
+  list: (roomId: string, query: Record<string, unknown>) => Promise<unknown>,
+): Promise<any> {
+  const { room_id, session_id, limit, offset, order } = params;
+
+  if (!room_id || room_id.trim() === "") {
+    return {
+      content: [{ type: "text", text: `Room ID is required to list ${what}.` }],
+      isError: true,
+    };
+  }
+
+  try {
+    logger.info(`Listing ${what}`, { room_id, session_id });
+    const result = await list(room_id, { session_id, limit, offset, order });
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger.error(`Error listing ${what}`, { room_id, error: message });
+    return {
+      content: [{ type: "text", text: `Error listing ${what}: ${message}` }],
+      isError: true,
+    };
+  }
+}
+
+/**
  * Validation + error-handling wrapper shared by the Q&A interaction handlers
  */
 async function runQaHandler(
@@ -1526,9 +1653,9 @@ async function runQaHandler(
   verb: string,
   describe: string,
 ): Promise<any> {
-  // No read-back for these: the Q&A action endpoints have no matching read that
-  // would distinguish "applied" from "accepted and ignored" without pulling the
-  // whole Q&A export per call. verifiedWrite reports the response body's
+  // No read-back for these: the question list carries no dismissed or
+  // live-answer state, so it cannot tell "applied" from "accepted and ignored"
+  // for most of them. verifiedWrite reports the response body's
   // evidence when there is any, and says plainly that it is unverified when
   // there is not.
   return verifiedWrite({
@@ -1545,8 +1672,8 @@ async function runQaHandler(
  *
  * The API forwards the message to the signalling server and returns an error
  * when it is refused (no live session, E2EE, or a signalling failure), so a
- * success response means the message was handed over. The chat export is the
- * only read-back, and it only holds anything when the room persists chat; it
+ * success response means the message was handed over. The room's chat list is
+ * the read-back, and it only holds anything when the room persists chat; it
  * decides the outcome there and is skipped elsewhere.
  */
 async function handleSendChatMessage(
@@ -1577,24 +1704,23 @@ async function handleSendChatMessage(
     verify: persists
       ? async () => {
           // The signalling server stores the message after relaying it, so
-          // give the export a few seconds before calling it missing.
+          // give the chat list a few seconds before calling it missing.
           for (let attempt = 0; attempt < CHAT_READBACK_ATTEMPTS; attempt++) {
             if (attempt > 0) {
               await new Promise((r) => setTimeout(r, CHAT_READBACK_DELAY_MS));
             }
-            const exported = await apiClient.exportChatMessages(roomId, {
-              format: "json",
+            const recent = await apiClient.listChatMessages(roomId, {
+              limit: 100,
+              order: "desc",
             });
-            if (exportContains(exported, message)) {
-              return {
-                landed: true,
-                evidence: "the message appears in the room's chat export",
-              };
+            const found = recent?.data?.find((m) => m.message === message);
+            if (found) {
+              return { landed: true, evidence: `chat message id ${found.id}` };
             }
           }
           return {
             landed: false,
-            evidence: "the message is absent from the room's chat export",
+            evidence: "the message is absent from the room's chat messages",
           };
         }
       : undefined,
@@ -1605,7 +1731,7 @@ const CHAT_READBACK_ATTEMPTS = 4;
 const CHAT_READBACK_DELAY_MS = 1000;
 
 /**
- * Whether a room persists chat, i.e. whether the chat export can serve as a
+ * Whether a room persists chat, i.e. whether its chat list can serve as a
  * read-back. Returns false if the room cannot be read.
  */
 async function roomPersistsChat(
@@ -1625,58 +1751,32 @@ async function roomPersistsChat(
 }
 
 /**
- * Whether an export payload contains the given text.
- *
- * Exports come back as an opaque string whose JSON shape is undocumented, so
- * match on the text itself rather than on a field path that may not hold.
+ * Find a room's question by predicate, newest first, paging through the
+ * question list (the API caps a page at 100). Stops after QUESTION_SCAN_PAGES
+ * pages; rooms with more questions than that are not a realistic read-back
+ * target.
  */
-function exportContains(exported: string, needle: string): boolean {
-  if (!exported) return false;
-  if (exported.includes(needle)) return true;
-  // JSON-encoded payloads escape quotes and other characters in the text.
-  return exported.includes(JSON.stringify(needle).slice(1, -1));
-}
-
-/**
- * Recover the id of the record carrying the given text from an export payload.
- *
- * The create endpoints return no id and there is no list-questions tool, so
- * this is the only way to hand the caller something it can act on. Walks the
- * payload rather than assuming a field path, since the export shape is
- * undocumented.
- *
- * @returns the id, or undefined if the payload is not JSON or has no match
- */
-function findIdForText(exported: string, text: string): string | undefined {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(exported);
-  } catch {
-    return undefined;
+async function findQuestion(
+  roomId: string,
+  predicate: (q: QuestionRecord) => boolean,
+  apiClient: DigitalSambaApiClient,
+): Promise<QuestionRecord | undefined> {
+  const limit = 100;
+  for (let page = 0; page < QUESTION_SCAN_PAGES; page++) {
+    const result = await apiClient.listQuestions(roomId, {
+      limit,
+      offset: page * limit,
+      order: "desc",
+    });
+    const rows = result?.data ?? [];
+    const found = rows.find(predicate);
+    if (found) return found;
+    if (rows.length < limit) return undefined;
   }
-
-  const stack: unknown[] = [parsed];
-  while (stack.length > 0) {
-    const node = stack.pop();
-    if (Array.isArray(node)) {
-      stack.push(...node);
-      continue;
-    }
-    if (!node || typeof node !== "object") continue;
-
-    const record = node as Record<string, unknown>;
-    const matches = Object.entries(record).some(
-      ([key, value]) => key !== "id" && value === text,
-    );
-    if (matches) {
-      const id = record.id;
-      if (typeof id === "string" || typeof id === "number") return String(id);
-    }
-    stack.push(...Object.values(record));
-  }
-
   return undefined;
 }
+
+const QUESTION_SCAN_PAGES = 10;
 
 /**
  * Handle create question
@@ -1707,23 +1807,21 @@ async function handleCreateQuestion(
         ...(breakoutId !== undefined && { breakout_id: breakoutId }),
       });
     },
-    // The create endpoint returns no id, so read the Q&A back both to confirm
-    // the question exists and to recover the id the caller needs to act on it.
+    // The create endpoint returns no id, so read the questions back both to
+    // confirm the question exists and to recover the id the caller needs to
+    // act on it. Newest first, so the first match is the one just created.
     verify: async () => {
-      const exported = await apiClient.exportQA(roomId, { format: "json" });
-      if (!exportContains(exported, question)) {
-        return {
-          landed: false,
-          evidence: "the question is absent from the room's Q&A export",
-        };
-      }
-      const id = findIdForText(exported, question);
-      return {
-        landed: true,
-        evidence: id
-          ? `question id ${id}`
-          : "the question appears in the room's Q&A export",
-      };
+      const found = await findQuestion(
+        roomId,
+        (q) => q.question === question,
+        apiClient,
+      );
+      return found
+        ? { landed: true, evidence: `question id ${found.id}` }
+        : {
+            landed: false,
+            evidence: "the question is absent from the room's questions",
+          };
     },
   });
 }
@@ -1808,17 +1906,26 @@ async function handleAnswerQuestion(
       });
     },
     verify: async () => {
-      const exported = await apiClient.exportQA(roomId, { format: "json" });
-      const found = exportContains(exported, answer);
-      const id = found ? findIdForText(exported, answer) : undefined;
-      return {
-        landed: found,
-        evidence: found
-          ? id
-            ? `answer id ${id}`
-            : "the answer appears in the room's Q&A export"
-          : "the answer is absent from the room's Q&A export",
-      };
+      const target = await findQuestion(
+        roomId,
+        (q) => q.id === questionId,
+        apiClient,
+      );
+      if (!target) {
+        return {
+          landed: false,
+          evidence: `question ${questionId} is not among the room's questions`,
+        };
+      }
+      const match = (target.answers ?? []).find(
+        (a: any) => a?.answer === answer,
+      ) as { id?: string } | undefined;
+      return match
+        ? { landed: true, evidence: `answer id ${match.id}` }
+        : {
+            landed: false,
+            evidence: "the answer is absent from the question's answers",
+          };
     },
   });
 }

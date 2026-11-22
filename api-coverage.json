@@ -30,15 +30,17 @@
     },
     "GET /api/v1/rooms/{room}/chat": {
       "operationId": "getChatMessages",
-      "pending": "No tool lists chat messages as paginated JSON (export-chat-messages only exports); add list-chat-messages.",
-      "issue": 26
+      "tools": [
+        "list-chat-messages",
+        "send-chat-message"
+      ]
     },
     "POST /api/v1/rooms/{room}/chat": {
       "operationId": "sendAChatMessageToTheRoom",
       "tools": [
         "send-chat-message"
       ],
-      "note": "Renamed from sendChatMessage. Body contract changed 2026-09: participant is now required and breakout_id is accepted; the tool still treats participant as optional/no-effect."
+      "note": "Renamed from sendChatMessage. Body contract changed 2026-09: participant is now required and breakout_id is accepted; the tool requires participant and maps breakoutId (#36)."
     },
     "DELETE /api/v1/rooms/{room}/chat": {
       "operationId": "deleteChatsByRoom",
@@ -90,8 +92,11 @@
     },
     "GET /api/v1/rooms/{room}/questions": {
       "operationId": "getQuestionsAndAnswers",
-      "pending": "No tool lists Q&A; add list-questions (also gives create-question a real read-back instead of scanning the export).",
-      "issue": 26
+      "tools": [
+        "list-questions",
+        "create-question",
+        "answer-question"
+      ]
     },
     "POST /api/v1/rooms/{room}/questions": {
       "operationId": "createAQuestionInTheRoom",
