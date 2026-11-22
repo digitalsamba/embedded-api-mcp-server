@@ -13,6 +13,18 @@ import { AnalyticsResource } from "../../types/analytics-resource.js";
 import { AnalyticsFilters } from "../../types/analytics.js";
 import logger from "../../logger.js";
 import { getToolAnnotations } from "../../tool-annotations.js";
+import { normalizeBoolean } from "../../utils.js";
+
+/**
+ * The billing-period switch shared by the team and room statistics tools. The
+ * current-period endpoints return the same body as the date-range ones, with
+ * the team's subscription start and end as the range.
+ */
+const CURRENT_PERIOD_PROPERTY = {
+  type: "boolean",
+  description:
+    "Report the team's current billing period (subscription start to end) instead of a date range. Cannot be combined with dateStart, dateEnd or period; the API ignores dates for this.",
+} as const;
 
 /**
  * Register all analytics tools
@@ -85,6 +97,7 @@ export function registerAnalyticsTools(): Tool[] {
             description:
               "Shorthand for a date range ending today (day = last 24h, week = last 7 days, month, year). Translated by this server into dateStart/dateEnd, which the API takes instead; ignored if you supply either date yourself.",
           },
+          currentPeriod: CURRENT_PERIOD_PROPERTY,
         },
         required: [],
       },
@@ -114,6 +127,7 @@ export function registerAnalyticsTools(): Tool[] {
             description:
               "Shorthand for a date range ending today (day = last 24h, week = last 7 days, month, year). Translated by this server into dateStart/dateEnd, which the API takes instead; ignored if you supply either date yourself.",
           },
+          currentPeriod: CURRENT_PERIOD_PROPERTY,
         },
         required: [],
       },
@@ -144,6 +158,7 @@ export function registerAnalyticsTools(): Tool[] {
             description:
               "Shorthand for a date range ending today (day = last 24h, week = last 7 days, month, year). Translated by this server into dateStart/dateEnd, which the API takes instead; ignored if you supply either date yourself.",
           },
+          currentPeriod: CURRENT_PERIOD_PROPERTY,
         },
       },
     },
@@ -222,6 +237,90 @@ export function registerAnalyticsTools(): Tool[] {
         required: ["participantId"],
       },
     },
+    {
+      name: "get-plan-usage",
+      description:
+        '[Analytics - TOOL] Get the participation minutes used in the current billing period against the plan\'s included minutes. Use when users say: "how many minutes have we used", "are we near our limit", "plan usage", "minutes left this month", "usage vs quota". Returns minutes used, the plan limit, the percentage used and the billing period dates. Limit and percentage are null on a plan with no minutes limit. This is the figure the usage alert emails are based on.',
+      annotations: getToolAnnotations("get-plan-usage", "Get Plan Usage"),
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "get-current-period-statistics",
+      description:
+        '[Analytics - TOOL] Get a snapshot of the current billing period: live sessions, live participants and active recorders right now, plus the period\'s participation, recorded, transcription and stored recording minutes, summaries and concurrency peaks. Use when users say: "how are we doing this billing period", "current period stats", "what is happening right now and this month". For the full metric set over the billing period use get-usage-statistics with currentPeriod.',
+      annotations: getToolAnnotations(
+        "get-current-period-statistics",
+        "Get Current Period Statistics",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "get-usage-by-tag",
+      description:
+        '[Analytics - TOOL] Get usage totals per room tag: rooms that held a session, participants, and participation, recorded, transcription and E2EE minutes. Use when users say: "usage per client", "usage by tag", "bill each customer", "multi-tenant usage report". Every tag of the team is listed, with zeroes when unused. Untagged rooms report under "common", and a room with several tags counts in full under each, so the tags can add up to more than the team total. Without dates it covers all time.',
+      annotations: getToolAnnotations("get-usage-by-tag", "Get Usage by Tag"),
+      inputSchema: {
+        type: "object",
+        properties: {
+          dateStart: {
+            type: "string",
+            description: "Start date in YYYY-MM-DD format",
+          },
+          dateEnd: {
+            type: "string",
+            description: "End date in YYYY-MM-DD format",
+          },
+          period: {
+            type: "string",
+            enum: ["day", "week", "month", "year"],
+            description:
+              "Shorthand for a date range ending today (day = last 24h, week = last 7 days, month, year). Ignored if you supply either date yourself.",
+          },
+        },
+      },
+    },
+    {
+      name: "list-started-sessions",
+      description:
+        '[Analytics - TOOL] Count how many sessions each browser started (was the first to join), most first. Use when users say: "who starts the most meetings", "returning hosts", "how many sessions did each device start". Browsers are identified by browser_id, an anonymous per-browser UUID, not a user or participant ID. Paginated: returns total_count (distinct browsers) and data.',
+      annotations: getToolAnnotations(
+        "list-started-sessions",
+        "List Started Sessions",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          dateStart: {
+            type: "string",
+            description: "Start date in YYYY-MM-DD format",
+          },
+          dateEnd: {
+            type: "string",
+            description: "End date in YYYY-MM-DD format",
+          },
+          limit: {
+            type: "number",
+            description: "Browsers to return (1-100, default 100)",
+          },
+          offset: {
+            type: "number",
+            description: "Number of browsers to skip, for pagination",
+          },
+          order: {
+            type: "string",
+            enum: ["asc", "desc"],
+            description:
+              "Sort by sessions started: desc (most first, default) or asc",
+          },
+        },
+      },
+    },
   ];
 }
 
@@ -292,6 +391,24 @@ function asText(result: unknown) {
 }
 
 /**
+ * Whether the caller asked for the current billing period. Returns an error
+ * result instead when dates were sent with it: the current-period endpoints
+ * ignore them, so honouring both would silently drop the caller's range.
+ */
+function currentPeriodRequested(toolName: string, args: any) {
+  if (normalizeBoolean(args.currentPeriod) !== true) {
+    return { current: false as const };
+  }
+  const rejected = unsupported(
+    toolName,
+    args,
+    ["dateStart", "dateEnd", "period"],
+    "currentPeriod reports the billing period; drop it to use a date range.",
+  );
+  return rejected ? { rejected } : { current: true as const };
+}
+
+/**
  * Handle analytics tool execution
  *
  * @param toolName - The name of the tool being executed
@@ -350,6 +467,16 @@ export async function executeAnalyticsTool(
 
       case "get-room-analytics": {
         logger.info("Executing room analytics query", { args });
+        const period = currentPeriodRequested(toolName, args);
+        if (period.rejected) return period.rejected;
+        if (period.current) {
+          // GET /rooms/{room}/statistics/current, or the team's
+          // GET /statistics/team/current when no room is given.
+          if (!args.roomId) {
+            return asText(await apiClient.getTeamCurrentStatistics());
+          }
+          return asText(await apiClient.getRoomCurrentStatistics(args.roomId));
+        }
         // If no roomId provided, get team-wide analytics instead
         if (!args.roomId) {
           const teamResult = await analytics.getTeamAnalytics(filters);
@@ -427,6 +554,11 @@ export async function executeAnalyticsTool(
 
       case "get-usage-statistics": {
         logger.info("Executing usage statistics query", { args });
+        const period = currentPeriodRequested(toolName, args);
+        if (period.rejected) return period.rejected;
+        if (period.current) {
+          return asText(await apiClient.getTeamCurrentStatistics());
+        }
         // Use team analytics for usage statistics
         const usageResult = await analytics.getTeamAnalytics(filters);
         return {
@@ -442,6 +574,11 @@ export async function executeAnalyticsTool(
       // Reader tools for analytics resources (hybrid approach)
       case "get-usage-analytics": {
         logger.info("Executing usage analytics query", { args });
+        const period = currentPeriodRequested(toolName, args);
+        if (period.rejected) return period.rejected;
+        if (period.current) {
+          return asText(await apiClient.getTeamCurrentStatistics());
+        }
         const usageAnalytics = await analytics.getTeamAnalytics(filters);
         return {
           content: [
@@ -485,6 +622,77 @@ export async function executeAnalyticsTool(
         // returns. This used to return the team's totals.
         return asText(
           await analytics.getParticipantAnalytics(args.participantId),
+        );
+      }
+
+      case "get-plan-usage": {
+        return asText(await apiClient.getCurrentUsage());
+      }
+
+      case "get-current-period-statistics": {
+        // GET /statistics/current: live counts plus billing-period totals.
+        return asText(await apiClient.getSimplifiedTeamCurrentStatistics());
+      }
+
+      case "get-usage-by-tag": {
+        return asText(
+          await apiClient.getTeamStatisticsByTags({
+            date_start: filters.date_start,
+            date_end: filters.date_end,
+          }),
+        );
+      }
+
+      case "list-started-sessions": {
+        const limit = args.limit === undefined ? undefined : Number(args.limit);
+        if (
+          limit !== undefined &&
+          (!Number.isInteger(limit) || limit < 1 || limit > 100)
+        ) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `${toolName}: limit must be a whole number from 1 to 100 (got ${args.limit}).`,
+              },
+            ],
+            isError: true,
+          };
+        }
+        const offset =
+          args.offset === undefined ? undefined : Number(args.offset);
+        if (offset !== undefined && (!Number.isInteger(offset) || offset < 0)) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `${toolName}: offset must be a whole number of 0 or more (got ${args.offset}).`,
+              },
+            ],
+            isError: true,
+          };
+        }
+        const order =
+          typeof args.order === "string" ? args.order.toLowerCase() : undefined;
+        if (order !== undefined && order !== "asc" && order !== "desc") {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `${toolName}: order must be "asc" or "desc" (got ${args.order}).`,
+              },
+            ],
+            isError: true,
+          };
+        }
+        return asText(
+          await apiClient.getStartedSessionsByParticipant({
+            date_start: args.dateStart,
+            date_end: args.dateEnd,
+            limit,
+            offset,
+            order: order as "asc" | "desc" | undefined,
+          }),
         );
       }
 

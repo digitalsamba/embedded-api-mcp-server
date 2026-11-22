@@ -212,7 +212,7 @@ describe('Analytics Tools', () => {
     it('should register all analytics tools', () => {
       const tools = registerAnalyticsTools();
       
-      expect(tools).toHaveLength(8); // 3 original + 5 reader tools
+      expect(tools).toHaveLength(12); // 3 original + 5 reader tools + 4 statistics (#26 group 5)
       
       const toolNames = tools.map(t => t.name);
       expect(toolNames).toContain('get-participant-statistics');

@@ -424,7 +424,11 @@ export function createServer(config: ServerConfig = {}): Server {
         name === "get-live-analytics" ||
         name === "get-live-room-analytics" ||
         name === "get-session-analytics" ||
-        name === "get-participant-analytics"
+        name === "get-participant-analytics" ||
+        name === "get-plan-usage" ||
+        name === "get-current-period-statistics" ||
+        name === "get-usage-by-tag" ||
+        name === "list-started-sessions"
       ) {
         return await executeAnalyticsTool(name, args || {}, client);
       }

@@ -30,7 +30,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const EXPECTED_TOOL_COUNT = 158;
+const EXPECTED_TOOL_COUNT = 162;
 
 // .env.local first (local dev secrets), then .env. Neither overrides a value
 // already exported in the environment.
@@ -395,6 +395,66 @@ async function run() {
       return "data [] / total_count 0";
     });
   }
+
+  // -- statistics (read-only; the billing period ties them together) ------
+  group("statistics");
+
+  let billing = null;
+  await check("get-plan-usage reports the billing period", async () => {
+    const usage = parseJson(await call("get-plan-usage"));
+    must(
+      typeof usage?.participation_minutes_used === "number",
+      "no participation_minutes_used",
+    );
+    must(usage.period_start && usage.period_end, "no billing period");
+    billing = usage;
+    return `${usage.participation_minutes_used} min used, ${usage.period_start} → ${usage.period_end}`;
+  });
+
+  await check("current-period tools agree on the billing period", async () => {
+    must(billing, "no billing period from get-plan-usage");
+    const reads = {
+      "get-current-period-statistics": await call(
+        "get-current-period-statistics",
+      ),
+      "get-usage-statistics currentPeriod": await call("get-usage-statistics", {
+        currentPeriod: true,
+      }),
+      "get-room-analytics currentPeriod": await call("get-room-analytics", {
+        roomId: created.roomId,
+        currentPeriod: true,
+      }),
+    };
+    for (const [label, text] of Object.entries(reads)) {
+      const body = parseJson(text);
+      must(
+        body?.date_start === billing.period_start &&
+          body?.date_end === billing.period_end,
+        `${label}: ${body?.date_start} → ${body?.date_end}`,
+      );
+    }
+    const room = parseJson(reads["get-room-analytics currentPeriod"]);
+    must(room.room_id === created.roomId, `room_id ${room.room_id}`);
+    return "3 reads, same period";
+  });
+
+  await check("get-usage-by-tag lists a row per tag", async () => {
+    const rows = parseJson(await call("get-usage-by-tag", { period: "month" }));
+    must(Array.isArray(rows), "not an array");
+    must(
+      rows.every((r) => typeof r.tag === "string"),
+      "a row without a tag",
+    );
+    return `${rows.length} tag row(s)`;
+  });
+
+  await check("list-started-sessions pages", async () => {
+    const page = parseJson(await call("list-started-sessions", { limit: 2 }));
+    must(Array.isArray(page?.data), "no data array");
+    must(page.data.length <= 2, `limit 2 returned ${page.data.length}`);
+    must(typeof page.total_count === "number", "no total_count");
+    return `${page.data.length} of ${page.total_count} browser(s)`;
+  });
 
   // -- shared notes (no live session needed) ------------------------------
   group("shared notes");

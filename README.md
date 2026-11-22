@@ -147,7 +147,7 @@ Use the server URL `https://mcp.digitalsamba.com/mcp` with any MCP-compatible cl
 
 ## Available Tools
 
-The MCP server provides **158 tools** covering the complete Digital Samba API.
+The MCP server provides **162 tools** covering the complete Digital Samba API.
 
 ### Room Management (13 tools)
 | Tool | Description |
@@ -217,17 +217,21 @@ The MCP server provides **158 tools** covering the complete Digital Samba API.
 | `start-restreamer` | Start restreaming to external service |
 | `stop-restreamer` | Stop restreaming |
 
-### Analytics Tools (8 tools)
+### Analytics Tools (12 tools)
 | Tool | Description |
 |------|-------------|
-| `get-room-analytics` | Room usage analytics |
-| `get-usage-statistics` | Overall usage stats |
+| `get-room-analytics` | Room usage analytics (`currentPeriod` for the billing period) |
+| `get-usage-statistics` | Overall usage stats (`currentPeriod` for the billing period) |
 | `get-usage-analytics` | Usage analytics over time |
 | `get-participant-statistics` | Participant analytics |
 | `get-session-analytics` | Session analytics |
 | `get-live-analytics` | Live session metrics |
 | `get-live-room-analytics` | Live metrics for a room |
 | `get-participant-analytics` | Specific participant stats |
+| `get-plan-usage` | Participation minutes used vs the plan limit this billing period |
+| `get-current-period-statistics` | Live counts plus billing-period totals |
+| `get-usage-by-tag` | Usage per room tag (multi-tenant billing) |
+| `list-started-sessions` | Sessions started per browser |
 
 ### Communication Management (30 tools)
 | Tool | Description |

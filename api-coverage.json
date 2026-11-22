@@ -816,23 +816,31 @@
     },
     "GET /api/v1/statistics/team/current": {
       "operationId": "getTeamGlobalStatisticsByCurrentPeriod",
-      "pending": "No tool; current-billing-period team statistics.",
-      "issue": 26
+      "tools": [
+        "get-room-analytics",
+        "get-usage-analytics",
+        "get-usage-statistics"
+      ],
+      "note": "Called with currentPeriod: true (get-room-analytics without a roomId). Same body as GET /statistics over the billing period; the API ignores dates, so the tools reject them alongside currentPeriod."
     },
     "GET /api/v1/statistics/current": {
       "operationId": "getTeamStatisticsForCurrentPeriod",
-      "pending": "No tool; live current-period statistics (what get-live-analytics should probably call).",
-      "issue": 26
+      "tools": [
+        "get-current-period-statistics"
+      ]
     },
     "GET /api/v1/statistics/totals": {
       "operationId": "getTeamGlobalStatisticsByTags",
-      "pending": "No tool; per-tag usage totals (multi-tenant billing).",
-      "issue": 26
+      "tools": [
+        "get-usage-by-tag"
+      ]
     },
     "GET /api/v1/statistics/participants/started-sessions": {
       "operationId": "getStartedSessionsByParticipantUUIDs",
-      "pending": "No tool.",
-      "issue": 26
+      "tools": [
+        "list-started-sessions"
+      ],
+      "note": "Counts sessions per browser_id where that browser joined first (is_first_joined); not per user or participant."
     },
     "GET /api/v1/rooms/{room}/statistics": {
       "operationId": "getRoomStatisticsByPeriod",
@@ -842,8 +850,10 @@
     },
     "GET /api/v1/rooms/{room}/statistics/current": {
       "operationId": "getRoomStatisticsByCurrentPeriod",
-      "pending": "No tool; current-billing-period room statistics.",
-      "issue": 26
+      "tools": [
+        "get-room-analytics"
+      ],
+      "note": "Called by get-room-analytics with roomId and currentPeriod: true."
     },
     "GET /api/v1/sessions/{session}/statistics": {
       "operationId": "getSessionStatistics",
@@ -1015,8 +1025,9 @@
     },
     "GET /api/v1/usage": {
       "operationId": "getCurrentParticipationMinutesUsage",
-      "pending": "New tool get-usage (participation minutes used vs plan limit in the current billing period).",
-      "issue": 26
+      "tools": [
+        "get-plan-usage"
+      ]
     },
     "GET /api/v1/recordings/{recording}/captions": {
       "operationId": "downloadRecordingCaptions",

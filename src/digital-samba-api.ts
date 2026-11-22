@@ -2993,6 +2993,63 @@ export class DigitalSambaApiClient {
   }
 
   /**
+   * Get team usage per room tag (GET /statistics/totals).
+   *
+   * One row per tag of the team, zeroes included; untagged rooms report under
+   * `common`, and a room with several tags counts in full under each.
+   */
+  async getTeamStatisticsByTags(
+    params?: DateRangeParams,
+  ): Promise<Record<string, any>[]> {
+    const queryParams = new URLSearchParams();
+    if (params?.date_start) queryParams.append("date_start", params.date_start);
+    if (params?.date_end) queryParams.append("date_end", params.date_end);
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+    return this.request<Record<string, any>[]>(`/statistics/totals${query}`);
+  }
+
+  /**
+   * Count the sessions each browser started (joined first), most first
+   * (GET /statistics/participants/started-sessions). Paginated, max 100.
+   */
+  async getStartedSessionsByParticipant(
+    params?: DateRangeParams & {
+      limit?: number;
+      offset?: number;
+      order?: "asc" | "desc";
+    },
+  ): Promise<{
+    total_count: number;
+    data: { browser_id: string; sessions_started: number }[];
+  }> {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    const query = queryParams.toString() ? `?${queryParams.toString()}` : "";
+    return this.request(`/statistics/participants/started-sessions${query}`);
+  }
+
+  /**
+   * Participation minutes used in the current billing period against the
+   * plan's limit (GET /usage). Limit and percentage are null on a plan with
+   * no minutes limit.
+   */
+  async getCurrentUsage(): Promise<{
+    participation_minutes_used: number;
+    participation_minutes_limit: number | null;
+    participation_minutes_percentage: number | null;
+    period_start: string;
+    period_end: string;
+  }> {
+    return this.request("/usage");
+  }
+
+  /**
    * Get participant statistics
    */
   async getParticipantStatistics(
