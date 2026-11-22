@@ -159,8 +159,9 @@
     },
     "DELETE /api/v1/rooms/{room}/recordings": {
       "operationId": "deleteRecordingsByRoom",
-      "pending": "No tool; add delete-room-recordings.",
-      "issue": 26
+      "tools": [
+        "delete-room-recordings"
+      ]
     },
     "GET /api/v1/rooms": {
       "operationId": "getAllTeamRooms",
@@ -206,8 +207,9 @@
     },
     "DELETE /api/v1/rooms/{room}/resources": {
       "operationId": "deleteRoomResources",
-      "pending": "No tool; delete-room only reaches this via delete_resources while deleting the room itself. Add delete-room-resources.",
-      "issue": 26
+      "tools": [
+        "delete-room-resources"
+      ]
     },
     "DELETE /api/v1/sessions/{session}/chat": {
       "operationId": "deleteChatsBySession",
@@ -338,13 +340,15 @@
     },
     "GET /api/v1/rooms/{room}/participants": {
       "operationId": "getAllRoomParticipants",
-      "pending": "No tool or resource lists a room's participants across sessions; add list-room-participants.",
-      "issue": 26
+      "tools": [
+        "list-room-participants"
+      ]
     },
     "PATCH /api/v1/rooms/{room}/participants/{participant}": {
       "operationId": "updateParticipant",
-      "pending": "New tool update-participant (change a live participant's role).",
-      "issue": 26
+      "tools": [
+        "update-participant"
+      ]
     },
     "POST /api/v1/rooms/{room}/participants/{participant}/raise-hand": {
       "operationId": "raiseHand",
@@ -461,8 +465,9 @@
     },
     "POST /api/v1/recordings/{recording}/bookmarks": {
       "operationId": "addABookmarkToARecording",
-      "pending": "New tool add-recording-bookmark (participant, bookmark, time).",
-      "issue": 26
+      "tools": [
+        "add-recording-bookmark"
+      ]
     },
     "POST /api/v1/recordings/{recording}/archive": {
       "operationId": "archiveRecording",

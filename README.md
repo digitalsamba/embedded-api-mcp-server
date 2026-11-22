@@ -147,9 +147,9 @@ Use the server URL `https://mcp.digitalsamba.com/mcp` with any MCP-compatible cl
 
 ## Available Tools
 
-The MCP server provides **153 tools** covering the complete Digital Samba API.
+The MCP server provides **158 tools** covering the complete Digital Samba API.
 
-### Room Management (11 tools)
+### Room Management (13 tools)
 | Tool | Description |
 |------|-------------|
 | `create-room` | Create a new room |
@@ -163,6 +163,8 @@ The MCP server provides **153 tools** covering the complete Digital Samba API.
 | `list-live-rooms` | List rooms with active sessions |
 | `list-live-participants` | List all live participants |
 | `delete-rooms-by-tag` | Bulk delete rooms matching tags |
+| `list-room-participants` | List a room's participants across sessions |
+| `delete-room-resources` | Delete all session content, keep the room |
 
 ### Session Management (11 tools)
 | Tool | Description |
@@ -179,7 +181,7 @@ The MCP server provides **153 tools** covering the complete Digital Samba API.
 | `hard-delete-session-resources` | Permanently delete data |
 | `bulk-delete-session-data` | Bulk delete operations |
 
-### Recording Management (11 tools)
+### Recording Management (13 tools)
 | Tool | Description |
 |------|-------------|
 | `get-recordings` | List recordings with filters |
@@ -190,15 +192,18 @@ The MCP server provides **153 tools** covering the complete Digital Samba API.
 | `archive-recording` | Archive a recording |
 | `unarchive-recording` | Restore archived recording |
 | `get-recording-bookmarks` | Get recording bookmarks |
+| `add-recording-bookmark` | Add a bookmark to a recording |
+| `delete-room-recordings` | Delete every recording of a room |
 | `get-recording-captions` | Get WebVTT/SRT captions from stored transcripts |
 | `start-recording` | Start recording a session |
 | `stop-recording` | Stop recording |
 
-### Live Session Controls (14 tools)
+### Live Session Controls (15 tools)
 | Tool | Description |
 |------|-------------|
 | `start-transcription` | Start live transcription |
 | `stop-transcription` | Stop transcription |
+| `update-participant` | Change a live participant's role |
 | `raise-participant-hand` | Raise a participant's hand |
 | `lower-participant-hand` | Lower a participant's hand |
 | `raise-phone-participant-hand` | Raise phone participant hand |

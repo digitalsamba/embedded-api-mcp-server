@@ -281,7 +281,7 @@ describe('Room Tools', () => {
     it('should register all room tools', () => {
       const tools = registerRoomTools();
       
-      expect(tools).toHaveLength(11);
+      expect(tools).toHaveLength(13);
       expect(tools.map(t => t.name)).toEqual([
         'create-room',
         'update-room',
@@ -293,6 +293,8 @@ describe('Room Tools', () => {
         'list-rooms',
         'get-room-details',
         'list-live-rooms',
+        'list-room-participants',
+        'delete-room-resources',
         'list-live-participants'
       ]);
       
