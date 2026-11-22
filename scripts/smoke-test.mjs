@@ -30,7 +30,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const EXPECTED_TOOL_COUNT = 162;
+const EXPECTED_TOOL_COUNT = 167;
 
 // .env.local first (local dev secrets), then .env. Neither overrides a value
 // already exported in the environment.
@@ -294,6 +294,7 @@ const created = {
   libraryId: null,
   roleId: null,
   webhookId: null,
+  alertRecipientId: null,
 };
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 // Role names are capped at 30 characters by the API, so identifiers that go
@@ -816,6 +817,53 @@ async function run() {
     return "created and updated";
   });
 
+  // -- account administration (#26 group 6) --------------------------------
+  group("account");
+
+  await check(
+    "alert recipient create + update + delete (read back)",
+    async () => {
+      const email = `mcp-smoke-${shortId}@example.com`;
+      const added = await call("create-alert-recipient", { email });
+      created.alertRecipientId = added.match(/\(id ([0-9a-f-]+)\)/i)?.[1];
+      must(created.alertRecipientId, "no recipient id in output");
+      must(/confirmed/.test(added), "create not confirmed");
+      const renamed = `mcp-smoke-${shortId}-2@example.com`;
+      await call("update-alert-recipient", {
+        recipient_id: created.alertRecipientId,
+        email: renamed,
+      });
+      must(
+        (await call("list-alert-recipients")).includes(renamed),
+        "update did not land",
+      );
+      await call("delete-alert-recipient", {
+        recipient_id: created.alertRecipientId,
+      });
+      must(
+        !(await call("list-alert-recipients")).includes(
+          created.alertRecipientId,
+        ),
+        "still listed after delete",
+      );
+      created.alertRecipientId = null;
+      return "created, renamed, deleted";
+    },
+  );
+
+  await check(
+    "get-system-check-results names an unknown support ID",
+    async () => {
+      try {
+        await call("get-system-check-results", { support_id: "SC-SMOK-E000" });
+      } catch (error) {
+        must(/No system check SC-SMOK-E000/.test(error.message), error.message);
+        return "unknown ID explained";
+      }
+      throw new Error("an unknown support ID returned success");
+    },
+  );
+
   // -- no-session write tools, previously untested (#44) --------------------
   group("room-level");
 
@@ -1216,6 +1264,16 @@ async function cleanup() {
       "webhook",
       created.webhookId,
       () => call("delete-webhook", { webhookId: created.webhookId }, opts),
+    ],
+    [
+      "alert recipient",
+      created.alertRecipientId,
+      () =>
+        call(
+          "delete-alert-recipient",
+          { recipient_id: created.alertRecipientId },
+          opts,
+        ),
     ],
   ];
 

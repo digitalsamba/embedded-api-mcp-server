@@ -146,6 +146,14 @@ export type {
 export type WriteResult = Record<string, unknown>;
 
 /** A recording bookmark (RecordingBookmarkResource). `time` is seconds. */
+/** A team alert recipient (GET /alert-recipients). */
+export interface AlertRecipient {
+  id: string;
+  email: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface RecordingBookmark {
   id: string;
   bookmark: string;
@@ -3047,6 +3055,57 @@ export class DigitalSambaApiClient {
     period_end: string;
   }> {
     return this.request("/usage");
+  }
+
+  // Alert recipients and system checks (account administration)
+
+  /**
+   * Extra addresses that receive the team's usage alert emails, by email.
+   * The team owner is always notified and is not in this list.
+   */
+  async listAlertRecipients(): Promise<{
+    total_count: number;
+    data: AlertRecipient[];
+  }> {
+    return this.request("/alert-recipients");
+  }
+
+  /** Add an alert recipient. 422 if the address is already a recipient. */
+  async createAlertRecipient(email: string): Promise<AlertRecipient> {
+    return this.request<AlertRecipient>("/alert-recipients", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  /** Change an alert recipient's address. */
+  async updateAlertRecipient(
+    recipientId: string,
+    email: string,
+  ): Promise<AlertRecipient> {
+    return this.request<AlertRecipient>(
+      `/alert-recipients/${encodeURIComponent(recipientId)}`,
+      { method: "PATCH", body: JSON.stringify({ email }) },
+    );
+  }
+
+  /** Remove an alert recipient (204). */
+  async deleteAlertRecipient(recipientId: string): Promise<void> {
+    await this.request<void>(
+      `/alert-recipients/${encodeURIComponent(recipientId)}`,
+      { method: "DELETE" },
+    );
+  }
+
+  /**
+   * The report a pre-call system check uploaded, by the support ID the user
+   * was shown. 404 when there is no such run for this team, or (with a
+   * different message) when the run has not uploaded its results yet.
+   */
+  async getSystemCheckResults(supportId: string): Promise<Record<string, any>> {
+    return this.request<Record<string, any>>(
+      `/system-checks/${encodeURIComponent(supportId)}`,
+    );
   }
 
   /**

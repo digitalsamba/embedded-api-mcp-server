@@ -147,7 +147,7 @@ Use the server URL `https://mcp.digitalsamba.com/mcp` with any MCP-compatible cl
 
 ## Available Tools
 
-The MCP server provides **162 tools** covering the complete Digital Samba API.
+The MCP server provides **167 tools** covering the complete Digital Samba API.
 
 ### Room Management (13 tools)
 | Tool | Description |
@@ -345,6 +345,15 @@ The MCP server provides **162 tools** covering the complete Digital Samba API.
 | `create-webhook` | Create webhook |
 | `update-webhook` | Update webhook |
 | `delete-webhook` | Delete webhook |
+
+### Account Administration (5 tools)
+| Tool | Description |
+|------|-------------|
+| `list-alert-recipients` | Extra recipients of usage alert emails |
+| `create-alert-recipient` | Add a usage alert recipient |
+| `update-alert-recipient` | Change a recipient's email |
+| `delete-alert-recipient` | Remove a recipient |
+| `get-system-check-results` | Pre-call system check report by support ID |
 
 ### Export Tools (9 tools)
 | Tool | Description |

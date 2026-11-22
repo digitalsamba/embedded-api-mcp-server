@@ -62,6 +62,11 @@ import {
   executeAnalyticsTool,
 } from "./tools/analytics-tools/index.js";
 import {
+  registerAccountTools,
+  executeAccountTool,
+  ACCOUNT_TOOL_NAMES,
+} from "./tools/account-management/index.js";
+import {
   registerLiveSessionTools,
   executeLiveSessionTool,
 } from "./tools/live-session-controls/index.js";
@@ -202,6 +207,7 @@ function listAllTools(): any[] {
     ...registerSessionTools(),
     ...registerRecordingTools(),
     ...registerAnalyticsTools(),
+    ...registerAccountTools(),
     ...registerLiveSessionTools(),
     ...registerCommunicationTools(),
     ...registerPollTools(),
@@ -431,6 +437,10 @@ export function createServer(config: ServerConfig = {}): Server {
         name === "list-started-sessions"
       ) {
         return await executeAnalyticsTool(name, args || {}, client);
+      }
+      // Account administration tools (alert recipients, system checks)
+      else if ((ACCOUNT_TOOL_NAMES as readonly string[]).includes(name)) {
+        return await executeAccountTool(name, args || {}, client);
       }
       // Session management tools
       else if (
