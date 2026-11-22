@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-22
+
+Completes API coverage (#26): every operation in the published OpenAPI spec
+now has a tool, a resource or a documented exclusion in `api-coverage.json`.
+
+Tool count: **167** (was 145). Resources: **39** (was 37). No tool or
+resource was removed or renamed.
+
+(1.2.0 to 1.4.0 are described in their GitHub Releases only.)
+
+### Fixed
+
+- **`delete-room` and `delete-rooms-by-tag` deleted room content when
+  `delete_resources` was the string `"false"`.** `delete_resources`,
+  `delete_history` and `delete_library` were not converted to booleans, and the
+  API reads them by PHP truthiness. They are now normalised like every other
+  boolean (#70).
+- `send-chat-message` works with the re-released chat endpoint: `participant`
+  is required (the API already refused calls without it), `breakoutId` is
+  accepted, and delivery is confirmed through `list-chat-messages` (#65, #67).
+- `create-room` / `update-room`: the API has no room name, so `name` was
+  silently dropped. It is now stored as the description when none is given,
+  and is no longer required (#64).
+- The `getRecordingBookmarks` type matches the API (`bookmark`, `time`,
+  `session_id`, `participant_id`) (#70).
+
+### Added
+
+- **Chat and Q&A reads**: `list-chat-messages`, `list-questions` (#67)
+- **Polls and quizzes**: `get-poll`, `get-poll-results`,
+  `export-quiz-results`; resource `digitalsamba://exports/quizzes/{roomId}`
+  (#68)
+- **Shared notes**: `export-shared-notes`, `delete-room-shared-notes`;
+  resource `digitalsamba://exports/shared-notes/{roomId}` (#69)
+- **Rooms, participants and recordings**: `list-room-participants`,
+  `delete-room-resources`, `delete-room-recordings`, `update-participant`
+  (change a live participant's role), `add-recording-bookmark` (#70)
+- **Recordings**: `get-recording-captions` (#66)
+- **Statistics and usage**: `get-plan-usage` (minutes used against the plan
+  limit), `get-current-period-statistics`, `get-usage-by-tag` (multi-tenant
+  billing), `list-started-sessions`; `currentPeriod` option on
+  `get-usage-statistics`, `get-usage-analytics` and `get-room-analytics`
+  (#71)
+- **Account administration**: `list-alert-recipients`,
+  `create-alert-recipient`, `update-alert-recipient`,
+  `delete-alert-recipient`, `get-system-check-results` (#72)
+- `always_show_names_on_tiles_enabled` on `create-room`, `update-room` and
+  `update-default-room-settings` (#66)
+
+Every new write tool confirms its effect by reading the state back rather than
+trusting the API's 2xx.
+
 ## [1.1.0] - 2026-08-12
 
 First production release since the July 2026 revival. Production had been
