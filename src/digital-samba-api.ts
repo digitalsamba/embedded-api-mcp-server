@@ -65,6 +65,8 @@ import type {
   QuizResult,
   RestreamerOptions,
   QAParticipant,
+  ChatMessageRecord,
+  QuestionRecord,
 
   // Content types
   Library,
@@ -183,6 +185,16 @@ export function assertSafeApiPath(endpoint: string): void {
       reject(`the request path contains a "${decoded}" segment`);
     }
   }
+}
+
+/** "?k=v&..." from the defined entries of a params object, or "". */
+function toQuery(params?: object): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params ?? {})) {
+    if (value !== undefined) query.append(key, String(value));
+  }
+  const text = query.toString();
+  return text ? `?${text}` : "";
 }
 
 /** Deadline for one upstream API call; API_TIMEOUT_MS overrides it. */
@@ -2351,6 +2363,32 @@ export class DigitalSambaApiClient {
     }
 
     return response.text();
+  }
+
+  /**
+   * List a room's chat messages as paginated JSON (newest first by default).
+   * Only rooms that persist chat have any.
+   */
+  async listChatMessages(
+    roomId: string,
+    params?: PaginationParams & { session_id?: string },
+  ): Promise<ApiResponse<ChatMessageRecord>> {
+    return this.request<ApiResponse<ChatMessageRecord>>(
+      `/rooms/${roomId}/chat${toQuery(params)}`,
+    );
+  }
+
+  /**
+   * List a room's questions, with their votes and answers, as paginated JSON
+   * (newest first by default).
+   */
+  async listQuestions(
+    roomId: string,
+    params?: PaginationParams & { session_id?: string },
+  ): Promise<ApiResponse<QuestionRecord>> {
+    return this.request<ApiResponse<QuestionRecord>>(
+      `/rooms/${roomId}/questions${toQuery(params)}`,
+    );
   }
 
   /**

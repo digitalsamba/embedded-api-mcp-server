@@ -265,7 +265,7 @@ describe("send-chat-message", () => {
     const apiClient: any = {
       getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: true }),
       sendChatMessage: jest.fn().mockResolvedValue({}),
-      exportChatMessages: jest.fn().mockResolvedValue("[]"),
+      listChatMessages: jest.fn().mockResolvedValue({ data: [] }),
     };
 
     const pending = executeCommunicationTool(
@@ -277,18 +277,21 @@ describe("send-chat-message", () => {
     const result = await pending;
 
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("absent from the room's chat export");
+    expect(textOf(result)).toContain("absent from the room's chat messages");
     // Polled a few times before calling it missing.
-    expect(apiClient.exportChatMessages.mock.calls.length).toBeGreaterThan(1);
+    expect(apiClient.listChatMessages.mock.calls.length).toBeGreaterThan(1);
   });
 
-  it("confirms delivery when the message appears in the export", async () => {
+  it("confirms delivery, with the id, when the message is in the room's chat", async () => {
     const apiClient: any = {
       getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: true }),
       sendChatMessage: jest.fn().mockResolvedValue({}),
-      exportChatMessages: jest
-        .fn()
-        .mockResolvedValue(JSON.stringify([{ message: "hello" }])),
+      listChatMessages: jest.fn().mockResolvedValue({
+        data: [
+          { id: "m-2", message: "hello there" },
+          { id: "m-1", message: "hello" },
+        ],
+      }),
     };
 
     const result = await executeCommunicationTool(
@@ -299,17 +302,23 @@ describe("send-chat-message", () => {
 
     expect(result.isError).toBeUndefined();
     expect(textOf(result)).toContain("confirmed by read-back");
+    // Exact match, not substring: "hello there" is not the message sent.
+    expect(textOf(result)).toContain("chat message id m-1");
+    expect(apiClient.listChatMessages).toHaveBeenCalledWith("r1", {
+      limit: 100,
+      order: "desc",
+    });
   });
 
-  it("confirms a message that reaches the export on a later attempt", async () => {
+  it("confirms a message that reaches the chat list on a later attempt", async () => {
     jest.useFakeTimers();
     const apiClient: any = {
       getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: true }),
       sendChatMessage: jest.fn().mockResolvedValue({}),
-      exportChatMessages: jest
+      listChatMessages: jest
         .fn()
-        .mockResolvedValueOnce("[]")
-        .mockResolvedValue(JSON.stringify([{ message: "hello" }])),
+        .mockResolvedValueOnce({ data: [] })
+        .mockResolvedValue({ data: [{ id: "m-1", message: "hello" }] }),
     };
 
     const pending = executeCommunicationTool(
@@ -332,7 +341,7 @@ describe("send-chat-message", () => {
     const apiClient: any = {
       getRoom: jest.fn().mockResolvedValue({ chat_persistence_enabled: false }),
       sendChatMessage: jest.fn().mockResolvedValue({}),
-      exportChatMessages: jest.fn().mockResolvedValue("[]"),
+      listChatMessages: jest.fn().mockResolvedValue({ data: [] }),
     };
 
     const result = await executeCommunicationTool(
@@ -344,7 +353,7 @@ describe("send-chat-message", () => {
     expect(result.isError).toBeUndefined();
     expect(textOf(result)).toContain("not verified");
     expect(textOf(result)).not.toContain("NOT delivered");
-    expect(apiClient.exportChatMessages).not.toHaveBeenCalled();
+    expect(apiClient.listChatMessages).not.toHaveBeenCalled();
   });
 
   it("sends the participant and maps breakoutId to breakout_id", async () => {
@@ -419,11 +428,9 @@ describe("create-question", () => {
   it("recovers the question id the create endpoint does not return", async () => {
     const apiClient: any = {
       createQuestion: jest.fn().mockResolvedValue({}),
-      exportQA: jest
-        .fn()
-        .mockResolvedValue(
-          JSON.stringify([{ id: "q-42", question: "Is this on?" }]),
-        ),
+      listQuestions: jest.fn().mockResolvedValue({
+        data: [{ id: "q-42", question: "Is this on?" }],
+      }),
     };
 
     const result = await executeCommunicationTool(
@@ -436,10 +443,39 @@ describe("create-question", () => {
     expect(textOf(result)).toContain("question id q-42");
   });
 
+  it("pages past the first 100 questions", async () => {
+    const filler = Array.from({ length: 100 }, (_, i) => ({
+      id: `q-${i}`,
+      question: `other ${i}`,
+    }));
+    const apiClient: any = {
+      createQuestion: jest.fn().mockResolvedValue({}),
+      listQuestions: jest
+        .fn()
+        .mockResolvedValueOnce({ data: filler })
+        .mockResolvedValue({
+          data: [{ id: "q-old", question: "Is this on?" }],
+        }),
+    };
+
+    const result = await executeCommunicationTool(
+      "create-question",
+      { roomId: "r1", question: "Is this on?", participant },
+      apiClient,
+    );
+
+    expect(textOf(result)).toContain("question id q-old");
+    expect(apiClient.listQuestions).toHaveBeenLastCalledWith("r1", {
+      limit: 100,
+      offset: 100,
+      order: "desc",
+    });
+  });
+
   it("reports an error when the question never appears", async () => {
     const apiClient: any = {
       createQuestion: jest.fn().mockResolvedValue({}),
-      exportQA: jest.fn().mockResolvedValue("[]"),
+      listQuestions: jest.fn().mockResolvedValue({ data: [] }),
     };
 
     const result = await executeCommunicationTool(
@@ -449,7 +485,116 @@ describe("create-question", () => {
     );
 
     expect(result.isError).toBe(true);
-    expect(textOf(result)).toContain("absent from the room's Q&A export");
+    expect(textOf(result)).toContain("absent from the room's questions");
+    // A short page means the list is exhausted: no further calls.
+    expect(apiClient.listQuestions).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("answer-question", () => {
+  const participant = { name: "Ada", external_id: "ada-1" };
+  const args = { roomId: "r1", questionId: "q-1", answer: "Yes", participant };
+
+  it("confirms the answer, with its id, under the question", async () => {
+    const apiClient: any = {
+      answerQuestion: jest.fn().mockResolvedValue({}),
+      listQuestions: jest.fn().mockResolvedValue({
+        data: [
+          { id: "q-2", question: "x", answers: [{ id: "a-9", answer: "Yes" }] },
+          { id: "q-1", question: "y", answers: [{ id: "a-1", answer: "Yes" }] },
+        ],
+      }),
+    };
+
+    const result = await executeCommunicationTool(
+      "answer-question",
+      args,
+      apiClient,
+    );
+
+    expect(result.isError).toBeUndefined();
+    expect(textOf(result)).toContain("answer id a-1");
+  });
+
+  it("reports an error when the answer is missing from the question", async () => {
+    const apiClient: any = {
+      answerQuestion: jest.fn().mockResolvedValue({}),
+      listQuestions: jest.fn().mockResolvedValue({
+        data: [{ id: "q-1", question: "y", answers: [] }],
+      }),
+    };
+
+    const result = await executeCommunicationTool(
+      "answer-question",
+      args,
+      apiClient,
+    );
+
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain("absent from the question's answers");
+  });
+
+  it("reports an error when the question itself is not found", async () => {
+    const apiClient: any = {
+      answerQuestion: jest.fn().mockResolvedValue({}),
+      listQuestions: jest.fn().mockResolvedValue({ data: [] }),
+    };
+
+    const result = await executeCommunicationTool(
+      "answer-question",
+      args,
+      apiClient,
+    );
+
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain("q-1 is not among the room's questions");
+  });
+});
+
+describe("list-chat-messages / list-questions", () => {
+  it.each([
+    ["list-chat-messages", "listChatMessages"],
+    ["list-questions", "listQuestions"],
+  ])("%s passes filters through and returns the page", async (tool, method) => {
+    const page = { total_count: 1, data: [{ id: "x1" }] };
+    const apiClient: any = { [method]: jest.fn().mockResolvedValue(page) };
+
+    const result = await executeCommunicationTool(
+      tool,
+      { room_id: "r1", session_id: "s1", limit: 10, offset: 20, order: "asc" },
+      apiClient,
+    );
+
+    expect(result.isError).toBeUndefined();
+    expect(JSON.parse(textOf(result))).toEqual(page);
+    expect(apiClient[method]).toHaveBeenCalledWith("r1", {
+      session_id: "s1",
+      limit: 10,
+      offset: 20,
+      order: "asc",
+    });
+  });
+
+  it.each(["list-chat-messages", "list-questions"])(
+    "%s requires room_id",
+    async (tool) => {
+      const result = await executeCommunicationTool(tool, {}, {} as any);
+      expect(result.isError).toBe(true);
+      expect(textOf(result)).toContain("Room ID is required");
+    },
+  );
+
+  it("surfaces API errors", async () => {
+    const apiClient: any = {
+      listQuestions: jest.fn().mockRejectedValue(new Error("Room not found")),
+    };
+    const result = await executeCommunicationTool(
+      "list-questions",
+      { room_id: "nope" },
+      apiClient,
+    );
+    expect(result.isError).toBe(true);
+    expect(textOf(result)).toContain("Error listing questions: Room not found");
   });
 });
 

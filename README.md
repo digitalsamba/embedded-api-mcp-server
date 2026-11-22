@@ -122,7 +122,7 @@ Use the server URL `https://mcp.digitalsamba.com/mcp` with any MCP-compatible cl
 
 ### Communication Tools
 - Create and manage polls
-- Export chat history, Q&A, and transcripts
+- List and export chat history, Q&A, and transcripts
 - Delete session data (GDPR compliance)
 - AI-generated session summaries
 
@@ -147,7 +147,7 @@ Use the server URL `https://mcp.digitalsamba.com/mcp` with any MCP-compatible cl
 
 ## Available Tools
 
-The MCP server provides **146 tools** covering the complete Digital Samba API.
+The MCP server provides **148 tools** covering the complete Digital Samba API.
 
 ### Room Management (11 tools)
 | Tool | Description |
@@ -224,7 +224,7 @@ The MCP server provides **146 tools** covering the complete Digital Samba API.
 | `get-live-room-analytics` | Live metrics for a room |
 | `get-participant-analytics` | Specific participant stats |
 
-### Communication Management (27 tools)
+### Communication Management (29 tools)
 | Tool | Description |
 |------|-------------|
 | `list-room-transcripts` | List room transcripts |
@@ -240,7 +240,9 @@ The MCP server provides **146 tools** covering the complete Digital Samba API.
 | `delete-room-summaries` | Delete all room summaries |
 | `delete-session-recordings` | Delete session recordings |
 | `delete-session-resources` | Delete session resources |
+| `list-chat-messages` | List a room's chat messages |
 | `send-chat-message` | Send a chat message to a room |
+| `list-questions` | List a room's questions with votes and answers |
 | `create-question` | Create a Q&A question |
 | `update-question` | Update a question |
 | `delete-question` | Delete a question |

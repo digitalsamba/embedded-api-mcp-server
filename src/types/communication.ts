@@ -92,3 +92,32 @@ export interface QAParticipant {
   /** External participant id (used with name) */
   external_id?: string;
 }
+
+/**
+ * A chat message as GET /rooms/{room}/chat returns it (Common\ChatMessageResource).
+ * The collection drops empty fields (array_filter), hence the optionals.
+ */
+export interface ChatMessageRecord {
+  id: string;
+  message: string;
+  is_reply?: boolean;
+  breakout_id?: string;
+  parent_id?: string;
+  participant_id?: string;
+  external_participant_id?: string;
+  participant_name?: string;
+  created_at: string;
+}
+
+/** A question as GET /rooms/{room}/questions returns it (QuestionResource). */
+export interface QuestionRecord {
+  id: string;
+  question: string;
+  breakout_id: string | null;
+  participant_id: string;
+  external_participant_id: string | null;
+  participant_name: string;
+  votes?: number;
+  answers?: unknown[];
+  created_at: string;
+}

@@ -30,7 +30,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const EXPECTED_TOOL_COUNT = 145;
+const EXPECTED_TOOL_COUNT = 148;
 
 // .env.local first (local dev secrets), then .env. Neither overrides a value
 // already exported in the environment.
@@ -380,6 +380,21 @@ async function run() {
       return "name read back as description";
     },
   );
+
+  // -- chat and Q&A reads (no live session needed) -------------------------
+  group("chat and Q&A reads");
+
+  for (const tool of ["list-chat-messages", "list-questions"]) {
+    await check(`${tool} returns an empty page for a new room`, async () => {
+      const page = parseJson(
+        await call(tool, { room_id: created.roomId, limit: 5, order: "asc" }),
+      );
+      must(Array.isArray(page?.data), "no data array in the response");
+      must(page.data.length === 0, `new room has ${page.data.length} rows`);
+      must(Number(page.total_count) === 0, `total_count ${page.total_count}`);
+      return "data [] / total_count 0";
+    });
+  }
 
   // -- polls ---------------------------------------------------------------
   group("polls");

@@ -491,6 +491,7 @@ export function createServer(config: ServerConfig = {}): Server {
         name.includes("-summaries") ||
         name.includes("question") ||
         name === "send-chat-message" ||
+        name === "list-chat-messages" ||
         name === "delete-session-recordings" ||
         name === "delete-session-resources"
       ) {
