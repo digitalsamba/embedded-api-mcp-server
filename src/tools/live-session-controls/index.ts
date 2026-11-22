@@ -10,6 +10,7 @@
  * - stop-transcription: Stop transcription for a session
  * - phone-participants-joined: Register phone participants joining
  * - phone-participants-left: Register phone participants leaving
+ * - update-participant: Change a live participant's role
  *
  * Note: Recording controls (start/stop) are in the recording-management module
  * Note: Session termination (end-session) is in the session-management module
@@ -167,6 +168,33 @@ export function registerLiveSessionTools(): ToolDefinition[] {
           },
         },
         required: ["roomId", "callIds"],
+      },
+    },
+    {
+      name: "update-participant",
+      description:
+        '[Live Session Controls] Change the role of a participant who is in a live session, e.g. promote an attendee to moderator. Use when users say: "make this participant a moderator", "change their role", "promote to presenter", "demote participant". Requires room_id, participant_id (a live participant, see list-room-participants with live true) and role (a role name or ID that the room allows: the roles in get-room-details, or the account default roles when the room has none of its own; any other role is refused as invalid). Only works during an active session.',
+      annotations: getToolAnnotations(
+        "update-participant",
+        "Update Participant",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room",
+          },
+          participant_id: {
+            type: "string",
+            description: "The ID of a participant in the live session",
+          },
+          role: {
+            type: "string",
+            description: "Role name (e.g. moderator) or role ID to switch to",
+          },
+        },
+        required: ["room_id", "participant_id", "role"],
       },
     },
     {
@@ -415,6 +443,8 @@ export async function executeLiveSessionTool(
       return handlePhoneParticipantsJoined(params, _apiClient);
     case "phone-participants-left":
       return handlePhoneParticipantsLeft(params, _apiClient);
+    case "update-participant":
+      return handleUpdateParticipant(params, _apiClient);
     case "raise-participant-hand":
       return handleRaiseParticipantHand(params, _apiClient);
     case "lower-participant-hand":
@@ -744,6 +774,73 @@ async function handlePhoneParticipantsLeft(
       isError: true,
     };
   }
+}
+
+/**
+ * Handle update participant (change a live participant's role)
+ *
+ * PATCH /rooms/{room}/participants/{participant} binds a live participant
+ * (404 otherwise), validates the role against the room's roles (422), and
+ * answers 400 when the signalling server refuses the change. It returns an
+ * empty body, so the change is read back from the room's live participant
+ * list, which follows the signalling server within a few seconds.
+ */
+export const ROLE_READBACK = { attempts: 4, delayMs: 1000 };
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function handleUpdateParticipant(
+  params: { room_id: string; participant_id: string; role: string },
+  apiClient: DigitalSambaApiClient,
+): Promise<any> {
+  const { room_id, participant_id, role } = params;
+
+  if (!role || String(role).trim() === "") {
+    return {
+      content: [{ type: "text", text: "role is required." }],
+      isError: true,
+    };
+  }
+
+  logger.info("Updating participant role", { room_id, participant_id, role });
+
+  return verifiedWrite({
+    required: { room_id, participant_id },
+    verb: "Changed the role of",
+    describe: `participant ${participant_id} in room ${room_id} to ${role}`,
+    errorLabel: "updating participant",
+    action: () => apiClient.updateParticipant(room_id, participant_id, role),
+    verify: async () => {
+      // The list reports role names; a role given by ID is resolved first.
+      const wanted = UUID.test(role)
+        ? (await apiClient.getRole(role)).name
+        : role;
+      let current: string | undefined;
+      for (let attempt = 1; attempt <= ROLE_READBACK.attempts; attempt++) {
+        const page = await apiClient.listRoomParticipants(room_id, {
+          live: true,
+        });
+        const row = (page?.data ?? []).find(
+          (p: { id?: string }) => p.id === participant_id,
+        ) as { role?: string } | undefined;
+        if (!row) {
+          throw new Error("the participant is no longer in the live session");
+        }
+        current = row.role;
+        if (current === wanted) break;
+        if (attempt < ROLE_READBACK.attempts) {
+          await new Promise((r) => setTimeout(r, ROLE_READBACK.delayMs));
+        }
+      }
+      return {
+        landed: current === wanted,
+        evidence:
+          current === wanted
+            ? `the participant now has role ${current}`
+            : `the participant still has role ${current}`,
+      };
+    },
+  });
 }
 
 /**

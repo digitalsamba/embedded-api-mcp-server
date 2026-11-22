@@ -409,7 +409,9 @@ export function createServer(config: ServerConfig = {}): Server {
         name === "get-room-details" ||
         name === "list-live-rooms" ||
         name === "list-live-participants" ||
-        name === "delete-rooms-by-tag"
+        name === "delete-rooms-by-tag" ||
+        name === "list-room-participants" ||
+        name === "delete-room-resources"
       ) {
         return await executeRoomTool(name, args || {}, request, { apiUrl });
       }
@@ -464,6 +466,7 @@ export function createServer(config: ServerConfig = {}): Server {
         name === "stop-transcription" ||
         name === "phone-participants-joined" ||
         name === "phone-participants-left" ||
+        name === "update-participant" ||
         name === "raise-participant-hand" ||
         name === "lower-participant-hand" ||
         name === "raise-phone-participant-hand" ||

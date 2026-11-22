@@ -6,6 +6,7 @@
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { DigitalSambaApiClient } from "../digital-samba-api.js";
 import { getToolAnnotations } from "../tool-annotations.js";
+import { countOf, verifiedWrite } from "./verified-write.js";
 
 export function registerRecordingTools(): Tool[] {
   return [
@@ -169,7 +170,7 @@ export function registerRecordingTools(): Tool[] {
     {
       name: "get-recording-bookmarks",
       description:
-        '[Recording Management] Get bookmarks for a recording. Use when users say: "get recording bookmarks", "show bookmarks", "list recording markers", "get recording highlights". Requires recording_id. Returns timestamps and labels of bookmarks added during recording.',
+        '[Recording Management] Get bookmarks for a recording. Use when users say: "get recording bookmarks", "show bookmarks", "list recording markers", "get recording highlights". Requires recording_id. Returns the text, time in seconds, session and participant of each bookmark.',
       annotations: getToolAnnotations(
         "get-recording-bookmarks",
         "Get Recording Bookmarks",
@@ -207,6 +208,68 @@ export function registerRecordingTools(): Tool[] {
           },
         },
         required: ["recording_id"],
+      },
+    },
+    {
+      name: "delete-room-recordings",
+      description:
+        '[Recording Management] Permanently delete EVERY recording of a room, from all its sessions. Use when users say: "delete all recordings of this room", "remove the room\'s recordings", "wipe room recordings". Requires room_id. Cannot be undone; to delete one recording use delete-recording.',
+      annotations: getToolAnnotations(
+        "delete-room-recordings",
+        "Delete Room Recordings",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: {
+            type: "string",
+            description: "The ID of the room whose recordings to delete",
+          },
+        },
+        required: ["room_id"],
+      },
+    },
+    {
+      name: "add-recording-bookmark",
+      description:
+        '[Recording Management] Add a bookmark (a labelled point in time) to a recording. Use when users say: "bookmark this recording at", "add a marker at 5 minutes", "mark the moment when". Requires recording_id, bookmark (text, max 255), time (seconds from the start, up to the recording length) and the participant who adds it: participant_id from the recorded session, or participant_name + participant_external_id matching one. The room must have recording_bookmarks_enabled.',
+      annotations: getToolAnnotations(
+        "add-recording-bookmark",
+        "Add Recording Bookmark",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          recording_id: {
+            type: "string",
+            description: "The ID of the recording",
+          },
+          bookmark: {
+            type: "string",
+            description: "Bookmark text (1-255 characters)",
+          },
+          time: {
+            type: "integer",
+            minimum: 0,
+            description: "Seconds from the start of the recording",
+          },
+          participant_id: {
+            type: "string",
+            description:
+              "ID of a participant of the recorded session (see list-session-participants)",
+          },
+          participant_name: {
+            type: "string",
+            description:
+              "Participant name, with participant_external_id, instead of participant_id",
+          },
+          participant_external_id: {
+            type: "string",
+            description:
+              "Participant external ID, with participant_name, instead of participant_id",
+          },
+        },
+        required: ["recording_id", "bookmark", "time"],
       },
     },
   ];
@@ -361,6 +424,86 @@ export async function executeRecordingTool(
           },
         ],
       };
+    }
+
+    case "delete-room-recordings": {
+      const roomId = args.room_id;
+      return verifiedWrite({
+        required: { room_id: roomId?.trim?.() },
+        describe: `all recordings of room ${roomId}`,
+        verb: "Deleted",
+        errorLabel: "deleting room recordings",
+        action: () => client.deleteRoomRecordings(roomId),
+        verify: async () => {
+          const page = await client.listRecordings({
+            room_id: roomId,
+            limit: 1,
+          });
+          const total = Number(page?.total_count ?? countOf(page));
+          if (!Number.isFinite(total)) {
+            throw new Error("could not count the room's recordings");
+          }
+          return {
+            landed: total === 0,
+            evidence:
+              total === 0
+                ? "the room now lists no recordings"
+                : `the room still lists ${total} recording(s)`,
+          };
+        },
+      });
+    }
+
+    case "add-recording-bookmark": {
+      const {
+        recording_id,
+        bookmark,
+        time,
+        participant_id,
+        participant_name,
+        participant_external_id,
+      } = args;
+      if (!participant_id && !(participant_name && participant_external_id)) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "Give participant_id, or both participant_name and participant_external_id.",
+            },
+          ],
+          isError: true,
+        };
+      }
+      const participant = participant_id
+        ? { id: participant_id }
+        : { name: participant_name, external_id: participant_external_id };
+
+      return verifiedWrite({
+        required: { recording_id, bookmark, time },
+        describe: `a bookmark on recording ${recording_id}`,
+        verb: "Added",
+        errorLabel: "adding recording bookmark",
+        action: () =>
+          client.createRecordingBookmark(recording_id, {
+            participant,
+            bookmark,
+            time: Number(time),
+          }),
+        verify: async (created) => {
+          const list = await client.getRecordingBookmarks(recording_id);
+          // A bare array today; accept the paginated envelope too.
+          const rows = Array.isArray(list)
+            ? list
+            : ((list as { data?: typeof list }).data ?? []);
+          const found = rows.find((b) => b.id === created?.id);
+          return {
+            landed: !!found,
+            evidence: found
+              ? `bookmark ${found.id} "${found.bookmark}" at ${found.time}s`
+              : "the new bookmark is not in the recording's bookmarks",
+          };
+        },
+      });
     }
 
     default:

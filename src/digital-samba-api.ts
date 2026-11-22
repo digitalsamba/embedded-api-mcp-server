@@ -145,6 +145,16 @@ export type {
  */
 export type WriteResult = Record<string, unknown>;
 
+/** A recording bookmark (RecordingBookmarkResource). `time` is seconds. */
+export interface RecordingBookmark {
+  id: string;
+  bookmark: string;
+  time: number;
+  session_id: string;
+  participant_id: string;
+  created_at: string;
+}
+
 /**
  * Refuse an API path whose segments would be rewritten before it is sent.
  *
@@ -826,12 +836,49 @@ export class DigitalSambaApiClient {
   }
 
   /**
-   * Delete all resources for a room
+   * Delete all content of a room's sessions, keeping the room. The API
+   * refuses (400) while the room has a live session.
    */
-  async deleteRoomResources(roomId: string): Promise<void> {
+  async deleteRoomResources(
+    roomId: string,
+    options?: { delete_history?: boolean; delete_library?: boolean },
+  ): Promise<void> {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+
     await this.request<void>(`/rooms/${roomId}/resources`, {
       method: "DELETE",
+      body: options ? JSON.stringify(options) : undefined,
     });
+  }
+
+  /**
+   * Delete every recording of a room
+   */
+  async deleteRoomRecordings(roomId: string): Promise<void> {
+    if (this.cache) {
+      this.cache.invalidateNamespace("api");
+    }
+
+    await this.request<void>(`/rooms/${roomId}/recordings`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Change a live participant's role. `role` is a role name or id that the
+   * room allows. The API answers 400 when the signalling server refuses.
+   */
+  async updateParticipant(
+    roomId: string,
+    participantId: string,
+    role: string,
+  ): Promise<WriteResult> {
+    return this.request<WriteResult>(
+      `/rooms/${roomId}/participants/${participantId}`,
+      { method: "PATCH", body: JSON.stringify({ role }) },
+    );
   }
 
   // Live Participants
@@ -1240,22 +1287,32 @@ export class DigitalSambaApiClient {
   /**
    * Get bookmarks for a recording
    */
-  async getRecordingBookmarks(recordingId: string): Promise<
-    Array<{
-      id: string;
-      timestamp: number;
-      label?: string;
-      created_at: string;
-    }>
-  > {
-    return this.request<
-      Array<{
-        id: string;
-        timestamp: number;
-        label?: string;
-        created_at: string;
-      }>
-    >(`/recordings/${recordingId}/bookmarks`);
+  async getRecordingBookmarks(
+    recordingId: string,
+  ): Promise<RecordingBookmark[]> {
+    return this.request<RecordingBookmark[]>(
+      `/recordings/${recordingId}/bookmarks`,
+    );
+  }
+
+  /**
+   * Add a bookmark to a recording. `participant` is either an existing
+   * participant `id` from the recorded session, or `name` + `external_id`
+   * (matched against that session; a new participant is made only when the
+   * session is still live). `time` is seconds into the recording.
+   */
+  async createRecordingBookmark(
+    recordingId: string,
+    data: {
+      participant: { id?: string; name?: string; external_id?: string };
+      bookmark: string;
+      time: number;
+    },
+  ): Promise<RecordingBookmark> {
+    return this.request<RecordingBookmark>(
+      `/recordings/${recordingId}/bookmarks`,
+      { method: "POST", body: JSON.stringify(data) },
+    );
   }
 
   /**

@@ -30,7 +30,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const EXPECTED_TOOL_COUNT = 153;
+const EXPECTED_TOOL_COUNT = 158;
 
 // .env.local first (local dev secrets), then .env. Neither overrides a value
 // already exported in the environment.
@@ -1025,6 +1025,44 @@ async function run() {
     },
   );
 
+  // -- room participants and content (late: this wipes the room) ----------
+  group("room content");
+
+  await check("list-room-participants is empty for a new room", async () => {
+    const text = await call("list-room-participants", {
+      room_id: created.roomId,
+    });
+    must(/No participants found/.test(text), `got: ${text.slice(0, 120)}`);
+    return "none";
+  });
+
+  await check("update-participant refuses a participant not live", async () => {
+    const error = await callExpectingError("update-participant", {
+      room_id: created.roomId,
+      participant_id: "00000000-0000-0000-0000-000000000000",
+      role: "moderator",
+    });
+    must(/404|not found/i.test(error), `got: ${error.slice(0, 120)}`);
+    return "404 surfaced";
+  });
+
+  await check("delete-room-recordings confirms by read-back", async () => {
+    const text = await call("delete-room-recordings", {
+      room_id: created.roomId,
+    });
+    must(/confirmed by read-back/.test(text), `got: ${text.slice(0, 160)}`);
+    return "no recordings";
+  });
+
+  await check("delete-room-resources confirms by read-back", async () => {
+    const text = await call("delete-room-resources", {
+      room_id: created.roomId,
+      delete_history: "false",
+    });
+    must(/confirmed by read-back/.test(text), `got: ${text.slice(0, 160)}`);
+    return "room content empty";
+  });
+
   // -- honest failures -----------------------------------------------------
   group("must-fail-honestly");
 
@@ -1069,6 +1107,8 @@ async function run() {
     ["send-chat-message delivery", "needs an active session"],
     ["create-question", "needs an active session"],
     ["raise-participant-hand", "needs a live participant"],
+    ["update-participant role change", "needs a live participant"],
+    ["add-recording-bookmark", "needs a recording with a session"],
     ["start-transcription", "needs an active session"],
     ["connect-phone", "needs telephony on the account"],
   ];

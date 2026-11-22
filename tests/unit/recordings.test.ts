@@ -237,7 +237,7 @@ describe('Recording Tools', () => {
     it('should register all recording tools', () => {
       const tools = registerRecordingTools();
       
-      expect(tools).toHaveLength(11);
+      expect(tools).toHaveLength(13);
       expect(tools.map(t => t.name)).toEqual([
         'delete-recording',
         'update-recording',
@@ -249,7 +249,9 @@ describe('Recording Tools', () => {
         'get-recording-download-link',
         'unarchive-recording',
         'get-recording-bookmarks',
-        'get-recording-captions'
+        'get-recording-captions',
+        'delete-room-recordings',
+        'add-recording-bookmark'
       ]);
       
       tools.forEach(tool => {

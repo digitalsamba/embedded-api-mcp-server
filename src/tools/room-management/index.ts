@@ -16,7 +16,7 @@ import {
 // Removed enhanced client import - using standard client
 import { getApiKeyFromRequest } from "../../auth.js";
 import logger from "../../logger.js";
-import { compareApplied } from "../verified-write.js";
+import { compareApplied, verifiedWrite } from "../verified-write.js";
 import { normalizeBooleans } from "../../utils.js";
 import { getToolAnnotations } from "../../tool-annotations.js";
 
@@ -929,6 +929,75 @@ export function registerRoomTools(): Tool[] {
       },
     },
     {
+      name: "list-room-participants",
+      description:
+        '[Room Management] List the participants of a room across all its sessions, past and live. Use when users say: "who attended this room", "participants of the room", "attendance for room", "who joined the meeting room last week". Requires room_id. Filter by session_id, live (only those in the room now), date_start/date_end (YYYY-MM-DD). Paginated: limit (max 500), offset, order by join time.',
+      annotations: getToolAnnotations(
+        "list-room-participants",
+        "List Room Participants",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: { type: "string", description: "The ID of the room" },
+          session_id: {
+            type: "string",
+            description: "Only participants of this session",
+          },
+          live: {
+            type: "boolean",
+            description:
+              "true: only participants in the room now; false: only past ones",
+          },
+          date_start: {
+            type: "string",
+            description: "Joined on or after this date (YYYY-MM-DD)",
+          },
+          date_end: {
+            type: "string",
+            description: "Joined on or before this date (YYYY-MM-DD)",
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number to return (default and max 500)",
+          },
+          offset: { type: "number", description: "Number to skip" },
+          order: {
+            type: "string",
+            enum: ["asc", "desc"],
+            description: "Order by join time (default desc)",
+          },
+        },
+        required: ["room_id"],
+      },
+    },
+    {
+      name: "delete-room-resources",
+      description:
+        '[Room Management] Permanently delete all content from every session of a room while keeping the room: recordings, chat, transcripts and their summaries, Q&A, polls and quizzes (the polls and quizzes themselves, not only their results), restreams, shared files, breakout rooms, banned participants and the shared notes. Use when users say: "clear everything from this room", "wipe the room content but keep the room", "delete all room data". Requires room_id. Optional delete_history anonymises archived participants; delete_library also deletes the room\'s content library. Refused while the room has a live session. Cannot be undone.',
+      annotations: getToolAnnotations(
+        "delete-room-resources",
+        "Delete Room Resources",
+      ),
+      inputSchema: {
+        type: "object",
+        properties: {
+          room_id: { type: "string", description: "The ID of the room" },
+          delete_history: {
+            type: "boolean",
+            description:
+              "Also anonymise the personal data of all archived participants of the room (default false)",
+          },
+          delete_library: {
+            type: "boolean",
+            description:
+              "Also delete the room's content library and the personal libraries of its participants (default false)",
+          },
+        },
+        required: ["room_id"],
+      },
+    },
+    {
       name: "list-live-participants",
       description:
         '[Room Management - TOOL] List all rooms with detailed participant information. Use when users say: "show who is in meetings", "list participants in all rooms", "active participants", "who is in which room", "all attendees". This TOOL provides the same data as the digitalsamba://rooms/live/participants resource. Returns rooms with full participant details including names and join times.',
@@ -1512,6 +1581,95 @@ export async function executeRoomTool(
           isError: true,
         };
       }
+    }
+
+    case "list-room-participants": {
+      const {
+        room_id,
+        session_id,
+        live,
+        date_start,
+        date_end,
+        limit,
+        offset,
+        order,
+      } = args;
+      try {
+        const liveFlag = normalizeBooleans({ live }).live;
+        const page = await client.listRoomParticipants(room_id, {
+          ...(session_id && { session_id }),
+          ...(liveFlag !== undefined && { live: liveFlag }),
+          ...(date_start && { date_start }),
+          ...(date_end && { date_end }),
+          ...(limit !== undefined && { limit }),
+          ...(offset !== undefined && { offset }),
+          ...(order && { order }),
+        });
+        const rows = page?.data ?? [];
+        const total = page?.total_count ?? rows.length;
+        return {
+          content: [
+            {
+              type: "text",
+              text:
+                rows.length === 0
+                  ? `No participants found in room ${room_id} for these filters.`
+                  : `Showing ${rows.length} of ${total} participant(s) in room ${room_id}:\n\n` +
+                    JSON.stringify(page, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error("Error listing room participants", {
+          roomId: room_id,
+          error: message,
+        });
+        return {
+          content: [
+            {
+              type: "text",
+              text: `Error listing room participants: ${message}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+
+    case "delete-room-resources": {
+      const { room_id, delete_history, delete_library } = args;
+      const flags = normalizeBooleans({ delete_history, delete_library });
+      const hasFlags = Object.values(flags).some((v) => v !== undefined);
+      logger.info("Deleting room resources", { roomId: room_id, ...flags });
+
+      return verifiedWrite({
+        required: { room_id: room_id?.trim?.() },
+        describe: `the content of room ${room_id}`,
+        verb: "Deleted",
+        errorLabel: "deleting room resources",
+        action: () =>
+          client.deleteRoomResources(room_id, hasFlags ? flags : undefined),
+        verify: async () => {
+          // The resources flags do not cover recordings, so count those too.
+          const [resources, recordings] = await Promise.all([
+            client.getRoomResources(room_id),
+            client.listRecordings({ room_id, limit: 1 }),
+          ]);
+          const left = Object.entries(resources ?? {})
+            .filter(([key, value]) => key.startsWith("has_") && value === true)
+            .map(([key]) => key.slice(4));
+          const recordingCount = Number(recordings?.total_count ?? 0);
+          if (recordingCount > 0) left.push(`${recordingCount} recording(s)`);
+          return {
+            landed: left.length === 0,
+            evidence:
+              left.length === 0
+                ? "the room now reports no recordings, transcripts, chat, Q&A, polls, quizzes or shared notes"
+                : `the room still reports: ${left.join(", ")}`,
+          };
+        },
+      });
     }
 
     case "list-live-participants": {
