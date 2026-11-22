@@ -928,23 +928,27 @@
     },
     "GET /api/v1/alert-recipients": {
       "operationId": "getAlertRecipientsForTheTeam",
-      "pending": "New tool list-alert-recipients.",
-      "issue": 26
+      "tools": [
+        "list-alert-recipients"
+      ]
     },
     "POST /api/v1/alert-recipients": {
       "operationId": "addAnAlertRecipientToTheTeam",
-      "pending": "New tool create-alert-recipient (email).",
-      "issue": 26
+      "tools": [
+        "create-alert-recipient"
+      ]
     },
     "PATCH /api/v1/alert-recipients/{alertRecipient}": {
       "operationId": "updateTheSpecifiedAlertRecipient",
-      "pending": "New tool update-alert-recipient.",
-      "issue": 26
+      "tools": [
+        "update-alert-recipient"
+      ]
     },
     "DELETE /api/v1/alert-recipients/{alertRecipient}": {
       "operationId": "deleteTheSpecifiedAlertRecipient",
-      "pending": "New tool delete-alert-recipient.",
-      "issue": 26
+      "tools": [
+        "delete-alert-recipient"
+      ]
     },
     "PATCH /api/v1/rooms/{room}/questions/{question}": {
       "operationId": "updateQuestion",
@@ -1020,8 +1024,9 @@
     },
     "GET /api/v1/system-checks/{supportId}": {
       "operationId": "getSystemCheckResults",
-      "pending": "New tool get-system-check-results (support ID from the pre-call check).",
-      "issue": 26
+      "tools": [
+        "get-system-check-results"
+      ]
     },
     "GET /api/v1/usage": {
       "operationId": "getCurrentParticipationMinutesUsage",
