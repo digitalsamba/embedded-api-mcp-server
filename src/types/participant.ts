@@ -46,3 +46,14 @@ export interface TokenResponse {
   token: string;
   link: string;
 }
+
+/** One line of GET /participants/{id}/logs?format=json */
+export interface ParticipantLogLine {
+  id?: string;
+  message: string | null;
+  payload?: Record<string, unknown> | null;
+  timestamp: string;
+  level: string | null;
+  action?: string | null;
+  created_at?: string;
+}

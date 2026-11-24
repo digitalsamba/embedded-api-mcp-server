@@ -27,6 +27,7 @@ import {
   ValidationError,
 } from "./errors.js";
 import logger from "./logger.js";
+import { gunzipSync } from "node:zlib";
 
 // Import all types from organized type definitions
 import type {
@@ -49,6 +50,7 @@ import type {
   // Participant types
   Participant,
   ParticipantDetail,
+  ParticipantLogLine,
   TokenOptions,
   TokenResponse,
 
@@ -3117,6 +3119,67 @@ export class DigitalSambaApiClient {
     return this.request<ParticipantDetail>(
       `/participants/${participantId}/statistics`,
     );
+  }
+
+  /**
+   * Fetch a non-JSON export uncached: logs change while a participant is
+   * live, and the rtcstats dump is binary.
+   */
+  private async fetchExport(endpoint: string): Promise<Response> {
+    const response = await this.fetchWithTimeout(this.apiUrl(endpoint), {
+      headers: { Authorization: `Bearer ${this.getApiKey()}` },
+    });
+    if (response.ok) return response;
+
+    const text = await response.text();
+    let message = text;
+    try {
+      message = JSON.parse(text).message || text;
+    } catch {
+      // not JSON
+    }
+    if (response.status === 401 || response.status === 403) {
+      throw new AuthenticationError(`Authentication error: ${message}`);
+    }
+    throw new ApiResponseError(
+      `Digital Samba API error (${response.status}): ${message}`,
+      { statusCode: response.status, apiErrorMessage: message },
+    );
+  }
+
+  /**
+   * Client-side logs of one participant connection, as JSON lines
+   * (GET /participants/{id}/logs?format=json).
+   */
+  async getParticipantLogs(
+    participantId: string,
+    params?: { level?: string; message?: string },
+  ): Promise<ParticipantLogLine[]> {
+    const query = new URLSearchParams({ format: "json" });
+    if (params?.level) query.append("level", params.level);
+    if (params?.message) query.append("message", params.message);
+    const response = await this.fetchExport(
+      `/participants/${participantId}/logs?${query.toString()}`,
+    );
+    const text = await response.text();
+    if (!text.trim()) return [];
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed : [];
+  }
+
+  /**
+   * The participant's rtcstats dump, decompressed to text
+   * (GET /participants/{id}/rtcstats). Available once the participant has
+   * left; 404 while they are still in the session or after the dump expired.
+   */
+  async getParticipantRtcstats(participantId: string): Promise<string> {
+    const response = await this.fetchExport(
+      `/participants/${participantId}/rtcstats`,
+    );
+    const body = Buffer.from(await response.arrayBuffer());
+    // gzip magic 1f 8b; a proxy may already have decoded it.
+    const raw = body[0] === 0x1f && body[1] === 0x8b ? gunzipSync(body) : body;
+    return raw.toString("utf8");
   }
 
   // Breakout Rooms
