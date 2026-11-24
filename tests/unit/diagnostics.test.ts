@@ -341,10 +341,86 @@ describe("diagnostics tools", () => {
     });
     const res = await executeDiagnosticsTool("get-session-diagnostics", { sessionId: "s1" }, api);
     const body = JSON.parse(res.content[0].text);
-    expect(body.participants).toBe(2);
+    expect(body.totalParticipants).toBe(2);
     expect(body.results[0]).toMatchObject({ participantId: "p1", device: "Chrome 142 / Windows" });
     expect(body.results[1].findings.join("\n")).toMatch(/No WebRTC stats/);
-    expect(api.listSessionParticipants).toHaveBeenCalledWith("s1", { limit: 50 });
+    expect(body.checked).toBe(2);
+    // p2: no stats and no logs at all is itself a finding.
+    expect(body.withProblems).toBe(2);
+    expect(body.nextOffset).toBeUndefined();
+    expect(api.listSessionParticipants).toHaveBeenCalledWith("s1", { limit: 12, offset: 0 });
+  });
+
+  const throttled = () =>
+    new ApiResponseError("Digital Samba API error (429): Too Many Attempts. You may try again in 47 seconds.", {
+      statusCode: 429,
+      apiErrorMessage: "Too Many Attempts. You may try again in 47 seconds.",
+    });
+  const roster = (n: number, from = 0) =>
+    Array.from({ length: n }, (_, i) => ({ id: `p${from + i}`, name: `Synthetic ${from + i}` }));
+
+  it("reports a throttled participant as not checked, not as a problem", async () => {
+    const d = await diagnoseParticipant(
+      client({ getParticipantLogs: jest.fn().mockRejectedValue(throttled()) }),
+      "p1",
+    );
+    expect(d.rateLimited).toEqual({ retryAfterSeconds: 47 });
+    expect(d.problems).toBe(false);
+    expect(d.rtcstats).toBeUndefined();
+    expect(d.findings).toEqual(["Not checked: the API's diagnostics rate limit was reached. Try again in 47 seconds."]);
+  });
+
+  it("stops at the first 429 and says where to resume", async () => {
+    let calls = 0;
+    const api = client({
+      listSessionParticipants: jest.fn().mockResolvedValue({ total_count: 30, data: roster(12, 10) }),
+      // The first 3 participants (6 requests) get through, then the throttle closes.
+      getParticipantRtcstats: jest
+        .fn()
+        .mockImplementation(() => (++calls > 3 ? Promise.reject(throttled()) : Promise.resolve(troubledCall()))),
+    });
+    const res = await executeDiagnosticsTool("get-session-diagnostics", { sessionId: "s1", offset: 10 }, api);
+    const body = JSON.parse(res.content[0].text);
+    expect(api.listSessionParticipants).toHaveBeenCalledWith("s1", { limit: 12, offset: 10 });
+    expect(body.totalParticipants).toBe(30);
+    expect(body.checked).toBe(3);
+    expect(body.withProblems).toBe(3);
+    expect(body.notChecked).toBe(9);
+    expect(body.retryAfterSeconds).toBe(47);
+    expect(body.nextOffset).toBe(13);
+    const skipped = body.results.filter((r: any) => !r.checked);
+    expect(skipped).toHaveLength(9);
+    skipped.forEach((r: any) => expect(r.findings).toBeUndefined());
+    // No request is spent on participants after the throttle closed.
+    expect(api.getParticipantRtcstats.mock.calls.length).toBeLessThan(12);
+  });
+
+  it("offers the next batch when the session is larger than one call", async () => {
+    const api = client({
+      listSessionParticipants: jest.fn().mockResolvedValue({ total_count: 20, data: roster(12) }),
+    });
+    const body = JSON.parse(
+      (await executeDiagnosticsTool("get-session-diagnostics", { sessionId: "s1" }, api)).content[0].text,
+    );
+    expect(body.checked).toBe(12);
+    expect(body.notChecked).toBeUndefined();
+    expect(body.nextOffset).toBe(12);
+    expect(body.retryAfterSeconds).toBeUndefined();
+  });
+
+  it("does not count 'no known problem patterns' as a problem", async () => {
+    const api = client({
+      listSessionParticipants: jest.fn().mockResolvedValue({ total_count: 1, data: roster(1) }),
+      getParticipantRtcstats: jest.fn().mockRejectedValue(notFound()),
+      getParticipantLogs: jest
+        .fn()
+        .mockResolvedValue([{ timestamp: "2025-11-20T12:00:00Z", level: "warn", message: "Synthetic warning", action: null, payload: null }]),
+    });
+    const body = JSON.parse(
+      (await executeDiagnosticsTool("get-session-diagnostics", { sessionId: "s1" }, api)).content[0].text,
+    );
+    expect(body.results[0].problems).toBe(false);
+    expect(body.withProblems).toBe(0);
   });
 
   it("gunzips the dump in the API client", async () => {
