@@ -7,6 +7,7 @@
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
+  CallToolRequest,
   CallToolRequestSchema,
   ErrorCode,
   ListResourcesRequestSchema,
@@ -16,7 +17,15 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 import { DigitalSambaApiClient } from "./digital-samba-api.js";
+import { getApiKeyFromRequest } from "./auth.js";
 import logger from "./logger.js";
+import { setUserAgentVersion } from "./user-agent.js";
+import {
+  clientLabel,
+  keyFingerprint,
+  logToolCall,
+  ToolOutcome,
+} from "./usage-log.js";
 
 // Import resources
 import {
@@ -281,6 +290,7 @@ export function missingRequiredArguments(
  * Creates and configures the MCP server with all handlers
  */
 export function createServer(config: ServerConfig = {}): Server {
+  setUserAgentVersion(VERSION);
   const server = new Server(
     {
       name: "digital-samba",
@@ -389,7 +399,12 @@ export function createServer(config: ServerConfig = {}): Server {
     return { tools: allTools };
   });
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  // ctx.apiStatus carries the API's HTTP status out of the catch below, before
+  // the error is rewrapped as an McpError, for the usage log.
+  const callTool = async (
+    request: CallToolRequest,
+    ctx: { apiStatus?: number },
+  ) => {
     const apiKey = getApiKey();
     if (!apiKey) {
       throw new McpError(
@@ -561,6 +576,9 @@ export function createServer(config: ServerConfig = {}): Server {
       throw new McpError(ErrorCode.InvalidRequest, `Unknown tool: ${name}`);
     } catch (error: any) {
       logger.error(`Tool execution error: ${error.message}`, error);
+      if (typeof error?.statusCode === "number") {
+        ctx.apiStatus = error.statusCode;
+      }
 
       if (error instanceof McpError) {
         throw error;
@@ -570,6 +588,38 @@ export function createServer(config: ServerConfig = {}): Server {
         ErrorCode.InternalError,
         `Failed to execute tool ${name}: ${error.message}`,
       );
+    }
+  };
+
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    const started = Date.now();
+    const ctx: { apiStatus?: number } = {};
+    const base = () => ({
+      tool: request.params.name,
+      ms: Date.now() - started,
+      session: extra?.sessionId,
+      // The HTTP transport puts the caller's key in apiKeyContext; the API
+      // client uses that one first, so fingerprint the same key.
+      caller: keyFingerprint(getApiKeyFromRequest(null) ?? getApiKey()),
+      client: clientLabel(server.getClientVersion()),
+    });
+    try {
+      const result = await callTool(request, ctx);
+      logToolCall({
+        ...base(),
+        outcome: result?.isError ? "tool_error" : "ok",
+      });
+      return result;
+    } catch (error) {
+      let outcome: ToolOutcome = "error";
+      if (error instanceof McpError) {
+        if (error.code === ErrorCode.InvalidParams) outcome = "invalid_params";
+        else if (error.code === ErrorCode.InvalidRequest) {
+          outcome = "invalid_request";
+        }
+      }
+      logToolCall({ ...base(), outcome, status: ctx.apiStatus });
+      throw error;
     }
   });
 
