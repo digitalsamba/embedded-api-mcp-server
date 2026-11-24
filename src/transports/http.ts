@@ -28,6 +28,11 @@ import { SessionRegistry } from "../session-registry.js";
 import { registerAuthorizeRoutes } from "./oauth-routes.js";
 import { rateLimit } from "../rate-limit.js";
 import { isPublicRequest } from "./public-paths.js";
+import {
+  wwwAuthenticate,
+  protectedResourceMetadata,
+  PROTECTED_RESOURCE_METADATA_PATH,
+} from "./oauth-discovery.js";
 import { resolveApiUrls, apiHost } from "../api-urls.js";
 import { getStoreStatus } from "../session-store.js";
 import { healthProblems } from "../health.js";
@@ -79,7 +84,11 @@ const transports = new SessionRegistry<StreamableHTTPServerTransport>({
  * Validates Bearer token and extracts API key
  * Supports both direct API keys and OAuth session tokens
  */
-function authMiddleware(requireAuth: boolean) {
+/**
+ * @param oauthIssuer OAuth issuer URL, used to give 401s an absolute
+ *   resource_metadata link (RFC 9728); undefined when OAuth is not configured.
+ */
+function authMiddleware(requireAuth: boolean, oauthIssuer?: string) {
   return async (
     req: Request,
     res: Response,
@@ -96,10 +105,7 @@ function authMiddleware(requireAuth: boolean) {
 
     if (!authHeader && requireAuth) {
       // Include WWW-Authenticate header for OAuth discovery
-      res.setHeader(
-        "WWW-Authenticate",
-        'Bearer realm="mcp", resource_metadata="/.well-known/oauth-protected-resource"',
-      );
+      res.setHeader("WWW-Authenticate", wwwAuthenticate(oauthIssuer, req.path));
       res.status(401).json({
         jsonrpc: "2.0",
         error: {
@@ -147,7 +153,10 @@ function authMiddleware(requireAuth: boolean) {
           // itself rather than needing the connector removed and re-added.
           res.setHeader(
             "WWW-Authenticate",
-            'Bearer realm="mcp", error="invalid_token", error_description="The OAuth session has expired", resource_metadata="/.well-known/oauth-protected-resource"',
+            wwwAuthenticate(oauthIssuer, req.path, {
+              code: "invalid_token",
+              description: "The OAuth session has expired",
+            }),
           );
           res.status(401).json({
             jsonrpc: "2.0",
@@ -242,7 +251,7 @@ export async function startHttpServer(
   if (cors) {
     app.use(corsMiddleware);
   }
-  app.use(authMiddleware(requireAuth));
+  app.use(authMiddleware(requireAuth, oauthConfig?.issuer));
 
   // The two store counts scan Redis, and /health is public and polled by
   // the deploy workflows, so they are cached rather than run per request.
@@ -348,12 +357,13 @@ export async function startHttpServer(
       res.json(getAuthorizationServerMetadata(oauthConfig));
     });
 
-    // Also support the alternative path used by some clients
-    app.get("/.well-known/oauth-protected-resource", (_req, res) => {
-      res.json({
-        resource: oauthConfig.issuer,
-        authorization_servers: [oauthConfig.issuer],
-      });
+    // RFC 9728 - OAuth Protected Resource Metadata, one document per MCP
+    // endpoint: "/" (the URL customers are given) and "/mcp".
+    app.get(PROTECTED_RESOURCE_METADATA_PATH, (_req, res) => {
+      res.json(protectedResourceMetadata(oauthConfig.issuer, ""));
+    });
+    app.get(`${PROTECTED_RESOURCE_METADATA_PATH}/mcp`, (_req, res) => {
+      res.json(protectedResourceMetadata(oauthConfig.issuer, "/mcp"));
     });
 
     // =========================================================================
