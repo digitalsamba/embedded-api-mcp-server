@@ -185,8 +185,11 @@ const MEDIA_ERROR_NAME =
  * (react-frontend): reportMediaCaptureFailure ("Media capture failed: <Name>:
  * ...", in-call unmute / device switch), GENERIC_JANUS_ERROR ("WebRTC client
  * error in <source>: <Name> | ...", publishing), and logSwitchCaptureFailure
- * ("<op> capture failed; keeping current stream", name in the payload).
- * The join screen's own handler logs to the browser console only.
+ * ("<op> capture failed; keeping current stream", name in the payload),
+ * and useSingularUserMedia ("Error when requesting user media: <Name>:
+ * <message>", the camera/microphone request itself: join screen and device
+ * setup). The last one is where a refused permission shows up; it was
+ * missing here, so a patient's denied camera or mic read as a clean log.
  */
 function mediaErrorOf(
   message: string,
@@ -207,6 +210,13 @@ function mediaErrorOf(
     return {
       error: m[1],
       context: "answering a camera/microphone request that had hung",
+    };
+  }
+  m = message.match(/^Error when requesting user media: (\w+)/);
+  if (m && MEDIA_ERROR_NAME.test(m[1])) {
+    return {
+      error: m[1],
+      context: "requesting the camera/microphone (join screen or device setup)",
     };
   }
   m = message.match(/^Media capture failed: (\w+):/);

@@ -244,6 +244,24 @@ describe("client log summary", () => {
     expect(s.findings[2]).toMatch(/Camera switch \(the previous stream kept working\): OverconstrainedError/);
   });
 
+  it("names a refused camera/microphone request (useSingularUserMedia)", () => {
+    // The line the client logs when the request itself fails: join screen and
+    // device setup. Seen on real refusals (iPhone camera/mic "not allowed").
+    const s = summarizeClientLogs([
+      { level: "error", message: "Error when requesting user media: NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.", timestamp: at(1) },
+      { level: "error", message: "Error when requesting user media: NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.", timestamp: at(2) },
+      { level: "error", message: "Error when requesting user media: NotFoundError: Requested device not found", timestamp: at(3) },
+      // non-DOMException branch: no name, not a media error
+      { level: "error", message: "Error when requesting user media: TypeError: x", timestamp: at(4) },
+    ]);
+    expect(s.mediaErrors.map((e) => [e.error, e.count])).toEqual([
+      ["NotAllowedError", 2],
+      ["NotFoundError", 1],
+    ]);
+    expect(s.findings[0]).toMatch(/failed 2x while requesting the camera\/microphone \(join screen or device setup\): NotAllowedError - permission denied/);
+    expect(s.findings.join("\n")).not.toMatch(/No problems found/);
+  });
+
   it("reports audio, permission-prompt and weak-connection signals, one per incident", () => {
     const s = summarizeClientLogs([
       { level: "warn", message: "[GUM] request still pending — join-screen", timestamp: at(1) },
