@@ -27,6 +27,7 @@ import {
   ValidationError,
 } from "./errors.js";
 import logger from "./logger.js";
+import { getUserAgent } from "./user-agent.js";
 import { gunzipSync } from "node:zlib";
 
 // Import all types from organized type definitions
@@ -368,8 +369,19 @@ export class DigitalSambaApiClient {
   ): Promise<Response> {
     const timeoutMs = API_TIMEOUT_MS;
     try {
+      // Plain-object headers stay a plain object (callers and tests read
+      // them back); a caller's own User-Agent wins.
+      let headers: RequestInit["headers"];
+      if (init.headers instanceof Headers || Array.isArray(init.headers)) {
+        const h = new Headers(init.headers);
+        if (!h.has("user-agent")) h.set("User-Agent", getUserAgent());
+        headers = h;
+      } else {
+        headers = { "User-Agent": getUserAgent(), ...init.headers };
+      }
       return await fetch(url, {
         ...init,
+        headers,
         signal: init.signal ?? AbortSignal.timeout(timeoutMs),
       });
     } catch (error) {
