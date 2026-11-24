@@ -195,7 +195,7 @@ function mediaErrorOf(
   // The client sends every argument after the message as a JSON array in
   // payload, so the name can be in either; search both as text.
   const nameIn = (text: string) => text.match(MEDIA_ERROR_NAME_IN_TEXT)?.[1];
-  let payloadText = "";
+  let payloadText: string;
   try {
     payloadText = payload ? JSON.stringify(payload) : "";
   } catch {
