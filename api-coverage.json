@@ -305,6 +305,10 @@
       ],
       "note": "get-session-details and digitalsamba://sessions/{sessionId} call this AI-summary endpoint instead of GET /sessions/{session}."
     },
+    "GET /api/v1/sessions/{session}/logs": {
+      "operationId": "exportSessionLogs",
+      "excluded": "Returns a zip of raw per-connection log files. get-session-diagnostics covers the same data per participant and returns a summary instead of an archive."
+    },
     "GET /api/v1/sessions/{session}/transcripts/export": {
       "operationId": "exportSessionTranscripts",
       "tools": [
@@ -877,6 +881,20 @@
         "get-participant-statistics"
       ],
       "note": "Alias of GET /participants/{participant} (same handler); get-participant-statistics calls this path."
+    },
+    "GET /api/v1/participants/{participant}/logs": {
+      "operationId": "exportParticipantLogs",
+      "tools": [
+        "get-participant-diagnostics",
+        "get-session-diagnostics"
+      ]
+    },
+    "GET /api/v1/participants/{participant}/rtcstats": {
+      "operationId": "exportParticipantRTCStats",
+      "tools": [
+        "get-participant-diagnostics",
+        "get-session-diagnostics"
+      ]
     },
     "POST /api/v1/rooms/{room}/transcription/start": {
       "operationId": "startTranscription",

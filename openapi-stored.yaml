@@ -6965,6 +6965,81 @@ paths:
         required: true
         schema:
           type: string
+  '/api/v1/sessions/{session}/logs':
+    get:
+      summary: 'Export session logs.'
+      operationId: exportSessionLogs
+      description: "Client-side logs of every participant connection in the session, as a zip archive\nwith one file per connection. A participant who reconnects gets a new connection,\nso each reconnect is a separate file.\nShares a rate limit of 30 requests per minute with the other log and RTC stats exports."
+      parameters:
+        -
+          in: query
+          name: locale
+          description: 'Locale used for the column headers and labels in the exported file.'
+          example: en
+          required: false
+          schema:
+            type: string
+            description: 'Locale used for the column headers and labels in the exported file.'
+            example: en
+            enum:
+              - en
+              - it
+              - de
+              - es
+        -
+          in: query
+          name: lang
+          description: 'Alias of locale, used when locale is not given.'
+          example: null
+          required: false
+          schema:
+            type: string
+            description: 'Alias of locale, used when locale is not given.'
+            example: null
+            enum:
+              - en
+              - it
+              - de
+              - es
+        -
+          in: query
+          name: timezone
+          description: 'IANA timezone the times in txt, csv and pdf files are shown in. Defaults to UTC. Json output is always UTC. Must be a valid time zone, such as <code>Africa/Accra</code>.'
+          example: Europe/Rome
+          required: false
+          schema:
+            type: string
+            description: 'IANA timezone the times in txt, csv and pdf files are shown in. Defaults to UTC. Json output is always UTC. Must be a valid time zone, such as <code>Africa/Accra</code>.'
+            example: Europe/Rome
+        -
+          in: query
+          name: format
+          description: 'Format of the files in the archive (txt or json). Default is txt.'
+          example: json
+          required: false
+          schema:
+            type: string
+            description: 'Format of the files in the archive (txt or json). Default is txt.'
+            example: json
+      responses:
+        200:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: 'Zip file - Session logs'
+      tags:
+        - Sessions
+    parameters:
+      -
+        in: path
+        name: session
+        description: 'The UUID of the session.'
+        example: a853d608-e6cf-48eb-a3c9-7d089bbc09b0
+        required: true
+        schema:
+          type: string
   /api/v1/participants:
     get:
       summary: 'Get all participants.'
@@ -7782,6 +7857,126 @@ paths:
         name: session
         description: 'The UUID of the session.'
         example: 16719c1b-cc82-4dfe-9f6f-40d9093fa695
+        required: true
+        schema:
+          type: string
+  '/api/v1/participants/{participant}/logs':
+    get:
+      summary: 'Export participant logs.'
+      operationId: exportParticipantLogs
+      description: "Client-side logs of one participant connection.\nShares a rate limit of 30 requests per minute with the other log and RTC stats exports."
+      parameters:
+        -
+          in: query
+          name: locale
+          description: 'Locale used for the column headers and labels in the exported file.'
+          example: en
+          required: false
+          schema:
+            type: string
+            description: 'Locale used for the column headers and labels in the exported file.'
+            example: en
+            enum:
+              - en
+              - it
+              - de
+              - es
+        -
+          in: query
+          name: lang
+          description: 'Alias of locale, used when locale is not given.'
+          example: null
+          required: false
+          schema:
+            type: string
+            description: 'Alias of locale, used when locale is not given.'
+            example: null
+            enum:
+              - en
+              - it
+              - de
+              - es
+        -
+          in: query
+          name: timezone
+          description: 'IANA timezone the times in txt, csv and pdf files are shown in. Defaults to UTC. Json output is always UTC. Must be a valid time zone, such as <code>Africa/Accra</code>.'
+          example: Europe/Rome
+          required: false
+          schema:
+            type: string
+            description: 'IANA timezone the times in txt, csv and pdf files are shown in. Defaults to UTC. Json output is always UTC. Must be a valid time zone, such as <code>Africa/Accra</code>.'
+            example: Europe/Rome
+        -
+          in: query
+          name: format
+          description: 'Export format (txt or json). Default is txt.'
+          example: json
+          required: false
+          schema:
+            type: string
+            description: 'Export format (txt or json). Default is txt.'
+            example: json
+        -
+          in: query
+          name: level
+          description: 'Only return log lines of this level.'
+          example: null
+          required: false
+          schema:
+            type: string
+            description: 'Only return log lines of this level.'
+            example: null
+        -
+          in: query
+          name: message
+          description: 'Only return log lines whose message contains every word of this text.'
+          example: null
+          required: false
+          schema:
+            type: string
+            description: 'Only return log lines whose message contains every word of this text.'
+            example: null
+      responses:
+        200:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: 'Text file - Participant logs'
+      tags:
+        - Participants
+    parameters:
+      -
+        in: path
+        name: participant
+        description: 'The UUID of the participant.'
+        example: d70b61f4-c914-48ec-9c3f-97e154279b95
+        required: true
+        schema:
+          type: string
+  '/api/v1/participants/{participant}/rtcstats':
+    get:
+      summary: 'Export participant RTC stats.'
+      operationId: exportParticipantRTCStats
+      description: "The WebRTC statistics dump of one participant connection (gzipped rtcstats format),\navailable once the session has ended. Returns 404 while the session is live.\nShares a rate limit of 30 requests per minute with the log exports."
+      parameters: []
+      responses:
+        200:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: 'Gzip file - RTC stats dump'
+      tags:
+        - Participants
+    parameters:
+      -
+        in: path
+        name: participant
+        description: 'The UUID of the participant.'
+        example: d70b61f4-c914-48ec-9c3f-97e154279b95
         required: true
         schema:
           type: string
