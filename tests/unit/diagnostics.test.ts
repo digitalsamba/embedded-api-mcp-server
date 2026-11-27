@@ -330,7 +330,7 @@ describe("diagnostics tools", () => {
       "p1",
     );
     expect(d.rtcstats).toBeUndefined();
-    expect(d.findings.join("\n")).toMatch(/may still be in the session/);
+    expect(d.findings.join("\n")).toMatch(/once the whole session has ended.*try again in a few minutes/);
   });
 
   it("returns findings only when detail is off", async () => {
