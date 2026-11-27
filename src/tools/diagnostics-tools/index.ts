@@ -121,7 +121,7 @@ function unavailableReason(error: unknown, what: "rtcstats" | "logs"): string {
   const status = (error as { statusCode?: number })?.statusCode;
   if (status === 404) {
     return what === "rtcstats"
-      ? "No WebRTC stats for this participant: they may still be in the session (stats are uploaded when they leave), never got as far as connecting, or the stats are older than 30 days."
+      ? "No WebRTC stats for this participant yet. Stats become available once the whole session has ended, about 5-8 minutes after the last participant leaves (straight away if the host ends the session). If the session is still running or only just finished, try again in a few minutes. Otherwise the participant never got as far as connecting, or the stats are older than 30 days."
       : "No client logs for this participant.";
   }
   return `Could not fetch ${what}: ${error instanceof Error ? error.message : String(error)}`;

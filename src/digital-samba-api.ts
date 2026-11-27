@@ -3181,8 +3181,10 @@ export class DigitalSambaApiClient {
 
   /**
    * The participant's rtcstats dump, decompressed to text
-   * (GET /participants/{id}/rtcstats). Available once the participant has
-   * left; 404 while they are still in the session or after the dump expired.
+   * (GET /participants/{id}/rtcstats). Available once the whole session has
+   * been archived: about 5-8 minutes after the last participant leaves, or at
+   * once if the host ends the session. 404 before that (even for a participant
+   * who left early) and after the dump expired.
    */
   async getParticipantRtcstats(participantId: string): Promise<string> {
     const response = await this.fetchExport(
